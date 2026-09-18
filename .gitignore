@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.sqlite
+*.db
+*.log
+results/development/**
+!results/development/.gitkeep
+results/raw/
+.DS_Store
