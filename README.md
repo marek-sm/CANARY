@@ -10,6 +10,24 @@ Current slice owners and states live in [`TASKS.md`](TASKS.md). The dated weekly
 
 Before work starts, each retained slice receives one accountable owner who commits to all of its acceptance checks. Review is independent verification, not deputy ownership; the full rule is in [`TASKS.md`](TASKS.md).
 
+## Development setup
+
+Requires Git and Python 3.11 (`SPEC.md` Section 4). `make` is optional.
+
+```sh
+git clone https://github.com/marek-sm/CANARY.git
+cd CANARY
+python3 -m venv .venv                # Windows: py -3.11 -m venv .venv
+source .venv/bin/activate            # Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install jsonschema pytest        # TEMPORARY WORKAROUND, see note below
+make test                            # no make: python -m pytest -q
+make trace                           # no make: python -m runner.mock_slice
+```
+
+`make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
+
+> **Temporary workaround:** `pip install -e ".[dev]"` should be the install command, but it currently fails because setuptools' automatic package discovery finds multiple top-level packages. Until `pyproject.toml` is fixed (see the open packaging issue), install the two dependencies directly, as CI does. Delete this note and the workaround line in the PR that fixes packaging.
+
 ## What CANARY is designed to measure
 
 - Model-level unsafe proposals and exact-canary disclosure.
