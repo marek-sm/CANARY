@@ -45,6 +45,20 @@ Not-applicable and unknown are distinguished by surrounding disposition fields. 
 - The sanitizer produces a new bundle manifest but may not alter scored fields.
 - All public tables and claims bind to the sanitized-bundle manifest, active protocol, and generating commit.
 
+## Version namespaces
+
+CANARY carries several independent version identifiers. They advance on different triggers and are never aligned to one another; equal or differing numbers across namespaces imply nothing.
+
+| Namespace | Where it lives | Advances when |
+|---|---|---|
+| Specification version | `SPEC.md` header | The specification document is re-baselined; after freeze, only through `SPEC.md` Section 11 |
+| `protocol_version` | Result records and `protocol/active.json` | The claim-bearing protocol changes; a material change after freeze requires the Section 11 increment |
+| `schema_version` and schema `$id` | `schemas/*.schema.json` and every record they validate | A schema's serialized structure changes; schemas stay `0.x` until the measurement-contract lock and become `1.0.0` as part of that lock |
+| Package version | `pyproject.toml` | A tagged software release is cut; it does not track the specification or protocol |
+| Component versions | Constants such as `RUNNER_VERSION`, `LOOP_VERSION`, and `PROVIDER_ADAPTER_VERSION`, recorded in events and results | That component's behavior changes (see `docs/INTERFACES.md`); `-v0` and `placeholder` values mark pre-freeze or mock implementations |
+
+Version-shaped values inside `SPEC.md` example records illustrate post-freeze data and are not the repository's current versions. Never bump a version only to make it match another namespace: every recorded version is evidence of what produced a record.
+
 ## Evolution rules
 
 Before measurement-contract lock, an additive field is allowed only when its semantics, schema, fixtures, and tests land together. After lock, reinterpretation, type changes, new required fields, changed nullability, changed identifiers, or changed endpoint derivations are material protocol changes.
