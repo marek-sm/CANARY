@@ -42,7 +42,7 @@ The target week is the planned acceptance week, not necessarily the week work be
 
 | ID | Slice | Portfolio | Target week | Accountable owner | Depends on | Gate | Initial status |
 |---|---|---|---|---|---|---|---|
-| S00 | Repository policy and documentation baseline | T5 | W4 | — | — | Before coding | `PLANNED` |
+| S00 | Repository policy and documentation baseline | T5 | W4 | Marek | — | Before coding | `DONE` (`149a706`, `65288d3`) |
 | S01 | Python package, dependency lock, no-credit CI, and Make targets | T3 | W5 | — | S00 | Gate 1 | `PLANNED` |
 | S02 | Initial schemas, identifiers, canonical JSON, and hash utilities | T3 | W5 | — | S00–S01 | Gate 1 | `PLANNED` |
 | S03 | Safe-tool framework, minimal fictional fixture, and boundary tests | T1 | W5 | — | S01–S02 | Gate 1 | `PLANNED` |
@@ -121,13 +121,13 @@ A yellow item requires an owner and repair deadline and never extends the Novemb
 
 ### S00 — documentation baseline
 
-- [ ] `SPEC.md`, `README.md`, `AGENTS.md`, `CLAUDE.md`, `TASKS.md`, `STATUS.md`, `SECURITY.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md` are committed.
-- [ ] `.github/pull_request_template.md` is committed and routes every change through the scope, safety, evidence, and documentation checks.
-- [ ] `docs/ARCHITECTURE.md`, `docs/INTERFACES.md`, `docs/DATA_CONTRACTS.md`, `docs/DEMO_DESIGN.md`, `docs/DATA_RELEASE.md`, `docs/decisions/README.md`, `docs/decisions/0001-document-authority.md`, `docs/decisions/0002-single-owner-model.md`, `docs/decisions/0003-weekly-status-artifact.md`, `docs/contributions/README.md`, and `docs/protocol_deviations.md` are committed.
-- [ ] No catch-all organizational context file exists; durable rationale uses decision records.
-- [ ] Links resolve and each rule has one canonical owner.
-- [ ] Public project slug/name treatment is recorded.
-- [ ] `D0_BASELINE`, `D1_POLICY_GATE`, and `D2_DATAMARKING` are the only CANARY configuration identifiers; bare `D0`, `D1`, and `D2` appear only when comparing another project's terminology.
+- [x] `SPEC.md`, `README.md`, `AGENTS.md`, `CLAUDE.md`, `TASKS.md`, `STATUS.md`, `SECURITY.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md` are committed.
+- [x] `.github/pull_request_template.md` is committed and routes every change through the scope, safety, evidence, and documentation checks.
+- [x] `docs/ARCHITECTURE.md`, `docs/INTERFACES.md`, `docs/DATA_CONTRACTS.md`, `docs/DEMO_DESIGN.md`, `docs/DATA_RELEASE.md`, `docs/decisions/README.md`, `docs/decisions/0001-document-authority.md`, `docs/decisions/0002-single-owner-model.md`, `docs/decisions/0003-weekly-status-artifact.md`, `docs/contributions/README.md`, and `docs/protocol_deviations.md` are committed.
+- [x] No catch-all organizational context file exists; durable rationale uses decision records.
+- [x] Links resolve and each rule has one canonical owner.
+- [x] Public project slug/name treatment is recorded.
+- [x] `D0_BASELINE`, `D1_POLICY_GATE`, and `D2_DATAMARKING` are the only CANARY configuration identifiers; bare `D0`, `D1`, and `D2` appear only when comparing another project's terminology.
 
 ### S01–S07 — Gate 1
 
