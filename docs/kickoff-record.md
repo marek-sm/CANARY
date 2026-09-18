@@ -1,3 +1,3 @@
 # Kickoff Record
 
-<!-- Public file. Record only what each person agreed to have recorded: contributor ID or consented public name, accepted slice/issue, reviewer, and dates. No contact details, selection rationale, availability reasons, or private discussion. -->
+<!-- Public file. Record only the kickoff itself: date, whether the core reading was assigned, judging-rubric and demo-logistics status, and a link to the TASKS.md commit that recorded accepted owners. Slice owners live only in TASKS.md; do not repeat them here. No contact details, selection rationale, availability reasons, or private discussion. -->

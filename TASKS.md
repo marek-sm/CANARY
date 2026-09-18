@@ -135,7 +135,9 @@ A yellow item requires an owner and repair deadline and never extends the Novemb
 - [ ] All six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`.
 - [ ] Schema, structural-diff, canonical-payload, deterministic-score, and no-key replay checks pass.
 - [ ] Mock CI uses no credits and exercises the containment tests available at this gate; the complete arbitrary-endpoint proof is required by Gate 3.
+- [ ] S01: `uv.lock` resolves the `pyproject.toml` dependencies; README setup, CI, and the Dockerfile install from it, and the Dockerfile base image is pinned by digest.
 - [ ] S02: `result.schema.json` carries the case `split`, and when `split` is `evaluation` it requires non-null `protocol_version`, `channel`, `condition`, and `comparison_superblock_id`; positive and negative fixtures cover both splits.
+- [ ] S04: `.env.example` lists only provider variable names with empty values, is read only by the outer runner, and is never read by CI or the mock provider.
 
 ### S08–S11 — Gate 2
 
