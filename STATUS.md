@@ -1,0 +1,61 @@
+# CANARY Status — Club Week 4 — September 14, 2026
+
+> This is a dated public summary, not a second task tracker or protocol. `TASKS.md` owns slice owners and states; `protocol/active.json` will own the exact frozen tier and run instance; `SPEC.md` owns scientific and release meaning. If this summary disagrees with one of those authorities, the authority wins and this file must be corrected.
+
+## Current scope and gate
+
+| Field | Current public state |
+|---|---|
+| Lifecycle state | Pre-implementation documentation and kickoff preparation |
+| Documentation baseline | `v1.0.0` prepared; repository commit evidence not yet recorded |
+| Active-contributor count | Not yet recorded in the public artifacts |
+| Active/provisional tier | Not yet selected; Section 12 headcount, funding, and readiness ceilings apply |
+| Current protocol or run ID | Not created; required by Gate 3 |
+| Next gate | Gate 1 — vertical slice and measurement-contract lock — September 27 |
+| Last green commit/container | Not yet recorded |
+| Demo slot | Unconfirmed; no live duration or rehearsal target has been inferred |
+| Judging rubric | No receipt source or date is recorded yet |
+
+## Evidence snapshot
+
+| Evidence | Current public state |
+|---|---|
+| Development/model trials | None represented as completed |
+| Official empirical trials | None represented as started |
+| `ENGINEERING` validation | Not activated |
+| Spend and funded cap | No approved value recorded yet |
+| Open protocol deviation | None; the protocol is not frozen |
+| Public result or defense-effect claim | None |
+
+## Owner outcomes
+
+The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Replace each dash there only after explicit acceptance; do not record private selection or performance discussion here.
+
+| Portfolio | This week's public outcome |
+|---|---|
+| T1 — Agent and task oracles | Accept the retained slices and identify first Gate-1 evidence |
+| T2 — Corpus and adapters | Accept the retained slices, complete core reading, and identify source-review evidence |
+| T3 — Runner and evidence | Accept the retained slices and identify schema/replay evidence |
+| T4 — Defenses and policy | Accept the retained slices and identify policy/defense test evidence |
+| T5 — Demo and release | Accept the retained slices and identify demo/accessibility evidence |
+| Project lead | Complete kickoff, assignment, paper-workflow, external-dependency, and Gate-1 readiness decisions |
+
+## Public decisions, risks, and external asks
+
+1. **Project presentation:** use `CANARY` in all caps and make no uniqueness or novelty claim.
+2. **Funding/model:** the approved budget and eligible model path must be recorded before Gate 3; no paid or credentialed CI is permitted.
+3. **Event inputs:** record the judging-rubric source/date and the confirmed demo slot, Q&A, network, display, and speaker constraints when supplied.
+4. **Licensing:** do not accept external contributions or imply reuse rights until code/content licensing is selected.
+
+## Next seven days
+
+- Commit the complete S00 documentation baseline, including this file and decision record 0003.
+- Complete kickoff and the core reading in `TASKS.md`.
+- Record exactly one accepted owner for every slice that enters `IN PROGRESS`.
+- Queue bounded Gate-1 issues with a reviewer, evidence path, and due date.
+- If the judging rubric arrives, map it to existing demo/release artifacts within 24 hours without changing scientific definitions.
+- If event timing arrives, record all five timing fields required by `docs/DEMO_DESIGN.md`; otherwise keep the live duration unconfirmed.
+
+## Weekly update rule
+
+Update this file from repository evidence every Sunday during build and internal-release weeks. Report the current gate/tier, evidence links, public risks and asks, and next-seven-day outcomes. Summarize slice state by linking `TASKS.md`; never create a conflicting copy. Before the applicable lock, do not publish evaluation outcomes. At the November 22 release freeze, record the immutable release tag/commit and manifest identifier. Week-15/16 entries may append confirmed logistics, factual submission status, and presentation-only observations without modifying the frozen release.
