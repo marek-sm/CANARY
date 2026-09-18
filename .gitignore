@@ -12,3 +12,17 @@ results/development/**
 !results/development/.gitkeep
 results/raw/
 .DS_Store
+
+# Packaging output (editable installs create CANARY.egg-info/)
+*.egg-info/
+build/
+dist/
+
+# Claude Code per-user settings
+.claude/settings.local.json
+
+# Tool caches
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
