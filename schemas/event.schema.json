@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:canary-pi-measurement:schema:event:0.1.0",
+  "$id": "urn:CANARY:schema:event:0.1.0",
   "title": "CANARY append-only event",
   "description": "One durably appended runner event. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Pre-lock version: additive changes must land with fixtures and tests.",
   "type": "object",

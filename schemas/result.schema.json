@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:canary-pi-measurement:schema:result:0.1.0",
+  "$id": "urn:CANARY:schema:result:0.1.0",
   "title": "CANARY logical-trial result",
   "description": "One logical trial and its derived Boolean-or-null endpoints. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Unknown evidence is null, never false. Pre-lock version: additive changes must land with fixtures and tests.",
   "type": "object",

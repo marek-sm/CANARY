@@ -1563,7 +1563,7 @@ No fabricated, inferred, or unopened citation enters the corpus or paper. Becaus
 Every retained implementation slice must have exactly one accountable owner before it enters `IN PROGRESS`. A contributor accepts a slice only after reviewing its scope, dependencies, deadline, and acceptance evidence; acceptance means owning all of its completion criteria, not making a partial attempt. Reviewers validate work but do not become deputies, backup owners, or silent co-owners, and no delivery plan depends on a designated human understudy. Risks and blockers are raised early while the owner remains accountable for driving an explicit resolution. If actual capacity changes, the affected work is marked `BLOCKED` and the project makes a visible reassignment, tier, cut, or schedule decision before work proceeds; ownership never changes by implication. Technical replay, offline media, and a second tested device remain system contingencies, not personnel substitutes.
 
 ```text
-canary-pi-measurement/
+CANARY/
 ├── AGENTS.md                 # ambient instructions for human and automated contributors
 ├── CLAUDE.md                 # thin tool-specific entry point; no duplicated policy
 ├── SPEC.md                   # this authoritative public scientific contract
