@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:canary-pi-measurement:schema:event:0.1.0",
+  "title": "CANARY append-only event",
+  "description": "One durably appended runner event. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Pre-lock version: additive changes must land with fixtures and tests.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "sequence",
+    "event_type",
+    "experiment_id",
+    "logical_trial_id",
+    "model_call_id",
+    "attempt_id",
+    "configuration",
+    "recorded_at",
+    "payload",
+    "raw_evidence",
+    "component_versions"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "event_id": {
+      "description": "Globally unique: logical_trial_id plus ':e' and the sequence number.",
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence": {
+      "description": "Durable per-trial append order, starting at 1 with no gaps.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "event_type": {
+      "enum": [
+        "trial_started",
+        "provider_attempt",
+        "tool_requested",
+        "authorization_decision",
+        "tool_dispatch",
+        "tool_result",
+        "effect_observation",
+        "sink_receipt",
+        "final_output",
+        "trial_ended"
+      ]
+    },
+    "experiment_id": {"type": "string", "minLength": 1},
+    "logical_trial_id": {"type": "string", "minLength": 1},
+    "model_call_id": {
+      "description": "logical_trial_id plus ':step<n>'; null for events not bound to one model call.",
+      "type": ["string", "null"]
+    },
+    "attempt_id": {
+      "description": "model_call_id plus ':a<n>'; null for events not bound to one provider attempt.",
+      "type": ["string", "null"]
+    },
+    "configuration": {"$ref": "#/$defs/configuration"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "payload": {"type": "object"},
+    "raw_evidence": {
+      "description": "Raw evidence by value in payload or by content-addressed reference. Null sha256 means no raw evidence exists for this event.",
+      "type": "object",
+      "required": ["sha256", "artifact_ref"],
+      "properties": {
+        "sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "artifact_ref": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "component_versions": {
+      "type": "object",
+      "required": ["runner", "agent_loop", "provider_adapter"],
+      "additionalProperties": {"type": "string", "minLength": 1}
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"event_type": {"const": "provider_attempt"}}},
+      "then": {
+        "properties": {
+          "model_call_id": {"type": "string", "minLength": 1},
+          "attempt_id": {"type": "string", "minLength": 1},
+          "raw_evidence": {"properties": {"sha256": {"type": "string"}}},
+          "payload": {
+            "type": "object",
+            "required": [
+              "step",
+              "attempt_index",
+              "outcome",
+              "provider_request_id",
+              "model_requested",
+              "model_resolved",
+              "provider_fingerprint",
+              "raw_response"
+            ],
+            "properties": {
+              "step": {"type": "integer", "minimum": 1},
+              "attempt_index": {"type": "integer", "minimum": 1},
+              "outcome": {"enum": ["model_response", "no_model_content"]},
+              "provider_request_id": {"type": ["string", "null"]},
+              "model_requested": {"type": "string", "minLength": 1},
+              "model_resolved": {"type": ["string", "null"]},
+              "provider_fingerprint": {"type": ["string", "null"]},
+              "raw_response": {"type": ["object", "null"]}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "final_output"}}},
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "required": ["text", "text_sha256"],
+            "properties": {
+              "text": {"type": "string"},
+              "text_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "trial_ended"}}},
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "required": ["status", "termination_reason", "steps_used"],
+            "properties": {
+              "status": {"$ref": "#/$defs/status"},
+              "termination_reason": {"$ref": "#/$defs/termination_reason"},
+              "steps_used": {"type": "integer", "minimum": 0}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "configuration": {"enum": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"]},
+    "status": {"enum": ["completed", "infrastructure_failure"]},
+    "termination_reason": {
+      "enum": ["final_answer", "max_steps", "malformed_model_output", "infrastructure_failure"]
+    }
+  }
+}

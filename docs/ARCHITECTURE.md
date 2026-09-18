@@ -8,9 +8,9 @@ This guide explains the implementation shape defined by `SPEC.md`. It does not r
 flowchart TD
     A["Corpus + task registry"] --> B["C2/C3/C4 renderer"]
     B --> C["Resumable runner"]
-    C --> D["D2_DATAMARKING transform (D2 only)"]
+    C --> D["D2_DATAMARKING transform (D2_DATAMARKING only)"]
     D --> E["Tool-calling agent"]
-    E --> F["D1 gate (D1 only) or observational audit"]
+    E --> F["D1_POLICY_GATE gate (D1_POLICY_GATE only) or observational audit"]
     F --> G["Intrinsically safe tools"]
     C --> H["Append-only events"]
     H --> I["Scoring + report + replay"]

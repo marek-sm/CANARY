@@ -1,0 +1,12 @@
+[project]
+name = "canary-pi-measurement"
+version = "0.0.0"
+requires-python = ">=3.11,<3.12"
+dependencies = ["jsonschema>=4.21"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

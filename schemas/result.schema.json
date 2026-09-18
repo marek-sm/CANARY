@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:canary-pi-measurement:schema:result:0.1.0",
+  "title": "CANARY logical-trial result",
+  "description": "One logical trial and its derived Boolean-or-null endpoints. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Unknown evidence is null, never false. Pre-lock version: additive changes must land with fixtures and tests.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "protocol_version",
+    "experiment_id",
+    "logical_trial_id",
+    "comparison_superblock_id",
+    "base_case_id",
+    "attack_family_id",
+    "case_id",
+    "analysis_role",
+    "channel",
+    "condition",
+    "configuration",
+    "run_index",
+    "status",
+    "termination_reason",
+    "run_metadata",
+    "attempts",
+    "model_calls",
+    "canaries",
+    "tool_events",
+    "final_output",
+    "final_output_sha256",
+    "security",
+    "utility",
+    "usage",
+    "display_label"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "protocol_version": {
+      "description": "Null only when no protocol exists for the producing run.",
+      "type": ["string", "null"]
+    },
+    "experiment_id": {"type": "string", "minLength": 1},
+    "logical_trial_id": {"type": "string", "minLength": 1},
+    "comparison_superblock_id": {"type": ["string", "null"]},
+    "base_case_id": {"type": "string", "minLength": 1},
+    "attack_family_id": {"type": ["string", "null"]},
+    "case_id": {"type": "string", "minLength": 1},
+    "analysis_role": {"type": ["string", "null"]},
+    "channel": {"enum": ["C2", "C3", "C4", null]},
+    "condition": {"enum": ["attack", "clean", null]},
+    "configuration": {"$ref": "#/$defs/configuration"},
+    "run_index": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["completed", "infrastructure_failure"]},
+    "termination_reason": {
+      "enum": ["final_answer", "max_steps", "malformed_model_output", "infrastructure_failure"]
+    },
+    "run_metadata": {
+      "type": "object",
+      "required": [
+        "started_at",
+        "schedule_index",
+        "schedule_seed",
+        "model_requested",
+        "model_resolved",
+        "provider_request_ids",
+        "temperature",
+        "top_p",
+        "provider_seed",
+        "max_steps",
+        "code_commit",
+        "container_digest",
+        "corpus_hash",
+        "prompt_hash",
+        "defense_hash",
+        "rendered_fixture_hash",
+        "task_policy_hash",
+        "utility_oracle_hash"
+      ],
+      "properties": {
+        "started_at": {"type": "string", "format": "date-time"},
+        "schedule_index": {"type": ["integer", "null"], "minimum": 0},
+        "schedule_seed": {"type": ["string", "null"]},
+        "model_requested": {"type": "string", "minLength": 1},
+        "model_resolved": {"type": ["string", "null"]},
+        "provider_request_ids": {"type": "array", "items": {"type": ["string", "null"]}},
+        "temperature": {"type": ["number", "null"]},
+        "top_p": {"type": ["number", "null"]},
+        "provider_seed": {"type": ["integer", "null"]},
+        "max_steps": {"type": "integer", "minimum": 1},
+        "code_commit": {"type": ["string", "null"]},
+        "container_digest": {"type": ["string", "null"]},
+        "corpus_hash": {"$ref": "#/$defs/nullable_sha256"},
+        "prompt_hash": {"$ref": "#/$defs/nullable_sha256"},
+        "defense_hash": {"$ref": "#/$defs/nullable_sha256"},
+        "rendered_fixture_hash": {"$ref": "#/$defs/nullable_sha256"},
+        "task_policy_hash": {"$ref": "#/$defs/nullable_sha256"},
+        "utility_oracle_hash": {"$ref": "#/$defs/nullable_sha256"}
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["attempt_id", "model_call_id", "step", "attempt_index", "provider_request_id", "outcome"],
+        "properties": {
+          "attempt_id": {"type": "string", "minLength": 1},
+          "model_call_id": {"type": "string", "minLength": 1},
+          "step": {"type": "integer", "minimum": 1},
+          "attempt_index": {"type": "integer", "minimum": 1},
+          "provider_request_id": {"type": ["string", "null"]},
+          "outcome": {"enum": ["model_response", "no_model_content"]}
+        }
+      }
+    },
+    "model_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "model_call_id",
+          "step",
+          "model_requested",
+          "model_resolved",
+          "provider_fingerprint",
+          "raw_response_sha256",
+          "artifact_ref",
+          "parser_version"
+        ],
+        "properties": {
+          "model_call_id": {"type": "string", "minLength": 1},
+          "step": {"type": "integer", "minimum": 1},
+          "model_requested": {"type": "string", "minLength": 1},
+          "model_resolved": {"type": ["string", "null"]},
+          "provider_fingerprint": {"type": ["string", "null"]},
+          "raw_response_sha256": {"$ref": "#/$defs/sha256"},
+          "artifact_ref": {"type": ["string", "null"]},
+          "parser_version": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "canaries": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "tool_events": {"type": "array", "items": {"$ref": "#/$defs/tool_event"}},
+    "final_output": {"type": ["string", "null"]},
+    "final_output_sha256": {"$ref": "#/$defs/nullable_sha256"},
+    "security": {
+      "type": "object",
+      "required": [
+        "unauthorized_user_disclosure",
+        "proposed_egress",
+        "external_exfiltration",
+        "unauthorized_action_requested",
+        "unauthorized_action_dispatched",
+        "unauthorized_action_effect",
+        "model_violation",
+        "system_compromise"
+      ],
+      "properties": {
+        "unauthorized_user_disclosure": {"$ref": "#/$defs/tri"},
+        "proposed_egress": {"$ref": "#/$defs/tri"},
+        "external_exfiltration": {"$ref": "#/$defs/tri"},
+        "unauthorized_action_requested": {"$ref": "#/$defs/tri"},
+        "unauthorized_action_dispatched": {"$ref": "#/$defs/tri"},
+        "unauthorized_action_effect": {"$ref": "#/$defs/tri"},
+        "model_violation": {"$ref": "#/$defs/tri"},
+        "system_compromise": {"$ref": "#/$defs/tri"}
+      },
+      "additionalProperties": false
+    },
+    "utility": {
+      "type": "object",
+      "required": ["oracle_id", "oracle_version", "pass", "reason_codes"],
+      "properties": {
+        "oracle_id": {"type": ["string", "null"]},
+        "oracle_version": {"type": ["integer", "null"]},
+        "pass": {"$ref": "#/$defs/tri"},
+        "reason_codes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "usage": {
+      "type": "object",
+      "required": ["provider_requests", "input_tokens", "output_tokens", "latency_ms"],
+      "properties": {
+        "provider_requests": {"type": "integer", "minimum": 0},
+        "input_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "output_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "latency_ms": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "display_label": {
+      "description": "Demo-only label; never used to calculate results. Null when it cannot be derived.",
+      "enum": [
+        "ERROR_AFTER_COMPROMISE",
+        "SYSTEM_COMPROMISE",
+        "ERROR",
+        "CONTAINED_MODEL_VIOLATION",
+        "SAFE_COMPLETE",
+        "SAFE_INCOMPLETE",
+        null
+      ]
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "configuration": {"enum": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"]},
+    "tri": {
+      "description": "Three-valued fact: true, false, or null for unknown.",
+      "type": ["boolean", "null"]
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullable_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "decision": {
+      "type": ["object", "null"],
+      "required": ["authorized", "reason_codes", "evaluator_version"],
+      "properties": {
+        "authorized": {"$ref": "#/$defs/tri"},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "evaluator_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "tool_event": {
+      "type": "object",
+      "required": [
+        "call_id",
+        "step",
+        "tool",
+        "requested_args",
+        "normalized_args",
+        "normalizer_version",
+        "request_evaluable",
+        "authorized",
+        "gate_decision",
+        "audit_decision",
+        "gate_audit_match",
+        "blocked",
+        "dispatched",
+        "disposition_observed",
+        "execution_succeeded",
+        "effect_observed",
+        "effect_oracle_id",
+        "sink_received",
+        "evidence_refs"
+      ],
+      "properties": {
+        "call_id": {"type": "string", "minLength": 1},
+        "step": {"type": "integer", "minimum": 1},
+        "tool": {"enum": ["read_file", "query_db", "fetch_url", "send_email"]},
+        "requested_args": {"type": "object"},
+        "normalized_args": {"type": ["object", "null"]},
+        "normalizer_version": {"type": "string", "minLength": 1},
+        "request_evaluable": {"type": "boolean"},
+        "authorized": {"$ref": "#/$defs/tri"},
+        "gate_decision": {"$ref": "#/$defs/decision"},
+        "audit_decision": {"$ref": "#/$defs/decision"},
+        "gate_audit_match": {"$ref": "#/$defs/tri"},
+        "blocked": {"$ref": "#/$defs/tri"},
+        "dispatched": {"$ref": "#/$defs/tri"},
+        "disposition_observed": {"$ref": "#/$defs/tri"},
+        "execution_succeeded": {"$ref": "#/$defs/tri"},
+        "effect_observed": {"$ref": "#/$defs/tri"},
+        "effect_oracle_id": {"type": "string", "minLength": 1},
+        "sink_received": {"$ref": "#/$defs/tri"},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}
