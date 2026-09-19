@@ -25,6 +25,7 @@ make trace                           # no make: python -m runner.mock_slice
 ```
 
 `make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
+d
 
 > **Temporary workaround:** `pip install -e ".[dev]"` should be the install command, but it currently fails because setuptools' automatic package discovery finds multiple top-level packages. Until `pyproject.toml` is fixed (see the open packaging issue), install the two dependencies directly, as CI does. Delete this note and the workaround line in the PR that fixes packaging.
 
@@ -54,28 +55,28 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 
 ## Documentation map
 
-| File | Read it for |
-|---|---|
-| [`SPEC.md`](SPEC.md) | Authoritative scientific and release requirements |
-| [`TASKS.md`](TASKS.md) | Work slices, owners, dependencies, gates, and current slice states |
-| [`STATUS.md`](STATUS.md) | Dated weekly gate, evidence, public-risk, and next-outcome rollup |
-| [`AGENTS.md`](AGENTS.md) | Ambient rules for human and automated coding work |
-| [`CLAUDE.md`](CLAUDE.md) | Thin Claude-specific entry point to the same rules |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution, review, testing, and protocol-change process |
-| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Professional conduct, privacy, consent, and reporting expectations |
-| [`SECURITY.md`](SECURITY.md) | Vulnerability reporting and prohibited testing |
-| [`.github/pull_request_template.md`](.github/pull_request_template.md) | Scope, safety, evidence, and documentation checks for each change |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Components, flow, and trust boundaries |
-| [`docs/INTERFACES.md`](docs/INTERFACES.md) | Provider, tool, oracle, runner, and event boundaries |
-| [`docs/DATA_CONTRACTS.md`](docs/DATA_CONTRACTS.md) | Schema ownership, identifiers, hashes, and null semantics |
-| [`docs/DEMO_DESIGN.md`](docs/DEMO_DESIGN.md) | Terminal, replay, video, and accessibility rules |
-| [`docs/DATA_RELEASE.md`](docs/DATA_RELEASE.md) | Public/private classification and release pipeline |
-| [`docs/decisions/README.md`](docs/decisions/README.md) | How to record durable decisions without rewriting history |
-| [`docs/decisions/0001-document-authority.md`](docs/decisions/0001-document-authority.md) | Why this bounded document set has one scientific authority and no catch-all context file |
-| [`docs/decisions/0002-single-owner-model.md`](docs/decisions/0002-single-owner-model.md) | Why every retained slice has one accountable owner and no standing personnel deputy |
-| [`docs/decisions/0003-weekly-status-artifact.md`](docs/decisions/0003-weekly-status-artifact.md) | Why weekly status is a bounded summary rather than a second task tracker |
-| [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
-| [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
+| File                                                                                             | Read it for                                                                              |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [`SPEC.md`](SPEC.md)                                                                             | Authoritative scientific and release requirements                                        |
+| [`TASKS.md`](TASKS.md)                                                                           | Work slices, owners, dependencies, gates, and current slice states                       |
+| [`STATUS.md`](STATUS.md)                                                                         | Dated weekly gate, evidence, public-risk, and next-outcome rollup                        |
+| [`AGENTS.md`](AGENTS.md)                                                                         | Ambient rules for human and automated coding work                                        |
+| [`CLAUDE.md`](CLAUDE.md)                                                                         | Thin Claude-specific entry point to the same rules                                       |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)                                                             | Contribution, review, testing, and protocol-change process                               |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)                                                       | Professional conduct, privacy, consent, and reporting expectations                       |
+| [`SECURITY.md`](SECURITY.md)                                                                     | Vulnerability reporting and prohibited testing                                           |
+| [`.github/pull_request_template.md`](.github/pull_request_template.md)                           | Scope, safety, evidence, and documentation checks for each change                        |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                                                   | Components, flow, and trust boundaries                                                   |
+| [`docs/INTERFACES.md`](docs/INTERFACES.md)                                                       | Provider, tool, oracle, runner, and event boundaries                                     |
+| [`docs/DATA_CONTRACTS.md`](docs/DATA_CONTRACTS.md)                                               | Schema ownership, identifiers, hashes, and null semantics                                |
+| [`docs/DEMO_DESIGN.md`](docs/DEMO_DESIGN.md)                                                     | Terminal, replay, video, and accessibility rules                                         |
+| [`docs/DATA_RELEASE.md`](docs/DATA_RELEASE.md)                                                   | Public/private classification and release pipeline                                       |
+| [`docs/decisions/README.md`](docs/decisions/README.md)                                           | How to record durable decisions without rewriting history                                |
+| [`docs/decisions/0001-document-authority.md`](docs/decisions/0001-document-authority.md)         | Why this bounded document set has one scientific authority and no catch-all context file |
+| [`docs/decisions/0002-single-owner-model.md`](docs/decisions/0002-single-owner-model.md)         | Why every retained slice has one accountable owner and no standing personnel deputy      |
+| [`docs/decisions/0003-weekly-status-artifact.md`](docs/decisions/0003-weekly-status-artifact.md) | Why weekly status is a bounded summary rather than a second task tracker                 |
+| [`docs/contributions/README.md`](docs/contributions/README.md)                                   | Evidence and consent format for accurate public credit                                   |
+| [`docs/protocol_deviations.md`](docs/protocol_deviations.md)                                     | Append-only record of material post-freeze defects and responses                         |
 
 ## Reproduction contract
 
