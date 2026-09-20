@@ -1,7 +1,7 @@
 """Hand-written agent loop placeholder with an explicit step limit.
 
 No agent framework is used (SPEC.md Section 4). This placeholder handles only
-text turns: tool dispatch, retries, and parsing arrive with S03/S04. A
+text turns: tool dispatch, retries, and parsing arrive with W5-T1. A
 tool-use response raises rather than being silently ignored.
 """
 
@@ -53,9 +53,9 @@ def run_loop(
         on_attempt(step, 1, response)
         raw = response["raw_response"]
         if raw is None:
-            raise NotImplementedError("no-content retry handling arrives with S04")
+            raise NotImplementedError("no-content retry handling arrives with W5-T1")
         if raw["stop_reason"] == "tool_use":
-            raise NotImplementedError("tool dispatch arrives with S03/S04")
+            raise NotImplementedError("tool dispatch arrives with W5-T1")
         text = response_text(raw)
         if raw["stop_reason"] == "end_turn":
             return LoopOutcome("final_answer", text, step)
