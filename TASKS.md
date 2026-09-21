@@ -56,8 +56,8 @@ The target week is the planned acceptance week, not necessarily the week work be
 | S11 | Full development matrix, interruption recovery, context, and budget evidence | T3 | W7 | — | S06, S08–S10 | Gate 2 | `PLANNED` |
 | S12 | Deterministic corpus selection, active tier, model, and full protocol freeze | T3 | W8 | — | S11 | Gate 3 | `PLANNED` |
 | S13 | Randomized official sweep or frozen `ENGINEERING` validation | T3 | W10 | — | S12 | Gate 4 | `PLANNED` |
-| S14 | Generated analysis/report, terminal demo, replay, video, and accessibility | T5 | W12 | — | S06 for shell/replay; S13 for final evidence | Gates 4–5 | `PLANNED` |
-| S15 | Sanitized release, citations/licenses, contribution records, manifest, and tag | T5 | W13 | — | S14 | Release | `PLANNED` |
+| S14 | Generated analysis/report, terminal demo, replay, video, and accessibility | T5 | W12 | Miles | S06 for shell/replay; S13 for final evidence | Gates 4–5 | `IN PROGRESS` ([#6](https://github.com/marek-sm/CANARY/issues/6)) |
+| S15 | Sanitized release, citations/licenses, contribution records, manifest, and tag | T5 | W13 | Miles | S14 | Release | `PLANNED` |
 
 ## Club-week milestones
 
