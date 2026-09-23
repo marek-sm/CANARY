@@ -26,6 +26,51 @@ Before a retained slice enters `IN PROGRESS`, it has exactly one accountable own
 5. Open a pull request describing scope, safety impact, evidence, and documentation impact.
 6. Obtain review from someone other than the primary implementer for oracle, corpus, defense, sanitizer, and release changes.
 
+## Branch and pull-request mechanics
+
+Project participants are collaborators on `marek-sm/CANARY` and push branches directly to it; no fork is needed. Never push directly to `main`.
+
+1. Set your Git identity once. The repository is public, so use your GitHub no-reply address (GitHub → Settings → Emails) rather than a personal email:
+
+   ```
+   git config --global user.name "Your Name"
+   git config --global user.email "ID+handle@users.noreply.github.com"
+   ```
+
+2. Start each change from an up-to-date `main` on its own branch:
+
+   ```
+   git switch main
+   git pull
+   git switch -c type/short-description
+   ```
+
+   Name branches `<type>/<short-description>` in lowercase with hyphens, where the type matches the commit-message prefix (`feat`, `fix`, `docs`, `test`, `chore`), for example `feat/oracle-tests` or `docs/contributing-git`.
+
+3. Commit and push:
+
+   ```
+   git add <files>
+   git commit -m "type: summary of the change"
+   git push -u origin type/short-description
+   ```
+
+4. On GitHub, use the **Compare & pull request** banner, keep the base as `main`, fill in the template, and add your reviewer in the **Reviewers** field.
+5. Address review comments by committing to the same branch and pushing again; the pull request updates automatically.
+6. If `main` moves ahead of your branch, you usually need to do nothing: GitHub merges non-overlapping changes. If the pull request reports conflicts, or you need the newer work, bring `main` into your branch:
+
+   ```
+   git switch main
+   git pull
+   git switch type/short-description
+   git merge main
+   git push
+   ```
+
+   If Git reports conflicts, edit the marked sections, then `git add` the files and `git commit` before pushing. Without conflicts, the **Update branch** button on the pull request does the same merge in the browser.
+
+GitHub does not accept account passwords over HTTPS. If `git push` asks for one, set up SSH or run `gh auth login`. Until then, you can make small edits in the browser with **Add file → Create new file** (or the edit pencil), choose **Create a new branch for this commit and start a pull request**, and continue from step 4.
+
 ## Pull-request checklist
 
 Use [`.github/pull_request_template.md`](.github/pull_request_template.md) as the single current per-change checklist. This guide owns the contribution workflow; the template owns the prompts applied to each pull request. Update the template rather than maintaining a second checklist here.

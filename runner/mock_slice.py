@@ -6,7 +6,7 @@ events only, validated, and appended to ``results.jsonl``.
 
 This is a development mock, not a corpus case or an empirical trial. No
 channel, tool, canary, authorization audit, or utility oracle exists yet
-(S03-S07), so every endpoint that needs one of them is null.
+(W5-T1 through W5-T4), so every endpoint that needs one of them is null.
 
 Usage: python -m runner.mock_slice [--out DIR]
 """
@@ -57,7 +57,7 @@ COMPONENT_VERSIONS = {
 }
 
 
-# Provisional serialization for hashing only; S02 commits the canonical JSON rule.
+# Provisional serialization for hashing only; W5-T3 commits the canonical JSON rule.
 def sha256_json(value: Any) -> str:
     data = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
