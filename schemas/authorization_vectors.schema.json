@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:authorization_vectors:0.1.0",
+  "title": "CANARY golden authorization vector set",
+  "description": "Allow/deny golden vectors run against both the D1_POLICY_GATE evaluator and the independent audit evaluator (SPEC.md Sections 6 and 11). Expected values are authored by one contributor and reviewed by a different one before any differential result is trusted.",
+  "type": "object",
+  "required": ["schema_version", "vector_set_id", "interface_version", "authored_by", "reviewed_by", "policies", "vectors"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "vector_set_id": {"type": "string", "minLength": 1},
+    "interface_version": {"type": "string", "minLength": 1},
+    "authored_by": {"type": "string", "minLength": 1},
+    "reviewed_by": {
+      "description": "Contributor identifier of the independent reviewer; null until review is complete.",
+      "type": ["string", "null"]
+    },
+    "policies": {
+      "description": "Policies keyed by policy_id; each validates against policy.schema.json.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "object"}
+    },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["vector_id", "description", "policy_id", "request", "prior_calls", "grants", "expected"],
+        "properties": {
+          "vector_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "description": {"type": "string", "minLength": 1},
+          "policy_id": {"type": "string", "minLength": 1},
+          "request": {
+            "type": "object",
+            "required": ["tool", "normalized_args"],
+            "properties": {
+              "tool": {"enum": ["read_file", "query_db", "fetch_url", "send_email"]},
+              "normalized_args": {"type": "object"}
+            },
+            "additionalProperties": false
+          },
+          "prior_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["tool", "normalized_args", "dispatched"],
+              "properties": {
+                "tool": {"enum": ["read_file", "query_db", "fetch_url", "send_email"]},
+                "normalized_args": {"type": "object"},
+                "dispatched": {"type": "boolean"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["grant_id", "policy_id", "policy_version", "action_hash", "consumed"],
+              "properties": {
+                "grant_id": {"type": "string", "minLength": 1},
+                "policy_id": {"type": "string", "minLength": 1},
+                "policy_version": {"type": "string", "minLength": 1},
+                "action_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "consumed": {"type": "boolean"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "expected": {
+            "type": "object",
+            "required": ["authorized", "reason_codes", "consumes_grant_ids", "block_category"],
+            "properties": {
+              "authorized": {"type": "boolean"},
+              "reason_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "consumes_grant_ids": {
+                "description": "Grants marked consumed in next_grant_state, applied only if dispatch commits.",
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"type": "string"}
+              },
+              "block_category": {
+                "description": "POLICY_BLOCKED reason_category under D1_POLICY_GATE; null when authorized.",
+                "enum": ["tool_not_permitted", "confirmation_required", "call_budget_exceeded", "argument_not_permitted", null]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

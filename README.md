@@ -68,6 +68,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Components, flow, and trust boundaries |
 | [`docs/INTERFACES.md`](docs/INTERFACES.md) | Provider, tool, oracle, runner, and event boundaries |
 | [`docs/DATA_CONTRACTS.md`](docs/DATA_CONTRACTS.md) | Schema ownership, identifiers, hashes, and null semantics |
+| [`docs/DEFENSES_AND_POLICY.md`](docs/DEFENSES_AND_POLICY.md) | Frozen authorization, D1_POLICY_GATE, D2_DATAMARKING, and event-meaning contract |
 | [`docs/DEMO_DESIGN.md`](docs/DEMO_DESIGN.md) | Terminal, replay, video, and accessibility rules |
 | [`docs/DATA_RELEASE.md`](docs/DATA_RELEASE.md) | Public/private classification and release pipeline |
 | [`docs/decisions/README.md`](docs/decisions/README.md) | How to record durable decisions without rewriting history |
