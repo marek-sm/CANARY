@@ -12,21 +12,19 @@ Before work starts, each retained slice receives one accountable owner who commi
 
 ## Development setup
 
-Requires Git and Python 3.11 (`SPEC.md` Section 4). `make` is optional.
+Requires Git, [uv](https://docs.astral.sh/uv/getting-started/installation/), and Python 3.11 (`SPEC.md` Section 4). `make` is optional.
 
 ```sh
 git clone https://github.com/marek-sm/CANARY.git
 cd CANARY
-python3 -m venv .venv                # Windows: py -3.11 -m venv .venv
-source .venv/bin/activate            # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install jsonschema pytest        # TEMPORARY WORKAROUND, see note below
-make test                            # no make: python -m pytest -q
-make trace                           # no make: python -m runner.mock_slice
+uv sync --locked                     # installs the exact uv.lock versions into .venv, including the dev group
+uv run make test                     # no make: uv run pytest -q
+uv run make trace                    # no make: uv run python -m runner.mock_slice
 ```
 
-`make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
+`uv sync --locked` stops with an error instead of re-resolving when `uv.lock` no longer matches `pyproject.toml`. After changing a dependency, run `uv lock` and commit `uv.lock` in the same pull request.
 
-> **Temporary workaround:** `pip install -e ".[dev]"` should be the install command, but it currently fails because setuptools' automatic package discovery finds multiple top-level packages. Until `pyproject.toml` is fixed (see the open packaging issue), install the two dependencies directly, as CI does. Delete this note and the workaround line in the PR that fixes packaging.
+`make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
 
 ## What CANARY is designed to measure
 
