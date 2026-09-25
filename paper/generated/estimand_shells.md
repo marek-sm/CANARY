@@ -135,9 +135,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Blocked unauthorized requests | Eligible unauthorized requests | Fraction | Indeterminate count | Zero-denominator label |
-| --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — |
+| Blocked unauthorized requests | Eligible unauthorized requests | Fraction | Gate/audit disagreement count | Indeterminate count | Zero-denominator label |
+| --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — |
 
 ### D1_POLICY_GATE enforcement escape conformance
 
@@ -149,9 +149,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Dispatched unauthorized requests | Eligible unauthorized requests | Fraction | Escapes with observed effect | Indeterminate count | Zero-denominator label |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Dispatched unauthorized requests | Eligible unauthorized requests | Fraction | Escapes with observed effect | Gate/audit disagreement count | Indeterminate count | Zero-denominator label |
+| --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — |
 
 ### D1_POLICY_GATE authorized dispatch conformance
 
@@ -163,9 +163,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Dispatched authorized requests | Eligible authorized requests | Fraction | Indeterminate count | Zero-denominator label |
-| --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — |
+| Dispatched authorized requests | Eligible authorized requests | Fraction | Gate/audit disagreement count | Indeterminate count | Zero-denominator label |
+| --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — |
 
 ## Matched controls and secondary outcomes
 
@@ -245,15 +245,15 @@ counts, interval labeling where required, and the table equivalent below.
 
 - **Estimand/output ID:** `UnauthorizedOutcomeDecomposition`
 - **Status:** PRE-RESULTS — NO DATA
-- **Caption scaffold:** Exact counts for unauthorized disclosure, proposed egress, exfiltration, requests, dispatches, effects, intersections, and unions.
-- **Alt-text scaffold:** Placeholder for the decomposition of unauthorized outcomes from proposal through observed effect; no counts are available.
+- **Caption scaffold:** Per-configuration, attack-or-clean condition, and delivery-channel exact true, false, and null counts for the six underlying security facts and their two unions, including model-violation/system-compromise overlap and each union's observed three-fact patterns.
+- **Alt-text scaffold:** Placeholder separating attack and clean cases and delivery channels while showing known, unknown, overlapping, and union-pattern security outcomes; no counts are available.
 - **Figure shell:** Intentionally empty until generated from frozen evidence.
 
 #### Table equivalent
 
-| Configuration | Outcome or intersection | True | False | Unknown | Observed denominator |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Configuration | Condition (attack / clean) | Delivery channel / adapter | Outcome, intersection, or three-fact pattern | True | False | Null | Observed denominator |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — |
 
 ### D1_POLICY_GATE block reasons
 
@@ -287,15 +287,29 @@ counts, interval labeling where required, and the table equivalent below.
 
 - **Estimand/output ID:** `MixedRepeatRates`
 - **Status:** PRE-RESULTS — NO DATA
-- **Caption scaffold:** Repeat-group instability for model violation, system compromise, and utility, with missing-repeat groups reported separately.
-- **Alt-text scaffold:** Placeholder for mixed-repeat rates and missing-repeat counts; no values are available.
+- **Caption scaffold:** Repeat-group instability by configuration, attack-or-clean condition, delivery channel, and endpoint; incomplete groups are separated into mixed-among-observed and undetermined categories.
+- **Alt-text scaffold:** Placeholder separating attack and clean repeat groups by delivery channel, including complete-group mixed rates and distinct incomplete groups that are mixed among observed repeats or undetermined; no values are available.
 - **Figure shell:** Intentionally empty until generated from frozen evidence.
 
 #### Table equivalent
 
-| Configuration | Endpoint | Mixed groups | Complete groups | Groups with missing repeats | Rate |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Configuration | Condition (attack / clean) | Delivery channel / adapter | Endpoint | Mixed complete groups | Complete groups | Mixed-repeat rate | Incomplete: mixed among observed | Incomplete: undetermined |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
+
+### C1 direct-injection positive controls
+
+- **Estimand/output ID:** `C1DirectInjectionControls`
+- **Status:** PRE-RESULTS — NO DATA
+- **Caption scaffold:** Separate descriptive C1 direct-injection positive-control table with one row per control and no rate, macro-average, interval, or comparison with indirect cases.
+- **Alt-text scaffold:** Placeholder for each C1 control's repeat count, exact true, false, and null security and utility outcomes, and infrastructure-failure count; C1 is outside the primary threat model and no values are available.
+- **Figure shell:** Intentionally empty until generated from frozen evidence.
+
+#### Table equivalent
+
+| C1 control ID | D0_BASELINE repeat count | Outcome (six facts, two unions, or utility_pass) | True | False | Null | Infrastructure-failure count |
+| --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — |
 
 ### Paired adapter differences
 

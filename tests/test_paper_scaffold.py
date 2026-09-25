@@ -24,6 +24,9 @@ REQUIRED_ESTIMANDS = {
     "InjectionExcessRisk",
     "AttackTaskCompletion",
     "SecureTaskCompletion",
+    "UnauthorizedOutcomeDecomposition",
+    "MixedRepeatRates",
+    "C1DirectInjectionControls",
 }
 
 
@@ -61,6 +64,34 @@ def test_every_shell_has_caption_alt_text_and_table_equivalent():
         assert entry["caption"].strip()
         assert entry["alt_text"].strip()
         assert len(entry["columns"]) >= 2
+
+
+def test_spec_v1_1_diagnostic_tables_expose_required_strata_and_counts():
+    entries = {entry["id"]: entry for entry in load_manifest()["estimands"]}
+
+    for estimand_id in (
+        "PolicyGateUnauthorizedBlockRate",
+        "PolicyGateEnforcementEscapeRate",
+        "PolicyGateAuthorizedDispatchRate",
+    ):
+        assert "Gate/audit disagreement count" in entries[estimand_id]["columns"]
+
+    repeated = entries["MixedRepeatRates"]["columns"]
+    assert "Condition (attack / clean)" in repeated
+    assert "Delivery channel / adapter" in repeated
+    assert "Incomplete: mixed among observed" in repeated
+    assert "Incomplete: undetermined" in repeated
+
+    outcomes = entries["UnauthorizedOutcomeDecomposition"]["columns"]
+    assert "Condition (attack / clean)" in outcomes
+    assert "Delivery channel / adapter" in outcomes
+    assert "Outcome, intersection, or three-fact pattern" in outcomes
+    assert "Null" in outcomes
+
+    c1 = entries["C1DirectInjectionControls"]["columns"]
+    assert "D0_BASELINE repeat count" in c1
+    assert "Outcome (six facts, two unions, or utility_pass)" in c1
+    assert "Infrastructure-failure count" in c1
 
 
 def test_generated_shell_is_current_and_contains_no_result_values():

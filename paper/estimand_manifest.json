@@ -73,7 +73,7 @@
       "group": "D1_POLICY_GATE conformance",
       "caption": "Exact fraction of evaluable unauthorized D1_POLICY_GATE requests durably blocked before dispatch, including indeterminate and zero-denominator handling.",
       "alt_text": "Placeholder for D1_POLICY_GATE unauthorized block conformance counts; no request data are available.",
-      "columns": ["Blocked unauthorized requests", "Eligible unauthorized requests", "Fraction", "Indeterminate count", "Zero-denominator label"]
+      "columns": ["Blocked unauthorized requests", "Eligible unauthorized requests", "Fraction", "Gate/audit disagreement count", "Indeterminate count", "Zero-denominator label"]
     },
     {
       "id": "PolicyGateEnforcementEscapeRate",
@@ -81,7 +81,7 @@
       "group": "D1_POLICY_GATE conformance",
       "caption": "Exact fraction of evaluable unauthorized D1_POLICY_GATE requests durably dispatched, with escaped-effect and indeterminate counts.",
       "alt_text": "Placeholder for D1_POLICY_GATE enforcement escape counts; no request data are available.",
-      "columns": ["Dispatched unauthorized requests", "Eligible unauthorized requests", "Fraction", "Escapes with observed effect", "Indeterminate count", "Zero-denominator label"]
+      "columns": ["Dispatched unauthorized requests", "Eligible unauthorized requests", "Fraction", "Escapes with observed effect", "Gate/audit disagreement count", "Indeterminate count", "Zero-denominator label"]
     },
     {
       "id": "PolicyGateAuthorizedDispatchRate",
@@ -89,7 +89,7 @@
       "group": "D1_POLICY_GATE conformance",
       "caption": "Exact fraction of evaluable authorized D1_POLICY_GATE requests durably dispatched, including indeterminate and zero-denominator handling.",
       "alt_text": "Placeholder for D1_POLICY_GATE authorized dispatch conformance counts; no request data are available.",
-      "columns": ["Dispatched authorized requests", "Eligible authorized requests", "Fraction", "Indeterminate count", "Zero-denominator label"]
+      "columns": ["Dispatched authorized requests", "Eligible authorized requests", "Fraction", "Gate/audit disagreement count", "Indeterminate count", "Zero-denominator label"]
     },
     {
       "id": "BackgroundModelViolationRate",
@@ -135,9 +135,9 @@
       "id": "UnauthorizedOutcomeDecomposition",
       "title": "Unauthorized outcome decomposition",
       "group": "Predeclared diagnostic outputs",
-      "caption": "Exact counts for unauthorized disclosure, proposed egress, exfiltration, requests, dispatches, effects, intersections, and unions.",
-      "alt_text": "Placeholder for the decomposition of unauthorized outcomes from proposal through observed effect; no counts are available.",
-      "columns": ["Configuration", "Outcome or intersection", "True", "False", "Unknown", "Observed denominator"]
+      "caption": "Per-configuration, attack-or-clean condition, and delivery-channel exact true, false, and null counts for the six underlying security facts and their two unions, including model-violation/system-compromise overlap and each union's observed three-fact patterns.",
+      "alt_text": "Placeholder separating attack and clean cases and delivery channels while showing known, unknown, overlapping, and union-pattern security outcomes; no counts are available.",
+      "columns": ["Configuration", "Condition (attack / clean)", "Delivery channel / adapter", "Outcome, intersection, or three-fact pattern", "True", "False", "Null", "Observed denominator"]
     },
     {
       "id": "PolicyGateBlockReasons",
@@ -159,9 +159,17 @@
       "id": "MixedRepeatRates",
       "title": "Mixed-repeat rates",
       "group": "Predeclared diagnostic outputs",
-      "caption": "Repeat-group instability for model violation, system compromise, and utility, with missing-repeat groups reported separately.",
-      "alt_text": "Placeholder for mixed-repeat rates and missing-repeat counts; no values are available.",
-      "columns": ["Configuration", "Endpoint", "Mixed groups", "Complete groups", "Groups with missing repeats", "Rate"]
+      "caption": "Repeat-group instability by configuration, attack-or-clean condition, delivery channel, and endpoint; incomplete groups are separated into mixed-among-observed and undetermined categories.",
+      "alt_text": "Placeholder separating attack and clean repeat groups by delivery channel, including complete-group mixed rates and distinct incomplete groups that are mixed among observed repeats or undetermined; no values are available.",
+      "columns": ["Configuration", "Condition (attack / clean)", "Delivery channel / adapter", "Endpoint", "Mixed complete groups", "Complete groups", "Mixed-repeat rate", "Incomplete: mixed among observed", "Incomplete: undetermined"]
+    },
+    {
+      "id": "C1DirectInjectionControls",
+      "title": "C1 direct-injection positive controls",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Separate descriptive C1 direct-injection positive-control table with one row per control and no rate, macro-average, interval, or comparison with indirect cases.",
+      "alt_text": "Placeholder for each C1 control's repeat count, exact true, false, and null security and utility outcomes, and infrastructure-failure count; C1 is outside the primary threat model and no values are available.",
+      "columns": ["C1 control ID", "D0_BASELINE repeat count", "Outcome (six facts, two unions, or utility_pass)", "True", "False", "Null", "Infrastructure-failure count"]
     },
     {
       "id": "PairedAdapterDifferences",
