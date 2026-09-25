@@ -3,7 +3,7 @@
   "vector_set_id": "w5-t4-initial",
   "interface_version": "defense-interfaces-v0.1.0",
   "authored_by": "t4-defenses",
-  "reviewed_by": [],
+  "reviewed_by": ["Chace"],
   "policies": {
     "golden-read-report": {
       "schema_version": "0.1.0",
