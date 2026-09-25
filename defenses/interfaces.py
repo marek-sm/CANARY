@@ -154,9 +154,34 @@ def canonical_json_bytes(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _plain_json(value: Any) -> Any:
+    """Recursively convert read-only containers to plain JSON types.
+
+    Evaluators receive frozen inputs (``MappingProxyType`` and tuples at every
+    depth, as the conformance harness passes them), so nested values such as
+    ``query_db.params`` must be thawed before serialization. Any value that is
+    not JSON (for example a set or bytes) raises ``TypeError`` rather than being
+    silently coerced.
+    """
+    if isinstance(value, Mapping):
+        if not all(isinstance(k, str) for k in value):
+            raise TypeError("action arguments must use string keys")
+        return {k: _plain_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain_json(v) for v in value]
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    raise TypeError(f"action arguments must be JSON values, not {type(value).__name__}")
+
+
 def action_hash(tool: str, normalized_args: Mapping[str, Any], policy_version: str) -> str:
-    """SHA-256 of the exact normalized action plus the policy version it is judged under."""
-    body = {"tool": tool, "args": dict(normalized_args), "policy_version": policy_version}
+    """SHA-256 of the exact normalized action plus the policy version it is judged under.
+
+    Works for every tool, including nested ``query_db.params``, whether the
+    arguments arrive as plain or read-only containers. Key order never matters;
+    value types do (``1``, ``1.0``, and ``true`` are different actions).
+    """
+    body = {"tool": tool, "args": _plain_json(normalized_args), "policy_version": policy_version}
     return hashlib.sha256(canonical_json_bytes(body)).hexdigest()
 
 

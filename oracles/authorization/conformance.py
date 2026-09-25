@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import copy
 import json
+from dataclasses import replace
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
@@ -98,6 +99,45 @@ def _consumed_ids(before: GrantState, after: GrantState) -> list[str]:
     return sorted(now - was)
 
 
+def _with_consumed(state: GrantState, grant_ids: list[str]) -> GrantState:
+    """The input state with exactly these grants marked consumed and nothing else changed."""
+    ids = set(grant_ids)
+    return GrantState(tuple(replace(g, consumed=True) if g.grant_id in ids else g for g in state.grants))
+
+
+def _check_single_use(
+    authorizer: Authorizer, vid: str, policy: Any, request: CanonicalRequest,
+    prior: tuple[PriorCall, ...], state: GrantState,
+) -> list[str]:
+    """Replay the same request against each committed grant state until no grant is left.
+
+    Each replay that uses a grant must consume exactly one grant that was unused
+    before, so no grant is ever used twice. Once none is left, the replay must be
+    denied with ``grant_already_consumed`` and leave the state unchanged. This is
+    about grants, not the verdict: a request can consume a matching grant while
+    denied for another reason (SPEC.md Section 7), since D0_BASELINE and
+    D2_DATAMARKING still dispatch it.
+    """
+    for _ in range(len(state.grants) + 1):
+        try:
+            decision = authorizer.authorize(policy, request, prior, state)
+        except Exception as exc:
+            return [f"{vid}: replay raised {type(exc).__name__}: {exc}"]
+        newly = _consumed_ids(state, decision.next_grant_state)
+        if newly:
+            if len(newly) != 1 or decision.next_grant_state != _with_consumed(state, newly):
+                return [f"{vid}: replay consumed more than one grant or changed another grant"]
+            state = decision.next_grant_state
+            continue
+        failures: list[str] = []
+        if decision.next_grant_state != state:
+            failures.append(f"{vid}: replay changed the grant state without consuming a grant")
+        if decision.authorized or "grant_already_consumed" not in decision.reason_codes:
+            failures.append(f"{vid}: replay after every matching grant was used was not denied with grant_already_consumed")
+        return failures
+    return [f"{vid}: replay kept consuming grants after every grant was used"]
+
+
 def check_authorizer(authorizer: Authorizer, path: Path = DEFAULT_VECTORS) -> list[str]:
     """Return one human-readable line per mismatch; an empty list means conformance.
 
@@ -135,6 +175,11 @@ def check_authorizer(authorizer: Authorizer, path: Path = DEFAULT_VECTORS) -> li
         consumed = _consumed_ids(grants, decision.next_grant_state)
         if consumed != sorted(expected["consumes_grant_ids"]):
             failures.append(f"{vid}: consumes {consumed}, expected {sorted(expected['consumes_grant_ids'])}")
-        if {g.grant_id for g in decision.next_grant_state.grants} != {g.grant_id for g in grants.grants}:
-            failures.append(f"{vid}: next_grant_state added or dropped a grant")
+        if decision.next_grant_state != _with_consumed(grants, expected["consumes_grant_ids"]):
+            failures.append(
+                f"{vid}: next_grant_state must equal the input with only {sorted(expected['consumes_grant_ids'])} "
+                "marked consumed (no grant added, dropped, reordered, edited, or un-consumed)"
+            )
+        if expected["consumes_grant_ids"]:
+            failures.extend(_check_single_use(authorizer, vid, policy, request, prior, decision.next_grant_state))
     return failures

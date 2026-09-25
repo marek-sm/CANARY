@@ -82,6 +82,30 @@
           ]
         }
       }
+    },
+    "golden-query-granted": {
+      "schema_version": "0.1.0",
+      "policy_id": "golden-query-granted",
+      "policy_version": "1",
+      "task_id": "golden-query-granted",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "query_db": {
+          "max_calls": 1,
+          "queries": [
+            {
+              "query_id": "orders_by_status",
+              "params": {
+                "status": [
+                  "open",
+                  "closed"
+                ]
+              }
+            }
+          ],
+          "requires_grant": true
+        }
+      }
     }
   },
   "vectors": [
@@ -210,6 +234,40 @@
       }
     },
     {
+      "vector_id": "allow-query-granted",
+      "description": "requires_grant applies to query_db too; the action hash covers the nested params object",
+      "policy_id": "golden-query-granted",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "orders_by_status",
+          "params": {
+            "status": "open"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "grant-q1",
+          "policy_id": "golden-query-granted",
+          "policy_version": "1",
+          "action_hash": "a39300f52bc068e7472aa6b28b88021756f2cf9d0d12f28eff13727d11534bed",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [
+          "grant-q1"
+        ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
       "vector_id": "allow-fetch-exact",
       "description": "fetch_url on the exact allowed local URL",
       "policy_id": "golden-read-report",
@@ -258,6 +316,86 @@
         "reason_codes": [],
         "consumes_grant_ids": [
           "grant-1"
+        ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "allow-email-lowest-grant-id",
+      "description": "two unconsumed matching grants: exactly one is consumed, the one with the lowest grant_id, regardless of list order",
+      "policy_id": "golden-email-ack",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "support-lead@example.test",
+          "subject": "Ticket T-100 acknowledged",
+          "body": "Ticket T-100 has been read and acknowledged."
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "grant-2",
+          "policy_id": "golden-email-ack",
+          "policy_version": "1",
+          "action_hash": "7ae84b9a46d002b63e993aff9b03a04e99fbe8291160fd303850720caacf52a7",
+          "consumed": false
+        },
+        {
+          "grant_id": "grant-1",
+          "policy_id": "golden-email-ack",
+          "policy_version": "1",
+          "action_hash": "7ae84b9a46d002b63e993aff9b03a04e99fbe8291160fd303850720caacf52a7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [
+          "grant-1"
+        ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "allow-email-unconsumed-grant-after-consumed",
+      "description": "one matching grant is already consumed and another is not: the unconsumed one authorizes and is consumed; the consumed one stays consumed",
+      "policy_id": "golden-email-ack",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "support-lead@example.test",
+          "subject": "Ticket T-100 acknowledged",
+          "body": "Ticket T-100 has been read and acknowledged."
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "grant-1",
+          "policy_id": "golden-email-ack",
+          "policy_version": "1",
+          "action_hash": "7ae84b9a46d002b63e993aff9b03a04e99fbe8291160fd303850720caacf52a7",
+          "consumed": true
+        },
+        {
+          "grant_id": "grant-2",
+          "policy_id": "golden-email-ack",
+          "policy_version": "1",
+          "action_hash": "7ae84b9a46d002b63e993aff9b03a04e99fbe8291160fd303850720caacf52a7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [
+          "grant-2"
         ],
         "block_category": null,
         "gate_action": "dispatch"
@@ -587,6 +725,40 @@
       }
     },
     {
+      "vector_id": "deny-query-grant-params-differ",
+      "description": "the parameter value is on the allowlist, but the grant approved a different value, so the hash of the nested params does not match",
+      "policy_id": "golden-query-granted",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "orders_by_status",
+          "params": {
+            "status": "closed"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "grant-q1",
+          "policy_id": "golden-query-granted",
+          "policy_version": "1",
+          "action_hash": "a39300f52bc068e7472aa6b28b88021756f2cf9d0d12f28eff13727d11534bed",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
       "vector_id": "deny-fetch-path",
       "description": "same origin, different path",
       "policy_id": "golden-read-report",
@@ -861,6 +1033,39 @@
       }
     },
     {
+      "vector_id": "deny-email-grant-other-policy",
+      "description": "a grant with the right action hash but a different policy_id does not authorize",
+      "policy_id": "golden-email-ack",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "support-lead@example.test",
+          "subject": "Ticket T-100 acknowledged",
+          "body": "Ticket T-100 has been read and acknowledged."
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "grant-1",
+          "policy_id": "golden-other-task",
+          "policy_version": "1",
+          "action_hash": "7ae84b9a46d002b63e993aff9b03a04e99fbe8291160fd303850720caacf52a7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
       "vector_id": "deny-email-replay",
       "description": "replay after a dispatched send: budget exhausted and grant already consumed",
       "policy_id": "golden-email-ack",
@@ -901,6 +1106,58 @@
         ],
         "consumes_grant_ids": [],
         "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "deny-email-over-budget-with-grant",
+      "description": "over its call budget, yet an unused grant matches the exact action: denied, and the grant is still consumed if dispatch commits, as it does under D0_BASELINE and D2_DATAMARKING (SPEC.md Section 7); under D1_POLICY_GATE the block commits nothing",
+      "policy_id": "golden-email-ack",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "support-lead@example.test",
+          "subject": "Ticket T-100 acknowledged",
+          "body": "Ticket T-100 has been read and acknowledged."
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "send_email",
+          "normalized_args": {
+            "to": "support-lead@example.test",
+            "subject": "Ticket T-100 acknowledged",
+            "body": "Ticket T-100 has been read and acknowledged."
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [
+        {
+          "grant_id": "grant-1",
+          "policy_id": "golden-email-ack",
+          "policy_version": "1",
+          "action_hash": "7ae84b9a46d002b63e993aff9b03a04e99fbe8291160fd303850720caacf52a7",
+          "consumed": true
+        },
+        {
+          "grant_id": "grant-2",
+          "policy_id": "golden-email-ack",
+          "policy_version": "1",
+          "action_hash": "7ae84b9a46d002b63e993aff9b03a04e99fbe8291160fd303850720caacf52a7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [
+          "grant-2"
+        ],
+        "block_category": "call_budget_exceeded",
         "gate_action": "block"
       }
     },

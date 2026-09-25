@@ -7,6 +7,7 @@ measurement-contract lock is a versioned change, not a test to edit quietly.
 import copy
 import hashlib
 import html
+import itertools
 import json
 import re
 import unicodedata
@@ -207,13 +208,93 @@ def test_vector_ids_unique_and_expectations_consistent(vectors):
             assert e["consumes_grant_ids"] == [] or "grant_already_consumed" not in e["reason_codes"]
 
 
-def test_grant_hashes_recompute(vectors):
+def _approved_actions(policy):
+    """Every exact action a policy allows for its grant-guarded tools (small golden policies only)."""
+    for tool, rule in policy["tools"].items():
+        if not rule.get("requires_grant"):
+            continue
+        if tool == "send_email":
+            for to, subject, body in itertools.product(rule["recipients"], rule["subjects"], rule["bodies"]):
+                yield tool, {"to": to, "subject": subject, "body": body}
+        elif tool == "query_db":
+            for q in rule["queries"]:
+                names = sorted(q["params"])
+                for values in itertools.product(*(q["params"][n] for n in names)):
+                    yield tool, {"query_id": q["query_id"], "params": dict(zip(names, values))}
+        elif tool == "read_file":
+            for path in rule["paths"]:
+                yield tool, {"path": path}
+        elif tool == "fetch_url":
+            for url in rule["urls"]:
+                yield tool, {"url": url}
+
+
+def test_every_grant_is_bound_to_an_approved_action(vectors):
+    # Each grant's hash must recompute from an action the policy allows, so no
+    # vector relies on an arbitrary or stale hash.
     for v in vectors["vectors"]:
         for g in v["grants"]:
-            if v["vector_id"] in {"allow-email-granted", "deny-email-no-grant"} or g["consumed"]:
-                assert g["action_hash"] == di.action_hash(
-                    v["request"]["tool"], v["request"]["normalized_args"], g["policy_version"]
-                ), v["vector_id"]
+            policy = vectors["policies"].get(g["policy_id"], vectors["policies"][v["policy_id"]])
+            hashes = {di.action_hash(t, a, g["policy_version"]) for t, a in _approved_actions(policy)}
+            assert g["action_hash"] in hashes, (v["vector_id"], g["grant_id"])
+
+
+def test_action_hash_covers_every_request_as_evaluators_receive_it(vectors):
+    # Evaluators get read-only containers at every depth; hashing must work for
+    # every tool, including nested query_db.params, and match the plain form.
+    for v in vectors["vectors"]:
+        _, request, _, _ = build_inputs(vectors, v)
+        frozen = di.action_hash(request.tool, request.normalized_args, "1")
+        plain = di.action_hash(v["request"]["tool"], v["request"]["normalized_args"], "1")
+        assert frozen == plain, v["vector_id"]
+    assert {v["request"]["tool"] for v in vectors["vectors"]} == set(di.TOOLS)
+
+
+def test_action_hash_distinguishes_nested_values_and_types():
+    base = {"query_id": "orders_by_status", "params": {"status": "open", "page": 1}}
+    h = di.action_hash("query_db", base, "1")
+    assert h == di.action_hash("query_db", {"params": {"page": 1, "status": "open"}, "query_id": "orders_by_status"}, "1")
+    assert h != di.action_hash("query_db", {**base, "params": {"status": "closed", "page": 1}}, "1")
+    assert h != di.action_hash("query_db", {**base, "params": {"status": "open", "page": 1.0}}, "1")
+    assert h != di.action_hash("query_db", {**base, "params": {"status": "open", "page": True}}, "1")
+    assert h != di.action_hash("read_file", base, "1")
+    with pytest.raises(TypeError):
+        di.action_hash("query_db", {**base, "params": {"status": {"open"}}}, "1")
+
+
+class _ReusesGrants:
+    """Authorizes any grant-guarded request without ever marking a grant consumed."""
+
+    evaluator_version = "reuses-grants-test"
+
+    def __init__(self, doc):
+        self._by_id = {v["vector_id"]: v["expected"] for v in doc["vectors"]}
+
+    def authorize(self, task_policy, request, prior_calls, grant_state):
+        e = self._by_id[request.call_id]
+        if not e["evaluable"]:
+            raise di.AuthorizationNotComputable("expected not evaluable")
+        return di.AuthorizationDecision(e["authorized"], tuple(e["reason_codes"]), grant_state, self.evaluator_version)
+
+
+class _UnconsumesGrants(_ReusesGrants):
+    """Returns a next_grant_state with every grant reset to unconsumed."""
+
+    evaluator_version = "unconsumes-grants-test"
+
+    def authorize(self, task_policy, request, prior_calls, grant_state):
+        d = super().authorize(task_policy, request, prior_calls, grant_state)
+        reset = di.GrantState(tuple(replace(g, consumed=False) for g in grant_state.grants))
+        return di.AuthorizationDecision(d.authorized, d.reason_codes, reset, d.evaluator_version)
+
+
+def test_harness_catches_grant_reuse_and_unconsumption(vectors):
+    consuming = {v["vector_id"] for v in vectors["vectors"] if v["expected"]["consumes_grant_ids"]}
+    had_consumed = {v["vector_id"] for v in vectors["vectors"] if any(g["consumed"] for g in v["grants"])}
+    reuse = {f.split(":")[0] for f in check_authorizer(_ReusesGrants(vectors))}
+    assert consuming <= reuse
+    unconsume = {f.split(":")[0] for f in check_authorizer(_UnconsumesGrants(vectors))}
+    assert had_consumed <= unconsume
 
 
 def test_vectors_cover_both_budget_bases(vectors):
@@ -293,7 +374,13 @@ class _AlwaysAllow:
 
 
 class _Lookup:
-    """Returns each vector's expected answer, to prove the harness accepts a correct evaluator."""
+    """Returns each vector's expected answer, to prove the harness accepts a correct evaluator.
+
+    For grant-consuming vectors it also honors single use on replay: it keeps the
+    expected verdict while consuming the lowest-id unused grant bound to the same
+    action, and adds grant_already_consumed once none is left. Test-only; not an
+    evaluator.
+    """
 
     evaluator_version = "lookup-test"
 
@@ -304,10 +391,20 @@ class _Lookup:
         e = self._by_id[request.call_id]
         if not e["evaluable"]:
             raise di.AuthorizationNotComputable("expected not evaluable")
-        grants = tuple(
-            replace(g, consumed=True) if g.grant_id in e["consumes_grant_ids"] else g
-            for g in grant_state.grants
+        if not e["consumes_grant_ids"]:
+            return di.AuthorizationDecision(
+                e["authorized"], tuple(e["reason_codes"]), grant_state, self.evaluator_version
+            )
+        ref = next(g for g in grant_state.grants if g.grant_id == e["consumes_grant_ids"][0])
+        key = (ref.policy_id, ref.policy_version, ref.action_hash)
+        unused = sorted(
+            g.grant_id for g in grant_state.grants
+            if (g.policy_id, g.policy_version, g.action_hash) == key and not g.consumed
         )
+        if not unused:
+            codes = tuple(sorted(set(e["reason_codes"]) | {"grant_already_consumed"}))
+            return di.AuthorizationDecision(False, codes, grant_state, self.evaluator_version)
+        grants = tuple(replace(g, consumed=True) if g.grant_id == unused[0] else g for g in grant_state.grants)
         return di.AuthorizationDecision(
             e["authorized"], tuple(e["reason_codes"]), di.GrantState(grants), self.evaluator_version
         )
