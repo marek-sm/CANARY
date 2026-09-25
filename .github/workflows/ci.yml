@@ -7,9 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
+          version: "0.12.18"
           python-version: "3.11"
-      - run: pip install jsonschema pytest
-      - run: make test
-      - run: make trace
+      - run: uv sync --locked
+      - run: uv run make test
+      - run: uv run make trace
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag canary:ci .
+      - run: docker run --rm --network none canary:ci

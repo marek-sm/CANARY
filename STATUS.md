@@ -14,7 +14,7 @@
 | Next gate | Gate 1 — vertical slice and measurement-contract lock — September 27 |
 | Last green commit/container | `65288d3`: CI run [35318133761](https://github.com/marek-sm/CANARY/actions/runs/35318133761), Python 3.11, `make test` and `make trace`, September 18; no container built yet |
 | Demo slot | Unconfirmed; no live duration or rehearsal target has been inferred |
-| Judging rubric | No receipt source or date is recorded yet |
+| Judging rubric | Not received as of September 24, 2026; no receipt source or date exists yet. It is mapped within 24 hours of receipt |
 
 ## Evidence snapshot
 
@@ -23,7 +23,7 @@
 | Development/model trials | None represented as completed |
 | Official empirical trials | None represented as started |
 | `ENGINEERING` validation | Not activated |
-| Spend and funded cap | No approved value recorded yet |
+| Spend and funded cap | Mock-only as of September 24, 2026; no funded cap is approved, so development uses the mock provider only |
 | Open protocol deviation | None; the protocol is not frozen |
 | Public result or defense-effect claim | None |
 
