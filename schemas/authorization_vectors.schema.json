@@ -2,17 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:CANARY:schema:authorization_vectors:0.1.0",
   "title": "CANARY golden authorization vector set",
-  "description": "Allow/deny golden vectors run against both the D1_POLICY_GATE evaluator and the independent audit evaluator (SPEC.md Sections 6 and 11). Expected values are authored by one contributor and reviewed by a different one before any differential result is trusted.",
+  "description": "Allow/deny golden vectors run against both the D1_POLICY_GATE evaluator and the independent audit evaluator (SPEC.md Sections 6 and 11). Expected values are authored by one contributor and checked by independent reviewers before any differential result is trusted.",
   "type": "object",
-  "required": ["schema_version", "vector_set_id", "interface_version", "authored_by", "reviewed_by", "policies", "vectors"],
+  "required": ["schema_version", "vector_set_id", "interface_version", "authored_by", "reviewed_by", "policies", "vectors", "differential_fixtures"],
   "properties": {
     "schema_version": {"const": "0.1.0"},
     "vector_set_id": {"type": "string", "minLength": 1},
     "interface_version": {"type": "string", "minLength": 1},
     "authored_by": {"type": "string", "minLength": 1},
     "reviewed_by": {
-      "description": "Contributor identifier of the independent reviewer; null until review is complete.",
-      "type": ["string", "null"]
+      "description": "Distinct contributor identifiers of the independent reviewers, none equal to authored_by. Empty until review starts. SPEC.md Section 6 requires at least two before any differential result is trusted when three or more contributors are active.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
     },
     "policies": {
       "description": "Policies keyed by policy_id; each validates against policy.schema.json.",
@@ -47,7 +49,10 @@
               "properties": {
                 "tool": {"enum": ["read_file", "query_db", "fetch_url", "send_email"]},
                 "normalized_args": {"type": "object"},
-                "dispatched": {"type": "boolean"}
+                "dispatched": {
+                  "description": "Durable disposition of the prior request; null when unknown. Never coerced (decision 0004 item 5).",
+                  "type": ["boolean", "null"]
+                }
               },
               "additionalProperties": false
             }
@@ -69,9 +74,13 @@
           },
           "expected": {
             "type": "object",
-            "required": ["authorized", "reason_codes", "consumes_grant_ids", "block_category"],
+            "required": ["evaluable", "authorized", "reason_codes", "consumes_grant_ids", "block_category", "gate_action"],
             "properties": {
-              "authorized": {"type": "boolean"},
+              "evaluable": {
+                "description": "False when authorization cannot be computed (AuthorizationNotComputable).",
+                "type": "boolean"
+              },
+              "authorized": {"type": ["boolean", "null"]},
               "reason_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
               "consumes_grant_ids": {
                 "description": "Grants marked consumed in next_grant_state, applied only if dispatch commits.",
@@ -82,6 +91,26 @@
               "block_category": {
                 "description": "POLICY_BLOCKED reason_category under D1_POLICY_GATE; null when authorized.",
                 "enum": ["tool_not_permitted", "confirmation_required", "call_budget_exceeded", "argument_not_permitted", null]
+              },
+              "gate_action": {
+                "description": "D1_POLICY_GATE action for this request.",
+                "enum": ["dispatch", "block", "unavailable"]
+              }
+            },
+            "if": {"properties": {"evaluable": {"const": false}}},
+            "then": {
+              "properties": {
+                "authorized": {"const": null},
+                "reason_codes": {"maxItems": 0},
+                "consumes_grant_ids": {"maxItems": 0},
+                "block_category": {"const": null},
+                "gate_action": {"const": "unavailable"}
+              }
+            },
+            "else": {
+              "properties": {
+                "authorized": {"type": "boolean"},
+                "gate_action": {"enum": ["dispatch", "block"]}
               }
             },
             "additionalProperties": false
@@ -89,6 +118,34 @@
         },
         "additionalProperties": false
       }
+    },
+    "differential_fixtures": {
+      "description": "Gate/audit decision pairs with the expected gate_audit_match, for the W6-T4 differential test (SPEC.md Section 6, decision 0004 item 6).",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["fixture_id", "description", "gate", "audit", "expected_match"],
+        "properties": {
+          "fixture_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "description": {"type": "string", "minLength": 1},
+          "gate": {"oneOf": [{"$ref": "#/$defs/decision"}, {"type": "null"}]},
+          "audit": {"oneOf": [{"$ref": "#/$defs/decision"}, {"type": "null"}]},
+          "expected_match": {"type": ["boolean", "null"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "decision": {
+      "type": "object",
+      "required": ["authorized", "reason_codes"],
+      "properties": {
+        "authorized": {"type": "boolean"},
+        "reason_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

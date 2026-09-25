@@ -22,6 +22,7 @@ from oracles.authorization.conformance import (
     build_inputs,
     check_authorizer,
     load_vectors,
+    review_complete,
 )
 
 REPO = Path(__file__).resolve().parent.parent
@@ -87,7 +88,7 @@ def _string_leaves(value):
 
 def test_blocked_observation_never_echoes_arguments(vectors):
     for v in vectors["vectors"]:
-        if v["expected"]["authorized"]:
+        if v["expected"]["gate_action"] != "block":
             continue
         obs = di.policy_blocked_observation(v["expected"]["reason_codes"])
         assert set(obs) == {"status", "reason_category", "message"}
@@ -114,6 +115,25 @@ def test_decision_rejects_inconsistent_values():
         decision(False, ["url_not_authorized", "path_not_authorized"])  # unsorted
     with pytest.raises(ValueError):
         decision(False, ["not_a_code"])
+
+
+def test_blocked_request_event_facts_match_spec():
+    # SPEC.md Section 6 / decision 0004 item 2: POLICY_BLOCKED and POLICY_UNAVAILABLE share these.
+    assert dict(di.BLOCKED_REQUEST_EVENT_FACTS) == {
+        "blocked": True,
+        "dispatched": False,
+        "disposition_observed": True,
+        "execution_succeeded": None,
+        "effect_observed": False,
+        "sink_received": False,
+    }
+    with pytest.raises(TypeError):
+        di.BLOCKED_REQUEST_EVENT_FACTS["dispatched"] = True
+
+
+def test_prior_disposition_may_be_unknown():
+    call = di.PriorCall("read_file", {"path": "docs/report.txt"}, None)
+    assert call.dispatched is None
 
 
 def test_gate_audit_match_is_three_valued():
@@ -173,6 +193,11 @@ def test_vector_ids_unique_and_expectations_consistent(vectors):
     for v in vectors["vectors"]:
         e = v["expected"]
         assert v["policy_id"] in vectors["policies"]
+        if not e["evaluable"]:
+            assert e["authorized"] is None and e["gate_action"] == "unavailable"
+            assert e["reason_codes"] == [] and e["consumes_grant_ids"] == [] and e["block_category"] is None
+            continue
+        assert e["gate_action"] == ("dispatch" if e["authorized"] else "block")
         assert e["reason_codes"] == sorted(set(e["reason_codes"]))
         assert set(e["reason_codes"]) <= set(di.REASON_CODES)
         assert e["authorized"] == (e["reason_codes"] == [])
@@ -207,6 +232,51 @@ def test_vectors_cover_every_tool_reason_and_category(vectors):
     assert seen_categories == set(di.BLOCK_CATEGORIES)
 
 
+def test_vectors_cover_unknown_disposition_and_out_of_root_paths(vectors):
+    by_id = {v["vector_id"]: v for v in vectors["vectors"]}
+    # decision 0004 item 5: an unknown prior disposition that decides the budget is not evaluable.
+    assert by_id["unavailable-read-unknown-prior"]["expected"]["evaluable"] is False
+    assert by_id["deny-read-budget-despite-unknown"]["expected"]["evaluable"] is True
+    # decision 0004 item 4: out-of-root paths stay evaluable and are not authorized.
+    for vid, prefix in (("deny-read-out-of-root", ".."), ("deny-read-absolute-path", "/")):
+        v = by_id[vid]
+        assert v["request"]["normalized_args"]["path"].startswith(prefix)
+        assert v["expected"]["evaluable"] and v["expected"]["reason_codes"] == ["path_not_authorized"]
+
+
+def test_differential_fixtures_follow_the_disagreement_rule(vectors):
+    # SPEC.md Section 6 / decision 0004 item 6: any difference in authorized or in
+    # the sorted reason codes is a disagreement; a missing side makes the match null.
+    def as_decision(side):
+        if side is None:
+            return None
+        return di.AuthorizationDecision(side["authorized"], tuple(side["reason_codes"]), di.GrantState(), "fixture")
+
+    fixtures = vectors["differential_fixtures"]
+    for f in fixtures:
+        assert di.decisions_match(as_decision(f["gate"]), as_decision(f["audit"])) == f["expected_match"], f["fixture_id"]
+    reason_only = [
+        f for f in fixtures
+        if f["gate"] and f["audit"] and f["gate"]["authorized"] == f["audit"]["authorized"] and f["expected_match"] is False
+    ]
+    assert reason_only, "need a fixture where only the reason codes disagree"
+
+
+@pytest.mark.parametrize("path", [DEFAULT_VECTORS, DATAMARKING_VECTORS], ids=["golden", "datamarking"])
+def test_vector_reviewers_are_independent(path):
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(doc["reviewed_by"], list)
+    assert len(doc["reviewed_by"]) == len(set(doc["reviewed_by"]))
+    assert doc["authored_by"] not in doc["reviewed_by"]
+
+
+def test_review_complete_needs_two_independent_reviewers(vectors):
+    doc = dict(vectors)
+    assert not review_complete({**doc, "reviewed_by": []})
+    assert not review_complete({**doc, "reviewed_by": ["contributor-a"]})
+    assert review_complete({**doc, "reviewed_by": ["contributor-a", "contributor-b"]})
+
+
 def test_vectors_contain_no_canary_marker(vectors):
     # SPEC.md Section 6: D1_POLICY_GATE is canary-blind; its fixtures carry no canary values.
     assert "CANARY-" not in DEFAULT_VECTORS.read_text(encoding="utf-8")
@@ -232,6 +302,8 @@ class _Lookup:
 
     def authorize(self, task_policy, request, prior_calls, grant_state):
         e = self._by_id[request.call_id]
+        if not e["evaluable"]:
+            raise di.AuthorizationNotComputable("expected not evaluable")
         grants = tuple(
             replace(g, consumed=True) if g.grant_id in e["consumes_grant_ids"] else g
             for g in grant_state.grants
@@ -243,8 +315,21 @@ class _Lookup:
 
 def test_harness_catches_a_permissive_evaluator():
     failures = check_authorizer(_AlwaysAllow())
-    deny_ids = {v["vector_id"] for v in load_vectors()["vectors"] if not v["expected"]["authorized"]}
+    deny_ids = {v["vector_id"] for v in load_vectors()["vectors"] if v["expected"]["authorized"] is not True}
     assert {f.split(":")[0] for f in failures} >= deny_ids
+
+
+class _NeverComputable:
+    evaluator_version = "never-computable-test"
+
+    def authorize(self, task_policy, request, prior_calls, grant_state):
+        raise di.AuthorizationNotComputable("always")
+
+
+def test_harness_rejects_not_computable_on_evaluable_requests(vectors):
+    failures = {f.split(":")[0] for f in check_authorizer(_NeverComputable())}
+    evaluable = {v["vector_id"] for v in vectors["vectors"] if v["expected"]["evaluable"]}
+    assert failures == evaluable
 
 
 def test_harness_accepts_a_matching_evaluator(vectors):

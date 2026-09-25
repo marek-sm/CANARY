@@ -4,7 +4,7 @@
   "spec_version": "datamarking-spec-v0.1.0",
   "source": "arXiv:2403.14720v1 Sections 3.3 and 5.4",
   "authored_by": "t4-defenses",
-  "reviewed_by": null,
+  "reviewed_by": [],
   "vectors": [
     {
       "vector_id": "source-example",

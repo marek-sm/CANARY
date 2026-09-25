@@ -3,7 +3,7 @@
   "vector_set_id": "w5-t4-initial",
   "interface_version": "defense-interfaces-v0.1.0",
   "authored_by": "t4-defenses",
-  "reviewed_by": null,
+  "reviewed_by": [],
   "policies": {
     "golden-read-report": {
       "schema_version": "0.1.0",
@@ -98,10 +98,12 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": true,
         "reason_codes": [],
         "consumes_grant_ids": [],
-        "block_category": null
+        "block_category": null,
+        "gate_action": "dispatch"
       }
     },
     {
@@ -125,10 +127,12 @@
       ],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": true,
         "reason_codes": [],
         "consumes_grant_ids": [],
-        "block_category": null
+        "block_category": null,
+        "gate_action": "dispatch"
       }
     },
     {
@@ -152,10 +156,12 @@
       ],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": true,
         "reason_codes": [],
         "consumes_grant_ids": [],
-        "block_category": null
+        "block_category": null,
+        "gate_action": "dispatch"
       }
     },
     {
@@ -171,10 +177,12 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": true,
         "reason_codes": [],
         "consumes_grant_ids": [],
-        "block_category": null
+        "block_category": null,
+        "gate_action": "dispatch"
       }
     },
     {
@@ -193,10 +201,12 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": true,
         "reason_codes": [],
         "consumes_grant_ids": [],
-        "block_category": null
+        "block_category": null,
+        "gate_action": "dispatch"
       }
     },
     {
@@ -212,10 +222,12 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": true,
         "reason_codes": [],
         "consumes_grant_ids": [],
-        "block_category": null
+        "block_category": null,
+        "gate_action": "dispatch"
       }
     },
     {
@@ -241,12 +253,14 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": true,
         "reason_codes": [],
         "consumes_grant_ids": [
           "grant-1"
         ],
-        "block_category": null
+        "block_category": null,
+        "gate_action": "dispatch"
       }
     },
     {
@@ -264,12 +278,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "tool_not_permitted"
         ],
         "consumes_grant_ids": [],
-        "block_category": "tool_not_permitted"
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -285,17 +301,19 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "path_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
-      "vector_id": "deny-read-unnormalized",
-      "description": "exact-match policy rejects a path spelled differently from the allowlist",
+      "vector_id": "deny-read-out-of-root",
+      "description": "a path that resolves outside the fixture root keeps its leading \"..\" after lexical normalization, is evaluable, and is not authorized (decision 0004 item 4)",
       "policy_id": "golden-read-report",
       "request": {
         "tool": "read_file",
@@ -306,12 +324,37 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "path_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "deny-read-absolute-path",
+      "description": "an absolute path keeps its leading \"/\" and never matches the fixture-relative allowlist entry it resembles (decision 0004 item 4)",
+      "policy_id": "golden-read-report",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "/docs/report.txt"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "path_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -342,12 +385,95 @@
       ],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "call_budget_exceeded"
         ],
         "consumes_grant_ids": [],
-        "block_category": "call_budget_exceeded"
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "deny-read-budget-despite-unknown",
+      "description": "two known dispatched reads already exhaust the two-dispatch budget, so an earlier read with unknown disposition cannot change the outcome and the request stays evaluable",
+      "policy_id": "golden-read-report",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "docs/report.txt"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "read_file",
+          "normalized_args": {
+            "path": "docs/report.txt"
+          },
+          "dispatched": null
+        },
+        {
+          "tool": "read_file",
+          "normalized_args": {
+            "path": "docs/report.txt"
+          },
+          "dispatched": true
+        },
+        {
+          "tool": "read_file",
+          "normalized_args": {
+            "path": "docs/report.txt"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "unavailable-read-unknown-prior",
+      "description": "one known dispatch plus one read with unknown disposition against a two-dispatch budget: the budget outcome depends on the unknown, so authorization is not computable and D1_POLICY_GATE returns a POLICY_UNAVAILABLE block (decision 0004 items 2 and 5)",
+      "policy_id": "golden-read-report",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "docs/report.txt"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "read_file",
+          "normalized_args": {
+            "path": "docs/report.txt"
+          },
+          "dispatched": true
+        },
+        {
+          "tool": "read_file",
+          "normalized_args": {
+            "path": "docs/report.txt"
+          },
+          "dispatched": null
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": false,
+        "authorized": null,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "unavailable"
       }
     },
     {
@@ -371,12 +497,14 @@
       ],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "call_budget_exceeded"
         ],
         "consumes_grant_ids": [],
-        "block_category": "call_budget_exceeded"
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
       }
     },
     {
@@ -395,12 +523,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "query_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -419,12 +549,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "query_param_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -444,12 +576,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "query_param_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -465,12 +599,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "url_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -486,12 +622,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "url_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -517,13 +655,15 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "grant_missing",
           "recipient_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -549,13 +689,15 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "grant_missing",
           "subject_field_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -581,13 +723,15 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "body_field_not_authorized",
           "grant_missing"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -613,6 +757,7 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "body_field_not_authorized",
@@ -620,7 +765,8 @@
           "recipient_not_authorized"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -638,12 +784,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "grant_missing"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -669,12 +817,14 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "grant_already_consumed"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -700,12 +850,14 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "grant_missing"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -741,13 +893,15 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "call_budget_exceeded",
           "grant_already_consumed"
         ],
         "consumes_grant_ids": [],
-        "block_category": "confirmation_required"
+        "block_category": "confirmation_required",
+        "gate_action": "block"
       }
     },
     {
@@ -764,12 +918,14 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "argument_unexpected"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -794,12 +950,14 @@
         }
       ],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "argument_missing"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
     },
     {
@@ -815,13 +973,98 @@
       "prior_calls": [],
       "grants": [],
       "expected": {
+        "evaluable": true,
         "authorized": false,
         "reason_codes": [
           "argument_type_invalid"
         ],
         "consumes_grant_ids": [],
-        "block_category": "argument_not_permitted"
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
       }
+    }
+  ],
+  "differential_fixtures": [
+    {
+      "fixture_id": "match-allow",
+      "description": "both evaluators authorize",
+      "gate": {
+        "authorized": true,
+        "reason_codes": []
+      },
+      "audit": {
+        "authorized": true,
+        "reason_codes": []
+      },
+      "expected_match": true
+    },
+    {
+      "fixture_id": "match-deny",
+      "description": "both deny with the same sorted reason codes",
+      "gate": {
+        "authorized": false,
+        "reason_codes": [
+          "body_field_not_authorized",
+          "grant_missing",
+          "recipient_not_authorized"
+        ]
+      },
+      "audit": {
+        "authorized": false,
+        "reason_codes": [
+          "body_field_not_authorized",
+          "grant_missing",
+          "recipient_not_authorized"
+        ]
+      },
+      "expected_match": true
+    },
+    {
+      "fixture_id": "mismatch-reason-codes-only",
+      "description": "both deny, but the gate misses one reason code; a disagreement even though the verdicts agree (decision 0004 item 6)",
+      "gate": {
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "recipient_not_authorized"
+        ]
+      },
+      "audit": {
+        "authorized": false,
+        "reason_codes": [
+          "body_field_not_authorized",
+          "grant_missing",
+          "recipient_not_authorized"
+        ]
+      },
+      "expected_match": false
+    },
+    {
+      "fixture_id": "mismatch-verdict",
+      "description": "the gate authorizes a request the audit rejects",
+      "gate": {
+        "authorized": true,
+        "reason_codes": []
+      },
+      "audit": {
+        "authorized": false,
+        "reason_codes": [
+          "recipient_not_authorized"
+        ]
+      },
+      "expected_match": false
+    },
+    {
+      "fixture_id": "gate-unavailable",
+      "description": "the gate could not evaluate the request, so gate_audit_match is null and the request is not evaluable",
+      "gate": null,
+      "audit": {
+        "authorized": false,
+        "reason_codes": [
+          "path_not_authorized"
+        ]
+      },
+      "expected_match": null
     }
   ]
 }

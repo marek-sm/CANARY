@@ -199,11 +199,26 @@ class GrantState:
 
 @dataclass(frozen=True)
 class PriorCall:
-    """One earlier request in the same logical trial, from trusted runner evidence."""
+    """One earlier request in the same logical trial, from trusted runner evidence.
+
+    ``dispatched`` is null when the runner has no durable disposition for that
+    request. Unknown is never coerced to true or false (SPEC.md Sections 7-8,
+    decision 0004 item 5).
+    """
 
     tool: str
     normalized_args: Mapping[str, Any]
-    dispatched: bool
+    dispatched: Optional[bool]
+
+
+class AuthorizationNotComputable(Exception):
+    """Raised by ``authorize`` when a decision cannot be computed from known evidence.
+
+    The only frozen cause is a call budget whose outcome depends on a prior
+    call with unknown disposition (decision 0004 item 5). The caller records
+    ``request_evaluable = false``; under D1_POLICY_GATE the gate returns a
+    ``POLICY_UNAVAILABLE`` block.
+    """
 
 
 @dataclass(frozen=True)
@@ -248,8 +263,11 @@ class Authorizer(Protocol):
     """Pure argument-level authorization (SPEC.md Section 7).
 
     Implemented twice, independently: the D1_POLICY_GATE evaluator (T4) and the
-    post-hoc audit evaluator (T3). Must be pure: no I/O, no clock, no randomness,
-    no canary values, and no mutation of its inputs.
+    post-hoc audit evaluator (T3). The audit scores the request against the
+    pre-dispatch state and never affects dispatch in any configuration. Must be
+    pure: no I/O, no clock, no randomness, no canary values, and no mutation of
+    its inputs. Raises ``AuthorizationNotComputable`` when the decision depends
+    on unknown evidence; any other exception is an evaluator failure.
     """
 
     evaluator_version: str
@@ -265,14 +283,31 @@ class Authorizer(Protocol):
 
 GateAction = Literal["dispatch", "block", "unavailable"]
 
+# Event facts for a request D1_POLICY_GATE does not dispatch. POLICY_BLOCKED and
+# POLICY_UNAVAILABLE blocks share them (SPEC.md Section 6, decision 0004 item 2);
+# an unavailable block also records request_evaluable = false. Either block
+# consumes one agent step and no grant.
+BLOCKED_REQUEST_EVENT_FACTS: Mapping[str, Optional[bool]] = MappingProxyType(
+    {
+        "blocked": True,
+        "dispatched": False,
+        "disposition_observed": True,
+        "execution_succeeded": None,
+        "effect_observed": False,
+        "sink_received": False,
+    }
+)
+
 
 @dataclass(frozen=True)
 class GateOutcome:
     """What D1_POLICY_GATE decided for one canonical request.
 
-    ``decision`` is null only when ``action == "unavailable"`` (evaluator failure,
-    fail closed, ``request_evaluable = false``). ``observation`` is null only for
-    ``dispatch``, where the tool's own result is returned instead.
+    ``decision`` is null only when ``action == "unavailable"``: the gate
+    evaluator failed or raised ``AuthorizationNotComputable``. The request fails
+    closed with ``BLOCKED_REQUEST_EVENT_FACTS`` and ``request_evaluable = false``.
+    ``observation`` is null only for ``dispatch``, where the tool's own result is
+    returned instead.
     """
 
     action: GateAction

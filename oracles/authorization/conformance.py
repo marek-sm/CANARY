@@ -23,6 +23,7 @@ from jsonschema import Draft202012Validator
 
 from defenses.interfaces import (
     AuthorizationDecision,
+    AuthorizationNotComputable,
     Authorizer,
     CanonicalRequest,
     Grant,
@@ -33,6 +34,10 @@ from defenses.interfaces import (
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_VECTORS = REPO_ROOT / "oracles" / "authorization" / "golden" / "w5-t4-initial.json"
 SCHEMA_DIR = REPO_ROOT / "schemas"
+
+# SPEC.md Section 6: with three or more active contributors, golden vectors need
+# two independent reviewers before any differential result is trusted.
+REQUIRED_REVIEWERS = 2
 
 
 @lru_cache(maxsize=None)
@@ -48,7 +53,15 @@ def load_vectors(path: Path = DEFAULT_VECTORS) -> dict[str, Any]:
     _validator("authorization_vectors").validate(doc)
     for policy in doc["policies"].values():
         _validator("policy").validate(policy)
+    if doc["authored_by"] in doc["reviewed_by"]:
+        raise ValueError("the author of a vector set cannot also review it")
     return doc
+
+
+def review_complete(doc: Mapping[str, Any]) -> bool:
+    """True once enough independent reviewers are recorded to trust a differential result."""
+    reviewers = set(doc["reviewed_by"]) - {doc["authored_by"]}
+    return len(reviewers) >= REQUIRED_REVIEWERS
 
 
 def _freeze(value: Any) -> Any:
@@ -86,7 +99,11 @@ def _consumed_ids(before: GrantState, after: GrantState) -> list[str]:
 
 
 def check_authorizer(authorizer: Authorizer, path: Path = DEFAULT_VECTORS) -> list[str]:
-    """Return one human-readable line per mismatch; an empty list means conformance."""
+    """Return one human-readable line per mismatch; an empty list means conformance.
+
+    A vector with ``evaluable = false`` passes only if the evaluator raises
+    ``AuthorizationNotComputable``; any other exception is a failure.
+    """
     doc = load_vectors(path)
     failures: list[str] = []
     for vector in doc["vectors"]:
@@ -96,8 +113,15 @@ def check_authorizer(authorizer: Authorizer, path: Path = DEFAULT_VECTORS) -> li
         try:
             decision = authorizer.authorize(policy, request, prior, grants)
             again = authorizer.authorize(policy, request, prior, grants)
+        except AuthorizationNotComputable as exc:
+            if expected["evaluable"]:
+                failures.append(f"{vid}: raised AuthorizationNotComputable on an evaluable request: {exc}")
+            continue
         except Exception as exc:  # an evaluator crash is a conformance failure
             failures.append(f"{vid}: raised {type(exc).__name__}: {exc}")
+            continue
+        if not expected["evaluable"]:
+            failures.append(f"{vid}: returned a decision, expected AuthorizationNotComputable")
             continue
         if not isinstance(decision, AuthorizationDecision):
             failures.append(f"{vid}: returned {type(decision).__name__}, not AuthorizationDecision")
