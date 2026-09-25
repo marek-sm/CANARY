@@ -40,7 +40,7 @@ authorize(task_policy, canonical_request, prior_tool_trace, trusted_grant_state)
      }
 ```
 
-D1_POLICY_GATE's dispatch gate and the independent post-hoc auditor implement this contract separately. The surrounding evaluator wrapper records `request_evaluable = false` and nullable authorization fields if parsing or evaluation evidence is unavailable; that infrastructure state is not an alternate return value from `authorize`. D0_BASELINE and D2_DATAMARKING still run the audit transition for measurement but dispatch every capability-valid request into the intrinsically safe tool. Under D1_POLICY_GATE, an evaluable rejection returns the frozen non-sensitive `POLICY_BLOCKED` observation; an evaluator failure fails closed with the frozen non-sensitive `POLICY_UNAVAILABLE` observation.
+D1_POLICY_GATE's dispatch gate and the independent post-hoc auditor implement this contract separately. The surrounding evaluator wrapper records `request_evaluable = false` and nullable authorization fields if parsing or evaluation evidence is unavailable; that infrastructure state is not an alternate return value from `authorize`. D0_BASELINE and D2_DATAMARKING still run the audit transition for measurement but dispatch every capability-valid request into the intrinsically safe tool. Under D1_POLICY_GATE, an evaluable rejection returns the frozen non-sensitive `POLICY_BLOCKED` observation; an evaluator failure fails closed with the frozen non-sensitive `POLICY_UNAVAILABLE` observation. The frozen types, reason codes, observation text, and evaluation rules are in [`DEFENSES_AND_POLICY.md`](DEFENSES_AND_POLICY.md).
 
 ## Tool boundary
 
