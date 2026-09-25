@@ -1,10 +1,10 @@
 # CANARY Paper Lead Inputs
 
-> **DRAFT: pending project-lead approval.** Nothing here is approved claim language or an approved metric definition until the project lead approves it.
+> **Approved by the project lead on 2026-09-24.** This is the project lead's thesis, scoped contribution, permitted-claim language, and metric-definition input for the paper.
 >
-> **`SPEC.md` is canonical.** This file is a non-authoritative input for the paper. It restates `SPEC.md` for the designated club paper leads and must not change it. Where `SPEC.md` is silent or ambiguous, this draft applies the clarifications in [decision record 0004](../docs/decisions/0004-week5-measurement-contract-clarifications.md), which the project lead accepted on 2026-09-24. Each such statement cites "0004 item N". Those clarifications take effect only once they are written into `SPEC.md` at the measurement-contract lock. If this file and `SPEC.md` disagree, `SPEC.md` wins and this file must be corrected. It contains no results. Letters such as `X`, `Q`, and `ΔΔ` are symbols defined in `SPEC.md`, not values.
+> **`SPEC.md` is canonical.** This file is a non-authoritative input for the paper. It restates `SPEC.md` for the designated club paper leads and must not change it. Where `SPEC.md` is silent or ambiguous, this file applies the clarifications in [decision record 0004](../docs/decisions/0004-week5-measurement-contract-clarifications.md), which the project lead accepted on 2026-09-24. Each such statement cites "0004 item N". Those clarifications are written into `SPEC.md` v1.1.0. If this file and `SPEC.md` disagree, `SPEC.md` wins and this file must be corrected. It contains no results. Letters such as `X`, `Q`, and `ΔΔ` are symbols defined in `SPEC.md`, not values.
 >
-> This draft was prepared with AI assistance. `TASKS.md` (component portfolios; slice plan) and `AGENTS.md` ("AI assistance") reserve the thesis, scoped contribution, claim language, and metric definitions to the project lead. `SPEC.md` §15 reserves claims, uncertainty, and limitations to humans.
+> This file was prepared with AI assistance and approved by the project lead. `TASKS.md` (component portfolios; slice plan) and `AGENTS.md` ("AI assistance") reserve the thesis, scoped contribution, claim language, and metric definitions to the project lead. `SPEC.md` §15 reserves claims, uncertainty, and limitations to humans.
 
 This file supplies the project-lead inputs that `TASKS.md` (slice plan, paper-work split) assigns alongside `W5-T5`: the thesis, the scoped contribution, permitted-claim language, and exact metric definitions. Section numbers such as "paper §7" refer to the ten-section paper structure in `SPEC.md` §14. Estimand headings use the same IDs as the `W5-T5` estimand shells, so each definition lines up with its empty table.
 
@@ -488,9 +488,9 @@ These are reported for every configuration (SPEC §10, Matched controls and seco
 | 9. Limitations, ethics, and release safety | 3.5 all mandatory, conditional, and derived limitations; 3.1 forbidden claims; 3.4 venue and review language |
 | 10. Reproducibility and contribution statement | 3.3 generated-numbers rule; 3.4 contribution-bullet and venue language |
 
-## 6. Clarifications this draft depends on
+## 6. Clarifications this file depends on
 
-Every place where `SPEC.md` was silent, ambiguous, or internally inconsistent is resolved in [decision record 0004](../docs/decisions/0004-week5-measurement-contract-clarifications.md). That record gives the reason for each item and the exact text to add to `SPEC.md`. The draft applies items 1–19 as follows:
+Every place where `SPEC.md` was silent, ambiguous, or internally inconsistent is resolved in [decision record 0004](../docs/decisions/0004-week5-measurement-contract-clarifications.md). That record gives the reason for each item and the exact text to add to `SPEC.md`. This file applies items 1–19 as follows:
 
 | 0004 item | Topic | Applied in |
 |---|---|---|
