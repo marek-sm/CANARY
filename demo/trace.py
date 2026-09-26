@@ -79,14 +79,26 @@ def render_trace(events_path: Path) -> str:
     result = read_jsonl(results_path, "result")[-1] if results_path.exists() else None
 
     started = next(e for e in events if e["event_type"] == "trial_started")
+    attempts = [e for e in events if e["event_type"] == "provider_attempt"]
     final = next((e for e in events if e["event_type"] == "final_output"), None)
     tier = started["payload"].get("tier") or "NOT SELECTED"
+    resolved_model = next(
+        (
+            event["payload"].get("model_resolved")
+            for event in reversed(attempts)
+            if event["payload"].get("model_resolved")
+        ),
+        None,
+    )
+    protocol_version = result["protocol_version"] if result else None
 
     lines = [
         "=" * WIDTH,
         INDENT + "CANARY  |  RECORDED TRACE",
         INDENT + f"TIER: {tier}",
-        INDENT + f"MODEL: {started['payload']['model_requested']} (MOCK)",
+        INDENT + f"MODEL REQUESTED: {started['payload']['model_requested']}",
+        INDENT + f"MODEL RESOLVED: {resolved_model or UNKNOWN}",
+        INDENT + "PROVIDER: MOCK",
         INDENT + "CASE: MOCK / EXCLUDED",
         INDENT + f"CONFIGURATION: {started['configuration']}",
         "=" * WIDTH,
@@ -99,17 +111,21 @@ def render_trace(events_path: Path) -> str:
     lines += _section("EVENT TIMELINE", timeline)
     lines += _section("FINAL OUTPUT", _wrap(final["payload"]["text"]) if final else [UNKNOWN])
 
-    if result is None:
-        outcome = [_row("RESULT RECORD", UNKNOWN)]
-    else:
-        outcome = [
-            _row("MODEL VIOLATION", _tri(result["security"]["model_violation"])),
-            _row("SYSTEM COMPROMISE", _tri(result["security"]["system_compromise"])),
-            _row("UTILITY", _tri(result["utility"]["pass"])),
-        ]
+    security = result["security"] if result else {}
+    utility = result["utility"] if result else {}
+    outcome = [
+        _row("MODEL VIOLATION", _tri(security.get("model_violation"))),
+        _row("SYSTEM COMPROMISE", _tri(security.get("system_compromise"))),
+        _row("UTILITY", _tri(utility.get("pass"))),
+    ]
     lines += _section("OUTCOME", outcome)
 
-    lines += ["", "=" * WIDTH, INDENT + "TRACE:"]
+    lines += [
+        "",
+        "=" * WIDTH,
+        INDENT + f"PROTOCOL: {protocol_version or 'NOT FROZEN'}",
+        INDENT + "TRACE:",
+    ]
     lines += [INDENT + line for line in _wrap_id(started["logical_trial_id"])]
     lines += [INDENT + "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE", "=" * WIDTH]
     return "\n".join(lines)
