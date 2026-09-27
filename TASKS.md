@@ -357,6 +357,20 @@ Covers `W11-T1` through `W13-T5`.
 - [ ] The designated club paper leads received the technical handoffs and completed drafting/editing; the project lead wrote protocol/metrics/results and approved every result, number, and limitation before submission.
 - [ ] Every portfolio owner completes the judge-readiness drill below without notes and can point to the named canonical evidence.
 
+## Judging rubric map
+
+The judging rubric was received on September 26, 2026 from CSAI research leadership as the "CSAI Research 2026–2027 Research Expectations" document. The project lead is recused from setting or changing its criteria. The criteria are paraphrased below. This map changes presentation emphasis only. It never changes a scientific definition, estimand, or permitted claim in `SPEC.md`.
+
+| Criterion | Where CANARY shows it | Owner | Boundary |
+|---|---|---|---|
+| Impact and significance: a real-world gap and a strong problem statement | The `SPEC.md` Section 1 thesis. Agents that read untrusted content are deployed without a way to separate what the model proposed from what the system permitted, or to see what a defense costs legitimate tasks. The demo's fixed story order shows that failure end to end (`docs/DEMO_DESIGN.md`) | Project lead (thesis); T5 (demo) | Present a measurement gap, not an unsolved problem. The Section 1 claims list forbids novelty and "solves prompt injection" claims, and the paper names the overlapping work |
+| Research rigor: methodology, baselines, statistical validation, ablations, reproducibility, NeurIPS/IEEE standards | `D0_BASELINE` and exact matched clean twins as baselines. Each defense compared alone against the baseline, with no composition (Section 6), and the same attacks crossed through C2, C3, and C4 (Section 5), serve as the ablations. Section 10 estimands, cluster resampling, and missingness ranges. Section 11 freezes and change control. Fresh-clone `make report` and `make replay` (Gate 5). The Section 14 paper structure in the confirmed template | T3 (analysis, reproducibility); project lead (protocol, metrics); paper leads (format) | Only the active tier's comparisons are shown. `BASE` and `ENGINEERING` show instrument validation, not defense effects (Section 12) |
+| Conceptual understanding: judges' Q&A | The judge-readiness drill below. Every owner answers their portfolio's question without notes (Gate 5) | Every portfolio owner; T5 runs the W13 drill | The drill's linked `SPEC.md` sections remain the canonical answers |
+| Aesthetics: thoughtful design and visuals that show human effort | The large-type terminal demo and replay (Section 13). Hand-designed architecture, safety-boundary, and corpus-flow figures (`paper/outline.md`). Generated result figures with captions and alt text | T5 | Result figures come only from the frozen bundle (`AGENTS.md`). Accessibility rules still apply, including no meaning carried by color alone |
+| Enterprise readiness: efficient, well-scoped AI use and a result that still matters in 5–10 years | Bounded AI assistance under Section 15, `AGENTS.md`, and `CLAUDE.md`. Decision records that explain each choice. The provider adapter interface (Section 4), which lets the same harness rerun on future models. The model-versus-system split, which applies to any agent that reads untrusted data | Project lead | Results apply only to the frozen model and version (Section 1). No claim that they transfer to other models |
+
+Open question for leadership: what evidence of prompt quality judges will look at under enterprise readiness.
+
 ## Judge-readiness drill
 
 The questions are operating checks; the linked `SPEC.md` sections remain the canonical answers. Do not copy scientific definitions into this file.
