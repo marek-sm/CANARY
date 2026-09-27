@@ -98,8 +98,10 @@ def append_jsonl(path: Path, record: Mapping[str, Any], schema_name: str) -> Non
 
 
 class EventLog:
-    def __init__(self, path: Path, clock: Callable[[], str]) -> None:
+    def __init__(self, path: Path, clock: Callable[[], str], *, logical_trial_id: str = LOGICAL_TRIAL_ID, component_versions: Optional[Mapping[str, str]] = None) -> None:
         self.path = path
+        self.logical_trial_id = logical_trial_id
+        self.component_versions = dict(component_versions or COMPONENT_VERSIONS)
         self.clock = clock
         self.sequence = 0
         path.open("x").close()  # refuse to append to an existing trace
@@ -118,18 +120,18 @@ class EventLog:
             self.path,
             {
                 "schema_version": "0.1.0",
-                "event_id": f"{LOGICAL_TRIAL_ID}:e{self.sequence}",
+                "event_id": f"{self.logical_trial_id}:e{self.sequence}",
                 "sequence": self.sequence,
                 "event_type": event_type,
                 "experiment_id": EXPERIMENT_ID,
-                "logical_trial_id": LOGICAL_TRIAL_ID,
+                "logical_trial_id": self.logical_trial_id,
                 "model_call_id": model_call_id,
                 "attempt_id": attempt_id,
                 "configuration": CONFIGURATION,
                 "recorded_at": self.clock(),
                 "payload": dict(payload),
                 "raw_evidence": {"sha256": raw_sha256, "artifact_ref": None},
-                "component_versions": dict(COMPONENT_VERSIONS),
+                "component_versions": self.component_versions,
             },
             "event",
         )

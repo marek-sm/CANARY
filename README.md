@@ -89,3 +89,11 @@ CANARY does not claim to solve prompt injection, establish general security, ran
 ## License and citation
 
 No reuse license is implied until a `LICENSE` file is committed. License selection is a tracked pre-release task. `CITATION.cff` is created only after the consented author list is stable.
+
+### W5-T1 mock tool/task smoke
+
+`uv run make t1-smoke` runs the fictional ticket through the safe file reader,
+mock loop, durable evidence, deterministic utility validator, and replay.
+See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and design
+choices. It consumes merged W5-T4 interfaces; **W5-T3 has not landed**, so its
+measurement integration and the final contract lock remain outstanding.

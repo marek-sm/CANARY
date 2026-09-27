@@ -10,3 +10,7 @@ paper-shells:
 
 paper-shells-check:
 	python -m analysis.report_shells --check
+
+.PHONY: t1-smoke
+t1-smoke:
+	python -m runner.ticket_slice

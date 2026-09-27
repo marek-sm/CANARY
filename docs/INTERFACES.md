@@ -92,3 +92,11 @@ Internal CLI names may evolve before freeze. Do not document a command until it 
 ## Versioning
 
 Every schema, normalizer, parser, oracle, scorer, defense, prompt/tool registry, task registry, and effect oracle has a version or content hash in claim-bearing records. An incompatible interface change increments its version and triggers every applicable change-control requirement.
+
+## W5-T1 provisional implementation
+
+The [W5-T1 handoff](W5_T1_HANDOFF.md) specifies the read-file canonicalizer
+subset, tool-worker boundary, integer-versioned utility oracle, and provisional
+runner adapter. These consume the merged T4 interfaces. T3's finalized
+measurement contract is unavailable; compatibility and security scoring remain
+outstanding. The provider remains mock-only under decision 0005.

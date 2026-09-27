@@ -12,4 +12,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-cache
 COPY . .
 
+RUN useradd --uid 10001 --create-home canary && mkdir -p /app/results/development && chown -R canary:canary /app/results
+USER 10001:10001
 CMD ["python", "-m", "runner.mock_slice"]
