@@ -1,6 +1,6 @@
 # 0007: Freeze the corpus rules at Gate 1, define near-duplicates, and assign development-base tasks
 
-- Status: Proposed. Drafted with AI assistance for the project lead on 2026-09-27.
+- Status: Accepted. Approved by the project lead on 2026-09-27; drafted with AI assistance.
 - Date: 2026-09-27
 - Decision scope: Protocol
 - Secondary scopes: None

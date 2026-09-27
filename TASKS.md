@@ -119,14 +119,14 @@ All five W5 slices start Monday against the committed pre-kickoff scaffold and a
 
 Lead scaffold, not a member slice: `uv.lock`, no-credit CI, and Make targets; the rubric map; post-kickoff clock verification; `STATUS.md`; the thesis, scoped contribution, permitted-claim language, and exact metric definitions that D-14 reserves to the project lead; and the measurement-contract lock commit and version, which is also the Gate 1 step; and the development-base task assignment that `W6-T1` and `W6-T2` both build against. That lock includes the `SPEC.md` Section 5 step 1 corpus rules — eligibility, exact quota, family and source caps, task assignment, deduplication, adaptation, and relaxation order — which must freeze in W5 even though the evaluation corpus is not built until W7 and W8.
 
-### W5-T1 implementation evidence — September 26
+### W5-T1 implementation evidence — September 27
 
-`IN PROGRESS` — Chace owns [issue #18](https://github.com/marek-sm/CANARY/issues/18)
-on `nkuhanas/W5-T1-safe-read-file-task`;
-required independent reviewer: `@Dhruv235`. Component implementation is ready
-for review, with acceptance commands and interfaces in the
-[W5-T1 handoff](docs/W5_T1_HANDOFF.md). This does not mark the slice or Gate 1
-`DONE` before independent review and dependency integration.
+Chace owns [issue #18](https://github.com/marek-sm/CANARY/issues/18). The
+component merged in [#19](https://github.com/marek-sm/CANARY/pull/19)
+(`c4429d2`) on September 27, after `@Dhruv235` reviewed it against every
+Committed item. Acceptance commands and interfaces are in the
+[W5-T1 handoff](docs/W5_T1_HANDOFF.md). Integration with W5-T3 is checked after
+W5-T3 merges, before the lock re-pins the W5 slices.
 
 **Schedule-driven limitation:** W5-T4 is merged; W5-T3 has not landed. T1 uses
 the committed provisional scaffold to preserve implementation progress.
@@ -410,7 +410,7 @@ The judging rubric was received on September 26, 2026 from CSAI research leaders
 | Aesthetics: thoughtful design and visuals that show human effort | The large-type terminal demo and replay (Section 13). Hand-designed architecture, safety-boundary, and corpus-flow figures (`paper/outline.md`). Generated result figures with captions and alt text | T5 | Result figures come only from the frozen bundle (`AGENTS.md`). Accessibility rules still apply, including no meaning carried by color alone |
 | Enterprise readiness: efficient, well-scoped AI use and a result that still matters in 5–10 years | Bounded AI assistance under Section 15, `AGENTS.md`, and `CLAUDE.md`. Decision records that explain each choice. The provider adapter interface (Section 4), which lets the same harness rerun on future models. The model-versus-system split, which applies to any agent that reads untrusted data | Project lead | Results apply only to the frozen model and version (Section 1). No claim that they transfer to other models |
 
-Open question for leadership: what evidence of prompt quality judges will look at under enterprise readiness.
+Leadership has given no further guidance on what evidence of prompt quality judges will look at under enterprise readiness.
 
 ## Judge-readiness drill
 
