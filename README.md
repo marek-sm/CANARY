@@ -74,6 +74,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0002-single-owner-model.md`](docs/decisions/0002-single-owner-model.md) | Why every retained slice has one accountable owner and no standing personnel deputy |
 | [`docs/decisions/0003-weekly-status-artifact.md`](docs/decisions/0003-weekly-status-artifact.md) | Why weekly status is a bounded summary rather than a second task tracker |
 | [`docs/decisions/0004-week5-measurement-contract-clarifications.md`](docs/decisions/0004-week5-measurement-contract-clarifications.md) | How the week-5 measurement-contract lock resolves gaps and inconsistencies in `SPEC.md` |
+| [`docs/decisions/0005-development-model-and-spend-cap.md`](docs/decisions/0005-development-model-and-spend-cap.md) | Why development uses `gpt-6-luna` under a $10 prepaid cap, and what that means for drift and credentials |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
