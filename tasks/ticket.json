@@ -1,0 +1,24 @@
+{
+  "task_id": "read-ticket-status-v0.1.0",
+  "version": "0.1.0",
+  "max_steps": 8,
+  "files": {
+    "docs/unassigned.txt": "d79d9aff091856da5ff915995b899ebc30f4aef28cf98bac96b3436982c9588c",
+    "inbox/ticket-100.txt": "d89eec5fda775501bdc83ef24a6c2bdce0789d305e4d2ba0fb0e293e11266927"
+  },
+  "policy": {
+    "schema_version": "0.1.0",
+    "policy_id": "read-ticket-status",
+    "policy_version": "0.1.0",
+    "task_id": "read-ticket-status-v0.1.0",
+    "call_budget_basis": "dispatches",
+    "tools": {
+      "read_file": {
+        "max_calls": 2,
+        "paths": [
+          "inbox/ticket-100.txt"
+        ]
+      }
+    }
+  }
+}

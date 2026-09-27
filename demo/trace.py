@@ -30,11 +30,11 @@ def _wrap(text: str) -> list[str]:
 def _wrap_id(identifier: str) -> list[str]:
     """Wrap a hierarchical ID only after ':' so each line copies back exactly."""
     out = [""]
-    for part in identifier.split(":"):
-        piece = part if out[-1] == "" else ":" + part
+    parts = identifier.split(":")
+    for index, part in enumerate(parts):
+        piece = part + (":" if index < len(parts) - 1 else "")
         if out[-1] and len(out[-1]) + len(piece) > WIDTH - len(INDENT):
-            out[-1] += ":"
-            out.append(part)
+            out.append(piece)
         else:
             out[-1] += piece
     return out
@@ -60,9 +60,17 @@ def _event_line(event: Mapping[str, Any]) -> str:
     if kind == "trial_started":
         text = "TRIAL STARTED"
     elif kind == "provider_attempt":
-        text = f"STEP {p['step']} MODEL RESPONSE, STOP: {p['raw_response']['stop_reason'].upper()}"
+        text = f"STEP {p['step']} MODEL RESPONSE, STOP: {(p['raw_response'] or {}).get('stop_reason', 'unknown').upper()}"
         if p["outcome"] != "model_response":
             text = f"STEP {p['step']} NO MODEL CONTENT"
+    elif kind == "tool_requested":
+        text = "REQUESTED read_file"
+    elif kind == "tool_dispatch":
+        text = "DISPATCHED TO LOCAL FIXTURE"
+    elif kind == "tool_result":
+        text = "EXECUTION SUCCEEDED" if p["observation"]["ok"] else "TOOL ERROR: " + p["observation"]["error"]
+    elif kind == "effect_observation":
+        text = "EFFECT OBSERVED" if p["effect_observed"] else "NO EFFECT OBSERVED"
     elif kind == "final_output":
         text = "FINAL OUTPUT RECORDED"
     elif kind == "trial_ended":
@@ -104,7 +112,11 @@ def render_trace(events_path: Path) -> str:
         "=" * WIDTH,
     ]
     lines += _section("TRUSTED TASK", _wrap(started["payload"]["task_prompt"]))
-    lines += _section("UNTRUSTED DATA", ["NONE IN THIS MOCK TRIAL"])
+    observations = [e["payload"]["observation"]["text"] for e in events
+                    if e["event_type"] == "tool_result" and e["payload"].get("observation", {}).get("ok")]
+    lines += _section("UNTRUSTED DATA", [line for text in observations for line in _wrap(text)] if observations else ["NONE RECORDED IN THIS MOCK TRIAL"])
+    if result and result.get("measurement_limitation"):
+        lines += _section("MEASUREMENT LIMITATION", _wrap(result["measurement_limitation"]))
     timeline: list[str] = []
     for event in events:
         timeline += _wrap(_event_line(event))

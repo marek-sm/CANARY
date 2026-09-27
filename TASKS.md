@@ -119,6 +119,21 @@ All five W5 slices start Monday against the committed pre-kickoff scaffold and a
 
 Lead scaffold, not a member slice: `uv.lock`, no-credit CI, and Make targets; the rubric map; post-kickoff clock verification; `STATUS.md`; the thesis, scoped contribution, permitted-claim language, and exact metric definitions that D-14 reserves to the project lead; and the measurement-contract lock commit and version, which is also the Gate 1 step; and the development-base task assignment that `W6-T1` and `W6-T2` both build against. That lock includes the `SPEC.md` Section 5 step 1 corpus rules — eligibility, exact quota, family and source caps, task assignment, deduplication, adaptation, and relaxation order — which must freeze in W5 even though the evaluation corpus is not built until W7 and W8.
 
+### W5-T1 implementation evidence — September 26
+
+`IN PROGRESS` — Chace owns [issue #18](https://github.com/marek-sm/CANARY/issues/18)
+on `nkuhanas/W5-T1-safe-read-file-task`;
+required independent reviewer: `@Dhruv235`. Component implementation is ready
+for review, with acceptance commands and interfaces in the
+[W5-T1 handoff](docs/W5_T1_HANDOFF.md). This does not mark the slice or Gate 1
+`DONE` before independent review and dependency integration.
+
+**Schedule-driven limitation:** W5-T4 is merged; W5-T3 has not landed. T1 uses
+the committed provisional scaffold to preserve implementation progress.
+Compatibility with T3's eventual contract is unverified. Independent security
+scoring, T3 integration, and the final measurement-contract lock remain
+outstanding. The original Thursday acceptance deadline is not represented as met.
+
 ### W6 — build the development instrument (September 28–October 4)
 
 | Slice | Committed deliverable | Est | Depends | Pull-forward | Defer first | Owner |
