@@ -23,7 +23,7 @@
 | Development/model trials | None represented as completed |
 | Official empirical trials | None represented as started |
 | `ENGINEERING` validation | Not activated |
-| Spend and funded cap | Mock-only as of September 24, 2026; no funded cap is approved, so development uses the mock provider only |
+| Spend and funded cap | As of September 26, 2026: project-lead funded, with a $10 prepaid OpenAI development cap and auto-recharge off; the development model candidate is `gpt-6-luna` ([decision 0005](docs/decisions/0005-development-model-and-spend-cap.md)). No paid call has been made; development stays on the mock provider until the provider adapter merges, and CI stays mock-only. The season cap is set at Gate 2 from measured development cost |
 | Open protocol deviation | None; the protocol is not frozen |
 | Public result or defense-effect claim | None |
 
@@ -43,7 +43,7 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Replace
 ## Public decisions, risks, and external asks
 
 1. **Project presentation:** use `CANARY` in all caps and make no uniqueness or novelty claim.
-2. **Funding/model:** the approved budget and eligible model path must be recorded before Gate 3; no paid or credentialed CI is permitted.
+2. **Funding/model:** development is project-lead funded under a $10 prepaid cap, with `gpt-6-luna` as the development candidate ([decision 0005](docs/decisions/0005-development-model-and-spend-cap.md)). The official model, its fallback decision, and the season budget are still recorded before Gate 3 from development evidence; no paid or credentialed CI is permitted.
 3. **Event inputs:** record the judging-rubric source/date and the confirmed demo slot, Q&A, network, display, and speaker constraints when supplied.
 4. **Licensing:** do not accept external contributions or imply reuse rights until code/content licensing is selected.
 
