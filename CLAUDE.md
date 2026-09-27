@@ -14,4 +14,4 @@ For each requested slice:
 
 Never infer that planned counts are completed results, use evaluation candidates for development, make real external calls from CANARY tools, or modify frozen claim-bearing artifacts without Section 11 change control.
 
-Never commit or push. Solely generate a commit message that the user can use to commit and push their own code themselves.
+Never commit or push. Solely generate a commit message that the user can use to commit and push their own code themselves. Commit messages are always a single line, with no body.
