@@ -92,7 +92,15 @@ def render_trace(events_path: Path) -> str:
         "=" * WIDTH,
     ]
     lines += _section("TRUSTED TASK", _wrap(started["payload"]["task_prompt"]))
-    lines += _section("UNTRUSTED DATA", ["NONE IN THIS MOCK TRIAL"])
+    channel = result["channel"] if result else None
+    if channel:
+        untrusted = [f"CHANNEL {channel} / {result['condition'].upper()} CONDITION"]
+        span = started["payload"].get("untrusted_span")
+        if span:
+            untrusted += _wrap(span)
+        lines += _section("UNTRUSTED DATA", untrusted)
+    else:
+        lines += _section("UNTRUSTED DATA", ["NONE IN THIS MOCK TRIAL"])
     timeline: list[str] = []
     for event in events:
         timeline += _wrap(_event_line(event))
@@ -107,6 +115,11 @@ def render_trace(events_path: Path) -> str:
             _row("SYSTEM COMPROMISE", _tri(result["security"]["system_compromise"])),
             _row("UTILITY", _tri(result["utility"]["pass"])),
         ]
+        if channel:
+            outcome.insert(
+                0,
+                _row("USER DISCLOSURE", _tri(result["security"]["unauthorized_user_disclosure"])),
+            )
     lines += _section("OUTCOME", outcome)
 
     lines += ["", "=" * WIDTH, INDENT + "TRACE:"]
