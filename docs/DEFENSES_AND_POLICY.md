@@ -127,6 +127,6 @@ A later error never erases an earlier event, and missing evidence stays null.
 
 ## 5. Open items for review
 
-- Golden vectors and datamarking vectors are authored by T4. `reviewed_by` lists distinct reviewers, none of them the author, and `SPEC.md` Section 6 requires at least two before any differential result is trusted (`review_complete` in the conformance harness checks this). Chace and Miles are the assigned reviewers.
+- Golden vectors and datamarking vectors are authored by T4. `reviewed_by` lists the one independent reviewer, who is not the author. `SPEC.md` Section 6 requires exactly one before any differential result is trusted ([decision 0006](decisions/0006-one-vector-reviewer.md)); `review_complete` in the conformance harness checks this. Chace is the reviewer of both W5-T4 vector sets.
 - `canonical_json_bytes` mirrors the runner's provisional serialization and must re-point to the rule W5-T3 commits.
 - Task policies written in W5-T1 and W6-T1 should validate against `schemas/policy.schema.json`.
