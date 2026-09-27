@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.1.0**  
+**Public project and experimental specification v1.2.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -458,7 +458,7 @@ D1_POLICY_GATE never receives the comparison-superblock canary values and never 
 
 D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING receive identical task policies and grant state. In every configuration, the independent audit evaluator scores the canonical request against the pre-dispatch state. Under D0_BASELINE and D2_DATAMARKING, that decision is observational and every capability-valid request is still dispatched into the intrinsically safe local tool. Under D1_POLICY_GATE, a rejected request is blocked before dispatch.
 
-D1_POLICY_GATE’s gate and the post-hoc audit scorer consume the same frozen declarative policy but use independently implemented evaluators. One contributor authors the allow/deny golden vectors and a different contributor independently reviews them; when three or more contributors are active, a second independent reviewer also checks them. Differential tests exercise both evaluators. Any gate/scorer disagreement invalidates the affected block. A disagreement is any difference in `authorized` or in the sorted reason codes. Affected repair blocks leave every trial-level estimand under the Section 9 repair rule; the conformance table still counts their requests and reports the disagreement count. This prevents one shared code bug from “proving” its own correctness while keeping the `R6` tier executable by its two active contributors.
+D1_POLICY_GATE’s gate and the post-hoc audit scorer consume the same frozen declarative policy but use independently implemented evaluators. One contributor authors the allow/deny golden vectors and exactly one different contributor independently reviews them, whatever the number of active contributors. Differential tests exercise both evaluators. Any gate/scorer disagreement invalidates the affected block. A disagreement is any difference in `authorized` or in the sorted reason codes. Affected repair blocks leave every trial-level estimand under the Section 9 repair rule; the conformance table still counts their requests and reports the disagreement count. This prevents one shared code bug from “proving” its own correctness while keeping the `R6` tier executable by its two active contributors.
 
 A fall in dispatched or completed unauthorized actions is still enforcement by construction, not evidence that the model became resistant. The empirical checks are conformance, residual disclosure outside the tool boundary, and utility. D1_POLICY_GATE is successful when it:
 

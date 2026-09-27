@@ -347,15 +347,22 @@ def test_differential_fixtures_follow_the_disagreement_rule(vectors):
 def test_vector_reviewers_are_independent(path):
     doc = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(doc["reviewed_by"], list)
-    assert len(doc["reviewed_by"]) == len(set(doc["reviewed_by"]))
+    assert len(doc["reviewed_by"]) <= 1
     assert doc["authored_by"] not in doc["reviewed_by"]
 
 
-def test_review_complete_needs_two_independent_reviewers(vectors):
+def test_review_complete_needs_one_independent_reviewer(vectors):
     doc = dict(vectors)
     assert not review_complete({**doc, "reviewed_by": []})
-    assert not review_complete({**doc, "reviewed_by": ["contributor-a"]})
-    assert review_complete({**doc, "reviewed_by": ["contributor-a", "contributor-b"]})
+    assert not review_complete({**doc, "reviewed_by": [doc["authored_by"]]})
+    assert review_complete({**doc, "reviewed_by": ["contributor-a"]})
+
+
+def test_vector_schema_rejects_a_second_reviewer(vectors):
+    doc = copy.deepcopy(dict(vectors))
+    doc["reviewed_by"] = ["contributor-a", "contributor-b"]
+    with pytest.raises(ValidationError):
+        schema("authorization_vectors").validate(doc)
 
 
 def test_vectors_contain_no_canary_marker(vectors):

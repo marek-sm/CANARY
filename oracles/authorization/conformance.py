@@ -36,9 +36,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_VECTORS = REPO_ROOT / "oracles" / "authorization" / "golden" / "w5-t4-initial.json"
 SCHEMA_DIR = REPO_ROOT / "schemas"
 
-# SPEC.md Section 6: with three or more active contributors, golden vectors need
-# two independent reviewers before any differential result is trusted.
-REQUIRED_REVIEWERS = 2
+# SPEC.md Section 6 (decision 0006): a vector set needs exactly one independent
+# reviewer before any differential result is trusted.
+REQUIRED_REVIEWERS = 1
 
 
 @lru_cache(maxsize=None)
