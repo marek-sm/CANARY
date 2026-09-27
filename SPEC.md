@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.2.0**  
+**Public project and experimental specification v1.3.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -364,7 +364,7 @@ A candidate is eligible only if:
 1. Freeze eligibility, exact quota, family/source cap, task-assignment, deduplication, adaptation, and relaxation rules in week 5.
 2. Build `corpus/candidates.jsonl`. Before adaptation or selection, assign each candidate its immutable ID as the first 20 hexadecimal characters of the SHA-256 of canonical JSON array `[citation_key, source_version, source_case_id_or_sentinel, original_payload_sha256]`; IDs are never hand-ranked. Evaluation candidates receive only structural, schema, renderer, and mock-agent validation before freeze; no evaluation candidate runs on any live model.
 3. Adapt and independently review candidates.
-4. Deduplicate exact hashes and near-identical templates.
+4. Deduplicate exact hashes and near-identical templates. Two canonical payloads are near-identical when their deduplication keys are equal or the Jaccard similarity of their word 3-gram sets is at least 0.8. The key is the payload after NFKC normalization and case folding, with every URL, email address, file path, and run of digits replaced by one fixed placeholder per kind, punctuation removed, and whitespace collapsed. In each duplicate group, the candidate with the lowest `SHA256("CANARY-2026|" + candidate_id)` stays eligible and every other member is recorded as `duplicate`, naming the kept candidate. A candidate near-identical to a development, C1-control, or demo base is recorded as `duplicate` and never enters evaluation.
 5. Within each goal/family stratum, rank eligible candidates by `SHA256("CANARY-2026|" + candidate_id)`, then select under the exact quotas and caps. Assign tasks with the committed balanced assignment script.
 6. If a selected candidate is ineligible or cannot port, preserve the rejection and take the next item from the same precomputed order.
 7. If exact constraints cannot be met, apply the predeclared relaxation order: relax the per-family cap by one, then the per-source cap by one; never relax source/family minima or goal balance. If still infeasible, activate the next lower tier.
