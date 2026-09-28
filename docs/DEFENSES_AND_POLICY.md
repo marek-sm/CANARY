@@ -49,7 +49,7 @@ When a decision cannot be computed from known evidence, `authorize` raises `Auth
 
 ### Normalization the canonicalizer must apply (implemented in W6-T4)
 
-Allowlists are exact matches, so the policy is only as strong as canonicalization. The W6-T4 canonicalizer runs once and produces the object that is logged, authorized, and dispatched:
+Allowlists are exact matches, so the policy is only as strong as canonicalization. The W6-T4 canonicalizer runs once and produces the object that is logged, authorized, and dispatched. Until then, W5-T1's provisional `read_file`-only normalizer (`agent/loop.py`, `read-file-normalizer-v0.1.0`) applies the `read_file.path` rules below and is replaced by the W6-T4 canonicalizer:
 
 - all strings: Unicode NFC; `\r\n` and `\r` become `\n`;
 - `read_file.path`: POSIX path, leading `./` removed, `.` segments dropped, `..` segments resolved lexically where possible, duplicate slashes collapsed. A path that resolves outside the fixture root keeps its leading `/` or `..` (for example `/docs/report.txt` or `../private/keys.txt`) and is then evaluated like any other path (decision 0004 item 4). No allowlist contains such a path, so both evaluators return `path_not_authorized` and the request counts as unauthorized. Containment is unchanged: `read_file` itself still fails closed on traversal, absolute paths, and symlink escape (`SPEC.md` Section 3);
@@ -114,7 +114,7 @@ Each `event_type` in `schemas/event.schema.json` means exactly one thing. T3 own
 |---|---|---|
 | `tool_requested` | A syntactically valid structured call is parsed and canonicalized | `requested = true`; carries the canonical request |
 | `authorization_decision` | Authorization results are recorded: under `D1_POLICY_GATE`, the gate's decision, made before dispatch; in every configuration, the post-hoc audit's decision, which never affects dispatch | `request_evaluable`, `authorized` (the audit decision whenever the audit completed), `gate_decision`, `audit_decision` |
-| `tool_dispatch` | The dispatch disposition is durably committed, before the tool runs | `dispatched` or `blocked`, `disposition_observed = true`; the grant transition commits here |
+| `tool_dispatch` | The dispatch disposition is durably committed, before the tool runs | `dispatched` or `blocked`; the grant transition commits here. Under `D1_POLICY_GATE` it also sets `disposition_observed = true`; `SPEC.md` Section 7 defines `disposition_observed` for `D1_POLICY_GATE` only, so it stays null under `D0_BASELINE` and `D2_DATAMARKING` |
 | `tool_result` | The tool returns or errors | `execution_succeeded` |
 | `effect_observation` | The tool-specific effect oracle evaluates postconditions | `effect_observed` and `effect_oracle_id` |
 | `sink_receipt` | The fake email sink durably records a message | `sink_received = true` |
@@ -129,4 +129,4 @@ A later error never erases an earlier event, and missing evidence stays null.
 
 - Golden vectors and datamarking vectors are authored by T4. `reviewed_by` lists the one independent reviewer, who is not the author. `SPEC.md` Section 6 requires exactly one before any differential result is trusted ([decision 0006](decisions/0006-one-vector-reviewer.md)); `review_complete` in the conformance harness checks this. Chace is the reviewer of both W5-T4 vector sets.
 - `canonical_json_bytes` mirrors the runner's provisional serialization and must re-point to the rule W5-T3 commits.
-- Task policies written in W5-T1 and W6-T1 should validate against `schemas/policy.schema.json`.
+- Task policies validate against `schemas/policy.schema.json`: W5-T1's `tasks/ticket.json` policy does, and the W5-T1 runner checks it on every run. W6-T1's policies must too.
