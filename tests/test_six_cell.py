@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -7,6 +8,7 @@ import pytest
 from jsonschema import ValidationError
 
 from demo.trace import UNKNOWN, WIDTH, render_trace
+from runner import mock_slice
 from runner import six_cell
 from runner.mock_provider import MockProvider
 
@@ -81,11 +83,12 @@ def test_one_shared_superblock_and_canary_pair(run_dir):
 
 
 def test_canonical_payload_carries_no_literal_canary(run_dir):
-    for _, result in cells(run_dir):
+    for d, result in cells(run_dir):
         started = next(
-            e for e in lines(six_cell.cell_dirs(run_dir)[0] / six_cell.EVENTS_FILE)
+            e for e in lines(d / six_cell.EVENTS_FILE)
             if e["event_type"] == "trial_started"
         )
+        # check THIS cell's own untrusted span, not a single shared cell's
         assert "CANARY-" not in started["payload"]["untrusted_span"] or result["condition"] != "attack"
     # the attack span is exactly the corpus canonical payload, which has no canary
     attack_dir = run_dir / f"{six_cell.BASE_CASE_ID}_C2_attack"
@@ -150,10 +153,38 @@ def test_refuses_to_overwrite_existing_run(run_dir):
         six_cell.run_six_cells(run_dir)
 
 
-def test_canary_pair_is_reproducible(tmp_path):
+def _det_canary_factory():
+    """A fresh deterministic canary generator (two tokens) for one run."""
+    tokens = iter(["a1a1a1a1", "b2b2b2b2"])
+    return lambda: next(tokens)
+
+
+def test_canary_pair_is_fresh_by_default_but_reproducible_when_injected(tmp_path):
+    # Default: each run mints a fresh uuid4-based pair, so two runs differ.
     a = six_cell.run_six_cells(tmp_path / "a")
     b = six_cell.run_six_cells(tmp_path / "b")
-    assert (a / six_cell.CANARIES_FILE).read_text() == (b / six_cell.CANARIES_FILE).read_text()
+    assert (a / six_cell.CANARIES_FILE).read_text() != (b / six_cell.CANARIES_FILE).read_text()
+    # Injected generator + fixed experiment id: fully reproducible.
+    c = six_cell.run_six_cells(
+        tmp_path / "c", experiment_id="six-cell-dev-fixed", canary_factory=_det_canary_factory()
+    )
+    d = six_cell.run_six_cells(
+        tmp_path / "d", experiment_id="six-cell-dev-fixed", canary_factory=_det_canary_factory()
+    )
+    assert (c / six_cell.CANARIES_FILE).read_text() == (d / six_cell.CANARIES_FILE).read_text()
+    stored = json.loads((c / six_cell.CANARIES_FILE).read_text(encoding="utf-8"))
+    assert stored["canaries"] == ["CANARY-a1a1a1a1", "CANARY-b2b2b2b2"]
+
+
+def test_resolved_canaries_reload_on_a_resumed_run(tmp_path):
+    # First resolve mints + persists; a second resolve against the same dir
+    # reloads the persisted pair instead of regenerating (non-blocker 7).
+    out = tmp_path / "run"
+    out.mkdir()
+    first = six_cell.resolve_canaries(out, "exp-1", "sb-1", _det_canary_factory())
+    # a different factory would mint different values, but the file already exists
+    second = six_cell.resolve_canaries(out, "exp-1", "sb-1", lambda: "SHOULD-NOT-BE-USED")
+    assert first == second == ["CANARY-a1a1a1a1", "CANARY-b2b2b2b2"]
 
 
 def test_rendered_hash_matches_frozen_manifest(run_dir):
@@ -213,11 +244,18 @@ def test_per_trial_ids_are_unique_across_six_cells(run_dir):
 
 
 def test_ids_and_events_reproducible_across_two_runs(tmp_path):
-    """Two independent runs with a fixed clock produce byte-identical events and
-    results per cell, so every id (and derived record) is reproducible."""
+    """Two independent runs with a fixed clock, injected experiment id, and
+    injected canary generator produce byte-identical events and results per cell,
+    so every id (and derived record) is reproducible."""
     clock = lambda: "2020-01-01T00:00:00Z"  # noqa: E731 - deterministic test clock
-    a = six_cell.run_six_cells(tmp_path / "a", clock=clock)
-    b = six_cell.run_six_cells(tmp_path / "b", clock=clock)
+    a = six_cell.run_six_cells(
+        tmp_path / "a", clock=clock, experiment_id="six-cell-dev-fixed",
+        canary_factory=_det_canary_factory(),
+    )
+    b = six_cell.run_six_cells(
+        tmp_path / "b", clock=clock, experiment_id="six-cell-dev-fixed",
+        canary_factory=_det_canary_factory(),
+    )
     for da, db in zip(six_cell.cell_dirs(a), six_cell.cell_dirs(b)):
         assert (da / six_cell.EVENTS_FILE).read_text(encoding="utf-8") == (
             db / six_cell.EVENTS_FILE
@@ -235,7 +273,7 @@ def test_each_event_is_durably_persisted_before_the_next_provider_call(tmp_path,
     first provider call and the first provider_attempt is on disk before the
     second, proving each event is durably written before the loop continues."""
     log_paths = []
-    real_log = six_cell.CellEventLog
+    real_log = six_cell.EventLog
 
     class TrackingLog(real_log):
         def __init__(self, path, *a, **k):
@@ -251,7 +289,7 @@ def test_each_event_is_durably_persisted_before_the_next_provider_call(tmp_path,
             snapshots.append([e["event_type"] for e in lines(log_paths[-1])])
             return super().complete(*a, **k)
 
-    monkeypatch.setattr(six_cell, "CellEventLog", TrackingLog)
+    monkeypatch.setattr(six_cell, "EventLog", TrackingLog)
     monkeypatch.setattr(six_cell, "MockProvider", Watching)
     six_cell.run_six_cells(tmp_path / "run")
 
@@ -320,3 +358,70 @@ def test_no_network_socket_is_opened(tmp_path, monkeypatch):
     # every cell still produced its schema-valid evidence without any socket
     for d, result in cells(run_dir):
         six_cell.validator("result").validate(result)
+
+
+# --- Added coverage (TESTER, W5-T3): explicit assertions for NB8 (two default
+# runs collide on no id), NB10 (single code_commit per run + EventLog reuse with
+# no duplicate CellEventLog), and NB11 (raw-byte template hash enforcement). ---
+
+
+def test_two_default_runs_have_disjoint_experiment_scoped_ids(tmp_path):
+    """NB8: with no injected experiment id each run mints a fresh uuid4-based
+    experiment id, so two default runs share no logical_trial_id, no event_id,
+    and no experiment_id."""
+    a = six_cell.run_six_cells(tmp_path / "a")
+    b = six_cell.run_six_cells(tmp_path / "b")
+
+    a_trials = {r["logical_trial_id"] for _, r in cells(a)}
+    b_trials = {r["logical_trial_id"] for _, r in cells(b)}
+    assert len(a_trials) == 6 and a_trials.isdisjoint(b_trials)
+
+    a_exp = {r["experiment_id"] for _, r in cells(a)}
+    b_exp = {r["experiment_id"] for _, r in cells(b)}
+    assert len(a_exp) == 1 and a_exp.isdisjoint(b_exp)
+
+    a_events = {
+        e["event_id"] for d in six_cell.cell_dirs(a) for e in lines(d / six_cell.EVENTS_FILE)
+    }
+    b_events = {
+        e["event_id"] for d in six_cell.cell_dirs(b) for e in lines(d / six_cell.EVENTS_FILE)
+    }
+    assert len(a_events) == 30 and a_events.isdisjoint(b_events)
+
+
+def test_code_commit_is_resolved_once_per_run(tmp_path, monkeypatch):
+    """NB10: git HEAD is resolved a single time per run and threaded to all six
+    cells rather than re-shelled per cell."""
+    calls = []
+
+    def counting():
+        calls.append(True)
+        return "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+
+    monkeypatch.setattr(six_cell, "code_commit", counting)
+    run_dir = six_cell.run_six_cells(tmp_path / "run")
+    assert len(calls) == 1
+    for _, result in cells(run_dir):
+        assert result["run_metadata"]["code_commit"] == "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+
+
+def test_six_cell_reuses_mock_slice_eventlog_with_no_duplicate():
+    """NB10: the runner reuses the frozen append-only EventLog from mock_slice and
+    does not define a parallel CellEventLog."""
+    assert six_cell.EventLog is mock_slice.EventLog
+    assert not hasattr(six_cell, "CellEventLog")
+
+
+def test_load_template_enforces_raw_byte_sha256(tmp_path):
+    """NB11: load_template hashes the exact raw file bytes; a byte-different file
+    (e.g. an appended trailing newline) is rejected loud rather than silently
+    normalized."""
+    good = tmp_path / "t.txt"
+    good.write_bytes(b"hello world")
+    digest = hashlib.sha256(b"hello world").hexdigest()
+    assert six_cell.load_template(good, digest) == "hello world"
+
+    mangled = tmp_path / "t2.txt"
+    mangled.write_bytes(b"hello world\n")  # exact bytes now differ from the frozen hash
+    with pytest.raises(ValueError):
+        six_cell.load_template(mangled, digest)
