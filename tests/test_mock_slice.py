@@ -106,6 +106,18 @@ def test_events_are_durable_before_next_step(tmp_path):
     ]
 
 
+def test_mock_trace_is_byte_identical_across_two_fixed_clock_runs(tmp_path):
+    """BLOCKER1: the W5-T3 refactor makes six_cell reuse mock_slice's EventLog and
+    assemble_result, so the mock trace itself must stay unchanged. With a fixed
+    clock two independent runs produce byte-identical events.jsonl and
+    results.jsonl, pinning the mock trace against a silent regression."""
+    clock = lambda: "2020-01-01T00:00:00Z"  # noqa: E731 - deterministic test clock
+    a = mock_slice.run_mock_trial(tmp_path / "a", clock=clock)
+    b = mock_slice.run_mock_trial(tmp_path / "b", clock=clock)
+    assert (a / mock_slice.EVENTS_FILE).read_bytes() == (b / mock_slice.EVENTS_FILE).read_bytes()
+    assert (a / mock_slice.RESULTS_FILE).read_bytes() == (b / mock_slice.RESULTS_FILE).read_bytes()
+
+
 def test_invalid_record_is_rejected_before_write(tmp_path):
     path = tmp_path / "events.jsonl"
     log = mock_slice.EventLog(path, mock_slice.utc_now)
