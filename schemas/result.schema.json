@@ -33,6 +33,11 @@
     "display_label"
   ],
   "properties": {
+    "measurement_limitation": {
+      "description": "Optional pre-lock development annotation identifying unavailable measurement components; never an endpoint or a replacement for null evidence.",
+      "type": "string",
+      "minLength": 1
+    },
     "schema_version": {"const": "0.1.0"},
     "protocol_version": {
       "description": "Null only when no protocol exists for the producing run.",

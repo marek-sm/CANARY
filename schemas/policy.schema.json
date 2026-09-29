@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:policy:0.1.0",
+  "title": "CANARY declarative task authorization policy",
+  "description": "One trusted, versioned, argument-level task policy consumed by both the D1_POLICY_GATE evaluator and the independent audit evaluator. Meaning is owned by SPEC.md Sections 6-7; evaluation rules are in docs/DEFENSES_AND_POLICY.md. A tool absent from `tools` is not permitted. Every allowlist is exact-match on normalized values. Pre-lock version: additive changes must land with vectors and tests.",
+  "type": "object",
+  "required": ["schema_version", "policy_id", "policy_version", "task_id", "call_budget_basis", "tools"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "policy_id": {"$ref": "#/$defs/identifier"},
+    "policy_version": {
+      "description": "Bound into every high-risk grant's action hash; a grant for another version never matches.",
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {"$ref": "#/$defs/identifier"},
+    "call_budget_basis": {
+      "description": "SPEC.md Section 7: whether each tool's max_calls counts completed dispatches or every request. CANARY's default is \"dispatches\"; a policy must state its choice explicitly.",
+      "enum": ["dispatches", "requests"]
+    },
+    "tools": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "read_file": {
+          "type": "object",
+          "required": ["max_calls", "paths"],
+          "properties": {
+            "max_calls": {"$ref": "#/$defs/max_calls"},
+            "paths": {
+              "description": "Exact normalized fixture-relative POSIX paths.",
+              "$ref": "#/$defs/string_set"
+            },
+            "requires_grant": {"$ref": "#/$defs/requires_grant"}
+          },
+          "additionalProperties": false
+        },
+        "query_db": {
+          "type": "object",
+          "required": ["max_calls", "queries"],
+          "properties": {
+            "max_calls": {"$ref": "#/$defs/max_calls"},
+            "queries": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["query_id", "params"],
+                "properties": {
+                  "query_id": {"$ref": "#/$defs/identifier"},
+                  "params": {
+                    "description": "Every parameter the request must carry, each with its exact allowed values. The request's parameter names must equal this key set.",
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "minItems": 1,
+                      "uniqueItems": true,
+                      "items": {"type": ["string", "integer", "boolean"]}
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "requires_grant": {"$ref": "#/$defs/requires_grant"}
+          },
+          "additionalProperties": false
+        },
+        "fetch_url": {
+          "type": "object",
+          "required": ["max_calls", "urls"],
+          "properties": {
+            "max_calls": {"$ref": "#/$defs/max_calls"},
+            "urls": {
+              "description": "Exact normalized local fixture URLs (scheme, host, port, path, query). Redirects are always disabled intrinsically.",
+              "$ref": "#/$defs/string_set"
+            },
+            "requires_grant": {"$ref": "#/$defs/requires_grant"}
+          },
+          "additionalProperties": false
+        },
+        "send_email": {
+          "type": "object",
+          "required": ["max_calls", "recipients", "subjects", "bodies"],
+          "properties": {
+            "max_calls": {"$ref": "#/$defs/max_calls"},
+            "recipients": {"$ref": "#/$defs/string_set"},
+            "subjects": {"$ref": "#/$defs/string_set"},
+            "bodies": {"$ref": "#/$defs/string_set"},
+            "requires_grant": {"$ref": "#/$defs/requires_grant"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "max_calls": {"type": "integer", "minimum": 1},
+    "requires_grant": {
+      "description": "When true, the exact normalized action must match an unconsumed trusted grant for this policy_id and policy_version.",
+      "type": "boolean",
+      "default": false
+    },
+    "string_set": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}
