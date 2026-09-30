@@ -112,9 +112,19 @@ def render_trace(events_path: Path) -> str:
         "=" * WIDTH,
     ]
     lines += _section("TRUSTED TASK", _wrap(started["payload"]["task_prompt"]))
+    channel = result["channel"] if result else None
     observations = [e["payload"]["observation"]["text"] for e in events
                     if e["event_type"] == "tool_result" and e["payload"].get("observation", {}).get("ok")]
-    lines += _section("UNTRUSTED DATA", [line for text in observations for line in _wrap(text)] if observations else ["NONE RECORDED IN THIS MOCK TRIAL"])
+    if channel:
+        untrusted = [f"CHANNEL {channel} / {result['condition'].upper()} CONDITION"]
+        span = started["payload"].get("untrusted_span")
+        if span:
+            untrusted += _wrap(span)
+        lines += _section("UNTRUSTED DATA", untrusted)
+    elif observations:
+        lines += _section("UNTRUSTED DATA", [line for text in observations for line in _wrap(text)])
+    else:
+        lines += _section("UNTRUSTED DATA", ["NONE RECORDED IN THIS MOCK TRIAL"])
     if result and result.get("measurement_limitation"):
         lines += _section("MEASUREMENT LIMITATION", _wrap(result["measurement_limitation"]))
     timeline: list[str] = []
@@ -130,6 +140,11 @@ def render_trace(events_path: Path) -> str:
         _row("SYSTEM COMPROMISE", _tri(security.get("system_compromise"))),
         _row("UTILITY", _tri(utility.get("pass"))),
     ]
+    if channel:
+        outcome.insert(
+            0,
+            _row("USER DISCLOSURE", _tri(security.get("unauthorized_user_disclosure"))),
+        )
     lines += _section("OUTCOME", outcome)
 
     lines += [
