@@ -66,6 +66,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Components, flow, and trust boundaries |
 | [`docs/INTERFACES.md`](docs/INTERFACES.md) | Provider, tool, oracle, runner, and event boundaries |
 | [`docs/DATA_CONTRACTS.md`](docs/DATA_CONTRACTS.md) | Schema ownership, identifiers, hashes, and null semantics |
+| [`docs/DEFENSES_AND_POLICY.md`](docs/DEFENSES_AND_POLICY.md) | Frozen authorization, D1_POLICY_GATE, D2_DATAMARKING, and event-meaning contract |
 | [`docs/DEMO_DESIGN.md`](docs/DEMO_DESIGN.md) | Terminal, replay, video, and accessibility rules |
 | [`docs/DATA_RELEASE.md`](docs/DATA_RELEASE.md) | Public/private classification and release pipeline |
 | [`docs/decisions/README.md`](docs/decisions/README.md) | How to record durable decisions without rewriting history |
@@ -73,6 +74,9 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0002-single-owner-model.md`](docs/decisions/0002-single-owner-model.md) | Why every retained slice has one accountable owner and no standing personnel deputy |
 | [`docs/decisions/0003-weekly-status-artifact.md`](docs/decisions/0003-weekly-status-artifact.md) | Why weekly status is a bounded summary rather than a second task tracker |
 | [`docs/decisions/0004-week5-measurement-contract-clarifications.md`](docs/decisions/0004-week5-measurement-contract-clarifications.md) | How the week-5 measurement-contract lock resolves gaps and inconsistencies in `SPEC.md` |
+| [`docs/decisions/0005-development-model-and-spend-cap.md`](docs/decisions/0005-development-model-and-spend-cap.md) | Why development uses `gpt-6-luna` under a $10 prepaid cap, and what that means for drift and credentials |
+| [`docs/decisions/0006-one-vector-reviewer.md`](docs/decisions/0006-one-vector-reviewer.md) | Why each authorization and datamarking vector set has exactly one independent reviewer |
+| [`docs/decisions/0007-gate1-corpus-rules-freeze.md`](docs/decisions/0007-gate1-corpus-rules-freeze.md) | How the corpus rules froze at Gate 1, what counts as a near-duplicate, and which templates the development bases represent |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -87,3 +91,11 @@ CANARY does not claim to solve prompt injection, establish general security, ran
 ## License and citation
 
 No reuse license is implied until a `LICENSE` file is committed. License selection is a tracked pre-release task. `CITATION.cff` is created only after the consented author list is stable.
+
+### W5-T1 mock tool/task smoke
+
+`uv run make t1-smoke` runs the fictional ticket through the safe file reader,
+mock loop, durable evidence, deterministic utility validator, and replay.
+See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and design
+choices. It consumes merged W5-T4 interfaces; **W5-T3 has not landed**, so its
+measurement integration and the final contract lock remain outstanding.

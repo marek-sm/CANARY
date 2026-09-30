@@ -26,3 +26,6 @@ dist/
 .mypy_cache/
 .coverage
 htmlcov/
+
+# Local agent skills / tooling (not project code)
+skills/

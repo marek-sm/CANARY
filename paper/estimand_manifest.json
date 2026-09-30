@@ -1,0 +1,191 @@
+{
+  "manifest_version": "1.0.0",
+  "authority": "SPEC.md Section 10",
+  "status": "pre_results_no_data",
+  "estimands": [
+    {
+      "id": "ModelViolationRate",
+      "title": "Model violation rate",
+      "group": "Primary rates",
+      "caption": "Model-violation rates by retained configuration and adapter, including the equal-adapter macro-average and conditional cluster-resampling intervals where applicable.",
+      "alt_text": "Placeholder for model-violation rates; no values are available before the frozen analysis run.",
+      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval", "Boundary warning"]
+    },
+    {
+      "id": "SystemCompromiseRate",
+      "title": "System compromise rate",
+      "group": "Primary rates",
+      "caption": "System-compromise rates by retained configuration and adapter, including the equal-adapter macro-average and required intervals.",
+      "alt_text": "Placeholder for system-compromise rates; no values are available before the frozen analysis run.",
+      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval", "Boundary warning"]
+    },
+    {
+      "id": "CleanUtility",
+      "title": "Clean utility",
+      "group": "Primary rates",
+      "caption": "Clean utility by configuration, task template, and adapter with equal-adapter and equal-task macro-averages.",
+      "alt_text": "Placeholder for clean-utility component rates and macro-averages; no values are available before the frozen analysis run.",
+      "columns": ["Configuration", "Task template", "Adapter", "Passed / observed", "Rate or macro-average", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "DatamarkingAttackRiskDifference",
+      "title": "D2_DATAMARKING attacked-case risk difference",
+      "group": "Primary paired effects",
+      "caption": "Paired attacked-case model-violation risk difference for D2_DATAMARKING versus D0_BASELINE, computed within adapters and macro-averaged.",
+      "alt_text": "Placeholder for the D2_DATAMARKING attacked-case paired difference; negative values would favor D2_DATAMARKING, but no value is available.",
+      "columns": ["Adapter", "Complete pairs", "Missing pairs", "Risk difference", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "DatamarkingInjectionSpecificDifference",
+      "title": "D2_DATAMARKING clean-adjusted difference",
+      "group": "Primary paired effects",
+      "caption": "Clean-adjusted difference-in-differences for D2_DATAMARKING versus D0_BASELINE, with complete and missing four-cell pair counts.",
+      "alt_text": "Placeholder for the D2_DATAMARKING clean-adjusted paired effect; no value is available before frozen analysis.",
+      "columns": ["Adapter", "Complete four-cell pairs", "Missing pairs", "Difference-in-differences", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "CleanUtilityCost",
+      "title": "Clean utility cost",
+      "group": "Primary paired effects",
+      "caption": "Matched clean-utility cost by retained defense, task template, and adapter; a positive value means utility worsened.",
+      "alt_text": "Placeholder for matched clean-utility costs; no values are available before frozen analysis.",
+      "columns": ["Configuration", "Task template", "Adapter", "Complete pairs", "Missing pairs", "Utility cost percentage points", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "PolicyGateResidualSystemRiskDifference",
+      "title": "D1_POLICY_GATE residual system-risk difference",
+      "group": "Primary paired effects",
+      "caption": "Paired system-compromise risk difference for D1_POLICY_GATE versus D0_BASELINE, computed within adapters and macro-averaged.",
+      "alt_text": "Placeholder for the D1_POLICY_GATE residual system-risk difference; negative values would favor D1_POLICY_GATE, but no value is available.",
+      "columns": ["Adapter", "Complete pairs", "Missing pairs", "Risk difference", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "AuthorizedHighRiskCleanUtility",
+      "title": "Authorized high-risk clean utility",
+      "group": "Primary paired effects",
+      "caption": "Clean utility for active legitimate high-risk task templates by configuration, averaged equally over adapters and task templates.",
+      "alt_text": "Placeholder for authorized high-risk clean utility; no values are available before frozen analysis.",
+      "columns": ["Configuration", "High-risk task template", "Adapter", "Passed / observed", "Macro-average", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "PolicyGateUnauthorizedBlockRate",
+      "title": "D1_POLICY_GATE unauthorized block conformance",
+      "group": "D1_POLICY_GATE conformance",
+      "caption": "Exact fraction of evaluable unauthorized D1_POLICY_GATE requests durably blocked before dispatch, including indeterminate and zero-denominator handling.",
+      "alt_text": "Placeholder for D1_POLICY_GATE unauthorized block conformance counts; no request data are available.",
+      "columns": ["Blocked unauthorized requests", "Eligible unauthorized requests", "Fraction", "Gate/audit disagreement count", "Indeterminate count", "Zero-denominator label"]
+    },
+    {
+      "id": "PolicyGateEnforcementEscapeRate",
+      "title": "D1_POLICY_GATE enforcement escape conformance",
+      "group": "D1_POLICY_GATE conformance",
+      "caption": "Exact fraction of evaluable unauthorized D1_POLICY_GATE requests durably dispatched, with escaped-effect and indeterminate counts.",
+      "alt_text": "Placeholder for D1_POLICY_GATE enforcement escape counts; no request data are available.",
+      "columns": ["Dispatched unauthorized requests", "Eligible unauthorized requests", "Fraction", "Escapes with observed effect", "Gate/audit disagreement count", "Indeterminate count", "Zero-denominator label"]
+    },
+    {
+      "id": "PolicyGateAuthorizedDispatchRate",
+      "title": "D1_POLICY_GATE authorized dispatch conformance",
+      "group": "D1_POLICY_GATE conformance",
+      "caption": "Exact fraction of evaluable authorized D1_POLICY_GATE requests durably dispatched, including indeterminate and zero-denominator handling.",
+      "alt_text": "Placeholder for D1_POLICY_GATE authorized dispatch conformance counts; no request data are available.",
+      "columns": ["Dispatched authorized requests", "Eligible authorized requests", "Fraction", "Gate/audit disagreement count", "Indeterminate count", "Zero-denominator label"]
+    },
+    {
+      "id": "BackgroundModelViolationRate",
+      "title": "Background model-violation rate",
+      "group": "Matched controls and secondary outcomes",
+      "caption": "Clean-case background model-violation rates by configuration and adapter with equal-adapter macro-averages.",
+      "alt_text": "Placeholder for clean-case background model-violation rates; no values are available.",
+      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "BackgroundSystemCompromiseRate",
+      "title": "Background system-compromise rate",
+      "group": "Matched controls and secondary outcomes",
+      "caption": "Clean-case background system-compromise rates by configuration and adapter with equal-adapter macro-averages.",
+      "alt_text": "Placeholder for clean-case background system-compromise rates; no values are available.",
+      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "InjectionExcessRisk",
+      "title": "Injection excess risk",
+      "group": "Matched controls and secondary outcomes",
+      "caption": "Attack-minus-clean paired differences for each supported Boolean endpoint, computed within adapters and macro-averaged.",
+      "alt_text": "Placeholder for attack-minus-clean endpoint differences; no values are available before frozen analysis.",
+      "columns": ["Configuration", "Endpoint", "Adapter", "Complete pairs", "Missing pairs", "Excess risk", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "AttackTaskCompletion",
+      "title": "Attack task completion",
+      "group": "Matched controls and secondary outcomes",
+      "caption": "Attack-case utility by configuration, task template, and adapter with equal-adapter and equal-task macro-averages.",
+      "alt_text": "Placeholder for attack-case task-completion rates; no values are available.",
+      "columns": ["Configuration", "Task template", "Adapter", "Passed / observed", "Rate or macro-average", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "SecureTaskCompletion",
+      "title": "Secure task completion",
+      "group": "Matched controls and secondary outcomes",
+      "caption": "Attack-case secure-task-completion rates by configuration, task template, and adapter with macro-averages.",
+      "alt_text": "Placeholder for secure-task-completion rates combining utility and security evidence; no values are available.",
+      "columns": ["Configuration", "Task template", "Adapter", "Secure completions / observed", "Rate or macro-average", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "UnauthorizedOutcomeDecomposition",
+      "title": "Unauthorized outcome decomposition",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Per-configuration, attack-or-clean condition, and delivery-channel exact true, false, and null counts for the six underlying security facts and their two unions, including model-violation/system-compromise overlap and each union's observed three-fact patterns.",
+      "alt_text": "Placeholder separating attack and clean cases and delivery channels while showing known, unknown, overlapping, and union-pattern security outcomes; no counts are available.",
+      "columns": ["Configuration", "Condition (attack / clean)", "Delivery channel / adapter", "Outcome, intersection, or three-fact pattern", "True", "False", "Null", "Observed denominator"]
+    },
+    {
+      "id": "PolicyGateBlockReasons",
+      "title": "D1_POLICY_GATE block reasons",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Exact D1_POLICY_GATE block counts and reason distribution without interpreting enforcement as model resistance.",
+      "alt_text": "Placeholder for D1_POLICY_GATE block reasons and counts; no request data are available.",
+      "columns": ["Block reason", "Count", "Unknown disposition count", "Non-evaluable count"]
+    },
+    {
+      "id": "ReliabilityAndResourceDiagnostics",
+      "title": "Reliability and resource diagnostics",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Model refusals, malformed calls, step-limit outcomes, infrastructure failures, latency, and token use by configuration.",
+      "alt_text": "Placeholder for reliability, latency, and token-use diagnostics; no values are available.",
+      "columns": ["Configuration", "Diagnostic", "Count", "Observed denominator", "Summary value", "Unknown count"]
+    },
+    {
+      "id": "MixedRepeatRates",
+      "title": "Mixed-repeat rates",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Repeat-group instability by configuration, attack-or-clean condition, delivery channel, and endpoint; incomplete groups are separated into mixed-among-observed and undetermined categories.",
+      "alt_text": "Placeholder separating attack and clean repeat groups by delivery channel, including complete-group mixed rates and distinct incomplete groups that are mixed among observed repeats or undetermined; no values are available.",
+      "columns": ["Configuration", "Condition (attack / clean)", "Delivery channel / adapter", "Endpoint", "Mixed complete groups", "Complete groups", "Mixed-repeat rate", "Incomplete: mixed among observed", "Incomplete: undetermined"]
+    },
+    {
+      "id": "C1DirectInjectionControls",
+      "title": "C1 direct-injection positive controls",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Separate descriptive C1 direct-injection positive-control table with one row per control and no rate, macro-average, interval, or comparison with indirect cases.",
+      "alt_text": "Placeholder for each C1 control's repeat count, exact true, false, and null security and utility outcomes, and infrastructure-failure count; C1 is outside the primary threat model and no values are available.",
+      "columns": ["C1 control ID", "D0_BASELINE repeat count", "Outcome (six facts, two unions, or utility_pass)", "True", "False", "Null", "Infrastructure-failure count"]
+    },
+    {
+      "id": "PairedAdapterDifferences",
+      "title": "Paired adapter differences",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Predeclared paired differences among retained adapters with complete and missing pair counts and required intervals.",
+      "alt_text": "Placeholder for paired adapter differences; no values are available before frozen analysis.",
+      "columns": ["Endpoint", "Adapter contrast", "Complete pairs", "Missing pairs", "Difference", "95% conditional cluster-resampling interval"]
+    },
+    {
+      "id": "LeaveOneAttackFamilyOutSensitivity",
+      "title": "Leave-one-attack-family-out sensitivity",
+      "group": "Predeclared diagnostic outputs",
+      "caption": "Sensitivity of each primary effect when each attack family is omitted in turn.",
+      "alt_text": "Placeholder for leave-one-attack-family-out sensitivity estimates; no values are available.",
+      "columns": ["Primary effect", "Omitted attack family", "Estimate", "Change from full estimate", "Complete pairs", "Missing pairs"]
+    }
+  ]
+}

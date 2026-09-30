@@ -1,5 +1,8 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 permissions:
   contents: read
 jobs:
@@ -14,9 +17,11 @@ jobs:
       - run: uv sync --locked
       - run: uv run make test
       - run: uv run make trace
+      - run: uv run make t1-smoke
   docker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: docker build --tag canary:ci .
-      - run: docker run --rm --network none canary:ci
+      - run: docker run --rm --network none --read-only --tmpfs /app/results/development:uid=10001,gid=10001 --tmpfs /tmp canary:ci
+      - run: docker run --rm --network none --read-only --tmpfs /app/results/development:uid=10001,gid=10001 --tmpfs /tmp canary:ci python -m runner.ticket_slice

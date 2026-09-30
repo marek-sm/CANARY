@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import socket
 
 import pytest
 from jsonschema import ValidationError
@@ -105,6 +106,18 @@ def test_events_are_durable_before_next_step(tmp_path):
     ]
 
 
+def test_mock_trace_is_byte_identical_across_two_fixed_clock_runs(tmp_path):
+    """BLOCKER1: the W5-T3 refactor makes six_cell reuse mock_slice's EventLog and
+    assemble_result, so the mock trace itself must stay unchanged. With a fixed
+    clock two independent runs produce byte-identical events.jsonl and
+    results.jsonl, pinning the mock trace against a silent regression."""
+    clock = lambda: "2020-01-01T00:00:00Z"  # noqa: E731 - deterministic test clock
+    a = mock_slice.run_mock_trial(tmp_path / "a", clock=clock)
+    b = mock_slice.run_mock_trial(tmp_path / "b", clock=clock)
+    assert (a / mock_slice.EVENTS_FILE).read_bytes() == (b / mock_slice.EVENTS_FILE).read_bytes()
+    assert (a / mock_slice.RESULTS_FILE).read_bytes() == (b / mock_slice.RESULTS_FILE).read_bytes()
+
+
 def test_invalid_record_is_rejected_before_write(tmp_path):
     path = tmp_path / "events.jsonl"
     log = mock_slice.EventLog(path, mock_slice.utc_now)
@@ -162,6 +175,59 @@ def test_trace_fits_width(run_dir):
     start = trace.index("  TRACE:") + 1
     end = trace.index("  ILLUSTRATIVE — NOT STATISTICAL EVIDENCE")
     assert "".join(line.strip() for line in trace[start:end]) == mock_slice.LOGICAL_TRIAL_ID
+
+
+def test_trace_has_accessible_evidence_regions(run_dir):
+    trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
+    required_text = (
+        "CANARY  |  RECORDED TRACE",
+        "TIER: NOT SELECTED",
+        f"MODEL REQUESTED: {mock_slice.MOCK_MODEL_ID}",
+        f"MODEL RESOLVED: {mock_slice.MOCK_MODEL_ID}",
+        "PROVIDER: MOCK",
+        "CASE: MOCK / EXCLUDED",
+        "CONFIGURATION: D0_BASELINE",
+        "TRUSTED TASK",
+        "UNTRUSTED DATA",
+        "EVENT TIMELINE",
+        "FINAL OUTPUT",
+        "MODEL VIOLATION",
+        "SYSTEM COMPROMISE",
+        "UTILITY",
+        "PROTOCOL: NOT FROZEN",
+        "TRACE:",
+        "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE",
+    )
+    for text in required_text:
+        assert text in trace
+
+    assert "\N{ESCAPE}[" not in trace
+    for unsupported_shortcut in ("SAFE", "SECURE", "ATTACK PREVENTED", "DEFENSE SUCCEEDED"):
+        assert unsupported_shortcut not in trace
+
+
+def test_trace_keeps_outcomes_separate_without_result_record(run_dir):
+    (run_dir / mock_slice.RESULTS_FILE).unlink()
+
+    trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
+
+    assert trace.count(UNKNOWN) == 3
+    assert "MODEL VIOLATION" in trace
+    assert "SYSTEM COMPROMISE" in trace
+    assert "UTILITY" in trace
+
+
+def test_mock_trace_needs_no_network(tmp_path, monkeypatch):
+    def block_network(*args, **kwargs):
+        raise AssertionError("mock trace attempted network access")
+
+    monkeypatch.setattr(socket, "socket", block_network)
+    monkeypatch.setattr(socket, "create_connection", block_network)
+
+    out = mock_slice.run_mock_trial(tmp_path / "run")
+    trace = render_trace(out / mock_slice.EVENTS_FILE)
+
+    assert "RECORDED TRACE" in trace
 
 
 class RecordingEnviron(dict):

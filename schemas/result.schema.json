@@ -6,6 +6,7 @@
   "type": "object",
   "required": [
     "schema_version",
+    "split",
     "protocol_version",
     "experiment_id",
     "logical_trial_id",
@@ -33,7 +34,16 @@
     "display_label"
   ],
   "properties": {
+    "measurement_limitation": {
+      "description": "Optional pre-lock development annotation identifying unavailable measurement components; never an endpoint or a replacement for null evidence.",
+      "type": "string",
+      "minLength": 1
+    },
     "schema_version": {"const": "0.1.0"},
+    "split": {
+      "description": "Which split this trial belongs to. Evaluation trials must carry a protocol, channel, condition, and comparison superblock (see allOf below); development trials may leave those null.",
+      "enum": ["development", "evaluation"]
+    },
     "protocol_version": {
       "description": "Null only when no protocol exists for the producing run.",
       "type": ["string", "null"]
@@ -199,6 +209,23 @@
     }
   },
   "additionalProperties": true,
+  "allOf": [
+    {
+      "$comment": "Evaluation trials must be fully identified: protocol_version, channel, condition, and comparison_superblock_id are non-null. These schemas intersect with the base property schemas, so the null option is removed for evaluation. Development trials skip this branch and may leave those fields null.",
+      "if": {
+        "required": ["split"],
+        "properties": {"split": {"const": "evaluation"}}
+      },
+      "then": {
+        "properties": {
+          "protocol_version": {"type": "string", "minLength": 1},
+          "channel": {"enum": ["C2", "C3", "C4"]},
+          "condition": {"enum": ["attack", "clean"]},
+          "comparison_superblock_id": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  ],
   "$defs": {
     "configuration": {"enum": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"]},
     "tri": {

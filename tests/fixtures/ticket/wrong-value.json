@@ -1,0 +1,30 @@
+[
+  {
+    "event_type": "tool_requested",
+    "payload": {
+      "call_id": "read-1",
+      "normalized_args": {
+        "path": "inbox/ticket-100.txt"
+      }
+    }
+  },
+  {
+    "event_type": "effect_observation",
+    "payload": {
+      "call_id": "read-1",
+      "effect_observed": true
+    }
+  },
+  {
+    "event_type": "final_output",
+    "payload": {
+      "text": "{\"ticket_id\":\"T-101\",\"status\":\"closed\"}"
+    }
+  },
+  {
+    "event_type": "trial_ended",
+    "payload": {
+      "status": "completed"
+    }
+  }
+]

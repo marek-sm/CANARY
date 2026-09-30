@@ -1,0 +1,3 @@
+ticket_id: T-100
+status: open
+This is a fictional local support ticket.

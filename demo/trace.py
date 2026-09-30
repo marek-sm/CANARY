@@ -30,11 +30,11 @@ def _wrap(text: str) -> list[str]:
 def _wrap_id(identifier: str) -> list[str]:
     """Wrap a hierarchical ID only after ':' so each line copies back exactly."""
     out = [""]
-    for part in identifier.split(":"):
-        piece = part if out[-1] == "" else ":" + part
+    parts = identifier.split(":")
+    for index, part in enumerate(parts):
+        piece = part + (":" if index < len(parts) - 1 else "")
         if out[-1] and len(out[-1]) + len(piece) > WIDTH - len(INDENT):
-            out[-1] += ":"
-            out.append(part)
+            out.append(piece)
         else:
             out[-1] += piece
     return out
@@ -60,9 +60,17 @@ def _event_line(event: Mapping[str, Any]) -> str:
     if kind == "trial_started":
         text = "TRIAL STARTED"
     elif kind == "provider_attempt":
-        text = f"STEP {p['step']} MODEL RESPONSE, STOP: {p['raw_response']['stop_reason'].upper()}"
+        text = f"STEP {p['step']} MODEL RESPONSE, STOP: {(p['raw_response'] or {}).get('stop_reason', 'unknown').upper()}"
         if p["outcome"] != "model_response":
             text = f"STEP {p['step']} NO MODEL CONTENT"
+    elif kind == "tool_requested":
+        text = "REQUESTED read_file"
+    elif kind == "tool_dispatch":
+        text = "DISPATCHED TO LOCAL FIXTURE"
+    elif kind == "tool_result":
+        text = "EXECUTION SUCCEEDED" if p["observation"]["ok"] else "TOOL ERROR: " + p["observation"]["error"]
+    elif kind == "effect_observation":
+        text = "EFFECT OBSERVED" if p["effect_observed"] else "NO EFFECT OBSERVED"
     elif kind == "final_output":
         text = "FINAL OUTPUT RECORDED"
     elif kind == "trial_ended":
@@ -79,37 +87,72 @@ def render_trace(events_path: Path) -> str:
     result = read_jsonl(results_path, "result")[-1] if results_path.exists() else None
 
     started = next(e for e in events if e["event_type"] == "trial_started")
+    attempts = [e for e in events if e["event_type"] == "provider_attempt"]
     final = next((e for e in events if e["event_type"] == "final_output"), None)
     tier = started["payload"].get("tier") or "NOT SELECTED"
+    resolved_model = next(
+        (
+            event["payload"].get("model_resolved")
+            for event in reversed(attempts)
+            if event["payload"].get("model_resolved")
+        ),
+        None,
+    )
+    protocol_version = result["protocol_version"] if result else None
 
     lines = [
         "=" * WIDTH,
         INDENT + "CANARY  |  RECORDED TRACE",
         INDENT + f"TIER: {tier}",
-        INDENT + f"MODEL: {started['payload']['model_requested']} (MOCK)",
+        INDENT + f"MODEL REQUESTED: {started['payload']['model_requested']}",
+        INDENT + f"MODEL RESOLVED: {resolved_model or UNKNOWN}",
+        INDENT + "PROVIDER: MOCK",
         INDENT + "CASE: MOCK / EXCLUDED",
         INDENT + f"CONFIGURATION: {started['configuration']}",
         "=" * WIDTH,
     ]
     lines += _section("TRUSTED TASK", _wrap(started["payload"]["task_prompt"]))
-    lines += _section("UNTRUSTED DATA", ["NONE IN THIS MOCK TRIAL"])
+    channel = result["channel"] if result else None
+    observations = [e["payload"]["observation"]["text"] for e in events
+                    if e["event_type"] == "tool_result" and e["payload"].get("observation", {}).get("ok")]
+    if channel:
+        untrusted = [f"CHANNEL {channel} / {result['condition'].upper()} CONDITION"]
+        span = started["payload"].get("untrusted_span")
+        if span:
+            untrusted += _wrap(span)
+        lines += _section("UNTRUSTED DATA", untrusted)
+    elif observations:
+        lines += _section("UNTRUSTED DATA", [line for text in observations for line in _wrap(text)])
+    else:
+        lines += _section("UNTRUSTED DATA", ["NONE RECORDED IN THIS MOCK TRIAL"])
+    if result and result.get("measurement_limitation"):
+        lines += _section("MEASUREMENT LIMITATION", _wrap(result["measurement_limitation"]))
     timeline: list[str] = []
     for event in events:
         timeline += _wrap(_event_line(event))
     lines += _section("EVENT TIMELINE", timeline)
     lines += _section("FINAL OUTPUT", _wrap(final["payload"]["text"]) if final else [UNKNOWN])
 
-    if result is None:
-        outcome = [_row("RESULT RECORD", UNKNOWN)]
-    else:
-        outcome = [
-            _row("MODEL VIOLATION", _tri(result["security"]["model_violation"])),
-            _row("SYSTEM COMPROMISE", _tri(result["security"]["system_compromise"])),
-            _row("UTILITY", _tri(result["utility"]["pass"])),
-        ]
+    security = result["security"] if result else {}
+    utility = result["utility"] if result else {}
+    outcome = [
+        _row("MODEL VIOLATION", _tri(security.get("model_violation"))),
+        _row("SYSTEM COMPROMISE", _tri(security.get("system_compromise"))),
+        _row("UTILITY", _tri(utility.get("pass"))),
+    ]
+    if channel:
+        outcome.insert(
+            0,
+            _row("USER DISCLOSURE", _tri(security.get("unauthorized_user_disclosure"))),
+        )
     lines += _section("OUTCOME", outcome)
 
-    lines += ["", "=" * WIDTH, INDENT + "TRACE:"]
+    lines += [
+        "",
+        "=" * WIDTH,
+        INDENT + f"PROTOCOL: {protocol_version or 'NOT FROZEN'}",
+        INDENT + "TRACE:",
+    ]
     lines += [INDENT + line for line in _wrap_id(started["logical_trial_id"])]
     lines += [INDENT + "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE", "=" * WIDTH]
     return "\n".join(lines)
