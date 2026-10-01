@@ -2,15 +2,12 @@
 from __future__ import annotations
 import copy
 from dataclasses import dataclass
-import posixpath
-from types import MappingProxyType
 from typing import Any, Callable, Mapping, Optional, Sequence
-import unicodedata
 
-from defenses.interfaces import CanonicalRequest
+from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use
 
 LOOP_VERSION = "agent-loop-v0.1.0"
-NORMALIZER_VERSION = "read-file-normalizer-v0.1.0"
+SUPPORTED_TOOLS = ("read_file",)  # widened by W6-T1 as each safe tool lands
 MAX_STEPS = 8
 
 
@@ -25,29 +22,26 @@ def response_text(raw_response: Mapping[str, Any]) -> str:
     return "".join(block["text"] for block in raw_response["content"] if block.get("type") == "text")
 
 
-def parse_request(block, trial_id, step):
-    if set(block) != {"type", "id", "name", "input"} or block["name"] != "read_file":
-        raise ValueError("unsupported tool shape")
-    if not isinstance(block["id"], str) or not block["id"]:
-        raise ValueError("invalid call id")
-    args = block["input"]
-    if not isinstance(args, dict) or set(args) != {"path"} or not isinstance(args["path"], str):
-        raise ValueError("invalid arguments")
-    path = unicodedata.normalize("NFC", args["path"].replace("\r\n", "\n").replace("\r", "\n"))
-    if not path or "\x00" in path:
-        raise ValueError("unrepresentable path")
-    # POSIX normalization preserves escaping '..' and absolute paths for audit.
-    path = posixpath.normpath(path)
-    if path.startswith("//"):
-        path = "/" + path.lstrip("/")
-    return CanonicalRequest(f"{trial_id}:step{step}:call1", trial_id, step, "read_file", MappingProxyType({"path": path}), NORMALIZER_VERSION)
+def parse_request(block, trial_id, step, supported_tools: Sequence[str] = SUPPORTED_TOOLS):
+    """Canonicalize one provider tool_use block, exactly once, via the W6-T4 canonicalizer.
+
+    ``supported_tools`` is the set of tools this runner can dispatch today; a call to
+    any other tool cannot be handled and is treated as malformed model output.
+    """
+    try:
+        if not isinstance(block, Mapping) or block.get("name") not in supported_tools:
+            raise ValueError("unsupported tool shape")
+        return canonicalize_tool_use(block, trial_id, step)
+    except CanonicalizationError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
              tool_schemas: Sequence[Mapping[str, Any]], decoding: Mapping[str, Any],
              model_request: Mapping[str, Any], on_attempt: Callable,
              max_steps: int = MAX_STEPS, logical_trial_id: str = "mock",
-             dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None) -> LoopOutcome:
+             dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None,
+             supported_tools: Sequence[str] = SUPPORTED_TOOLS) -> LoopOutcome:
     """Persist attempts before acting. A response consumes one step, retries do not."""
     if max_steps < 1:
         raise ValueError("max_steps must be at least 1")
@@ -75,7 +69,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
                 if len(calls) != 1 or dispatch is None or on_tool is None:
                     raise ValueError("one registered tool call required")
                 block = calls[0]
-                request = parse_request(block, logical_trial_id, step)
+                request = parse_request(block, logical_trial_id, step, supported_tools)
                 if block["id"] in seen_ids:
                     raise ValueError("duplicate provider call id")
                 seen_ids.add(block["id"])
