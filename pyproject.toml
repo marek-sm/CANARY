@@ -2,7 +2,10 @@
 name = "CANARY"
 version = "0.0.0"
 requires-python = ">=3.11,<3.12"
-dependencies = ["jsonschema>=4.21"]
+dependencies = [
+    "jsonschema>=4.21",
+    "openai>=3.22.1",
+]
 
 [dependency-groups]
 dev = ["pytest>=8.0"]

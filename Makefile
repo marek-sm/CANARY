@@ -14,3 +14,8 @@ paper-shells-check:
 .PHONY: t1-smoke
 t1-smoke:
 	python -m runner.ticket_slice
+
+# Paid: one real OpenAI call sequence. Run by hand only; refuses when CI is set.
+.PHONY: live-smoke
+live-smoke:
+	python -m runner.live_smoke
