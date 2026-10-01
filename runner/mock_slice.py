@@ -280,8 +280,9 @@ def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             "model_requested": started["payload"]["model_requested"],
             "model_resolved": attempts[-1]["payload"]["model_resolved"] if attempts else None,
             "provider_request_ids": [a["payload"]["provider_request_id"] for a in attempts],
-            "temperature": started["payload"]["decoding"]["temperature"],
-            "top_p": started["payload"]["decoding"]["top_p"],
+            # Real-provider decoding sends no sampling parameters (decision 0005): null, not a default.
+            "temperature": started["payload"]["decoding"].get("temperature"),
+            "top_p": started["payload"]["decoding"].get("top_p"),
             "provider_seed": None,
             "max_steps": started["payload"]["max_steps"],
             "code_commit": started["payload"]["code_commit"],

@@ -12,6 +12,15 @@ The response preserves raw provider content by value or content-addressed refere
 
 The provider adapter never receives tool credentials because CANARY tools have none. The hosted-model credential remains in the outer runner process.
 
+`agent/openai_adapter.py` implements this boundary for OpenAI Chat Completions (decision 0005). It returns the mock provider's keys, with `raw_response` normalized to the `{stop_reason, content}` shape `agent/loop.py` parses. It adds five keys:
+
+- `provider_response`: the verbatim response body.
+- `requested_at` and `completed_at`.
+- `latency_ms`.
+- `error`: `type` (the error class, `no_choices`, or `invalid_body`), `status`, and, for HTTP errors, `provider_code` and `provider_type`. The message is never kept.
+
+Unknown values are `null`. SDK retries are off. A timeout, connection error, HTTP error, or empty `choices` returns `outcome: "no_model_content"` rather than raising, so every attempt is logged. The loop retries at most twice, then records `infrastructure_failure` (`SPEC.md` Section 9). A `content_filter` finish reason ends the turn as a completed response. How an HTTP 400 content-policy rejection is classified is not settled yet; the measurement-contract lock decides it. `decoding` must name `endpoint: "chat_completions"` and a `reasoning_effort`, which must be `"none"` when tools are sent. `temperature` and `top_p` are rejected.
+
 ## Channel boundary
 
 ```text

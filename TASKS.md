@@ -94,6 +94,7 @@ Each input is due before the Monday of the first week that uses it. If an outsid
 | Sunday, September 27 (Gate 1) | Development-base task assignment: which task template each of `dev-001` to `dev-005` represents, with its template ID and per-channel resource names, committed with the corpus rules | Project lead | `W6-T1`, `W6-T2` |
 | Friday, October 2 | The OpenAI provider adapter, merged as W6 lead scaffold | Project lead | `W7-T1`, `W7-T3`, `W9-T3` |
 | Sunday, October 4 | Paid-run access for the people running live calls, under the decision 0005 cap and credential rule; the named demo operator required by `SPEC.md` Section 13 | Project lead | `W7-T1`, `W7-T3`, `W7-T5`, `W9-T3`, `W13-T5` |
+| Sunday, October 4 | Evaluation-candidate selection margin, recorded in `STATUS.md`. `W7-T2` sources to the provisional tier count plus this margin | Project lead | `W7-T2` |
 | Sunday, October 11 (Gate 2) | Season budget from measured development cost; selected tier, active-contributor count, funded budget, and model decision, including the frozen endpoint, reasoning effort, and fallback-model decision | Project lead | `W8-T2`, `W8-T3`, `W8-T4`, `W9-T3` |
 | Sunday, November 1 (Gate 4 target) | Which results are supported; code and content license choice; author order from documented contributions, for `CITATION.cff` | Project lead | `W11-T3`, `W11-T4`, `W11-T5` |
 | Monday, November 2 | Manuscript draft for review | Designated club paper leads | `W11-T2`, `W11-T5`, `W12-T3` |
@@ -134,6 +135,11 @@ Compatibility with T3's eventual contract is unverified. Independent security
 scoring, T3 integration, and the final measurement-contract lock remain
 outstanding. The original Thursday acceptance deadline is not represented as met.
 
+**September 30 integration check:** W5-T3 merged as
+[#24](https://github.com/marek-sm/CANARY/pull/24) (`6263576`). On a fresh clone
+of that commit, the ticket run's records validate against W5-T3's result schema,
+including `split`. The measurement-contract lock is still outstanding.
+
 ### W6 — build the development instrument (September 28–October 4)
 
 | Slice | Committed deliverable | Est | Depends | Pull-forward | Defer first | Owner |
@@ -153,7 +159,7 @@ W6 is the heaviest week in the plan and is the week the lattice makes visible: 3
 | Slice | Committed deliverable | Est | Depends | Pull-forward | Defer first | Owner |
 |---|---|---:|---|---|---|---|
 | W7-T1 | The five task templates not represented by a development base prepared as predeclared canonical-adapter smoke cases and run as the 15 clean task-coverage smokes with the `W6-T3` runner; the tier's C1 direct-injection controls built as trusted-task-prompt variants from `W6-T2` source records, descriptive-only and never entering an indirect estimate per `SPEC.md` Section 3 | 3.0 | `W6-T1` templates, `W6-T2` C1 source records, `W6-T3` runner, provider adapter, lead's provisional build geometry and paid-run access (Mon) | → W8-T1 freeze preparation | — gate-critical under `SPEC.md` Section 9 | Chace |
-| W7-T2 † | Evaluation candidate intake completed to the provisional tier count plus selection margin and closed Thursday, every new source reviewed by T3, this slice's reviewer, in its pull request; development fixtures, source records, adaptations, and hashes validated; every considered candidate carries an explicit accept or reject status and reason with no silent drops; the deterministic selection script committed, producing the nested 20/15/10/8/6 prefixes and the seeded `ceil(0.20 × N)` recheck sample under `SPEC.md` Section 5 step 8 | 10.0 ⚠ | W6-T2, lead's provisional build geometry (Mon) | → W8-T2 corpus freeze preparation | Candidates beyond the provisional count plus selection margin | Johan |
+| W7-T2 † | Evaluation candidate intake completed to the provisional tier count plus selection margin and closed Thursday, every new source reviewed by T3, this slice's reviewer, in its pull request; development fixtures, source records, adaptations, and hashes validated; every considered candidate carries an explicit accept or reject status and reason with no silent drops; the deterministic selection script committed, producing the nested 20/15/10/8/6 prefixes and the seeded `ceil(0.20 × N)` recheck sample under `SPEC.md` Section 5 step 8 | 10.0 ⚠ | W6-T2, lead's provisional build geometry and selection margin (Mon) | → W8-T2 corpus freeze preparation | Candidates beyond the provisional count plus selection margin | Johan |
 | W7-T3 | The 90-cell development grid executed and schema-valid; forced termination and `--resume` proving no logical-trial gap, no duplicate, and no repeated dispatch, effect, or sink receipt; provider retries bounded at two and only when no model content returned; context and token usage measured per channel and configuration; the Gate 2 budget equation evaluated; as `W7-T2`'s reviewer, independent source review of every evaluation candidate it adds | 4.5 ‡ ⚠ | `W6-T1`, `W6-T2`, `W6-T3`, `W6-T4`, provider adapter, lead's paid-run access (Mon) | → W8-T3 tier arithmetic | Reliability pilots beyond those required for model choice, under the 120-trial development ceiling | Samson |
 | W7-T4 | Differential tests of the `W6-T4` gate against the `W6-T3` independent audit over the `W6-T1` golden vectors; the predeclared, outcome-blind D1_POLICY_GATE and D2_DATAMARKING readiness checks committed as a script that the project lead runs on the grid records in the Gate 2 step, so readiness is a Section 12 tier input and never self-certified | 5.0 ⚠ | `W6-T1`, `W6-T3`, `W6-T4` (Mon) | → W8-T4 defense-freeze preparation | — gate-critical | Dhruv |
 | W7-T5 | Terminal and replay path run successfully twice against `W6-T3` records, with the named presentation operator starting replay without notes and without provider access; the one separate demo case rendered and staged from its `W6-T2` source record, excluded from every estimate; accessible paper and demo assets current; T5's own technical-note handoff to the designated paper leads | 2.75 | W6-T5, `W6-T2` demo case source record, `W6-T3` records, lead's named demo operator (Mon) | → W8-T5 output-pipeline freeze | Accessible paper and demo asset refresh → W8-T5; both replay runs are required for Gate 2 | Miles |
@@ -225,7 +231,6 @@ Weeks 14 through 16 carry no build slices. Week 14 is dark, week 15 is frozen-pa
 Member capacity is five contributors × nine build weeks × roughly three focused hours, of which the Standing row consumes about half an hour. That leaves roughly **112.5 hours of committed member capacity** for the whole project, plus the project lead's pairing time under D-10.
 
 | Portfolio | `F20` est. | `M10-ALL` est. | `L8-ONE` est. | What actually scales |
-|---|---:|---:|---:|---|
 |---|---:|---:|---:|---|
 | T1 — Agent and task oracles | 33.5h | 33.5h | 33.5h | Nothing. Four tools, ten templates and the C1 controls are fixed by `SPEC.md` Sections 2 and 9 |
 | T2 — Corpus and adapters | 39.0h | 34.5h | 33.0h | Only the evaluation corpus; development bases, the demo case and their C2/C3/C4 renders are fixed |
@@ -349,15 +354,16 @@ A yellow item requires an owner and repair deadline and never extends the Novemb
 
 ### Gate 1 — end of week 5
 
-Covers `W5-T1` through `W5-T5` and the lead scaffold.
+Covers `W5-T1` through `W5-T5` and the lead scaffold. Checked September 30 against `6263576` on a fresh clone and CI run 36786772073; no manifest exists yet. The items were met after the Gate 1 deadline, so `STATUS.md`'s "Not passed" result stands.
 
-- [ ] One excluded base renders into attack and exact clean twins through C2/C3/C4.
-- [ ] All six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`.
-- [ ] Schema, structural-diff, canonical-payload, deterministic-score, and no-key replay checks pass.
-- [ ] Mock CI uses no credits and exercises the containment tests available at this gate; the complete arbitrary-endpoint proof is required by Gate 3.
-- [ ] Lead scaffold: `uv.lock` resolves the `pyproject.toml` dependencies; README setup, CI, and the Dockerfile install from it, and the Dockerfile base image is pinned by digest.
-- [ ] W5-T3: `result.schema.json` carries the case `split`, and when `split` is `evaluation` it requires non-null `protocol_version`, `channel`, `condition`, and `comparison_superblock_id`; positive and negative fixtures cover both splits.
-- [ ] W5-T1: `.env.example` lists only provider variable names with empty values, is read only by the outer runner, and is never read by CI or the mock provider.
+- [x] One excluded base renders into attack and exact clean twins through C2/C3/C4.
+- [x] All six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`.
+- [x] Schema, structural-diff, canonical-payload, deterministic-score, and no-key replay checks pass.
+- [x] Mock CI uses no credits and exercises the containment tests available at this gate; the complete arbitrary-endpoint proof is required by Gate 3.
+- [x] Lead scaffold: `uv.lock` resolves the `pyproject.toml` dependencies; README setup, CI, and the Dockerfile install from it, and the Dockerfile base image is pinned by digest.
+- [x] W5-T3: `result.schema.json` carries the case `split`, and when `split` is `evaluation` it requires non-null `protocol_version`, `channel`, `condition`, and `comparison_superblock_id`; positive and negative fixtures cover both splits.
+- [x] W5-T1: `.env.example` lists only provider variable names with empty values, is read only by the outer runner, and is never read by CI or the mock provider.
+- [ ] Lead's lock commit: the measurement contract is versioned (`SPEC.md` Section 11, Gate 1 row).
 
 ### Gate 2 — end of week 7
 
