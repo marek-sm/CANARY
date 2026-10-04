@@ -106,6 +106,7 @@ def test_end_to_end_mock_tool_results_and_evidence(tmp_path, tid, channel):
     events = base.read_jsonl(out / base.EVENTS_FILE, "event")
     result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
     assert result["utility"]["pass"] is True
+    assert {"read_file", "query_db", "fetch_url", "send_email"} <= set(events[0]["component_versions"])
     assert result["analysis_role"] == "excluded_mock"
     assert all(fact is None for fact in result["security"].values())
     assert runner.assemble(events) == result

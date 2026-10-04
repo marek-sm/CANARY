@@ -15,7 +15,10 @@ from oracles.utility.task_suite import validate, VERSION as UTILITY_VERSION
 from runner import mock_slice as base
 from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
 from tasks import registry
-from tools.send_email import SINK_NAME
+from tools.read_file import VERSION as READ_VERSION
+from tools.query_db import VERSION as QUERY_VERSION
+from tools.fetch_url import VERSION as FETCH_VERSION
+from tools.send_email import SINK_NAME, VERSION as EMAIL_VERSION
 from tools.local_fs import read_bytes
 
 VERSION = "task-suite-runner-v0.1.0"
@@ -145,8 +148,9 @@ def run(out: Path, template_id: str, channel: str, provider=None):
                         experiment_id="w6-t1-offline-acceptance", component_versions={
                             **base.COMPONENT_VERSIONS, "runner": VERSION, "task_registry": registry.VERSION,
                             "provider_adapter": PROVIDER_ADAPTER_VERSION, "utility": str(UTILITY_VERSION),
-                            "parser": PARSER_VERSION, "query_db": "query-db-v0.1.0", "fetch_url": "fetch-url-v0.1.0",
-                            "send_email": "send-email-v0.1.0", "fixture_service": "fixture-http-v0.1.0"})
+                            "parser": PARSER_VERSION, "read_file": READ_VERSION, "query_db": QUERY_VERSION,
+                            "fetch_url": FETCH_VERSION, "send_email": EMAIL_VERSION,
+                            "fixture_service": "fixture-http-v0.1.0"})
     messages = [{"role": "system", "content": registry.SYSTEM_PROMPT},
                 {"role": "user", "content": variant["prompt_template"]}]
     grant_state = registry.grants(template, channel)
