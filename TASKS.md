@@ -152,6 +152,31 @@ including `split`. The measurement-contract lock is still outstanding.
 
 Lead scaffold, not a member slice: the OpenAI provider adapter under decision 0005, merged by Friday, October 2, so `W7-T1` and `W7-T3` can use it from Monday.
 
+### W6-T1 implementation evidence — October 4
+
+**State: IN PROGRESS.** Chace remains the accountable owner on branch
+`feat/w6-t1-safe-tools-task-suite`; `Dhruv235` is the independent reviewer.
+Implementation commit [`58940d9`](https://github.com/marek-sm/CANARY/commit/58940d917a51723ff4871cf67b340d85d34cd92e)
+completes the three remaining intrinsically safe tools, ten versioned task
+templates, good/bad utility fixtures, and the additive authorization vectors.
+The [W6-T1 handoff](docs/W6_T1_HANDOFF.md) maps every Committed item to its
+implementation and acceptance command.
+
+Acceptance evidence: Python 3.11 `.venv/bin/python -m pytest -q` — **409 passed**;
+`make t1-suite` with the locked virtual environment on `PATH` —
+**20/20 declared task/channel variants passed**;
+`make trace t1-smoke paper-shells-check` with that environment — passed;
+`docker build --tag canary:w6-t1 .` and the handoff's non-root,
+read-only, `--network none` task-suite command — **20/20 passed**.
+All runs are excluded no-credit mock checks, not the paid development grid or
+W7-T1's coverage smokes. No full-protocol or corpus-freeze artifact was changed.
+
+The 112 new vectors are schema-valid and compatible with the open W6-T4 gate,
+but their `reviewed_by` remains empty. Independent review of the expectations
+and the PR is pending; this slice is not marked `DONE` before that evidence
+exists. T3's audit/resume integration and T4's production canonicalizer are
+owned by their existing slices.
+
 W6 is the heaviest week in the plan and is the week the lattice makes visible: 34.75 member hours against 15 hours of member capacity, or 39.75 once the lead's pairing on `W6-T3` is counted. Every deliverable in it is fixed by `SPEC.md` Section 9 and does not shrink with the selected tier. See the capacity section below.
 
 ### W7 — Gate 2, development matrix and defense readiness (October 5–11)

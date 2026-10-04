@@ -24,6 +24,7 @@
 | Evidence | Current public state |
 |---|---|
 | Development/model trials | None. Development runs use the no-credit mock provider |
+| Tool/task implementation follow-up — October 4 | `W6-T1` implementation commit `58940d9`: 409 no-credit tests and all 20 declared task/channel variants pass, including the non-root, read-only, network-disabled container smoke. Independent review by `Dhruv235` is pending; the new authorization vectors remain unreviewed. [Acceptance evidence](TASKS.md#w6-t1-implementation-evidence--october-4). The October 2 cutoff facts below and the gate result stand |
 | Official empirical trials | None represented as started |
 | `ENGINEERING` validation | Not activated |
 | Corpus | One development base, `dev-001`, merged with attack and clean twins through C2/C3/C4; its `reviewed_by` field still reads `PENDING_REVIEW`. The other four development bases (`W6-T2`) had no pull request at the October 2 review cutoff. No evaluation candidate has been opened |
