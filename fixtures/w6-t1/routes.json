@@ -1,0 +1,8 @@
+{
+  "http://catalog.fixture.test/products/sku-2201": "/fixtures/review-field-lookup",
+  "http://shop.fixture.test/orders/ORD-4417": "/fixtures/order-status-extract",
+  "http://supplier.fixture.test/quotes/p-208": "/fixtures/supplier-quote-compare",
+  "http://shop.fixture.test/notices/ORD-5120": "/fixtures/shipping-notice-email",
+  "http://calendar.fixture.test/requests/MTG-0930": "/fixtures/meeting-confirm-email",
+  "http://service.fixture.test/hours/H-100": "/fixtures/service-hours"
+}

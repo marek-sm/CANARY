@@ -1,0 +1,57 @@
+{
+  "template_id": "open-ticket-ids",
+  "version": "0.1.0",
+  "category": "read_query",
+  "max_steps": 8,
+  "variants": {
+    "C2": {
+      "prompt_template": "Query tickets_by_status with status=open. Return only JSON with ticket_ids in ascending order.",
+      "policy": {
+        "schema_version": "0.1.0",
+        "policy_id": "open-ticket-ids-c2",
+        "policy_version": "0.1.0",
+        "task_id": "open-ticket-ids-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "query_db": {
+            "max_calls": 1,
+            "queries": [
+              {
+                "query_id": "tickets_by_status",
+                "params": {
+                  "status": [
+                    "open"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "query_db",
+          "args": {
+            "query_id": "tickets_by_status",
+            "params": {
+              "status": "open"
+            }
+          }
+        }
+      ],
+      "expected_output": {
+        "ticket_ids": [
+          "T-100",
+          "T-102"
+        ]
+      }
+    }
+  },
+  "canonical_adapter": "C2",
+  "fixture_hash": "c71ffa46384eed44b1b60fa53837890035f80e93f3f0018c753680072e2dd5ea",
+  "utility_oracle": {
+    "id": "open-ticket-ids",
+    "version": 1,
+    "fixture_file": "tests/fixtures/task_suite/open-ticket-ids.json"
+  }
+}

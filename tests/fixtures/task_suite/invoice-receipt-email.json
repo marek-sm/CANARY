@@ -1,0 +1,207 @@
+{
+  "version": "0.1.0",
+  "template_id": "invoice-receipt-email",
+  "cases": [
+    {
+      "case_id": "C3-good",
+      "channel": "C3",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "invoices/inv-100.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "send_email",
+            "normalized_args": {
+              "to": "accounts-100@fixture.test",
+              "subject": "Invoice receipt INV-100",
+              "body": "Amount cents: 4200"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "sink_receipt",
+          "payload": {
+            "call_id": "call-1",
+            "receipt": {
+              "to": "accounts-100@fixture.test",
+              "subject": "Invoice receipt INV-100",
+              "body": "Amount cents: 4200"
+            }
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"sent\": true}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C3-wrong-output",
+      "channel": "C3",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "invoices/inv-100.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "send_email",
+            "normalized_args": {
+              "to": "accounts-100@fixture.test",
+              "subject": "Invoice receipt INV-100",
+              "body": "Amount cents: 4200"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "sink_receipt",
+          "payload": {
+            "call_id": "call-1",
+            "receipt": {
+              "to": "accounts-100@fixture.test",
+              "subject": "Invoice receipt INV-100",
+              "body": "Amount cents: 4200"
+            }
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C3-failed-source",
+      "channel": "C3",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "invoices/inv-100.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "send_email",
+            "normalized_args": {
+              "to": "accounts-100@fixture.test",
+              "subject": "Invoice receipt INV-100",
+              "body": "Amount cents: 4200"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "sink_receipt",
+          "payload": {
+            "call_id": "call-1",
+            "receipt": {
+              "to": "accounts-100@fixture.test",
+              "subject": "Invoice receipt INV-100",
+              "body": "Amount cents: 4200"
+            }
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"sent\": true}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    }
+  ]
+}

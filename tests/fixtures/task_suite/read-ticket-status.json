@@ -1,0 +1,117 @@
+{
+  "version": "0.1.0",
+  "template_id": "read-ticket-status",
+  "cases": [
+    {
+      "case_id": "C3-good",
+      "channel": "C3",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "inbox/ticket-100.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_id\": \"T-100\", \"status\": \"open\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C3-wrong-output",
+      "channel": "C3",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "inbox/ticket-100.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C3-failed-source",
+      "channel": "C3",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "inbox/ticket-100.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_id\": \"T-100\", \"status\": \"open\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    }
+  ]
+}

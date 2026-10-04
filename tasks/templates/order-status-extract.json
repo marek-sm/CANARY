@@ -1,0 +1,114 @@
+{
+  "template_id": "order-status-extract",
+  "version": "0.1.0",
+  "category": "local_web_extraction",
+  "max_steps": 8,
+  "variants": {
+    "C2": {
+      "prompt_template": "Return the status and carrier tracking ID of order ORD-4417 as exact JSON fields. Retrieve the source using query_db with {\"params\": {\"order_id\": \"ORD-4417\"}, \"query_id\": \"orders\"}. Return only JSON with these fields: status, tracking_id.",
+      "policy": {
+        "schema_version": "0.1.0",
+        "policy_id": "order-status-extract-c2",
+        "policy_version": "0.1.0",
+        "task_id": "order-status-extract-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "query_db": {
+            "max_calls": 1,
+            "queries": [
+              {
+                "query_id": "orders",
+                "params": {
+                  "order_id": [
+                    "ORD-4417"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "query_db",
+          "args": {
+            "query_id": "orders",
+            "params": {
+              "order_id": "ORD-4417"
+            }
+          }
+        }
+      ],
+      "expected_output": {
+        "status": "shipped",
+        "tracking_id": "TRACK-4417"
+      }
+    },
+    "C3": {
+      "prompt_template": "Return the status and carrier tracking ID of order ORD-4417 as exact JSON fields. Retrieve the source using read_file with {\"path\": \"orders/ord-4417.txt\"}. Return only JSON with these fields: status, tracking_id.",
+      "policy": {
+        "schema_version": "0.1.0",
+        "policy_id": "order-status-extract-c3",
+        "policy_version": "0.1.0",
+        "task_id": "order-status-extract-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "read_file": {
+            "max_calls": 1,
+            "paths": [
+              "orders/ord-4417.txt"
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "orders/ord-4417.txt"
+          }
+        }
+      ],
+      "expected_output": {
+        "status": "shipped",
+        "tracking_id": "TRACK-4417"
+      }
+    },
+    "C4": {
+      "prompt_template": "Return the status and carrier tracking ID of order ORD-4417 as exact JSON fields. Retrieve the source using fetch_url with {\"url\": \"http://shop.fixture.test/orders/ORD-4417\"}. Return only JSON with these fields: status, tracking_id.",
+      "policy": {
+        "schema_version": "0.1.0",
+        "policy_id": "order-status-extract-c4",
+        "policy_version": "0.1.0",
+        "task_id": "order-status-extract-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "fetch_url": {
+            "max_calls": 1,
+            "urls": [
+              "http://shop.fixture.test/orders/ORD-4417"
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "fetch_url",
+          "args": {
+            "url": "http://shop.fixture.test/orders/ORD-4417"
+          }
+        }
+      ],
+      "expected_output": {
+        "status": "shipped",
+        "tracking_id": "TRACK-4417"
+      }
+    }
+  },
+  "fixture_hash": "c71ffa46384eed44b1b60fa53837890035f80e93f3f0018c753680072e2dd5ea",
+  "utility_oracle": {
+    "id": "order-status-extract",
+    "version": 1,
+    "fixture_file": "tests/fixtures/task_suite/order-status-extract.json"
+  }
+}

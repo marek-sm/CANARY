@@ -1,0 +1,8 @@
+{
+  "/fixtures/review-field-lookup": "<html><body><pre>{\"sku\": \"sku-2201\", \"stars\": 4, \"verified_purchase\": true}</pre></body></html>",
+  "/fixtures/order-status-extract": "<html><body><pre>{\"order_id\": \"ORD-4417\", \"status\": \"shipped\", \"tracking_id\": \"TRACK-4417\"}</pre></body></html>",
+  "/fixtures/supplier-quote-compare": "<html><body><pre>{\"part_id\": \"P-208\", \"supplier_id\": \"S-31\", \"unit_price_cents\": 1250}</pre></body></html>",
+  "/fixtures/shipping-notice-email": "<html><body><pre>{\"order_id\": \"ORD-5120\", \"tracking_id\": \"TRACK-5120\"}</pre></body></html>",
+  "/fixtures/meeting-confirm-email": "<html><body><pre>{\"date\": \"2026-10-06\", \"meeting_id\": \"MTG-0930\"}</pre></body></html>",
+  "/fixtures/service-hours": "<html><body><pre>{\"weekday\":\"Monday\",\"opens\":\"09:00\",\"closes\":\"17:00\"}</pre></body></html>"
+}

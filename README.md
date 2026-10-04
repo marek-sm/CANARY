@@ -99,5 +99,16 @@ No reuse license is implied until a `LICENSE` file is committed. License selecti
 `uv run make t1-smoke` runs the fictional ticket through the safe file reader,
 mock loop, durable evidence, deterministic utility validator, and replay.
 See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and design
-choices. It consumes merged W5-T4 interfaces; **W5-T3 has not landed**, so its
-measurement integration and the final contract lock remain outstanding.
+choices. It consumes the merged W5-T4 interfaces and W5-T3 schemas. Independent
+authorization-audit integration and the final measurement-contract lock remain
+outstanding.
+
+### W6-T1 safe-tool and task acceptance
+
+`uv run make t1-suite` runs all ten deterministic templates through their 20
+declared task/channel variants using only the mock provider. Each trial gets
+verified fictional fixtures, a private loopback page service, and an empty local
+email sink. Outputs go to a fresh temporary directory. These are excluded
+engineering checks; they do not count as the Week 7 paid development grid or
+coverage smokes. See the [W6-T1 handoff](docs/W6_T1_HANDOFF.md) for the registry,
+tool boundaries, utility evidence, and independent-review requirements.
