@@ -59,7 +59,7 @@ Pull-forward moves schedule, never scope: it advances work already in the plan f
 
 ### Dependency discipline
 
-**Rule: a slice uses only work that is merged before its Monday.** Its `Depends` cell names that work, and no `Depends` cell names a slice from the same or a later week. `tests/test_tasks_dependencies.py` enforces this in CI. A slice whose input isn't merged on Monday is `BLOCKED` on the producer's late work, and the producer raises it that Monday.
+**Rule: a slice uses only work that is merged before its Monday.** Its `Depends` cell names that work, and no `Depends` cell names a slice from the same or a later week. `tests/test_tasks_dependencies.py` enforces this in CI. A slice whose input isn't merged on Monday is `BLOCKED` on the producer's late work, and the producer raises it that Monday. Since October 4, a `BLOCKED` slice starts the day its last missing slice input lands, and its pull-request date and the gate dates don't move. A slice input lands when the work its `Depends` cell names is on `main` (the whole slice when the cell names only a slice ID). A missing lead or outside input never blocks the whole slice; see [lead and outside inputs](#lead-and-outside-inputs). `Depends` cells still name only earlier-week work, so no slice plans around same-week work.
 
 Three kinds of input can appear in a `Depends` cell:
 
@@ -86,7 +86,7 @@ Some gates need several tracks' finished work combined in the same week. That co
 
 #### Lead and outside inputs
 
-Each input is due before the Monday of the first week that uses it. If an outside input hasn't arrived, the slice records that one step as blocked and finishes the rest; nobody waits for it during the week.
+Each input is due before the Monday of the first week that uses it. If an outside or lead input hasn't arrived, the slice records that one step as blocked and finishes the rest; nobody waits for it during the week. For example, without paid-run access a slice runs everything except its paid calls on the mock provider. Those mock runs don't count toward the 90-cell development grid or the Gate 2 cost forecast.
 
 | Due | What | From | Used by |
 |---|---|---|---|
@@ -163,6 +163,14 @@ W6 is the heaviest week in the plan and is the week the lattice makes visible: 3
 | W7-T3 | The 90-cell development grid executed and schema-valid; forced termination and `--resume` proving no logical-trial gap, no duplicate, and no repeated dispatch, effect, or sink receipt; provider retries bounded at two and only when no model content returned; context and token usage measured per channel and configuration; the Gate 2 budget equation evaluated; as `W7-T2`'s reviewer, independent source review of every evaluation candidate it adds | 4.5 ‡ ⚠ | `W6-T1`, `W6-T2`, `W6-T3`, `W6-T4`, provider adapter, lead's paid-run access (Mon) | → W8-T3 tier arithmetic | Reliability pilots beyond those required for model choice, under the 120-trial development ceiling | Samson |
 | W7-T4 | Differential tests of the `W6-T4` gate against the `W6-T3` independent audit over the `W6-T1` golden vectors; the predeclared, outcome-blind D1_POLICY_GATE and D2_DATAMARKING readiness checks committed as a script that the project lead runs on the grid records in the Gate 2 step, so readiness is a Section 12 tier input and never self-certified | 5.0 ⚠ | `W6-T1`, `W6-T3`, `W6-T4` (Mon) | → W8-T4 defense-freeze preparation | — gate-critical | Dhruv |
 | W7-T5 | Terminal and replay path run successfully twice against `W6-T3` records, with the named presentation operator starting replay without notes and without provider access; the one separate demo case rendered and staged from its `W6-T2` source record, excluded from every estimate; accessible paper and demo assets current; T5's own technical-note handoff to the designated paper leads | 2.75 | W6-T5, `W6-T2` demo case source record, `W6-T3` records, lead's named demo operator (Mon) | → W8-T5 output-pipeline freeze | Accessible paper and demo asset refresh → W8-T5; both replay runs are required for Gate 2 | Miles |
+
+**W7 start decision (October 4).** At the October 2 review cutoff, only the provider adapter had merged from the Week 6 inputs. Monday's `Depends` check applies the dependency rule above, so each W7 slice is ready or `BLOCKED` on named producers.
+
+- **Late Week 6 work first.** Owners finish unmerged Week 6 work before their W7 Committed row. That work is noted in their W7 issue rather than in a second issue.
+- **Dates stay fixed.** Every W7 pull request is due Thursday, October 8, and reviews close Friday, October 9. The Gate 2 step runs Saturday, October 10, on work merged by Friday.
+- **Each W7 issue records:** which producers blocked it on Monday, the date each input landed, and when the pull request opened.
+- **No reassignment or extra cuts.** No slice is reassigned, and nothing is cut beyond each slice's Defer-first row. The project lead accepts that Gate 2 is likely to be recorded not passed on October 11, with the `SPEC.md` Section 11 Gate 2 response.
+- **W7-T2 and the tier.** `W7-T2`'s 10-hour estimate exceeds one contributor-week. The provisional geometry stays `R15`. A candidate pool that closes short reaches a lower tier only through `SPEC.md` Section 5 step 7 and the Gate 3 record. A pool under 20 eligible bases needs a protocol decision record for the Section 5 step 8 selection, which lands before `W7-T2`'s pull request.
 
 ### W8 — Gate 3, corpus, model, tier, and full protocol freeze (October 12–18)
 
@@ -323,7 +331,7 @@ When a paper handoff is named in a slice, the owner sends concise notes plus lin
 ## Weekly operating cadence
 
 - **Monday:** update `STATUS.md`; open this week's five lattice slices as issues carrying their Committed, Standing, Pull-forward, and Defer-first rows; confirm one owner, reviewer, evidence path, and due date for each. A contributor holds one lattice slice per week; a second issue is allowed only for an explicit pairing reason.
-- **Monday:** confirm that every input named in this week's `Depends` cells is merged and every lead input due by now is recorded. A missing input makes the slice `BLOCKED` on the late producer, never on the consumer. The 72-hour slice clock runs from here.
+- **Monday:** confirm that every input named in this week's `Depends` cells is merged and every lead input due by now is recorded. A missing slice input makes the slice `BLOCKED` on the late producer, never on the consumer, until it lands; a missing lead or outside input blocks only the step that needs it (see [dependency discipline](#dependency-discipline) and [lead and outside inputs](#lead-and-outside-inputs)). The 72-hour slice clock runs from here and doesn't restart when a blocked slice starts.
 - **Tuesday–Thursday:** implement the smallest reviewable vertical changes first and keep integration continuous.
 - **Thursday:** every slice's pull request is open with its acceptance evidence, 72 hours after the Monday start; run the applicable mock CI, schema, safety, and replay checks.
 - **Friday:** review cutoff. Every Thursday pull request is reviewed by end of Friday so the Saturday rehearsal runs on reviewed work; the standing 48-hour review service level is the outer bound. Record blockers with a named owner and a 24-hour next action.
@@ -455,7 +463,7 @@ The questions are operating checks; the linked `SPEC.md` sections remain the can
 | Exact provider/model and hard budget | Gate 3 | Select from development evidence, never evaluation outcomes |
 | Judging rubric and artifact mapping | Within 24 hours of receipt | Record receipt date/source in `STATUS.md` and map fixed criteria to the demo and release artifacts without changing scientific definitions |
 | Demo slot and rehearsal plan | Before timed rehearsal | Record all five fields required by `docs/DEMO_DESIGN.md`: hard limit, shorter target, buffer, confirmation date/source, and first-cut sequence |
-| Paper outline in Week 5; complete by release candidate | Assign an owner and satisfy the explicit Gate 5 and release comparison check above |
+| Paper outline | Week 5; complete by release candidate | Assign an owner and satisfy the explicit Gate 5 and release comparison check above |
 | Intended publication venue language | Release candidate | State only publicly or authoritatively verified facts |
 
 ## Maintenance rule
