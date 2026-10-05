@@ -38,7 +38,7 @@ The designated club paper leads own manuscript drafting, editing, and submission
 
 ## Slice plan
 
-Slices form a track × week lattice. Every build week from W5 through W13 gives each of the five portfolios exactly one accountable slice, so the plan carries 45 slices, nine per track, and no week leaves a portfolio without a stated finish line. The slice ID is `W<club week>-T<portfolio>`. `S00` is retained unchanged because it is `DONE` and referenced by committed evidence; the former `S01`–`S15` identifiers are superseded by this lattice and must not be reused.
+Slices form a track × week lattice. Every build week from W5 through W13 gives each of the five portfolios exactly one accountable slice, so the plan carries 45 slices, nine per track, and no week leaves a portfolio without a stated finish line. The slice ID is `W<club week>-T<portfolio>`. `S00` is retained unchanged because it is `DONE` and referenced by committed evidence; the former `S01`–`S15` identifiers are superseded by this lattice and must not be reused. Under the [Week 7 recovery decision](#w7--gate-2-development-matrix-and-defense-readiness-october-1218), the W7 slices run in club week 8, and the October 11 re-plan maps W8–W13 to club weeks.
 
 Every slice still has exactly one accountable owner. The lattice changes how work is sequenced and sized; it does not create shared ownership, and it does not change any scientific definition in `SPEC.md`.
 
@@ -59,7 +59,7 @@ Pull-forward moves schedule, never scope: it advances work already in the plan f
 
 ### Dependency discipline
 
-**Rule: a slice uses only work that is merged before its Monday.** Its `Depends` cell names that work, and no `Depends` cell names a slice from the same or a later week. `tests/test_tasks_dependencies.py` enforces this in CI. A slice whose input isn't merged on Monday is `BLOCKED` on the producer's late work, and the producer raises it that Monday. Since October 4, a `BLOCKED` slice starts the day its last missing slice input lands, and its pull-request date and the gate dates don't move. A slice input lands when the work its `Depends` cell names is on `main` (the whole slice when the cell names only a slice ID). A missing lead or outside input never blocks the whole slice; see [lead and outside inputs](#lead-and-outside-inputs). `Depends` cells still name only earlier-week work, so no slice plans around same-week work.
+**Rule: a slice uses only work that is merged before its Monday.** Its `Depends` cell names that work, and no `Depends` cell names a slice from the same or a later week. `tests/test_tasks_dependencies.py` enforces this in CI. A slice whose input isn't merged on Monday is `BLOCKED` on the producer's late work, and the producer raises it that Monday. Since October 4, a `BLOCKED` slice starts the day its last missing slice input lands, and its pull-request date and the `SPEC.md` gate dates don't move. A slice input lands when the work its `Depends` cell names is on `main` (the whole slice when the cell names only a slice ID). A missing lead or outside input never blocks the whole slice; see [lead and outside inputs](#lead-and-outside-inputs). `Depends` cells still name only earlier-week work, so no slice plans around same-week work.
 
 Three kinds of input can appear in a `Depends` cell:
 
@@ -93,9 +93,9 @@ Each input is due before the Monday of the first week that uses it. If an outsid
 | Sunday, September 27 (Gate 1) | Provisional build geometry, recorded in `STATUS.md`. It sets the C1 control count and the evaluation-candidate target | Project lead | `W6-T2`, `W7-T1`, `W7-T2` |
 | Sunday, September 27 (Gate 1) | Development-base task assignment: which task template each of `dev-001` to `dev-005` represents, with its template ID and per-channel resource names, committed with the corpus rules | Project lead | `W6-T1`, `W6-T2` |
 | Friday, October 2 | The OpenAI provider adapter, merged as W6 lead scaffold | Project lead | `W7-T1`, `W7-T3`, `W9-T3` |
-| Sunday, October 4 | Paid-run access for the people running live calls, under the decision 0005 cap and credential rule; the named demo operator required by `SPEC.md` Section 13 | Project lead | `W7-T1`, `W7-T3`, `W7-T5`, `W9-T3`, `W13-T5` |
+| Sunday, October 11 (moved with W7) | Paid-run access for the people running live calls, under the decision 0005 cap and credential rule; the named demo operator required by `SPEC.md` Section 13 | Project lead | `W7-T1`, `W7-T3`, `W7-T5`, `W9-T3`, `W13-T5` |
 | Sunday, October 4 | Evaluation-candidate selection margin, recorded in `STATUS.md`. `W7-T2` sources to the provisional tier count plus this margin | Project lead | `W7-T2` |
-| Sunday, October 11 (Gate 2) | Season budget from measured development cost; selected tier, active-contributor count, funded budget, and model decision, including the frozen endpoint, reasoning effort, and fallback-model decision | Project lead | `W8-T2`, `W8-T3`, `W8-T4`, `W9-T3` |
+| Set at the October 11 re-plan; it needs `W7-T3`'s grid, so no earlier than the Gate 2 step on Saturday, October 17 | Season budget from measured development cost; selected tier, active-contributor count, funded budget, and model decision, including the frozen endpoint, reasoning effort, and fallback-model decision | Project lead | `W8-T2`, `W8-T3`, `W8-T4`, `W9-T3` |
 | Sunday, November 1 (Gate 4 target) | Which results are supported; code and content license choice; author order from documented contributions, for `CITATION.cff` | Project lead | `W11-T3`, `W11-T4`, `W11-T5` |
 | Monday, November 2 | Manuscript draft for review | Designated club paper leads | `W11-T2`, `W11-T5`, `W12-T3` |
 | Sunday, November 8 | Approved result summary for the video | Project lead | `W12-T1`, `W12-T3` |
@@ -154,7 +154,7 @@ Lead scaffold, not a member slice: the OpenAI provider adapter under decision 00
 
 W6 is the heaviest week in the plan and is the week the lattice makes visible: 34.75 member hours against 15 hours of member capacity, or 39.75 once the lead's pairing on `W6-T3` is counted. Every deliverable in it is fixed by `SPEC.md` Section 9 and does not shrink with the selected tier. See the capacity section below.
 
-### W7 — Gate 2, development matrix and defense readiness (October 5–11)
+### W7 — Gate 2, development matrix and defense readiness (October 12–18)
 
 | Slice | Committed deliverable | Est | Depends | Pull-forward | Defer first | Owner |
 |---|---|---:|---|---|---|---|
@@ -164,15 +164,20 @@ W6 is the heaviest week in the plan and is the week the lattice makes visible: 3
 | W7-T4 | Differential tests of the `W6-T4` gate against the `W6-T3` independent audit over the `W6-T1` golden vectors; the predeclared, outcome-blind D1_POLICY_GATE and D2_DATAMARKING readiness checks committed as a script that the project lead runs on the grid records in the Gate 2 step, so readiness is a Section 12 tier input and never self-certified | 5.0 ⚠ | `W6-T1`, `W6-T3`, `W6-T4` (Mon) | → W8-T4 defense-freeze preparation | — gate-critical | Dhruv |
 | W7-T5 | Terminal and replay path run successfully twice against `W6-T3` records, with the named presentation operator starting replay without notes and without provider access; the one separate demo case rendered and staged from its `W6-T2` source record, excluded from every estimate; accessible paper and demo assets current; T5's own technical-note handoff to the designated paper leads | 2.75 | W6-T5, `W6-T2` demo case source record, `W6-T3` records, lead's named demo operator (Mon) | → W8-T5 output-pipeline freeze | Accessible paper and demo asset refresh → W8-T5; both replay runs are required for Gate 2 | Miles |
 
-**W7 start decision (October 4).** At the October 2 review cutoff, only the provider adapter had merged from the Week 6 inputs. Monday's `Depends` check applies the dependency rule above, so each W7 slice is ready or `BLOCKED` on named producers.
+**Week 7 recovery decision (October 4).** This replaces the W7 start decision recorded earlier the same day, which kept the W7 dates fixed. At the October 4 checkpoint, `W6-T4` ([#25](https://github.com/marek-sm/CANARY/pull/25)) and `W6-T5` ([#28](https://github.com/marek-sm/CANARY/pull/28)) were open without a review, `W6-T1` ([#32](https://github.com/marek-sm/CANARY/pull/32)) and Part A of `W6-T3` ([#31](https://github.com/marek-sm/CANARY/pull/31)) opened that day, and `W6-T2` had no pull request. The lead's lock commit was still open, so the W5 slices were not yet re-pinned to a versioned contract.
 
-- **Late Week 6 work first.** Owners finish unmerged Week 6 work before their W7 Committed row. That work is noted in their W7 issue rather than in a second issue.
-- **Dates stay fixed.** Every W7 pull request is due Thursday, October 8, and reviews close Friday, October 9. The Gate 2 step runs Saturday, October 10, on work merged by Friday.
+- **October 5–11 is a recovery week with no W7 slice work.** Each owner's Week 6 pull request meets its Committed row, is reviewed by the standing reviewer, and is merged. Each owner's W5 slice still meets its Committed row on current `main`, with open gaps fixed. Each piece works with the slices it connects to, and CI is green on `main`. Owners check their own slices. Every open W6 pull request has its first review by Tuesday, October 6; any remaining W6 pull request is open by Thursday, October 8; and everything is reviewed and merged by Friday, October 9. The project lead's lock commit lands during the week, before any W7 paid call.
+- **Recovery check.** On Saturday, October 10, the project lead re-runs the [Gate 1 checklist](#gate-1--end-of-week-5) on a fresh clone of `main`, after the W6 merges and the lock. The October 11 rollup records each item, and a failing item gets an owner and a 24-hour next action. Gate 1's recorded result stays "Not passed".
+- **W7 runs October 12–18.** Its slices keep their IDs, owners, Committed rows, and `Depends` cells. Pull requests are due Thursday, October 15, reviews close Friday, October 16, and the Gate 2 step runs Saturday, October 17, on work merged by Friday. A W6 slice that isn't merged on October 12 makes its W7 consumers `BLOCKED` under the dependency rule above. `W6-T3`'s source review of `W6-T2`'s sources waits on `W6-T2`'s pull request.
 - **Each W7 issue records:** which producers blocked it on Monday, the date each input landed, and when the pull request opened.
-- **No reassignment or extra cuts.** No slice is reassigned, and nothing is cut beyond each slice's Defer-first row. The project lead accepts that Gate 2 is likely to be recorded not passed on October 11, with the `SPEC.md` Section 11 Gate 2 response.
-- **W7-T2 and the tier.** `W7-T2`'s 10-hour estimate exceeds one contributor-week. The provisional geometry stays `R15`. A candidate pool that closes short reaches a lower tier only through `SPEC.md` Section 5 step 7 and the Gate 3 record. A pool under 20 eligible bases needs a protocol decision record for the Section 5 step 8 selection, which lands before `W7-T2`'s pull request.
+- **Gate dates.** The `SPEC.md` Section 11 gate dates don't move; only the Gate 2 step does. Gate 2 is recorded not passed on October 11, with the Section 11 Gate 2 response. Gate 3 can't pass on October 18, because no W8 freeze can finish by then. If that date stands, the Section 11 Gate 3 response applies: with no complete empirical prefix or viable funded model, it requires `ENGINEERING` or `STOP`.
+- **W8 onward is re-planned on October 11.** Until then, W8–W13 are unscheduled and no W8 slice starts. The re-plan chooses between moving the gate dates through a `SPEC.md` change with a decision record and keeping them, which accepts the Gate 3 miss and its response (`ENGINEERING` or `STOP`). It sets the W8–W13 dates and the lead inputs W8 uses, and it absorbs the lost week without moving the November 8 data cutoff or the November 22 release freeze.
+- **No reassignment.** No slice is reassigned, and nothing is cut beyond each slice's Defer-first row before the re-plan.
+- **W7-T2 and the tier.** `W7-T2`'s 10-hour estimate exceeds one contributor-week. The provisional geometry stays `R15`. A candidate pool that closes short reaches a lower tier only through `SPEC.md` Section 5 step 7 and the Gate 3 record. A pool under 20 eligible bases needs a protocol decision record for the Section 5 step 8 selection, which lands before `W7-T2`'s pull request on October 15.
 
 ### W8 — Gate 3, corpus, model, tier, and full protocol freeze (October 12–18)
+
+W8 through W13 are unscheduled until the October 11 re-plan in the [Week 7 recovery decision](#w7--gate-2-development-matrix-and-defense-readiness-october-1218). The dates in their headings are the plan from before that decision, and no W8 slice starts until the re-plan sets new dates.
 
 | Slice | Committed deliverable | Est | Depends | Pull-forward | Defer first | Owner |
 |---|---|---:|---|---|---|---|
@@ -295,15 +300,15 @@ One transfer was considered and rejected: T3's authorization audit evaluator can
 
 ## Club-week milestones
 
-The scientific gate definitions and mandatory responses remain canonical in `SPEC.md` Section 11. This table owns the operating cadence between those gates.
+The scientific gate definitions and mandatory responses remain canonical in `SPEC.md` Section 11. This table owns the operating cadence between those gates. Weeks 7 and 8 follow the [Week 7 recovery decision](#w7--gate-2-development-matrix-and-defense-readiness-october-1218); the dates and outcomes for weeks 9 onward are re-planned on October 11.
 
 | Club week | Dates | Team outcome |
 |---:|---|---|
 | 4 | Sep 14–20 | Kickoff and bootcamp; accept portfolios/slices; complete core reading; confirm rubric and demo-logistics status; queue Gate-1 issues |
 | 5 | Sep 21–27 | Begin team implementation; complete the vertical slice and measurement-contract lock; create paper outline and empty generated-result shells; pass Gate 1 |
 | 6 | Sep 28–Oct 4 | Build safe tools, deterministic tasks, development bases, defense prototypes, and resumable runner components |
-| 7 | Oct 5–11 | Complete the development grid, coverage smokes, interruption recovery, and stageable replay; pass Gate 2 |
-| 8 | Oct 12–18 | Select the empirical prefix from the pool reviewed in W6–W7 and run the seeded recheck, or freeze the `ENGINEERING` plan; freeze protocol, methods, and accessible output pipeline; pass Gate 3 |
+| 7 | Oct 5–11 | Recovery week: finish, review, and merge the W5 and W6 work; land the lock commit; re-run the Gate 1 checklist on a fresh clone; Gate 2 is recorded not passed on October 11 |
+| 8 | Oct 12–18 | Run the W7 slices: complete the development grid, coverage smokes, interruption recovery, and stageable replay; run the Gate 2 step on October 17. Gate 3 stays dated October 18 and can't pass on that date |
 | 9 | Oct 19–25 | Begin the interleaved official sweep or execute the frozen engineering-validation plan; complete the pre-results paper draft |
 | 10 | Oct 26–Nov 1 | Complete and audit the official sweep or validation bundle; target Gate 4 lock |
 | 11 | Nov 2–8 | Perform only allowed symmetric repair/validation recovery; otherwise build the release candidate; enforce the November 8 absolute data cutoff |
@@ -362,7 +367,7 @@ A yellow item requires an owner and repair deadline and never extends the Novemb
 
 ### Gate 1 — end of week 5
 
-Covers `W5-T1` through `W5-T5` and the lead scaffold. Checked September 30 against `6263576` on a fresh clone and CI run 36786772073; no manifest exists yet. The items were met after the Gate 1 deadline, so `STATUS.md`'s "Not passed" result stands.
+Covers `W5-T1` through `W5-T5` and the lead scaffold. Checked September 30 against `6263576` on a fresh clone and CI run 36786772073; no manifest exists yet. The items were met after the Gate 1 deadline, so `STATUS.md`'s "Not passed" result stands. The October 10 recovery check re-runs this list on a fresh clone of `main`, after the W6 merges and the lock commit.
 
 - [x] One excluded base renders into attack and exact clean twins through C2/C3/C4.
 - [x] All six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`.
@@ -375,7 +380,7 @@ Covers `W5-T1` through `W5-T5` and the lead scaffold. Checked September 30 again
 
 ### Gate 2 — end of week 7
 
-Covers `W6-T1` through `W7-T5`.
+Covers `W6-T1` through `W7-T5`. Recorded against its `SPEC.md` date of October 11, while the W7 slices run October 12–18; items are ticked when their evidence lands, as with Gate 1.
 
 - [ ] All four intrinsically safe tools and all ten deterministic task templates pass their required validators, including the four authorized high-risk clean templates.
 - [ ] The 90-cell development grid completes, followed by one clean D0_BASELINE/D1_POLICY_GATE/D2_DATAMARKING smoke in one predeclared canonical adapter for each of the five task templates not represented by the development bases: 15 clean task-coverage smokes total, as defined in `SPEC.md` Section 9.
