@@ -6,14 +6,14 @@
 
 | Field | Current public state |
 |---|---|
-| Lifecycle state | Team implementation. Week 6 (September 28 – October 4) built toward the development instrument; Week 7 (October 5–11) runs the development grid for Gate 2 |
+| Lifecycle state | Team implementation. Week 6 (September 28 – October 4) built toward the development instrument. Week 7 (October 5–11) is a recovery week that finishes Weeks 5 and 6, and the W7 slices, including the development grid, run October 12–18 ([Week 7 recovery decision](TASKS.md#w7--gate-2-development-matrix-and-defense-readiness-october-1218)) |
 | Documentation baseline | `v1.0.0` committed in `149a706`; `SPEC.md` is now v1.3.0 through decisions [0004](docs/decisions/0004-week5-measurement-contract-clarifications.md), [0006](docs/decisions/0006-one-vector-reviewer.md), and [0007](docs/decisions/0007-gate1-corpus-rules-freeze.md) |
 | Active-contributor count | 6 — five portfolio owners plus the project lead; `F20` is the Section 12 headcount ceiling, and the Gate 1 response below caps it at `R15` |
 | Gate 1 result | **Not passed** on September 27. `W5-T3` merged as [#24](https://github.com/marek-sm/CANARY/pull/24) on September 30. A fresh-clone check of `6263576` that day (CI run [36786772073](https://github.com/marek-sm/CANARY/actions/runs/36786772073)) met every `TASKS.md` Gate 1 item except the lead's versioned measurement contract; no manifest exists yet. The `SPEC.md` Section 11 Gate 1 response still applies: integration recovery, an empirical ceiling of `R15` or smaller, and no nonessential corpus or presentation growth |
 | Measurement-contract lock | Partly done. The corpus rules are frozen and the development-base task assignment is committed ([decision 0007](docs/decisions/0007-gate1-corpus-rules-freeze.md)). Re-pinning the Week 5 slices and versioning the contract are still open; the event, result, and policy schemas read `0.1.0`. The lock also classifies the provider's content-policy rejection, because Section 11 freezes the error taxonomy at this lock, so the project lead plans to land it before the first Week 7 paid call |
 | Active/provisional tier | Provisional build geometry: `R15` — 15 evaluation bases, 8 tasks, and four C1 controls. It carries no claim; Gate 3 confirms or lowers it under Section 12. The selection margin, set October 4, is 4, two per primary goal: `W7-T2`'s pool needs at least 10 `secret_disclosure` and 9 `unauthorized_action` candidates with ledger status `evaluation` and a completed source review, counted in its pull request as merged |
 | Current protocol or run ID | Not created; required by Gate 3 |
-| Next gate | Gate 2 — development instrument — October 11; likely not passed (risk 6) |
+| Next gate | Gate 2 — development instrument — October 11; will be recorded not passed (risk 6). Gate 3 — October 18 — can't pass on its date (risk 7) |
 | Last green commit/container | `636c1fe`: CI run [36801713621](https://github.com/marek-sm/CANARY/actions/runs/36801713621), `test` and `docker` jobs, September 30 |
 | Review | Exactly one reviewer per slice. Standing pairs by portfolio: T4 reviews T1, T3 reviews T2 (including the `SPEC.md` Section 5 source review), T5 reviews T3, T1 reviews T4, and T2 reviews T5 |
 | Demo slot and operator | The slot is unconfirmed; no live duration or rehearsal target has been inferred. Demo operator (`SPEC.md` Section 13): not yet named |
@@ -33,16 +33,16 @@
 
 ## Owner outcomes
 
-The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Week 6 pull requests were due Thursday, October 1, and reviews by Friday, October 2. Week 7 pull requests are due Thursday, October 8, and reviews by Friday, October 9.
+The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Week 6 pull requests were due Thursday, October 1, and reviews by Friday, October 2. Week 7 slices start Monday, October 12; their pull requests are due Thursday, October 15, and reviews by Friday, October 16.
 
-| Portfolio | Week 6 outcome at the October 2 review cutoff | Week 7 outcome |
+| Portfolio | Week 6 outcome at the October 2 review cutoff | W7 slice outcome (October 12–18) |
 |---|---|---|
-| T1 — Chace | `W6-T1`: no pull request | `W7-T1`: the 15 clean coverage smokes and the C1 controls, after `W6-T1`, `W6-T2`, and `W6-T3` |
+| T1 — Chace | `W6-T1`: no pull request; opened as [#32](https://github.com/marek-sm/CANARY/pull/32) on October 4, after the cutoff | `W7-T1`: the 15 clean coverage smokes and the C1 controls, after `W6-T1`, `W6-T2`, and `W6-T3` |
 | T2 — Johan | `W6-T2`: no pull request | `W7-T2`: evaluation intake to 15 plus the selection margin, and the committed selection script, after `W6-T2` |
-| T3 — Samson | `W5-T3` merged as [#24](https://github.com/marek-sm/CANARY/pull/24) on September 30, which unblocked `W6-T3`; `W6-T3`: no pull request | `W7-T3`: the 90-cell development grid, forced resume, and the Gate 2 budget equation, after `W6-T1` to `W6-T4` |
+| T3 — Samson | `W5-T3` merged as [#24](https://github.com/marek-sm/CANARY/pull/24) on September 30, which unblocked `W6-T3`; `W6-T3`: no pull request; Part A opened as [#31](https://github.com/marek-sm/CANARY/pull/31) on October 4, after the cutoff | `W7-T3`: the 90-cell development grid, forced resume, and the Gate 2 budget equation, after `W6-T1` to `W6-T4` |
 | T4 — Dhruv | `W6-T4`: D1_POLICY_GATE and D2_DATAMARKING opened as [#25](https://github.com/marek-sm/CANARY/pull/25) on September 30 with CI green; not reviewed by the cutoff | `W7-T4`: gate-versus-audit differential tests and the readiness-check script, after `W6-T1`, `W6-T3`, and `W6-T4` |
 | T5 — Miles | `W6-T5`: started `BLOCKED` until `W5-T3` merged on September 30; known-trace replay opened as [#28](https://github.com/marek-sm/CANARY/pull/28) on October 3, after the cutoff, with CI green | `W7-T5`: two replay runs with the demo operator and the staged demo case, after `W6-T5`, `W6-T2`, and `W6-T3` |
-| Project lead — Marek | Provider adapter merged ([#26](https://github.com/marek-sm/CANARY/pull/26), September 30); Gate 1 cross-check on a fresh clone (September 30); no Week 6 issues opened by the lead | The lock commit before the first paid call; paid-run access; the selection-prefix decision record before `W7-T2`'s script; pairing on `W7-T3`; the Gate 2 step on October 10 |
+| Project lead — Marek | Provider adapter merged ([#26](https://github.com/marek-sm/CANARY/pull/26), September 30); Gate 1 cross-check on a fresh clone (September 30); no Week 6 issues opened by the lead | The lock commit during the recovery week; paid-run access and the named demo operator by October 11; the October 11 re-plan of Week 8 onward; the selection-prefix decision record before `W7-T2`'s script; pairing on `W7-T3`; the Gate 2 step on October 17 |
 
 ## Public decisions, risks, and external asks
 
@@ -54,16 +54,16 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Week 6 
    - The 72-hour slice clock was not enforced in Week 5, and pull-request open times are recorded as facts only.
    - `W5-T1`, `W5-T2`, and `W5-T5` waited on `W5-T3` in the same week. `Depends` cells now name only work merged before a slice's Monday, and `tests/test_tasks_dependencies.py` enforces that.
    - Since October 4, a slice that is `BLOCKED` on Monday starts the day its last input lands, with its dates unchanged ([`TASKS.md`](TASKS.md#dependency-discipline)).
-   - The project lead opened no Week 6 issues. That departed from the `TASKS.md` Monday cadence and the September 27 next-seven-days list. `W6-T5`'s owner opened [#27](https://github.com/marek-sm/CANARY/issues/27) on October 3, and weekly issues start in Week 7.
+   - The project lead opened no Week 6 issues. That departed from the `TASKS.md` Monday cadence and the September 27 next-seven-days list. `W6-T5`'s owner opened [#27](https://github.com/marek-sm/CANARY/issues/27) on October 3, and weekly issues start with the W7 slices on October 12.
 6. **Risk — Gate 2 (decided October 4):**
-   - At the October 2 review cutoff, the provider adapter was the only Week 6 input merged. `W6-T4` was open in [#25](https://github.com/marek-sm/CANARY/pull/25) without a review, and `W6-T1`, `W6-T2`, `W6-T3`, and `W6-T5` had no pull request. `W6-T5` opened [#28](https://github.com/marek-sm/CANARY/pull/28) on October 3.
+   - At the October 2 review cutoff, the provider adapter was the only Week 6 input merged. `W6-T4` was open in [#25](https://github.com/marek-sm/CANARY/pull/25) without a review, and `W6-T1`, `W6-T2`, `W6-T3`, and `W6-T5` had no pull request. `W6-T5` opened [#28](https://github.com/marek-sm/CANARY/pull/28) on October 3; `W6-T1` opened [#32](https://github.com/marek-sm/CANARY/pull/32) and Part A of `W6-T3` opened [#31](https://github.com/marek-sm/CANARY/pull/31) on October 4.
    - Every Gate 2 item depends on that work, and Gate 2 work does not shrink with the tier.
-   - The project lead's response is the [`TASKS.md`](TASKS.md#w7--gate-2-development-matrix-and-defense-readiness-october-511) W7 start decision:
-     - no reassignment, and no cut beyond each slice's Defer-first row;
-     - unmerged Week 6 work is finished first;
-     - Week 7 pull requests stay due October 8;
-     - Gate 2 is likely to be recorded not passed on October 11, with the `SPEC.md` Section 11 Gate 2 response.
-7. **Risk — Week 8:** Gate 3 (October 18) has the same shape: every Week 8 freeze depends on Week 7 work.
+   - The project lead's response is the [`TASKS.md`](TASKS.md#w7--gate-2-development-matrix-and-defense-readiness-october-1218) Week 7 recovery decision, which replaces the W7 start decision recorded earlier the same day:
+     - October 5–11 is a recovery week with no W7 slice work. Weeks 5 and 6 are finished, reviewed, and merged by Friday, October 9, and the Gate 1 checklist is re-run on a fresh clone on October 10;
+     - the W7 slices run October 12–18, with pull requests due October 15 and the Gate 2 step on October 17;
+     - no reassignment, and no cut beyond each slice's Defer-first row before the October 11 re-plan;
+     - Gate 2 is recorded not passed on October 11, with the `SPEC.md` Section 11 Gate 2 response.
+7. **Risk — Gate 3 (October 18):** it can't pass on its date, because every Week 8 freeze, empirical or `ENGINEERING`, depends on W7 slice work that now closes October 16. If the date stands, the `SPEC.md` Section 11 Gate 3 response applies: with no complete empirical prefix or viable funded model, it requires `ENGINEERING` or `STOP`. On October 11 the project lead re-plans Week 8 onward: either the gate dates move through a `SPEC.md` change with a decision record, or the dates stay and the project follows that response. The November 8 data cutoff and the November 22 release freeze don't move.
 8. **Risk — delivery path:** the six-cell runner currently places untrusted content in the user message rather than returning it as a tool result, so it exercises direct rather than indirect injection. `W6-T3` moves delivery to tool results before the Week 7 development grid.
 9. **Risk — `dev-001` record:** its `reviewed_by` field is still `PENDING_REVIEW`; the owner corrects it. The `template_sha256` mismatch was fixed in [#24](https://github.com/marek-sm/CANARY/pull/24).
 10. **Risk — development trial ceiling:** `SPEC.md` Section 9 allows 120 development trials: the 90-cell grid, 15 coverage smokes, and 15 pilots. A paid grid that fails part-way can't be rerun in full inside that ceiling. Mock-provider runs don't count toward the 90-cell grid or the Gate 2 cost forecast.
@@ -71,14 +71,13 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Week 6 
 
 ## Next seven days
 
-- Owners finish and merge their unmerged Week 6 work; `W6-T4` ([#25](https://github.com/marek-sm/CANARY/pull/25)) and `W6-T5` ([#28](https://github.com/marek-sm/CANARY/pull/28)) are reviewed by their standing reviewers.
-- The project lead's lock commit lands before the first Week 7 paid call.
-- Monday, October 5: open the five Week 7 issues. Each gets one owner, its standing reviewer, an evidence path, the October 8 due date, and any `BLOCKED` producer. Post the list.
-- Record paid-run access and the named demo operator.
-- Commit a protocol decision record for the Section 5 step 8 selection when fewer than 20 eligible bases exist, before `W7-T2`'s selection script.
-- Every Week 7 pull request is open with acceptance evidence by Thursday, October 8, and reviewed by Friday, October 9.
-- Saturday, October 10: the Gate 2 step runs `W7-T4`'s readiness checks on `W7-T3`'s grid records.
-- Sunday, October 11: the rollup records the Gate 2 result, the season budget, and the tier and model decisions.
+- No Week 7 slice work starts before Monday, October 12.
+- Owners finish their Week 6 slice and re-check their Week 5 slice against its Committed row on current `main`. Every open Week 6 pull request ([#25](https://github.com/marek-sm/CANARY/pull/25), [#28](https://github.com/marek-sm/CANARY/pull/28), [#31](https://github.com/marek-sm/CANARY/pull/31), and [#32](https://github.com/marek-sm/CANARY/pull/32)) has its first review from its standing reviewer by Tuesday, October 6.
+- Any remaining Week 6 pull request, including `W6-T2`'s and the rest of `W6-T3`, is open by Thursday, October 8, and everything is reviewed and merged by Friday, October 9.
+- The project lead's lock commit lands this week, before any Week 7 paid call.
+- Saturday, October 10: the project lead re-runs the Gate 1 checklist on a fresh clone of `main`.
+- Record paid-run access and the named demo operator by Sunday, October 11.
+- Sunday, October 11: the rollup records the Gate 2 result, the recovery week's outcome and recovery check, and the re-plan of Week 8 onward, including the gate-date choice.
 
 ## Weekly update rule
 
