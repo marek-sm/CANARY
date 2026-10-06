@@ -17,6 +17,7 @@ from runner import mock_slice as base
 from runner import task_suite as runner
 from runner.mock_provider import MockProvider
 from tasks import registry
+from tools.query_db import query_db
 
 TEMPLATES = registry.templates()
 VARIANTS = [(tid, channel) for tid, task in TEMPLATES.items() for channel in task["variants"]]
@@ -48,6 +49,25 @@ def test_ten_templates_follow_spec_category_counts_and_assignment():
     remaining = [task for tid, task in TEMPLATES.items() if tid not in represented]
     assert len(remaining) == 5
     assert all(task["canonical_adapter"] in task["variants"] for task in remaining)
+
+
+@pytest.mark.parametrize("base_case", json.loads(
+    (registry.ROOT / "corpus/development/task-assignment.json").read_text())["bases"],
+    ids=lambda base_case: base_case["base_case_id"])
+def test_c2_queries_read_the_assigned_seed_resource(tmp_path, base_case):
+    """Exercise assignment -> task query -> actual seeded SQLite rows."""
+    resource = base_case["channels"]["C2"]["resource"]
+    variant = TEMPLATES[base_case["template_id"]]["variants"]["C2"]
+    source, = [call for call in variant["required_calls"] if call["tool"] == "query_db"]
+    assert source["args"]["query_id"] == resource
+    seed = json.loads((registry.FIXTURES / "db-seed.json").read_text())
+    lookup, = source["args"]["params"].values()
+    expected = [{"record_id": row["record_id"], "content": row["content"]}
+                for row in seed if row["resource"] == resource and row["lookup"] == lookup]
+    assert expected, f"no seed row for assigned C2 resource {resource}"
+    root = registry.reset(tmp_path / "fixtures")
+    observation = query_db(root, **source["args"])
+    assert observation == {"ok": True, "rows": sorted(expected, key=lambda row: row["record_id"])}
 
 
 @pytest.mark.parametrize("tid,channel", VARIANTS)

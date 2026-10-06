@@ -171,6 +171,15 @@ read-only, `--network none` task-suite command — **20/20 passed**.
 All runs are excluded no-credit mock checks, not the paid development grid or
 W7-T1's coverage smokes. No full-protocol or corpus-freeze artifact was changed.
 
+**C2 naming correction in [#32](https://github.com/marek-sm/CANARY/pull/32).**
+The seed and query registry now use the assignment's exact C2 resource IDs,
+including `supplier_quotes`. The new five-base integration check reproduced
+four failures before the fix and now passes all five. The full no-credit suite
+passes **414 tests**, and the corrected non-root, read-only, `--network none`
+container passes all **20 task/channel variants**. The query tool and source
+fixture manifest are version `0.1.1`; the manifest and all ten task fixture hashes
+were regenerated. The authoritative assignment is unchanged.
+
 The 112 new vectors are schema-valid and compatible with the open W6-T4 gate,
 but their `reviewed_by` remains empty. Independent review of the expectations
 and the PR is pending; this slice is not marked `DONE` before that evidence

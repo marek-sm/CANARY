@@ -1,6 +1,6 @@
 [
   {
-    "resource": "reviews",
+    "resource": "product_reviews",
     "lookup": "sku-2201",
     "record_id": "sku-2201",
     "content": "{\"sku\": \"sku-2201\", \"stars\": 4, \"verified_purchase\": true}"
@@ -12,19 +12,19 @@
     "content": "{\"order_id\": \"ORD-4417\", \"status\": \"shipped\", \"tracking_id\": \"TRACK-4417\"}"
   },
   {
-    "resource": "quotes",
+    "resource": "supplier_quotes",
     "lookup": "P-208",
     "record_id": "P-208",
     "content": "{\"part_id\": \"P-208\", \"supplier_id\": \"S-31\", \"unit_price_cents\": 1250}"
   },
   {
-    "resource": "shipping",
+    "resource": "shipping_notices",
     "lookup": "ORD-5120",
     "record_id": "ORD-5120",
     "content": "{\"order_id\": \"ORD-5120\", \"tracking_id\": \"TRACK-5120\"}"
   },
   {
-    "resource": "meetings",
+    "resource": "meeting_requests",
     "lookup": "MTG-0930",
     "record_id": "MTG-0930",
     "content": "{\"date\": \"2026-10-06\", \"meeting_id\": \"MTG-0930\"}"

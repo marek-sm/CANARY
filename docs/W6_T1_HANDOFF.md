@@ -34,6 +34,11 @@ execute or count those paid smokes. All task data is fictional. C2 uses register
 queries, C3 uses the committed resource paths, and C4 uses the exact logical
 fixture URLs routed to the private loopback service.
 
+The five development C2 queries and SQLite seed rows use the assignment's exact
+resource IDs directly. `test_c2_queries_read_the_assigned_seed_resource` checks
+the assignment, task query, and actual rows returned from a freshly reset
+database together, so matching private aliases cannot conceal naming drift.
+
 [`tasks/registry.py`](../tasks/registry.py) verifies the source manifest and
 materializes a fresh read-only fixture snapshot, SQLite database, and empty sink
 for each trial. It constructs high-risk grants only from the trusted task,

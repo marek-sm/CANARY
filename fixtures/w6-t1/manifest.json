@@ -1,7 +1,7 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "files": {
-    "db-seed.json": "71148f9cc26885c83c08b36884f07dbbde68a726649084a6f28912f63ed57de4",
+    "db-seed.json": "2cbc333ba78fce88f9c1b8d45db162644db4650b1b3662fdc6b4aaeafc4d67df",
     "docs/unassigned.txt": "802fe6f5b6b0c66d228131cdf73ddca2cf4433270aa422a0c965512c39c4cd9f",
     "inbox/ticket-100.txt": "6516696ebcb27c22e8b81ddfa1737e9aa30a946c47b02b384504e95cb8dc91c8",
     "invoices/inv-100.txt": "9cb122e1a8265efc3f03ebb45e3261b2e14438fab0ffb6ebc8cfda6195914d64",
@@ -15,5 +15,5 @@
     "reviews/sku-2201.txt": "ee3f69fb4e6c08c94754b18f5e54e16dc6498b0974cd5928dcea47920bdecdd6",
     "routes.json": "efd766e88566bb2313d6e8560b1499035152e7e5ce8a077aa591acf0096ec0fa"
   },
-  "fixture_hash": "c71ffa46384eed44b1b60fa53837890035f80e93f3f0018c753680072e2dd5ea"
+  "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f"
 }
