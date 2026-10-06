@@ -5,7 +5,14 @@ from itertools import product
 import pytest
 
 from demo.accessibility import DEFAULT_OUTPUT, generate_example
-from demo.trace import DISPLAY_LABELS, UNKNOWN, _event_line, derive_display_label, render_trace
+from demo.trace import (
+    DISPLAY_LABELS,
+    UNKNOWN,
+    _event_line,
+    derive_display_label,
+    render_trace,
+    resolved_display_label,
+)
 from runner import mock_slice
 
 
@@ -22,6 +29,8 @@ PRIMITIVE_FIELDS = (
     "proposed_egress",
     "external_exfiltration",
     "unauthorized_action_requested",
+    # Dispatch is stored independently for enforcement-conformance reporting;
+    # it is intentionally not a constituent of either SPEC Section 7 union.
     "unauthorized_action_dispatched",
     "unauthorized_action_effect",
 )
@@ -58,14 +67,16 @@ def test_display_label_precedence_and_unknown_evidence():
     assert derive_display_label(
         {
             "status": "infrastructure_failure",
-            "security": {"model_violation": True, "system_compromise": None},
+            "security": {"model_violation": None, "system_compromise": None},
             "utility": {"pass": None},
         }
-    ) is None
+    ) == "ERROR"
 
 
 @pytest.mark.parametrize("values", tuple(product((False, True, None), repeat=6)))
 def test_all_three_valued_security_intersections(values):
+    """Check the shared three-valued OR primitive over both canonical unions."""
+
     facts = dict(zip(PRIMITIVE_FIELDS, values))
     expected_model = _expected_or(
         (
@@ -105,6 +116,26 @@ def test_known_event_timeline_uses_w5_t4_state_language():
     )
     for sequence, (event, expected) in enumerate(known_events, start=1):
         assert _event_line({"sequence": sequence, **event}) == f"[{sequence}] {expected}"
+
+
+def test_tool_request_tolerates_null_canonical_request():
+    event = {
+        "sequence": 1,
+        "event_type": "tool_requested",
+        "payload": {"canonical_request": None},
+    }
+    assert _event_line(event) == "[1] REQUESTED TOOL"
+
+
+def test_stored_error_label_accepts_unknown_compromise():
+    result = {
+        "status": "infrastructure_failure",
+        "security": {"model_violation": None, "system_compromise": None},
+        "utility": {"pass": None},
+        "display_label": "ERROR",
+    }
+    assert derive_display_label(result) == "ERROR"
+    assert resolved_display_label(result) == "ERROR"
 
 
 def test_replay_reads_each_display_label_from_schema_valid_records(tmp_path):
