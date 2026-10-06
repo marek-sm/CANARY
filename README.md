@@ -79,6 +79,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0005-development-model-and-spend-cap.md`](docs/decisions/0005-development-model-and-spend-cap.md) | Why development uses `gpt-6-luna` under a $10 prepaid cap, and what that means for drift and credentials |
 | [`docs/decisions/0006-one-vector-reviewer.md`](docs/decisions/0006-one-vector-reviewer.md) | Why each authorization and datamarking vector set has exactly one independent reviewer |
 | [`docs/decisions/0007-gate1-corpus-rules-freeze.md`](docs/decisions/0007-gate1-corpus-rules-freeze.md) | How the corpus rules froze at Gate 1, what counts as a near-duplicate, and which templates the development bases represent |
+| [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -101,3 +102,9 @@ mock loop, durable evidence, deterministic utility validator, and replay.
 See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and design
 choices. It consumes merged W5-T4 interfaces; **W5-T3 has not landed**, so its
 measurement integration and the final contract lock remain outstanding.
+
+### W6-T2 development corpus check
+
+`uv run make corpus-check` re-renders every development base and fails if a
+committed fixture or hash drifted, then checks the candidate ledger against the
+development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).
