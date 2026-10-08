@@ -7,7 +7,7 @@
     "C3": {
       "prompt_template": "Read inbox/ticket-100.txt and return only JSON fields ticket_id and status.",
       "policy": {
-        "schema_version": "0.1.0",
+        "schema_version": "1.0.0",
         "policy_id": "read-ticket-status-c3",
         "policy_version": "0.1.0",
         "task_id": "read-ticket-status-v0.1.0",
@@ -39,7 +39,7 @@
   "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
   "utility_oracle": {
     "id": "read-ticket-status",
-    "version": 1,
+    "version": 2,
     "fixture_file": "tests/fixtures/task_suite/read-ticket-status.json"
   }
 }

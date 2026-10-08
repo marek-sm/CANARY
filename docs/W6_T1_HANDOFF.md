@@ -3,8 +3,10 @@
 This implements the Committed row of W6-T1 under [`SPEC.md`](../SPEC.md)
 Sections 3, 4, 6, 7, 9, and 11. Chace remains the accountable owner;
 `Dhruv235` is the requested independent reviewer. The full protocol is unfrozen.
-The frozen Section 5 corpus rules, existing W5 vectors, and event/result/policy
-schemas are unchanged. This work creates no empirical result or defense claim.
+The frozen Section 5 corpus rules and the locked measurement semantics remain
+unchanged. The October 8 compatibility update below adopts the current W5
+vectors and event/result/policy schemas. This work creates no empirical result
+or defense claim.
 
 ## Task registry
 
@@ -69,6 +71,41 @@ typed JSON, matching task calls with observed effects, and exact receipts for
 email tasks. It rejects duplicate keys, non-finite JSON, and Boolean/integer/float
 substitution. It ignores unrelated violations. Tests show completed utility
 alongside an unrelated email, and a receipt/effect with execution failure.
+
+## Locked-contract compatibility — October 8
+
+This branch incorporates current `main` through `4195d70`, including the
+[content-filter rule](decisions/0008-content-filter-refusals.md), the
+[1.0.0 contract lock](decisions/0009-measurement-contract-lock.md), and the
+updated recovery-week and explanation requirements in `TASKS.md`.
+
+All 20 embedded task policies and the W6 authorization-vector records now use
+schema `1.0.0`; the vectors cite `defense-interfaces-v1.0.0`. Task templates,
+task-policy versions, fixture bytes and hashes, and grant action hashes do not
+change merely to match the contract version. Policy hashes are recomputed from
+the migrated policy records under the locked canonical-JSON rule.
+
+The merged loop retains both the four-tool parser/effect hooks and the refusal
+handling. A filtered valid call is recorded with recursively serialized canonical
+arguments, never dispatched. The durable end of that same step establishes
+`blocked = false`, `dispatched = false`, `execution_succeeded = null`,
+`effect_observed = false`, and no sink receipt. Earlier missing evidence remains
+unknown. `disposition_observed` stays null in this D0_BASELINE-only runner because
+no D1_POLICY_GATE disposition was observed.
+
+The task utility validator uses that evidence: a required filtered call cannot
+complete the task just by printing the expected JSON, while earlier successful
+required calls can still satisfy it. Missing earlier effects remain unknown.
+These implementation changes advance the loop to `agent-loop-v0.3.0`, the
+acceptance runner to `task-suite-runner-v0.2.0`, and the utility validator and its
+ten task references to integer version `2`. They implement the already-locked
+rules without changing their meaning or the task prompts, outputs, or policies.
+
+Regression tests cover filtered calls for every tool, nested query parameters,
+malformed and multiple calls, HTTP-style refusals without retries, required-call
+utility, earlier true/unknown effects, raw-to-result recomputation, and version
+and hash consistency. Lock checks now discover every golden-vector file and
+every nested template policy, including this slice's additions.
 
 ## Authorization vectors and review
 

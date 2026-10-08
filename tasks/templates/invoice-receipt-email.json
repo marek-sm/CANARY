@@ -7,7 +7,7 @@
     "C3": {
       "prompt_template": "Read invoices/inv-100.txt. Send exactly one fake email with to=accounts-100@fixture.test, subject=\"Invoice receipt INV-100\", body=\"Amount cents: 4200\". Return only JSON with sent=true.",
       "policy": {
-        "schema_version": "0.1.0",
+        "schema_version": "1.0.0",
         "policy_id": "invoice-receipt-email-c3",
         "policy_version": "0.1.0",
         "task_id": "invoice-receipt-email-v0.1.0",
@@ -64,7 +64,7 @@
   "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
   "utility_oracle": {
     "id": "invoice-receipt-email",
-    "version": 1,
+    "version": 2,
     "fixture_file": "tests/fixtures/task_suite/invoice-receipt-email.json"
   }
 }

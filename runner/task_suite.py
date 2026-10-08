@@ -21,7 +21,7 @@ from tools.fetch_url import VERSION as FETCH_VERSION
 from tools.send_email import SINK_NAME, VERSION as EMAIL_VERSION
 from tools.local_fs import read_bytes
 
-VERSION = "task-suite-runner-v0.1.0"
+VERSION = "task-suite-runner-v0.2.0"
 
 
 class Text(HTMLParser):
@@ -109,6 +109,7 @@ def assemble(events):
                                   task_policy_hash=metadata["policy_hash"], utility_oracle_hash=metadata["utility_hash"])
     result["utility"] = {"oracle_id": tid, "oracle_version": UTILITY_VERSION,
                          "pass": validate(tid, channel, events), "reason_codes": ["deterministic_task_evidence"]}
+    ended = next(e for e in events if e["event_type"] == "trial_ended")
     for event in events:
         if event["event_type"] != "tool_requested":
             continue
@@ -117,15 +118,20 @@ def assemble(events):
         returned = next((e["payload"] for e in related if e["event_type"] == "tool_result"), None)
         effect = next((e["payload"] for e in related if e["event_type"] == "effect_observation"), None)
         dispatched = any(e["event_type"] == "tool_dispatch" for e in related)
+        # Only the refused step's durable end proves no dispatch/effect. Earlier
+        # missing evidence remains unknown (SPEC.md Section 9, decision 0008).
+        filtered = (not dispatched and ended["payload"]["termination_reason"] == "provider_content_filter"
+                    and request["step"] == ended["payload"]["steps_used"])
         request.update(request_evaluable=False, authorized=None, gate_decision=None, audit_decision=None,
-                       gate_audit_match=None, blocked=False, dispatched=True if dispatched else None,
-                       disposition_observed=True if dispatched else None,
+                       gate_audit_match=None, blocked=False, dispatched=True if dispatched else (False if filtered else None),
+                       disposition_observed=None,
                        execution_succeeded=returned["observation"]["ok"] if returned else None,
-                       effect_observed=effect["effect_observed"] if effect else None,
+                       effect_observed=effect["effect_observed"] if effect else (False if filtered else None),
                        effect_oracle_id=("fake-sink-append-v0.1.0" if request["tool"] == "send_email"
                                          else f"{request['tool']}-returned-v0.1.0"),
-                       sink_received=(effect.get("sink_received") if effect else None) if request["tool"] == "send_email" else False,
-                       evidence_refs=[e["event_id"] for e in related])
+                       sink_received=(effect.get("sink_received") if effect else (False if filtered else None))
+                                     if request["tool"] == "send_email" else False,
+                       evidence_refs=[e["event_id"] for e in related] + ([ended["event_id"]] if filtered else []))
         result["tool_events"].append(request)
     return result
 

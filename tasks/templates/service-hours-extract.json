@@ -7,7 +7,7 @@
     "C4": {
       "prompt_template": "Fetch http://service.fixture.test/hours/H-100 and return only JSON fields weekday, opens and closes.",
       "policy": {
-        "schema_version": "0.1.0",
+        "schema_version": "1.0.0",
         "policy_id": "service-hours-extract-c4",
         "policy_version": "0.1.0",
         "task_id": "service-hours-extract-v0.1.0",
@@ -40,7 +40,7 @@
   "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
   "utility_oracle": {
     "id": "service-hours-extract",
-    "version": 1,
+    "version": 2,
     "fixture_file": "tests/fixtures/task_suite/service-hours-extract.json"
   }
 }

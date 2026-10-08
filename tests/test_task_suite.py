@@ -9,10 +9,11 @@ import subprocess
 
 import pytest
 
+from agent.loop import LOOP_VERSION
 from agent.task_requests import parse_request
 from defenses.interfaces import action_hash, TOOL_ARGUMENTS
 from oracles.authorization.conformance import TASK_VECTORS, load_vectors, review_complete
-from oracles.utility.task_suite import validate
+from oracles.utility.task_suite import validate, VERSION as UTILITY_VERSION
 from runner import mock_slice as base
 from runner import task_suite as runner
 from runner.mock_provider import MockProvider
@@ -78,6 +79,7 @@ def test_versioned_task_and_policy_shapes_and_hashes(tid, channel):
     base.validator("policy").validate(variant["policy"])
     assert task["fixture_hash"] == registry.verify(registry.FIXTURES)
     assert task["utility_oracle"]["id"] == tid
+    assert task["utility_oracle"]["version"] == UTILITY_VERSION
     assert len(variant["required_calls"]) + 1 <= task["max_steps"]
     cases = [case for template, case in CASES if template == tid and case["channel"] == channel]
     assert sum(case["expected"] is True for case in cases) >= 1
@@ -127,6 +129,12 @@ def test_end_to_end_mock_tool_results_and_evidence(tmp_path, tid, channel):
     result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
     assert result["utility"]["pass"] is True
     assert {"read_file", "query_db", "fetch_url", "send_email"} <= set(events[0]["component_versions"])
+    assert events[0]["component_versions"]["agent_loop"] == LOOP_VERSION
+    assert events[0]["component_versions"]["runner"] == runner.VERSION
+    assert events[0]["component_versions"]["utility"] == str(UTILITY_VERSION)
+    assert result["utility"]["oracle_version"] == UTILITY_VERSION
+    assert result["run_metadata"]["task_policy_hash"] == registry.digest(TEMPLATES[tid]["variants"][channel]["policy"])
+    assert result["run_metadata"]["rendered_fixture_hash"] == TEMPLATES[tid]["fixture_hash"]
     assert result["analysis_role"] == "excluded_mock"
     assert all(fact is None for fact in result["security"].values())
     assert runner.assemble(events) == result
@@ -295,3 +303,118 @@ def test_live_adapter_cannot_be_supplied_to_offline_acceptance_runner(tmp_path):
     with pytest.raises(TypeError):
         runner.run(tmp_path / "run", "read-ticket-status", "C3", Unexpected())
     assert not (tmp_path / "run").exists()
+
+
+FILTERED_CALLS = [
+    ("read-ticket-status", "C3", {"tool": "read_file", "args": {"path": "inbox/ticket-100.txt"}}),
+    ("order-status-extract", "C2", TEMPLATES["order-status-extract"]["variants"]["C2"]["required_calls"][0]),
+    ("service-hours-extract", "C4", TEMPLATES["service-hours-extract"]["variants"]["C4"]["required_calls"][0]),
+    ("invoice-receipt-email", "C3", TEMPLATES["invoice-receipt-email"]["variants"]["C3"]["required_calls"][-1]),
+]
+
+
+def filtered_response(call=None, text=""):
+    content = [{"type": "text", "text": text}]
+    if call is not None:
+        content.append({"type": "tool_use", "id": "filtered", "name": call["tool"], "input": call["args"]})
+    return {"stop_reason": "content_filter", "content": content}
+
+
+@pytest.mark.parametrize("tid,channel,call", FILTERED_CALLS)
+def test_filtered_calls_are_recorded_for_all_tools_without_dispatch(tmp_path, monkeypatch, tid, channel, call):
+    def never_dispatch(*args):
+        pytest.fail("a provider-filtered call must never dispatch")
+    monkeypatch.setattr(registry, "worker", never_dispatch)
+    provider = MockProvider([filtered_response(call)])
+    out = runner.run(tmp_path / "run", tid, channel, provider)
+    events = base.read_jsonl(out / base.EVENTS_FILE, "event")
+    result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    assert provider.calls == 1
+    assert result["status"] == "completed" and result["termination_reason"] == "provider_content_filter"
+    assert result["final_output"] == "" and result["utility"]["pass"] is False
+    request, = result["tool_events"]
+    assert request["tool"] == call["tool"] and request["normalized_args"] == call["args"]
+    assert request["blocked"] is False and request["dispatched"] is False
+    assert request["disposition_observed"] is None  # no D1 gate was involved
+    assert request["execution_succeeded"] is None and request["effect_observed"] is False
+    assert request["sink_received"] is False
+    assert events[-1]["event_id"] in request["evidence_refs"]
+    assert not any(e["event_type"] in ("tool_dispatch", "tool_result", "sink_receipt") for e in events)
+    assert runner.assemble(events) == result
+
+
+@pytest.mark.parametrize("tid,channel", VARIANTS)
+def test_filtered_required_call_cannot_claim_utility_from_correct_text(tmp_path, tid, channel):
+    variant = TEMPLATES[tid]["variants"][channel]
+    calls = variant["required_calls"]
+    provider = scripted(calls[:-1], variant["expected_output"])
+    provider._script[-1] = filtered_response(calls[-1], json.dumps(variant["expected_output"]))
+    out = runner.run(tmp_path / "run", tid, channel, provider)
+    result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    assert result["status"] == "completed"
+    assert result["termination_reason"] == "provider_content_filter"
+    assert result["utility"]["pass"] is False
+
+
+def test_later_filter_preserves_prior_effect_and_missing_evidence(tmp_path):
+    tid, channel = "read-ticket-status", "C3"
+    variant = TEMPLATES[tid]["variants"][channel]
+    call, = variant["required_calls"]
+    provider = scripted([call], variant["expected_output"])
+    provider._script[-1] = filtered_response(call, json.dumps(variant["expected_output"]))
+    out = runner.run(tmp_path / "run", tid, channel, provider)
+    events = base.read_jsonl(out / base.EVENTS_FILE, "event")
+    result = runner.assemble(events)
+    assert result["utility"]["pass"] is True
+    assert [e["effect_observed"] for e in result["tool_events"]] == [True, False]
+    missing = [e for e in events if e["event_type"] not in ("tool_result", "effect_observation")]
+    result = runner.assemble(missing)
+    assert result["utility"]["pass"] is None
+    assert [e["execution_succeeded"] for e in result["tool_events"]] == [None, None]
+    assert [e["effect_observed"] for e in result["tool_events"]] == [None, False]
+
+
+@pytest.mark.parametrize("call", [
+    {"tool": "query_db", "args": {"query_id": "orders", "params": []}},
+    {"tool": "query_db", "args": {"query_id": "orders", "params": {"id": 1.5}}},
+    {"tool": "send_email", "args": {"to": "fictional@fixture.test"}},
+    {"tool": "read_file", "args": '{"path":'},
+    {"tool": "shell", "args": {"command": "fictional"}},
+])
+def test_filter_with_malformed_call_is_completed_without_request(tmp_path, call):
+    provider = MockProvider([filtered_response(call, "Declined.")])
+    out = runner.run(tmp_path / "run", "read-ticket-status", "C3", provider)
+    result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    assert provider.calls == 1 and result["status"] == "completed"
+    assert result["termination_reason"] == "provider_content_filter"
+    assert result["final_output"] == "Declined." and result["tool_events"] == []
+    assert result["utility"]["pass"] is False
+
+
+@pytest.mark.parametrize("extra,termination", [
+    ({"type": "tool_use", "id": "second", "name": "read_file", "input": {"path": "inbox/ticket-100.txt"}},
+     "provider_content_filter"),
+    ({"type": "unsupported", "text": "fictional"}, "malformed_model_output"),
+])
+def test_filtered_multiple_calls_and_unsupported_blocks_do_not_dispatch(tmp_path, extra, termination):
+    raw = filtered_response(FILTERED_CALLS[0][2])
+    raw["content"].append(extra)
+    out = runner.run(tmp_path / "run", "read-ticket-status", "C3", MockProvider([raw]))
+    result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    assert result["status"] == "completed" and result["termination_reason"] == termination
+    assert result["tool_events"] == [] and result["utility"]["pass"] is False
+
+
+def test_http_content_filter_is_completed_once_with_empty_final_output(tmp_path):
+    class Rejected(MockProvider):
+        def complete(self, *args):
+            response = super().complete(*args)
+            response.update(outcome="provider_content_filter", raw_response=None)
+            return response
+    provider = Rejected([filtered_response()])
+    out = runner.run(tmp_path / "run", "read-ticket-status", "C3", provider)
+    result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    assert provider.calls == 1 and result["status"] == "completed"
+    assert result["termination_reason"] == "provider_content_filter"
+    assert result["final_output"] == "" and result["tool_events"] == []
+    assert result["utility"]["pass"] is False

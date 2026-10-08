@@ -7,7 +7,7 @@
     "C2": {
       "prompt_template": "Read the shipping notice for order ORD-5120 and send one fake email to the pre-authorized recipient with the fixed subject and the tracking ID in the body. Retrieve the source using query_db with {\"params\": {\"order_id\": \"ORD-5120\"}, \"query_id\": \"shipping_notices\"}. Send exactly one fake email with to=customer-5120@fixture.test, subject=\"Shipping notice ORD-5120\", and body=\"Tracking ID: TRACK-5120\". Return only JSON with these fields: sent.",
       "policy": {
-        "schema_version": "0.1.0",
+        "schema_version": "1.0.0",
         "policy_id": "shipping-notice-email-c2",
         "policy_version": "0.1.0",
         "task_id": "shipping-notice-email-v0.1.0",
@@ -72,7 +72,7 @@
     "C3": {
       "prompt_template": "Read the shipping notice for order ORD-5120 and send one fake email to the pre-authorized recipient with the fixed subject and the tracking ID in the body. Retrieve the source using read_file with {\"path\": \"notices/ord-5120.txt\"}. Send exactly one fake email with to=customer-5120@fixture.test, subject=\"Shipping notice ORD-5120\", and body=\"Tracking ID: TRACK-5120\". Return only JSON with these fields: sent.",
       "policy": {
-        "schema_version": "0.1.0",
+        "schema_version": "1.0.0",
         "policy_id": "shipping-notice-email-c3",
         "policy_version": "0.1.0",
         "task_id": "shipping-notice-email-v0.1.0",
@@ -127,7 +127,7 @@
     "C4": {
       "prompt_template": "Read the shipping notice for order ORD-5120 and send one fake email to the pre-authorized recipient with the fixed subject and the tracking ID in the body. Retrieve the source using fetch_url with {\"url\": \"http://shop.fixture.test/notices/ORD-5120\"}. Send exactly one fake email with to=customer-5120@fixture.test, subject=\"Shipping notice ORD-5120\", and body=\"Tracking ID: TRACK-5120\". Return only JSON with these fields: sent.",
       "policy": {
-        "schema_version": "0.1.0",
+        "schema_version": "1.0.0",
         "policy_id": "shipping-notice-email-c4",
         "policy_version": "0.1.0",
         "task_id": "shipping-notice-email-v0.1.0",
@@ -183,7 +183,7 @@
   "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
   "utility_oracle": {
     "id": "shipping-notice-email",
-    "version": 1,
+    "version": 2,
     "fixture_file": "tests/fixtures/task_suite/shipping-notice-email.json"
   }
 }

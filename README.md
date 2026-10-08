@@ -79,6 +79,8 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0005-development-model-and-spend-cap.md`](docs/decisions/0005-development-model-and-spend-cap.md) | Why development uses `gpt-6-luna` under a $10 prepaid cap, and what that means for drift and credentials |
 | [`docs/decisions/0006-one-vector-reviewer.md`](docs/decisions/0006-one-vector-reviewer.md) | Why each authorization and datamarking vector set has exactly one independent reviewer |
 | [`docs/decisions/0007-gate1-corpus-rules-freeze.md`](docs/decisions/0007-gate1-corpus-rules-freeze.md) | How the corpus rules froze at Gate 1, what counts as a near-duplicate, and which templates the development bases represent |
+| [`docs/decisions/0008-content-filter-refusals.md`](docs/decisions/0008-content-filter-refusals.md) | Why a provider content-filter refusal, from a finish reason or a listed HTTP 400 code, is a completed outcome that is never retried, and how it is scored |
+| [`docs/decisions/0009-measurement-contract-lock.md`](docs/decisions/0009-measurement-contract-lock.md) | How the week-5 measurement contract locked at `1.0.0`: which `SPEC.md` text is hash-frozen, the one canonical JSON rule, the reason-code vocabulary, and the predeclared development-floor reporting rule |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -99,8 +101,8 @@ No reuse license is implied until a `LICENSE` file is committed. License selecti
 `uv run make t1-smoke` runs the fictional ticket through the safe file reader,
 mock loop, durable evidence, deterministic utility validator, and replay.
 See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and design
-choices. It consumes the merged W5-T4 interfaces and W5-T3 schemas. Independent
-authorization-audit integration and the final measurement-contract lock remain
+choices. It consumes the merged W5-T4 interfaces and W5-T3 schemas, frozen at the
+measurement-contract lock. Independent authorization-audit integration remains
 outstanding.
 
 ### W6-T1 safe-tool and task acceptance

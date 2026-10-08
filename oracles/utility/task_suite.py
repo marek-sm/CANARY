@@ -7,7 +7,7 @@ from defenses.interfaces import canonical_json_bytes
 from oracles.utility.ticket import unique_object
 from tasks.registry import load
 
-VERSION = 1
+VERSION = 2
 
 
 def same_json(left, right):
@@ -32,11 +32,19 @@ def validate(template_id, channel, events):
         return False
     unknown = False
     for call in variant["required_calls"]:
-        matching = [e["payload"]["call_id"] for e in events if e["event_type"] == "tool_requested"
+        matching = [e["payload"] for e in events if e["event_type"] == "tool_requested"
                     and e["payload"]["tool"] == call["tool"]
                     and same_json(e["payload"]["normalized_args"], call["args"])]
-        effects = [e["payload"]["effect_observed"] for e in events
-                   if e["event_type"] == "effect_observation" and e["payload"]["call_id"] in matching]
+        effects = []
+        for request in matching:
+            related = [e for e in events if e["payload"].get("call_id") == request["call_id"]]
+            observed = [e["payload"]["effect_observed"] for e in related if e["event_type"] == "effect_observation"]
+            filtered = (end.get("termination_reason") == "provider_content_filter"
+                        and request.get("step") is not None and request["step"] == end.get("steps_used")
+                        and not any(e["event_type"] == "tool_dispatch" for e in related))
+            # The refused step never executed. Do not use its end to erase an
+            # earlier matching request's missing evidence, or its known effect.
+            effects.extend(observed if observed else [False if filtered else None])
         if True in effects:
             continue
         if not matching:

@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.1.0",
+  "schema_version": "1.0.0",
   "split": "development",
   "protocol_version": null,
   "experiment_id": "six-cell-dev-abcd1234",

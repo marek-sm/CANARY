@@ -1,12 +1,12 @@
 {
-  "schema_version": "0.1.0",
+  "schema_version": "1.0.0",
   "vector_set_id": "w6-t1-task-suite-v0.1.0",
-  "interface_version": "defense-interfaces-v0.1.0",
+  "interface_version": "defense-interfaces-v1.0.0",
   "authored_by": "nkuhanas",
   "reviewed_by": [],
   "policies": {
     "invoice-receipt-email-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "invoice-receipt-email-c3",
       "policy_version": "0.1.0",
       "task_id": "invoice-receipt-email-v0.1.0",
@@ -34,7 +34,7 @@
       }
     },
     "maintenance-confirm-email-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "maintenance-confirm-email-c3",
       "policy_version": "0.1.0",
       "task_id": "maintenance-confirm-email-v0.1.0",
@@ -62,7 +62,7 @@
       }
     },
     "meeting-confirm-email-c2": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "meeting-confirm-email-c2",
       "policy_version": "0.1.0",
       "task_id": "meeting-confirm-email-v0.1.0",
@@ -97,7 +97,7 @@
       }
     },
     "meeting-confirm-email-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "meeting-confirm-email-c3",
       "policy_version": "0.1.0",
       "task_id": "meeting-confirm-email-v0.1.0",
@@ -125,7 +125,7 @@
       }
     },
     "meeting-confirm-email-c4": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "meeting-confirm-email-c4",
       "policy_version": "0.1.0",
       "task_id": "meeting-confirm-email-v0.1.0",
@@ -153,7 +153,7 @@
       }
     },
     "open-ticket-ids-c2": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "open-ticket-ids-c2",
       "policy_version": "0.1.0",
       "task_id": "open-ticket-ids-v0.1.0",
@@ -175,7 +175,7 @@
       }
     },
     "order-status-extract-c2": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "order-status-extract-c2",
       "policy_version": "0.1.0",
       "task_id": "order-status-extract-v0.1.0",
@@ -197,7 +197,7 @@
       }
     },
     "order-status-extract-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "order-status-extract-c3",
       "policy_version": "0.1.0",
       "task_id": "order-status-extract-v0.1.0",
@@ -212,7 +212,7 @@
       }
     },
     "order-status-extract-c4": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "order-status-extract-c4",
       "policy_version": "0.1.0",
       "task_id": "order-status-extract-v0.1.0",
@@ -227,7 +227,7 @@
       }
     },
     "read-ticket-status-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "read-ticket-status-c3",
       "policy_version": "0.1.0",
       "task_id": "read-ticket-status-v0.1.0",
@@ -242,7 +242,7 @@
       }
     },
     "review-field-lookup-c2": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "review-field-lookup-c2",
       "policy_version": "0.1.0",
       "task_id": "review-field-lookup-v0.1.0",
@@ -264,7 +264,7 @@
       }
     },
     "review-field-lookup-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "review-field-lookup-c3",
       "policy_version": "0.1.0",
       "task_id": "review-field-lookup-v0.1.0",
@@ -279,7 +279,7 @@
       }
     },
     "review-field-lookup-c4": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "review-field-lookup-c4",
       "policy_version": "0.1.0",
       "task_id": "review-field-lookup-v0.1.0",
@@ -294,7 +294,7 @@
       }
     },
     "service-hours-extract-c4": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "service-hours-extract-c4",
       "policy_version": "0.1.0",
       "task_id": "service-hours-extract-v0.1.0",
@@ -309,7 +309,7 @@
       }
     },
     "shipping-notice-email-c2": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "shipping-notice-email-c2",
       "policy_version": "0.1.0",
       "task_id": "shipping-notice-email-v0.1.0",
@@ -344,7 +344,7 @@
       }
     },
     "shipping-notice-email-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "shipping-notice-email-c3",
       "policy_version": "0.1.0",
       "task_id": "shipping-notice-email-v0.1.0",
@@ -372,7 +372,7 @@
       }
     },
     "shipping-notice-email-c4": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "shipping-notice-email-c4",
       "policy_version": "0.1.0",
       "task_id": "shipping-notice-email-v0.1.0",
@@ -400,7 +400,7 @@
       }
     },
     "supplier-quote-compare-c2": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "supplier-quote-compare-c2",
       "policy_version": "0.1.0",
       "task_id": "supplier-quote-compare-v0.1.0",
@@ -428,7 +428,7 @@
       }
     },
     "supplier-quote-compare-c3": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "supplier-quote-compare-c3",
       "policy_version": "0.1.0",
       "task_id": "supplier-quote-compare-v0.1.0",
@@ -444,7 +444,7 @@
       }
     },
     "supplier-quote-compare-c4": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "supplier-quote-compare-c4",
       "policy_version": "0.1.0",
       "task_id": "supplier-quote-compare-v0.1.0",

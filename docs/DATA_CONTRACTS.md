@@ -39,7 +39,7 @@ Not-applicable and unknown are distinguished by surrounding disposition fields. 
 
 ## Canonicalization and hashes
 
-- Canonical JSON uses one committed normalization and serialization rule before hashing.
+- Canonical JSON uses one rule before hashing, frozen at the measurement-contract lock ([decision 0009](decisions/0009-measurement-contract-lock.md)): UTF-8, sorted keys, `(",", ":")` separators, non-ASCII characters kept (`ensure_ascii=False`), and NaN or infinity rejected (`allow_nan=False`). `defenses.interfaces.canonical_json_bytes` implements it, and every hash of a JSON value serializes through it; file and text hashes hash their bytes directly.
 - Payload records retain canonical, rendered, pre-D2_DATAMARKING, and post-D2_DATAMARKING hashes as applicable.
 - Fixture hashes are verified before paired trials.
 - The sanitizer produces a new bundle manifest but may not alter scored fields.
@@ -53,7 +53,7 @@ CANARY carries several independent version identifiers. They advance on differen
 |---|---|---|
 | Specification version | `SPEC.md` header | The specification document is re-baselined; after freeze, only through `SPEC.md` Section 11 |
 | `protocol_version` | Result records and `protocol/active.json` | The claim-bearing protocol changes; a material change after freeze requires the Section 11 increment |
-| `schema_version` and schema `$id` | `schemas/*.schema.json` and every record they validate | A schema's serialized structure changes; schemas stay `0.x` until the measurement-contract lock and become `1.0.0` as part of that lock |
+| `schema_version` and schema `$id` | `schemas/*.schema.json` and every record they validate | A schema's serialized structure changes; schemas were `0.x` until the measurement-contract lock and became `1.0.0` at it ([decision 0009](decisions/0009-measurement-contract-lock.md)) |
 | Package version | `pyproject.toml` | A tagged software release is cut; it does not track the specification or protocol |
 | Component versions | Constants such as `RUNNER_VERSION`, `LOOP_VERSION`, and `PROVIDER_ADAPTER_VERSION`, recorded in events and results | That component's behavior changes (see `docs/INTERFACES.md`); `-v0` and `placeholder` values mark pre-freeze or mock implementations |
 
