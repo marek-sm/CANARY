@@ -26,6 +26,7 @@ from typing import Any, Callable, Iterable, Mapping, Optional
 from jsonschema import Draft202012Validator
 
 from agent.loop import LOOP_VERSION, MAX_STEPS, run_loop
+from defenses.interfaces import canonical_json_bytes
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 
 RUNNER_VERSION = "mock-slice-v0"
@@ -57,10 +58,8 @@ COMPONENT_VERSIONS = {
 }
 
 
-# Provisional serialization for hashing only; W5-T3 commits the canonical JSON rule.
 def sha256_json(value: Any) -> str:
-    data = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+    return hashlib.sha256(canonical_json_bytes(value)).hexdigest()
 
 
 def sha256_text(text: str) -> str:
@@ -121,7 +120,7 @@ class EventLog:
         append_jsonl(
             self.path,
             {
-                "schema_version": "0.1.0",
+                "schema_version": "1.0.0",
                 "event_id": f"{self.logical_trial_id}:e{self.sequence}",
                 "sequence": self.sequence,
                 "event_type": event_type,
@@ -257,7 +256,7 @@ def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     )
 
     return {
-        "schema_version": "0.1.0",
+        "schema_version": "1.0.0",
         "split": "development",
         "protocol_version": None,
         "experiment_id": EXPERIMENT_ID,

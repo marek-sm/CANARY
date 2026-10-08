@@ -1,4 +1,4 @@
-"""Excluded W5-T1 smoke; provisional records pending the W5-T3 contract."""
+"""Excluded W5-T1 smoke on the locked contract; the independent audit is not yet integrated."""
 from __future__ import annotations
 import argparse
 import json
@@ -14,7 +14,7 @@ from tasks import ticket
 from runner import mock_slice as base
 from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
 
-VERSION = "ticket-runner-v0.1.0"
+VERSION = "ticket-runner-v0.2.0"
 # Present only in real-provider responses (agent/openai_adapter.py); the mock has none.
 PROVIDER_EVIDENCE_KEYS = ("usage", "requested_at", "completed_at", "latency_ms", "error", "provider_response")
 
@@ -56,10 +56,11 @@ def assemble(events, analysis_role="excluded_mock"):
     p = start["payload"]
     result.update(experiment_id=start["experiment_id"], logical_trial_id=start["logical_trial_id"], base_case_id=ticket.TASK_ID,
                   case_id=ticket.TASK_ID + ":none:none", analysis_role=analysis_role,
-                  measurement_limitation="W5-T3 audit/security scoring and final contract unavailable")
+                  measurement_limitation="independent authorization audit and security scoring not integrated")
     result["run_metadata"].update(rendered_fixture_hash=p["fixture_hash"], task_policy_hash=p["policy_hash"], utility_oracle_hash=p["utility_hash"])
     result["utility"] = {"oracle_id": ticket.TASK_ID, "oracle_version": UTILITY_VERSION,
                          "pass": validate(events), "reason_codes": ["deterministic_ticket_evidence"]}
+    ended = next(e["payload"] for e in events if e["event_type"] == "trial_ended")
     result["tool_events"] = []
     for event in events:
         if event["event_type"] != "tool_requested":
@@ -69,10 +70,14 @@ def assemble(events, analysis_role="excluded_mock"):
         returned = next((e["payload"] for e in related if e["event_type"] == "tool_result"), None)
         effect = next((e["payload"] for e in related if e["event_type"] == "effect_observation"), None)
         entered = any(e["event_type"] == "tool_dispatch" for e in related)
+        # A call in a content-filter response is never dispatched; the durable trial
+        # end proves no dispatch and no effect (SPEC.md Section 9, decision 0008).
+        filtered = (not entered and ended["termination_reason"] == "provider_content_filter"
+                    and request["step"] == ended["steps_used"])
         request.update(request_evaluable=False, authorized=None, gate_decision=None, audit_decision=None,
-                       gate_audit_match=None, blocked=False, dispatched=True if entered else None,
+                       gate_audit_match=None, blocked=False, dispatched=True if entered else (False if filtered else None),
                        disposition_observed=None, execution_succeeded=returned["observation"]["ok"] if returned else None,
-                       effect_observed=effect["effect_observed"] if effect else None,
+                       effect_observed=effect["effect_observed"] if effect else (False if filtered else None),
                        effect_oracle_id="read-returned-v0.1.0", sink_received=False,
                        evidence_refs=[e["event_id"] for e in related])
         result["tool_events"].append(request)
@@ -95,7 +100,7 @@ def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING
                "policy_hash": base.sha256_json(manifest["policy"]),
                "utility_hash": base.sha256_text((ticket.ROOT / "oracles/utility/ticket.py").read_text()),
                "tool_schema_hash": base.sha256_json(ticket.TOOL_SCHEMA), "task_version": manifest["version"],
-               "runner_version": VERSION, "measurement_limitation": "W5-T3 unavailable; provisional integration"})
+               "runner_version": VERSION, "measurement_limitation": "independent authorization audit not integrated"})
 
     def on_attempt(step, attempt_index, response):
         call = f"{trial}:step{step}"

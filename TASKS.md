@@ -81,7 +81,7 @@ Some gates need several tracks' finished work combined in the same week. That co
 | Week | Gate | Step | Uses | Run by |
 |---|---|---|---|---|
 | W5 | Gate 1 | The measurement-contract lock commit: re-pin `W5-T1`, `W5-T2`, `W5-T3`, and `W5-T5` to the frozen `W5-T3` schemas and `W5-T4` interfaces, version the contract, and freeze the `SPEC.md` Section 5 corpus rules | `W5-T1` to `W5-T5` as merged at the lock | Project lead |
-| W7 | Gate 2 | Run `W7-T4`'s committed readiness checks on `W7-T3`'s grid records and record the binary D1_POLICY_GATE and D2_DATAMARKING decisions as the Section 12 tier input | `W7-T3`, `W7-T4` | Project lead |
+| W7 | Gate 2 | Run `W7-T4`'s committed readiness checks on `W7-T3`'s grid records and record the binary D1_POLICY_GATE and D2_DATAMARKING decisions as the Section 12 tier input, plus the `SPEC.md` Section 10 development-floor count from a floor-count script the project lead merges before the grid's first paid call | `W7-T3`, `W7-T4` | Project lead |
 | W8 | Gate 3 | Generate `protocol/active.json` with `W8-T3`'s committed generator from the frozen `W8-T1`, `W8-T2`, and `W8-T4` hashes, the merged code commit, and the CI container digest; run `make report` to show `W8-T5`'s pipeline produces the empty generated shells from `W8-T3`'s frozen analysis code | `W8-T1` to `W8-T5` | Project lead |
 
 #### Lead and outside inputs
@@ -95,6 +95,7 @@ Each input is due before the Monday of the first week that uses it. If an outsid
 | Friday, October 2 | The OpenAI provider adapter, merged as W6 lead scaffold | Project lead | `W7-T1`, `W7-T3`, `W9-T3` |
 | Sunday, October 11 (moved with W7) | Paid-run access for the people running live calls, under the decision 0005 cap and credential rule; the named demo operator required by `SPEC.md` Section 13 | Project lead | `W7-T1`, `W7-T3`, `W7-T5`, `W9-T3`, `W13-T5` |
 | Sunday, October 4 | Evaluation-candidate selection margin, recorded in `STATUS.md`. `W7-T2` sources to the provisional tier count plus this margin | Project lead | `W7-T2` |
+| Saturday, October 10 | The measurement-contract lock ([decision 0009](docs/decisions/0009-measurement-contract-lock.md)), reviewed by Miles, merged after the W6 merges and before the recovery check | Project lead | `W7-T1`, `W7-T2`, `W7-T3` |
 | Set at the October 11 re-plan; it needs `W7-T3`'s grid, so no earlier than the Gate 2 step on Saturday, October 17 | Season budget from measured development cost; selected tier, active-contributor count, funded budget, and model decision, including the frozen endpoint, reasoning effort, and fallback-model decision | Project lead | `W8-T2`, `W8-T3`, `W8-T4`, `W9-T3` |
 | Sunday, November 1 (Gate 4 target) | Which results are supported; code and content license choice; author order from documented contributions, for `CITATION.cff` | Project lead | `W11-T3`, `W11-T4`, `W11-T5` |
 | Monday, November 2 | Manuscript draft for review | Designated club paper leads | `W11-T2`, `W11-T5`, `W12-T3` |
@@ -139,6 +140,8 @@ outstanding. The original Thursday acceptance deadline is not represented as met
 [#24](https://github.com/marek-sm/CANARY/pull/24) (`6263576`). On a fresh clone
 of that commit, the ticket run's records validate against W5-T3's result schema,
 including `split`. The measurement-contract lock is still outstanding.
+
+**Measurement-contract lock:** this supersedes the "has not landed" and "lock outstanding" lines above. [Decision 0009](docs/decisions/0009-measurement-contract-lock.md) re-pins this slice to the `1.0.0` schemas and W5-T4 interfaces, and the ticket run's records validate against them. The independent authorization audit and security scoring stay outstanding until the W6-T3 audit is integrated.
 
 ### W6 — build the development instrument (September 28–October 4)
 

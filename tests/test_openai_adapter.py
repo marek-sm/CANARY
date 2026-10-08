@@ -47,7 +47,8 @@ def tool_body(arguments='{"path": "inbox/ticket-100.txt"}', call_id="call_1"):
 
 
 class Fake:
-    """Scripted transport: each entry is a response body, an int status, or an exception."""
+    """Scripted transport: each entry is a response body, an int status, a
+    (status, provider error code) pair, or an exception."""
 
     def __init__(self, *script):
         self.script = list(script)
@@ -58,6 +59,10 @@ class Fake:
         item = self.script.pop(0)
         if isinstance(item, Exception):
             raise item
+        if isinstance(item, tuple):
+            status, code = item
+            return httpx2.Response(status, json={"error": {"message": "fake", "type": "fake", "code": code}},
+                                   headers={"x-request-id": "req_err"})
         if isinstance(item, int):
             return httpx2.Response(item, json={"error": {"message": "fake", "type": "fake"}}, headers={"x-request-id": "req_err"})
         return httpx2.Response(200, json=item, headers={"x-request-id": "req_123"})
@@ -159,7 +164,7 @@ def test_tool_call_is_normalized_for_the_loop():
         {"type": "tool_use", "id": "call_1", "name": "read_file", "input": {"path": "inbox/ticket-100.txt"}}]}
 
 
-@pytest.mark.parametrize("finish,stop", [("length", "max_tokens"), ("content_filter", "end_turn"), ("surprise", "surprise")])
+@pytest.mark.parametrize("finish,stop", [("length", "max_tokens"), ("content_filter", "content_filter"), ("surprise", "surprise")])
 def test_finish_reason_mapping(finish, stop):
     body = text_body("", finish_reason=finish) if finish != "surprise" else text_body("x")
     if finish == "surprise":
@@ -174,6 +179,26 @@ def test_unparseable_arguments_never_dispatch():
                        model_request={"model": MODEL}, on_attempt=lambda *a: None, dispatch=dispatched.append,
                        on_tool=lambda *a: None)
     assert outcome.termination_reason == "malformed_model_output" and dispatched == []
+
+
+NON_FINITE = ['{"path": NaN}', '{"path": -Infinity}', '{"path": "inbox/ticket-100.txt", "n": 1e999}']
+
+
+@pytest.mark.parametrize("arguments", NON_FINITE)
+def test_non_finite_arguments_stay_unparsed(arguments):
+    # NaN, infinity, and 1e999 are not JSON; parsed, they would make the
+    # canonical evidence hash (decision 0009) raise.
+    response = call(Fake(tool_body(arguments=arguments)))
+    assert response["raw_response"]["content"][0]["input"] == arguments
+    base.sha256_json(response)
+
+
+@pytest.mark.parametrize("arguments", NON_FINITE)
+def test_non_finite_arguments_are_a_logged_malformed_model_output(tmp_path, arguments):
+    events, result = run_ticket(tmp_path, Fake(tool_body(arguments=arguments)))
+    assert len(of_type(events, "provider_attempt")) == 1
+    assert result["status"] == "completed" and result["termination_reason"] == "malformed_model_output"
+    assert of_type(events, "tool_dispatch") == []
 
 
 # Errors and retries ---------------------------------------------------------
@@ -212,6 +237,76 @@ def test_rejected_request_logs_every_attempt_then_infrastructure_failure(tmp_pat
     [result] = base.read_jsonl(out / base.RESULTS_FILE, "result")
     assert [a["payload"]["error"]["status"] for a in attempts] == [401, 401, 401]
     assert result["termination_reason"] == "infrastructure_failure" and len(result["attempts"]) == 3
+
+
+# Content-filter refusals (decision 0008) ------------------------------------
+
+POLICY_CODE = "fake_content_policy_code"
+
+
+def run_ticket(tmp_path, fake):
+    out = ticket_slice.run(tmp_path / "run", fake.adapter(), model=MODEL, decoding=DECODING,
+                           experiment_id="live-dev-test", analysis_role="excluded_development")
+    [result] = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    return base.read_jsonl(out / base.EVENTS_FILE, "event"), result
+
+
+def of_type(events, kind):
+    return [e for e in events if e["event_type"] == kind]
+
+
+@pytest.fixture
+def policy_code(monkeypatch):
+    # OpenAI documents no Chat Completions content-policy code, so the shipped
+    # set is empty; tests list a fake one to exercise the rule.
+    monkeypatch.setattr(adapter_mod, "CONTENT_POLICY_CODES", frozenset({POLICY_CODE}), raising=False)
+
+
+def test_listed_content_policy_rejection_is_one_completed_refusal(tmp_path, policy_code):
+    fake = Fake((400, POLICY_CODE), (400, POLICY_CODE), (400, POLICY_CODE))
+    events, result = run_ticket(tmp_path, fake)
+    attempts = of_type(events, "provider_attempt")
+    assert len(fake.requests) == 1  # never retried
+    assert [a["payload"]["outcome"] for a in attempts] == ["provider_content_filter"]
+    assert attempts[0]["payload"]["error"]["status"] == 400 and attempts[0]["payload"]["error"]["provider_code"] == POLICY_CODE
+    assert result["status"] == "completed" and result["termination_reason"] == "provider_content_filter"
+    # The final-output surface is complete and empty, so scorers see it rather than null.
+    assert [e["payload"]["text"] for e in of_type(events, "final_output")] == [""]
+    assert result["final_output"] == "" and result["utility"]["pass"] is False
+
+
+def test_unlisted_400_is_still_an_infrastructure_failure(tmp_path, policy_code):
+    fake = Fake((400, "other_code"), (400, "other_code"), (400, "other_code"))
+    events, result = run_ticket(tmp_path, fake)
+    assert len(fake.requests) == 3
+    assert {a["payload"]["outcome"] for a in of_type(events, "provider_attempt")} == {"no_model_content"}
+    assert result["status"] == "infrastructure_failure" and result["termination_reason"] == "infrastructure_failure"
+
+
+def test_content_filter_finish_is_a_refusal_that_keeps_its_text(tmp_path):
+    events, result = run_ticket(tmp_path, Fake(text_body("partial answer", finish_reason="content_filter")))
+    assert result["status"] == "completed" and result["termination_reason"] == "provider_content_filter"
+    assert result["final_output"] == "partial answer"
+
+
+def test_tool_call_under_content_filter_is_requested_but_not_dispatched(tmp_path):
+    call = {"id": "call_1", "type": "function", "function": {"name": "read_file", "arguments": '{"path": "inbox/ticket-100.txt"}'}}
+    events, result = run_ticket(tmp_path, Fake(completion({"content": None, "tool_calls": [call]}, "content_filter")))
+    assert [e["payload"]["requested_args"] for e in of_type(events, "tool_requested")] == [{"path": "inbox/ticket-100.txt"}]
+    assert of_type(events, "tool_dispatch") == [] and of_type(events, "tool_result") == []
+    assert result["termination_reason"] == "provider_content_filter" and result["final_output"] == ""
+    [tool_event] = result["tool_events"]
+    # The durable trial end proves no dispatch and no effect; execution is not applicable.
+    assert tool_event["dispatched"] is False and tool_event["blocked"] is False
+    assert tool_event["effect_observed"] is False and tool_event["execution_succeeded"] is None
+
+
+def test_refusal_leaves_earlier_step_evidence_unchanged(tmp_path, policy_code):
+    _, refused = run_ticket(tmp_path / "a", Fake(tool_body(), (400, POLICY_CODE)))
+    _, answered = run_ticket(tmp_path / "b", Fake(tool_body(), text_body("x")))
+    strip = lambda event: {k: v for k, v in event.items() if k != "evidence_refs"}
+    assert [strip(e) for e in refused["tool_events"]] == [strip(e) for e in answered["tool_events"]]
+    assert refused["tool_events"][0]["authorized"] is None  # unknown stays unknown
 
 
 def test_empty_choices_is_no_content():
