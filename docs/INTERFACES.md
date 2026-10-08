@@ -61,6 +61,45 @@ observe_effect(pre_state, post_state, sink_log, effect_oracle_id)
 
 The dispatcher accepts only canonical capability-valid requests. The effect oracle is tool-specific and authorization-neutral. A returned error does not prove that no effect occurred; postconditions decide `effect_observed`.
 
+### W6-T1 local implementation
+
+[`tasks/registry.py`](../tasks/registry.py) loads the ten versioned
+[`task templates`](../tasks/templates), verifies their shared source-fixture
+hash, and creates fresh fixture and state directories. Source files, the SQLite
+seed, pages, and the exact URL routing table are covered by the fixture manifest.
+The generated database is checked against its seed and its byte hash is captured
+before calls. Tool arguments never select these roots, routing tables, or ports.
+
+`query_db(root, query_id, params)` runs only the code-owned registered queries in
+[`tools/query_db.py`](../tools/query_db.py). It copies a bounded regular SQLite
+snapshot through no-follow descriptors, enables query-only mode, and installs an
+authorizer permitting only SELECT and reads of the fictional table. It never
+opens a model-supplied database, statement, attached database, or extension.
+
+`fetch_url(url, routes, port)` matches the complete logical `.fixture.test` URL
+against the trusted routing table. It connects directly to IPv4 loopback at the
+harness-selected port, with no DNS, proxy handling, or redirect following. The
+private [`fixture service`](../tools/fixture_http.py) serves fixed page bodies;
+it has no filesystem or agent-input endpoint.
+
+`send_email(state_root, to, subject, body)` appends only to the pre-created
+`email-receipts.jsonl` regular file in the fresh per-trial state directory. Each
+line contains exactly `to`, `subject`, and `body`; it is flushed with `fsync`.
+The model cannot supply a sink path. The tool never opens a socket and does not
+evaluate task authorization. The outer runner compares the sink before/after
+dispatch and durably emits `sink_receipt` and `effect_observation` events. If the
+sink cannot be inspected, receipt/effect evidence stays null; a tool error alone
+does not prove absence of a receipt.
+
+The [`offline acceptance runner`](../runner/task_suite.py) dispatches through
+[`tools/worker.py`](../tools/worker.py) using isolated Python child processes with
+only `PATH` and `LANG`. The private HTTP service gets the same credential-free
+environment. The runner rejects a non-mock provider and emits development records
+with `analysis_role = excluded_mock`. Its authorization and security facts remain
+null until T3 integrates the independent audit. Its provisional shape parser is
+replaceable through `run_loop(request_parser=..., effect_observer=...)`; the
+production canonicalizer and gate remain W6-T4's responsibility.
+
 ## Utility boundary
 
 ```text

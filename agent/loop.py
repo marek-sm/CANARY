@@ -9,7 +9,7 @@ import unicodedata
 
 from defenses.interfaces import CanonicalRequest
 
-LOOP_VERSION = "agent-loop-v0.2.0"
+LOOP_VERSION = "agent-loop-v0.3.0"
 NORMALIZER_VERSION = "read-file-normalizer-v0.1.0"
 MAX_STEPS = 8
 
@@ -23,6 +23,13 @@ class LoopOutcome:
 
 def response_text(raw_response: Mapping[str, Any]) -> str:
     return "".join(block["text"] for block in raw_response["content"] if block.get("type") == "text")
+
+
+def plain_args(value):
+    """Preserve nested immutable canonical arguments in serialized evidence."""
+    if isinstance(value, Mapping):
+        return {key: plain_args(item) for key, item in value.items()}
+    return value
 
 
 def parse_request(block, trial_id, step):
@@ -45,14 +52,16 @@ def parse_request(block, trial_id, step):
 
 def requested_payload(request: CanonicalRequest, block: Mapping[str, Any], step: int) -> dict[str, Any]:
     return {"call_id": request.call_id, "step": step, "tool": request.tool, "requested_args": block["input"],
-            "normalized_args": dict(request.normalized_args), "normalizer_version": request.normalizer_version}
+            "normalized_args": plain_args(request.normalized_args), "normalizer_version": request.normalizer_version}
 
 
 def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
              tool_schemas: Sequence[Mapping[str, Any]], decoding: Mapping[str, Any],
              model_request: Mapping[str, Any], on_attempt: Callable,
              max_steps: int = MAX_STEPS, logical_trial_id: str = "mock",
-             dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None) -> LoopOutcome:
+             dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None,
+             request_parser: Callable = parse_request,
+             effect_observer: Optional[Callable] = None) -> LoopOutcome:
     """Persist attempts before acting. A response consumes one step, retries do not."""
     if max_steps < 1:
         raise ValueError("max_steps must be at least 1")
@@ -84,7 +93,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
                 if len(calls) != 1 or dispatch is None or on_tool is None:
                     raise ValueError("one registered tool call required")
                 block = calls[0]
-                request = parse_request(block, logical_trial_id, step)
+                request = request_parser(block, logical_trial_id, step)
                 if block["id"] in seen_ids:
                     raise ValueError("duplicate provider call id")
                 seen_ids.add(block["id"])
@@ -98,8 +107,8 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             # for audit, but the trial has ended, so it is never dispatched.
             if on_tool is not None and len(calls) == 1:
                 try:
-                    filtered = parse_request(calls[0], logical_trial_id, step)
-                except ValueError:
+                    filtered = request_parser(calls[0], logical_trial_id, step)
+                except (KeyError, TypeError, ValueError):
                     filtered = None
                 if filtered is not None:
                     on_tool("tool_requested", requested_payload(filtered, calls[0], step))
@@ -109,8 +118,9 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             observation = dispatch(request)
             history.append({"role": "assistant", "content": copy.deepcopy(content)})
             history.append({"role": "user", "content": [{"type": "tool_result", "tool_use_id": block["id"], "content": observation}]})
-            on_tool("effect_observation", {"call_id": request.call_id, "step": step,
-                    "effect_observed": observation["ok"], "effect_oracle_id": "read-returned-v0.1.0"})
+            effect = effect_observer(request, observation) if effect_observer is not None else {
+                "effect_observed": observation["ok"], "effect_oracle_id": "read-returned-v0.1.0"}
+            on_tool("effect_observation", {"call_id": request.call_id, "step": step, **effect})
             continue
         text = response_text(raw)
         if raw["stop_reason"] == "end_turn":

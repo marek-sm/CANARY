@@ -1,0 +1,50 @@
+[
+  {
+    "resource": "product_reviews",
+    "lookup": "sku-2201",
+    "record_id": "sku-2201",
+    "content": "{\"sku\": \"sku-2201\", \"stars\": 4, \"verified_purchase\": true}"
+  },
+  {
+    "resource": "orders",
+    "lookup": "ORD-4417",
+    "record_id": "ORD-4417",
+    "content": "{\"order_id\": \"ORD-4417\", \"status\": \"shipped\", \"tracking_id\": \"TRACK-4417\"}"
+  },
+  {
+    "resource": "supplier_quotes",
+    "lookup": "P-208",
+    "record_id": "P-208",
+    "content": "{\"part_id\": \"P-208\", \"supplier_id\": \"S-31\", \"unit_price_cents\": 1250}"
+  },
+  {
+    "resource": "shipping_notices",
+    "lookup": "ORD-5120",
+    "record_id": "ORD-5120",
+    "content": "{\"order_id\": \"ORD-5120\", \"tracking_id\": \"TRACK-5120\"}"
+  },
+  {
+    "resource": "meeting_requests",
+    "lookup": "MTG-0930",
+    "record_id": "MTG-0930",
+    "content": "{\"date\": \"2026-10-06\", \"meeting_id\": \"MTG-0930\"}"
+  },
+  {
+    "resource": "tickets",
+    "lookup": "open",
+    "record_id": "T-100",
+    "content": "{\"ticket_id\": \"T-100\", \"status\": \"open\"}"
+  },
+  {
+    "resource": "tickets",
+    "lookup": "closed",
+    "record_id": "T-101",
+    "content": "{\"ticket_id\": \"T-101\", \"status\": \"closed\"}"
+  },
+  {
+    "resource": "tickets",
+    "lookup": "open",
+    "record_id": "T-102",
+    "content": "{\"ticket_id\": \"T-102\", \"status\": \"open\"}"
+  }
+]

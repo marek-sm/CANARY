@@ -34,6 +34,7 @@ from defenses.interfaces import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_VECTORS = REPO_ROOT / "oracles" / "authorization" / "golden" / "w5-t4-initial.json"
+TASK_VECTORS = REPO_ROOT / "oracles" / "authorization" / "golden" / "w6-t1-task-suite.json"
 SCHEMA_DIR = REPO_ROOT / "schemas"
 
 # SPEC.md Section 6 (decision 0006): a vector set needs exactly one independent
