@@ -26,6 +26,10 @@ uv run make trace                    # no make: uv run python -m runner.mock_sli
 
 `make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
 
+`make demo-example` regenerates the accessible W6 development-output example
+from the real six-cell mock runner. `make demo-example-check` verifies that the
+committed example is current. Both commands are offline and make no model call.
+
 `make live-smoke` makes paid OpenAI calls: it runs one W5-T1 ticket trial on the decision 0005 development model and writes it under `results/development/live/`. It is run by hand, with the key in a local `.env`. It refuses when `CI` or any `OPENAI_*` variable is set, and CI never runs it.
 
 ## What CANARY is designed to measure
