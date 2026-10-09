@@ -5,14 +5,10 @@ from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use
+from defenses.interfaces import CanonicalRequest
 
-<<<<<<< HEAD
-LOOP_VERSION = "agent-loop-v0.1.0"
-SUPPORTED_TOOLS = ("read_file",)  # widened by W6-T1 as each safe tool lands
-=======
 LOOP_VERSION = "agent-loop-v0.2.0"
-NORMALIZER_VERSION = "read-file-normalizer-v0.1.0"
->>>>>>> main
+SUPPORTED_TOOLS = ("read_file",)  # widened by W6-T1 as each safe tool lands
 MAX_STEPS = 8
 
 
