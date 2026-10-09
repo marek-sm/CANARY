@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:result:0.1.0",
+  "$id": "urn:CANARY:schema:result:1.0.0",
   "title": "CANARY logical-trial result",
-  "description": "One logical trial and its derived Boolean-or-null endpoints. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Unknown evidence is null, never false. Pre-lock version: additive changes must land with fixtures and tests.",
+  "description": "One logical trial and its derived Boolean-or-null endpoints. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Unknown evidence is null, never false. Locked at 1.0.0 by decision 0009; after the lock, a change on the docs/DATA_CONTRACTS.md evolution-rules list follows SPEC.md Section 11.",
   "type": "object",
   "required": [
     "schema_version",
@@ -35,11 +35,11 @@
   ],
   "properties": {
     "measurement_limitation": {
-      "description": "Optional pre-lock development annotation identifying unavailable measurement components; never an endpoint or a replacement for null evidence.",
+      "description": "Optional development annotation identifying unavailable measurement components; never an endpoint or a replacement for null evidence.",
       "type": "string",
       "minLength": 1
     },
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {"const": "1.0.0"},
     "split": {
       "description": "Which split this trial belongs to. Evaluation trials must carry a protocol, channel, condition, and comparison superblock (see allOf below); development trials may leave those null.",
       "enum": ["development", "evaluation"]
@@ -61,7 +61,7 @@
     "run_index": {"type": "integer", "minimum": 1},
     "status": {"enum": ["completed", "infrastructure_failure"]},
     "termination_reason": {
-      "enum": ["final_answer", "max_steps", "malformed_model_output", "infrastructure_failure"]
+      "enum": ["final_answer", "max_steps", "malformed_model_output", "provider_content_filter", "infrastructure_failure"]
     },
     "run_metadata": {
       "type": "object",
@@ -117,7 +117,7 @@
           "step": {"type": "integer", "minimum": 1},
           "attempt_index": {"type": "integer", "minimum": 1},
           "provider_request_id": {"type": ["string", "null"]},
-          "outcome": {"enum": ["model_response", "no_model_content"]}
+          "outcome": {"enum": ["model_response", "no_model_content", "provider_content_filter"]}
         }
       }
     },
@@ -239,7 +239,7 @@
       "required": ["authorized", "reason_codes", "evaluator_version"],
       "properties": {
         "authorized": {"$ref": "#/$defs/tri"},
-        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "reason_codes": {"type": "array", "items": {"enum": ["argument_missing", "argument_unexpected", "argument_type_invalid", "tool_not_permitted", "call_budget_exceeded", "path_not_authorized", "query_not_authorized", "query_param_not_authorized", "url_not_authorized", "recipient_not_authorized", "subject_field_not_authorized", "body_field_not_authorized", "grant_missing", "grant_already_consumed"]}},
         "evaluator_version": {"type": "string", "minLength": 1}
       }
     },

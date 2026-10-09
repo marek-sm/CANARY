@@ -138,7 +138,7 @@ def test_end_to_end_no_network_no_env(tmp_path, monkeypatch):
     assert tool['blocked'] is False
     assert runner.assemble(events) == result
     trace = render_trace(out / base.EVENTS_FILE)
-    assert 'T-100' in trace and 'W5-T3' in trace and 'EFFECT OBSERVED' in trace
+    assert 'T-100' in trace and 'independent authorization audit' in trace and 'EFFECT OBSERVED' in trace
     assert 'NONE IN THIS MOCK TRIAL' not in trace
     assert all(len(line) <= 60 for line in trace.splitlines())
     with pytest.raises(FileExistsError):

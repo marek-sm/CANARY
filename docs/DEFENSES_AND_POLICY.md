@@ -16,7 +16,7 @@ This guide records the W5-T4 interface freeze for authorization, `D1_POLICY_GATE
 | [`defenses/datamarking.py`](../defenses/datamarking.py) | The `D2_DATAMARKING` transform and coverage helpers (W6-T4) |
 | [`tests/test_policy_gate.py`](../tests/test_policy_gate.py), [`tests/test_datamarking.py`](../tests/test_datamarking.py) | Gate, canonicalizer, and datamarking tests over the W5-T4 vectors (W6-T4) |
 
-Every version here is `0.x` until the end-of-week-5 measurement-contract lock.
+Every version here moved from `0.x` to `1.0.0` at the end-of-week-5 measurement-contract lock ([decision 0009](decisions/0009-measurement-contract-lock.md)).
 
 ## 1. Authorization interface
 
@@ -136,6 +136,6 @@ A later error never erases an earlier event, and missing evidence stays null.
 ## 5. Open items for review
 
 - Golden vectors and datamarking vectors are authored by T4. `reviewed_by` lists the one independent reviewer, who is not the author. `SPEC.md` Section 6 requires exactly one before any differential result is trusted ([decision 0006](decisions/0006-one-vector-reviewer.md)); `review_complete` in the conformance harness checks this. Chace is the reviewer of both W5-T4 vector sets.
-- `canonical_json_bytes` mirrors the runner's provisional serialization and must re-point to the rule W5-T3 commits.
+- `canonical_json_bytes` is the one canonical JSON rule since the lock ([decision 0009](decisions/0009-measurement-contract-lock.md) item 3), and the runner hashes through it.
 - Task policies validate against `schemas/policy.schema.json`: W5-T1's `tasks/ticket.json` policy does, and the W5-T1 runner checks it on every run. W6-T1's policies must too.
 - W6-T4 review points: (1) `post_sha256` hashes the marked decoded text, not the escaped form; confirm this is the hash the result schema wants. (2) `mark_html_document` is a coverage reference built on `html.parser`; W6-T2's C4 parser declares the real spans and may supersede it. (3) `SUPPORTED_TOOLS` in `agent/loop.py` stays `("read_file",)` until W6-T1 lands the other three tools.

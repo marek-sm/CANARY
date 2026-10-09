@@ -1,4 +1,4 @@
-"""Excluded W5-T1 smoke; provisional records pending the W5-T3 contract."""
+"""Excluded W5-T1 smoke on the locked contract; the independent audit is not yet integrated."""
 from __future__ import annotations
 import argparse
 import json
@@ -12,9 +12,11 @@ from agent.loop import run_loop
 from oracles.utility.ticket import validate, VERSION as UTILITY_VERSION
 from tasks import ticket
 from runner import mock_slice as base
-from runner.mock_provider import MockProvider, MOCK_MODEL_ID
+from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
 
-VERSION = "ticket-runner-v0.1.0"
+VERSION = "ticket-runner-v0.2.0"
+# Present only in real-provider responses (agent/openai_adapter.py); the mock has none.
+PROVIDER_EVIDENCE_KEYS = ("usage", "requested_at", "completed_at", "latency_ms", "error", "provider_response")
 
 
 class TicketProvider(MockProvider):
@@ -48,16 +50,17 @@ def worker(root, request):
     return json.loads(completed.stdout)
 
 
-def assemble(events):
+def assemble(events, analysis_role="excluded_mock"):
     result = base.assemble_result(events)
     start = events[0]
     p = start["payload"]
-    result.update(logical_trial_id=start["logical_trial_id"], base_case_id=ticket.TASK_ID,
-                  case_id=ticket.TASK_ID + ":none:none", analysis_role="excluded_mock",
-                  measurement_limitation="W5-T3 audit/security scoring and final contract unavailable")
+    result.update(experiment_id=start["experiment_id"], logical_trial_id=start["logical_trial_id"], base_case_id=ticket.TASK_ID,
+                  case_id=ticket.TASK_ID + ":none:none", analysis_role=analysis_role,
+                  measurement_limitation="independent authorization audit and security scoring not integrated")
     result["run_metadata"].update(rendered_fixture_hash=p["fixture_hash"], task_policy_hash=p["policy_hash"], utility_oracle_hash=p["utility_hash"])
     result["utility"] = {"oracle_id": ticket.TASK_ID, "oracle_version": UTILITY_VERSION,
                          "pass": validate(events), "reason_codes": ["deterministic_ticket_evidence"]}
+    ended = next(e["payload"] for e in events if e["event_type"] == "trial_ended")
     result["tool_events"] = []
     for event in events:
         if event["event_type"] != "tool_requested":
@@ -67,36 +70,45 @@ def assemble(events):
         returned = next((e["payload"] for e in related if e["event_type"] == "tool_result"), None)
         effect = next((e["payload"] for e in related if e["event_type"] == "effect_observation"), None)
         entered = any(e["event_type"] == "tool_dispatch" for e in related)
+        # A call in a content-filter response is never dispatched; the durable trial
+        # end proves no dispatch and no effect (SPEC.md Section 9, decision 0008).
+        filtered = (not entered and ended["termination_reason"] == "provider_content_filter"
+                    and request["step"] == ended["steps_used"])
         request.update(request_evaluable=False, authorized=None, gate_decision=None, audit_decision=None,
-                       gate_audit_match=None, blocked=False, dispatched=True if entered else None,
+                       gate_audit_match=None, blocked=False, dispatched=True if entered else (False if filtered else None),
                        disposition_observed=None, execution_succeeded=returned["observation"]["ok"] if returned else None,
-                       effect_observed=effect["effect_observed"] if effect else None,
+                       effect_observed=effect["effect_observed"] if effect else (False if filtered else None),
                        effect_oracle_id="read-returned-v0.1.0", sink_received=False,
                        evidence_refs=[e["event_id"] for e in related])
         result["tool_events"].append(request)
     return result
 
 
-def run(out: Path, provider=None):
+def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING, experiment_id=base.EXPERIMENT_ID,
+        analysis_role="excluded_mock"):
     out.mkdir(parents=True, exist_ok=False)
+    provider = provider or TicketProvider()
     fixture = ticket.reset(out / "fixtures")
     manifest = ticket.manifest()
     base.validator("policy").validate(manifest["policy"])
-    trial = f"mock-dev:unfrozen:{MOCK_MODEL_ID}:{ticket.TASK_ID}:none:none:D0_BASELINE:r1"
-    log = base.EventLog(out / base.EVENTS_FILE, base.utc_now, logical_trial_id=trial, component_versions={**base.COMPONENT_VERSIONS, "runner": VERSION, "read_file": "read-file-v0.1.0", "utility": str(UTILITY_VERSION)})
+    trial = f"{experiment_id}:unfrozen:{model}:{ticket.TASK_ID}:none:none:D0_BASELINE:r1"
+    log = base.EventLog(out / base.EVENTS_FILE, base.utc_now, logical_trial_id=trial, experiment_id=experiment_id, component_versions={**base.COMPONENT_VERSIONS, "provider_adapter": getattr(provider, "adapter_version", PROVIDER_ADAPTER_VERSION), "runner": VERSION, "read_file": "read-file-v0.1.0", "utility": str(UTILITY_VERSION)})
     messages = [{"role": "system", "content": ticket.SYSTEM_PROMPT}, {"role": "user", "content": ticket.TASK_PROMPT}]
     log.append("trial_started", {"task_prompt": ticket.TASK_PROMPT, "prompt_sha256": base.sha256_json(messages),
-               "model_requested": MOCK_MODEL_ID, "decoding": base.DECODING, "max_steps": manifest["max_steps"],
+               "model_requested": model, "decoding": dict(decoding), "max_steps": manifest["max_steps"],
                "code_commit": base.code_commit(), "tier": None, "fixture_hash": ticket.verify(fixture),
                "policy_hash": base.sha256_json(manifest["policy"]),
                "utility_hash": base.sha256_text((ticket.ROOT / "oracles/utility/ticket.py").read_text()),
                "tool_schema_hash": base.sha256_json(ticket.TOOL_SCHEMA), "task_version": manifest["version"],
-               "runner_version": VERSION, "measurement_limitation": "W5-T3 unavailable; provisional integration"})
+               "runner_version": VERSION, "measurement_limitation": "independent authorization audit not integrated"})
 
     def on_attempt(step, attempt_index, response):
         call = f"{trial}:step{step}"
-        log.append("provider_attempt", {"step": step, "attempt_index": attempt_index,
-                   **{key: response[key] for key in ("outcome", "provider_request_id", "model_requested", "model_resolved", "provider_fingerprint", "raw_response")}},
+        payload = {"step": step, "attempt_index": attempt_index,
+                   **{key: response[key] for key in ("outcome", "provider_request_id", "model_requested", "model_resolved", "provider_fingerprint", "raw_response")}}
+        if "provider_response" in response:
+            payload.update({key: response.get(key) for key in PROVIDER_EVIDENCE_KEYS})
+        log.append("provider_attempt", payload,
                    model_call_id=call, attempt_id=f"{call}:a{attempt_index}", raw_sha256=base.sha256_json(response["raw_response"]))
 
     def on_tool(kind, payload):
@@ -109,8 +121,8 @@ def run(out: Path, provider=None):
         return observation
 
     try:
-        outcome = run_loop(provider or TicketProvider(), messages, tool_schemas=[ticket.TOOL_SCHEMA],
-                           decoding=base.DECODING, model_request={"model": MOCK_MODEL_ID}, on_attempt=on_attempt,
+        outcome = run_loop(provider, messages, tool_schemas=[ticket.TOOL_SCHEMA],
+                           decoding=decoding, model_request={"model": model}, on_attempt=on_attempt,
                            max_steps=manifest["max_steps"], logical_trial_id=trial, dispatch=dispatch, on_tool=on_tool)
         if outcome.final_text is not None:
             log.append("final_output", {"text": outcome.final_text, "text_sha256": base.sha256_text(outcome.final_text)})
@@ -121,7 +133,7 @@ def run(out: Path, provider=None):
     log.append("trial_ended", {"status": "infrastructure_failure" if termination == "infrastructure_failure" else "completed", "termination_reason": termination, "steps_used": steps})
     events = base.read_jsonl(out / base.EVENTS_FILE, "event")
     (out / base.RESULTS_FILE).touch(exist_ok=False)
-    base.append_jsonl(out / base.RESULTS_FILE, assemble(events), "result")
+    base.append_jsonl(out / base.RESULTS_FILE, assemble(events, analysis_role), "result")
     return out
 
 

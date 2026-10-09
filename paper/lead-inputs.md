@@ -113,6 +113,7 @@ The result sentence varies by tier (SPEC §1, Predeclared result sentence):
 - A `ONE` tier includes only its retained defense clause.
 - A `BASE` tier replaces the template with a baseline measurement sentence and explicitly says that no defense passed the predeclared readiness gate.
 - `ENGINEERING` replaces it with a validation statement: the safe instrument passed the named mock/excluded-case checks, and no official model experiment or defense estimate ran.
+- If the development floor applies (SPEC §10, Interpretation rules), the sentence takes the floor form written out in SPEC §1, Predeclared result sentence (decision 0009 item 7).
 
 The counts in the sentence must come from the selected SPEC §12 row. The table below reproduces that row data (SPEC §12, Machine-selectable operating tiers). Rendered attack-case and clean-twin counts derive from the retained base and adapter counts (SPEC §5, Crossed indirect-delivery design).
 
@@ -472,6 +473,7 @@ These are reported for every configuration (SPEC §10, Matched controls and seco
 - `D2_DATAMARKING`'s result tests static-corpus behavioral resistance, not adaptive security.
 - C1 stays in a separate descriptive table.
 - If the endpoint or pair error threshold is exceeded, the affected comparison leaves the headline until it is repaired as a full repair block and rerun.
+- The development-floor rule: see SPEC §10, Interpretation rules (decision 0009 item 7).
 
 ## 5. Map to the paper structure (SPEC §14)
 

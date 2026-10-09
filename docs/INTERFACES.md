@@ -12,6 +12,15 @@ The response preserves raw provider content by value or content-addressed refere
 
 The provider adapter never receives tool credentials because CANARY tools have none. The hosted-model credential remains in the outer runner process.
 
+`agent/openai_adapter.py` implements this boundary for OpenAI Chat Completions (decision 0005). It returns the mock provider's keys, with `raw_response` normalized to the `{stop_reason, content}` shape `agent/loop.py` parses. It adds five keys:
+
+- `provider_response`: the verbatim response body.
+- `requested_at` and `completed_at`.
+- `latency_ms`.
+- `error`: `type` (the error class, `no_choices`, or `invalid_body`), `status`, and, for HTTP errors, `provider_code` and `provider_type`. The message is never kept.
+
+Unknown values are `null`. SDK retries are off. A timeout, connection error, HTTP error other than a listed content-policy refusal, or empty `choices` returns `outcome: "no_model_content"` rather than raising, so every attempt is logged. The loop retries at most twice, then records `infrastructure_failure` (`SPEC.md` Section 9). A provider content-filter refusal is a completed outcome that is never retried and ends the trial with `termination_reason: "provider_content_filter"` ([decision 0008](decisions/0008-content-filter-refusals.md)). It covers a `content_filter` finish reason, whose text is kept, and an HTTP 400 whose provider code is in the adapter's `CONTENT_POLICY_CODES`, which returns `outcome: "provider_content_filter"`. That set is empty until a code is recorded, because OpenAI documents none for Chat Completions. `decoding` must name `endpoint: "chat_completions"` and a `reasoning_effort`, which must be `"none"` when tools are sent. `temperature` and `top_p` are rejected.
+
 ## Channel boundary
 
 ```text
@@ -97,6 +106,7 @@ Every schema, normalizer, parser, oracle, scorer, defense, prompt/tool registry,
 
 The [W5-T1 handoff](W5_T1_HANDOFF.md) specifies the read-file canonicalizer
 subset, tool-worker boundary, integer-versioned utility oracle, and provisional
-runner adapter. These consume the merged T4 interfaces. T3's finalized
-measurement contract is unavailable; compatibility and security scoring remain
-outstanding. The provider remains mock-only under decision 0005.
+runner adapter. These consume the merged T4 interfaces and the measurement contract
+locked at `1.0.0` ([decision 0009](decisions/0009-measurement-contract-lock.md)).
+The independent audit and security scoring remain outstanding until the W6-T3
+audit is integrated. The ticket runner also runs on the real provider adapter through `make live-smoke` under decision 0005.
