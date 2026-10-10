@@ -17,9 +17,18 @@ The provider adapter never receives tool credentials because CANARY tools have n
 - `provider_response`: the verbatim response body.
 - `requested_at` and `completed_at`.
 - `latency_ms`.
-- `error`: `type` (the error class, `no_choices`, or `invalid_body`), `status`, and, for HTTP errors, `provider_code` and `provider_type`. The message is never kept.
+- `error`: `type` (the error class, `no_choices` from the OpenAI adapter, `no_content` from the Anthropic adapter, or `invalid_body`), `status`, and, for HTTP errors, `provider_code` and `provider_type`. The message is never kept.
 
 Unknown values are `null`. SDK retries are off. A timeout, connection error, HTTP error other than a listed content-policy refusal, or empty `choices` returns `outcome: "no_model_content"` rather than raising, so every attempt is logged. The loop retries at most twice, then records `infrastructure_failure` (`SPEC.md` Section 9). A provider content-filter refusal is a completed outcome that is never retried and ends the trial with `termination_reason: "provider_content_filter"` ([decision 0008](decisions/0008-content-filter-refusals.md)). It covers a `content_filter` finish reason, whose text is kept, and an HTTP 400 whose provider code is in the adapter's `CONTENT_POLICY_CODES`, which returns `outcome: "provider_content_filter"`. That set is empty until a code is recorded, because OpenAI documents none for Chat Completions. `decoding` must name `endpoint: "chat_completions"` and a `reasoning_effort`, which must be `"none"` when tools are sent. `temperature` and `top_p` are rejected.
+
+`agent/anthropic_adapter.py` implements the same boundary for the Anthropic Messages API, the decision 0010 development candidate. It returns the same keys. Its `provider_fingerprint` is always `null`, because Anthropic sends none.
+
+- **Request.** Leading system messages become top-level `system` blocks. Whitespace-only assistant text is dropped, because the API rejects it. A system message later in the conversation, a non-object tool input, or a history that ends with an assistant turn raises before any request.
+- **Decoding.** `decoding` must name `endpoint: "messages"`, `thinking: "disabled"`, an `effort` of `low`, `medium`, or `high`, and a positive `max_tokens`. Adaptive thinking and sampling parameters are rejected.
+- **Refusals.** A `stop_reason` of `"refusal"`, the provider's classifier decline, maps to `content_filter` under decision 0008. Its text is kept, and `stop_details` stays in `provider_response`.
+- **Malformed values.** A response that carries NaN or infinity outside a tool input is recorded as unparseable, so the loop records `malformed_model_output`. A non-string `model`, error type, or error code is recorded as `null`.
+- **HTTP errors.** `error.provider_code` is the response's `error.details.error_code`. The adapter's `CONTENT_POLICY_CODES` is empty, because Anthropic documents no content-policy code.
+- **Cut-off replies.** After a text-only `max_tokens` stop, `agent/loop.py` adds the fixed user turn `CONTINUATION_PROMPT` on every provider. It keeps the cut-off text when there is any. The loop then continues.
 
 ## Channel boundary
 
@@ -109,4 +118,4 @@ subset, tool-worker boundary, integer-versioned utility oracle, and provisional
 runner adapter. These consume the merged T4 interfaces and the measurement contract
 locked at `1.0.0` ([decision 0009](decisions/0009-measurement-contract-lock.md)).
 The independent audit and security scoring remain outstanding until the W6-T3
-audit is integrated. The ticket runner also runs on the real provider adapter through `make live-smoke` under decision 0005.
+audit is integrated. The ticket runner also runs on a real provider adapter through `make live-smoke`. That runs the decision 0010 development candidate (Anthropic) by default, and the OpenAI fallback with `--provider openai`.

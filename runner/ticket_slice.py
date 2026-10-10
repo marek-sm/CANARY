@@ -15,7 +15,7 @@ from runner import mock_slice as base
 from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
 
 VERSION = "ticket-runner-v0.2.0"
-# Present only in real-provider responses (agent/openai_adapter.py); the mock has none.
+# Present only in real-provider responses (agent/anthropic_adapter.py, agent/openai_adapter.py); the mock has none.
 PROVIDER_EVIDENCE_KEYS = ("usage", "requested_at", "completed_at", "latency_ms", "error", "provider_response")
 
 

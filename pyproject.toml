@@ -3,6 +3,7 @@ name = "CANARY"
 version = "0.0.0"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+    "anthropic>=1.13.0",
     "jsonschema>=4.21",
     "openai>=3.22.1",
 ]
