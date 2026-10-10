@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.4.0**  
+**Public project and experimental specification v1.5.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -9,7 +9,7 @@ This is the public, human-readable authority for CANARY's scope, measurement sem
 
 Versioned JSON Schemas define serialized structure, and `protocol/active.json` identifies the exact tier, artifacts, hashes, and schedule used for a release. Neither may contradict this specification. Any conflict blocks release until the documents, schemas, tests, and implementation are reconciled through the change-control process in Section 11.
 
-All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at the end of club week 8 before official outcomes are inspected, official data locks no later than November 8, 2026, and the public release freezes November 22, 2026. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
+All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 on Wednesday, October 28, 2026, in club week 10, before official outcomes are inspected, official data locks no later than November 8, 2026, and the public release freezes November 22, 2026. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
 
 ---
 
@@ -41,8 +41,8 @@ No schedule or presentation goal permits cutting intrinsic containment, determin
 | Quantitative utility | Ten deterministic task templates, including legitimate authorized high-risk actions |
 | Development split | Five separate base cases that never enter reported estimates |
 | Contract lock | End of club week 5 |
-| Full protocol freeze | End of club week 8, before official outcomes are inspected |
-| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved in club weeks 9–10 |
+| Full protocol freeze | Gate 3, Wednesday, October 28, 2026, before official outcomes are inspected |
+| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved in club week 10, after the October 28 freeze |
 | Absolute data cutoff | Sunday, November 8, 2026 |
 | Public release freeze | Sunday, November 22, 2026 |
 | Required public proof | Repository, sanitized frozen evidence, no-key report/replay, captioned video, and accessible paper/report |
@@ -982,7 +982,7 @@ remaining_funded_balance_at_gate_2
      + unspent_development_rehearsal_and_stage_reserve
 ```
 
-`remaining_funded_balance_at_gate_2` is the provider/project balance still available after all development charges incurred through the 90-trial grid; those sunk charges remain in the budget ledger but are not counted twice on the right-hand side. `conservative_C1_trial_cost` is the larger of a development-only direct-injection pilot, the global observed trial maximum, and the frozen maximum-token price bound. If any primary stratum has fewer than three valid development observations, use the larger of the global observed maximum and that same price bound. At `F20`, the reserve covers the remaining share of the 120 development trials, 30 rehearsal trials, and three on-stage trials at their conservative measured or bounded costs; a lower tier substitutes its manifest-derived `10K + K` demo total. Use provider hard budget controls where available. The 25% factor is the single contingency for token variance and bounded retries; it does not fund a complete invalidated-experiment restart. If the balance does not support full scope, activate a lower tier before week-8 freeze and regenerate the schedule and budget.
+`remaining_funded_balance_at_gate_2` is the provider/project balance still available after all development charges incurred through the 90-trial grid; those sunk charges remain in the budget ledger but are not counted twice on the right-hand side. `conservative_C1_trial_cost` is the larger of a development-only direct-injection pilot, the global observed trial maximum, and the frozen maximum-token price bound. If any primary stratum has fewer than three valid development observations, use the larger of the global observed maximum and that same price bound. At `F20`, the reserve covers the remaining share of the 120 development trials, 30 rehearsal trials, and three on-stage trials at their conservative measured or bounded costs; a lower tier substitutes its manifest-derived `10K + K` demo total. Use provider hard budget controls where available. The 25% factor is the single contingency for token variance and bounded retries; it does not fund a complete invalidated-experiment restart. If the balance does not support full scope, activate a lower tier before the Gate 3 freeze and regenerate the schedule and budget.
 
 ### Failure and retry policy
 
@@ -1018,7 +1018,7 @@ The **repair block** is narrower than the canary-sharing superblock: it is every
 
 ## 10. Analysis plan
 
-The analysis code and empty table/figure shells freeze in week 8 before official outcomes are inspected. No result is hand-entered anywhere.
+The analysis code and empty table/figure shells freeze at Gate 3 before official outcomes are inspected. No result is hand-entered anywhere.
 
 ### Active-protocol manifest
 
@@ -1253,6 +1253,8 @@ Presentation criteria may change presentation emphasis or demo wording. They do 
 
 ### End of week 8 — full protocol freeze
 
+This freeze is Gate 3, on Wednesday, October 28, 2026. Elsewhere in this specification, "the week-8 freeze" and "freeze … in week 8" name it, whatever club week it falls in.
+
 Freeze and hash the artifacts applicable to the selected tier:
 
 - `protocol/active.json`, including the active-contributor count, selected headcount/budget/readiness tier, and exact official trial count;
@@ -1319,7 +1321,7 @@ Gate status is evidence-based and recorded against a commit, manifest, and date.
 |---|---|---|
 | Gate 1 — vertical slice and contract lock | September 27 | One excluded base renders as attack and exact clean twin through C2/C3/C4; all six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`; structural diff, payload round-trip, schemas, deterministic scores, mock CI, and no-key replay pass; the measurement contract is versioned |
 | Gate 2 — development instrument | October 11 | The 90-cell one-repeat development grid and 15 clean task-coverage smokes complete; forced stop/resume creates no gaps, duplicates, or repeated effects; D1_POLICY_GATE/D2_DATAMARKING receive binary readiness decisions; cost and context-window forecasts support the proposed tier; demo/replay succeeds twice |
-| Gate 3 — protocol freeze | October 18 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container, fixtures, and hashes reconcile in `protocol/active.json` |
+| Gate 3 — protocol freeze | October 28 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container, fixtures, and hashes reconcile in `protocol/active.json` |
 | Gate 4 — data or validation integrity | November 1 target; November 8 absolute cutoff | Scheduled cells or validation checks, missingness, comparability, IDs, hashes, resets, attempt histories, raw-to-endpoint recomputation, sanitized manifests, and generated outputs pass; all claims match the active tier |
 | Gate 5 — release candidate | November 15 | Fresh-clone `make report` and `make replay` pass without a key or network in under five minutes; citations, licenses, accessibility, offline media, replay, and failure-mode rehearsals pass; release hashes agree |
 

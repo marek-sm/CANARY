@@ -82,6 +82,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0008-content-filter-refusals.md`](docs/decisions/0008-content-filter-refusals.md) | Why a provider content-filter refusal, from a finish reason or a listed HTTP 400 code, is a completed outcome that is never retried, and how it is scored |
 | [`docs/decisions/0009-measurement-contract-lock.md`](docs/decisions/0009-measurement-contract-lock.md) | How the week-5 measurement contract locked at `1.0.0`: which `SPEC.md` text is hash-frozen, the one canonical JSON rule, the reason-code vocabulary, and the predeclared development-floor reporting rule |
 | [`docs/decisions/0010-anthropic-development-model.md`](docs/decisions/0010-anthropic-development-model.md) | Why development uses `claude-haiku-5-5` with `gpt-6-luna` as the declared fallback, the $10-per-provider cap and credential rule, how a classifier refusal maps to a content-filter outcome, and why the loop follows a cut-off reply with a continuation turn |
+| [`docs/decisions/0011-week8-replan.md`](docs/decisions/0011-week8-replan.md) | How Week 8 onward was re-planned after the recovery week: Gate 3 on October 28 with no backstop, provisional `M10-ALL`, W10 folded into W9 and W11, the Gate 2 step slip rule, and lead-owned tool-result delivery |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
