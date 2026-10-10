@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTLINE = ROOT / "paper" / "outline.md"
 
 REQUIRED_ESTIMANDS = {
+    "RequestToEffectCounts",
     "ModelViolationRate",
     "SystemCompromiseRate",
     "CleanUtility",
@@ -27,6 +28,7 @@ REQUIRED_ESTIMANDS = {
     "UnauthorizedOutcomeDecomposition",
     "MixedRepeatRates",
     "C1DirectInjectionControls",
+    "ToolNameOnlyAblation",
 }
 
 
