@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.6.0**  
+**Public project and experimental specification v1.7.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -79,6 +79,10 @@ CANARY is complete only when the common requirements and all requirements for th
 
 ## 1. Thesis, questions, and permitted claims
 
+### Problem statement
+
+A defense against prompt injection in a tool-using agent can lower an end-to-end attack-success rate in three different ways: the model may ignore the injected instruction, a control outside the model may block the action it proposed, or the agent may fail at its legitimate task. One success rate can't tell these apart, so on its own it can't show whether a defense made the model safer or made the agent less able, and anyone choosing a defense for a deployed agent needs to know which. CANARY is not a new attack or defense. For the same runs, it records what the model requested, what the policy decided, what was dispatched, and what effect followed, beside exact no-injection twins and tasks that include authorized risky actions.
+
 ### Thesis
 
 CANARY measures two different layers that must not be collapsed:
@@ -89,6 +93,8 @@ CANARY measures two different layers that must not be collapsed:
 D2_DATAMARKING tries to change the first. D1_POLICY_GATE enforces the second. Both are measured alongside whether the legitimate task still succeeds.
 
 ### Research questions
+
+**Overall question.** On one hosted tool-calling model, when source-derived injections arrive through tool results, how often do they produce a model violation beyond the matched clean background, and how often a modeled system compromise? How much does D2_DATAMARKING change the model-violation rate, how much compromise remains when D1_POLICY_GATE, an argument-aware policy gate, checks requests before dispatch, and what does each defense cost in legitimate task completion? RQ1–RQ3 and the secondary questions below answer it in parts, and it adds no estimand.
 
 - **RQ1 — Behavioral resistance:** On one fixed model, does source-faithful datamarking change the attacked model-violation rate, and does that change remain after subtracting matched clean background behavior?
 - **RQ2 — Enforcement and residual risk:** Does an argument-aware reference monitor block every policy-violating request before dispatch, preserve authorized high-risk actions, and what system compromise remains outside the tool gate’s scope?
