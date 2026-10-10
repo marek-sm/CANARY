@@ -27,7 +27,7 @@
 | Official empirical trials | None represented as started |
 | `ENGINEERING` validation | Not activated |
 | Corpus | One development base, `dev-001`, merged with attack and clean twins through C2/C3/C4; its `reviewed_by` field still reads `PENDING_REVIEW`. The other four development bases (`W6-T2`) had no pull request at the October 2 review cutoff. No evaluation candidate has been opened |
-| Spend and funded cap | As of October 4, 2026: project-lead funded, with a $10 prepaid OpenAI development cap and auto-recharge off; the development model candidate is `gpt-6-luna` ([decision 0005](docs/decisions/0005-development-model-and-spend-cap.md)). The provider adapter merged as [#26](https://github.com/marek-sm/CANARY/pull/26) (`636c1fe`) on September 30. No paid call has been made. CI stays mock-only. The season cap is set at Gate 2 from measured development cost |
+| Spend and funded cap | As of October 4, 2026: project-lead funded, with a $10 prepaid OpenAI development cap and auto-recharge off; the development model candidate is `gpt-6-luna` ([decision 0005](docs/decisions/0005-development-model-and-spend-cap.md)). The provider adapter merged as [#26](https://github.com/marek-sm/CANARY/pull/26) (`636c1fe`) on September 30. No paid call has been made. CI stays mock-only. The season cap is set at Gate 2 from measured development cost. **Amended October 9, 2026:** [decision 0010](docs/decisions/0010-anthropic-development-model.md) makes `claude-haiku-5-5` the development candidate and `gpt-6-luna` the declared fallback. It raises the development cap to $10 per provider, $20 in total. Still no paid call |
 | Open protocol deviation | None; the protocol is not frozen |
 | Public result or defense-effect claim | None |
 
@@ -47,7 +47,7 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Week 6 
 ## Public decisions, risks, and external asks
 
 1. **Project presentation:** use `CANARY` in all caps and make no uniqueness or novelty claim.
-2. **Funding/model:** development is project-lead funded under a $10 prepaid cap, with `gpt-6-luna` as the development candidate ([decision 0005](docs/decisions/0005-development-model-and-spend-cap.md)). The official model, its fallback decision, and the season budget are still recorded before Gate 3 from development evidence; no paid or credentialed CI is permitted.
+2. **Funding/model:** development is project-lead funded under a $10 prepaid cap, with `gpt-6-luna` as the development candidate ([decision 0005](docs/decisions/0005-development-model-and-spend-cap.md)). The official model, its fallback decision, and the season budget are still recorded before Gate 3 from development evidence; no paid or credentialed CI is permitted. **Amended October 9, 2026:** under [decision 0010](docs/decisions/0010-anthropic-development-model.md), the development candidate is `claude-haiku-5-5`. `gpt-6-luna` is the declared fallback, which Gate 3 confirms or replaces. The cap is $10 per provider, $20 in total.
 3. **Event inputs:** record the judging-rubric source/date and the confirmed demo slot, Q&A, network, display, and speaker constraints when supplied.
 4. **Licensing:** do not accept external contributions or imply reuse rights until code/content licensing is selected.
 5. **Process:**
