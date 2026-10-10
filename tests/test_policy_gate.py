@@ -32,6 +32,10 @@ from oracles.authorization.conformance import (
 REPO = Path(__file__).resolve().parents[1]
 
 
+def _noop(outcome, state):
+    """A ``commit`` callback for tests that do not inspect the durable write."""
+
+
 @pytest.fixture(scope="module")
 def vectors():
     return load_vectors(DEFAULT_VECTORS)
@@ -211,7 +215,7 @@ def test_gate_dispatches_the_exact_request_object_it_evaluated():
     seen = []
     request = _req("read_file", path="docs/report.txt")
     result = gate_and_dispatch(
-        PolicyGate(), lambda r: seen.append(r) or {"ok": True}, _policy(), request, (), di.GrantState()
+        PolicyGate(), lambda r: seen.append(r) or {"ok": True}, _policy(), request, (), di.GrantState(), commit=_noop
     )
     assert len(seen) == 1 and seen[0] is request
     assert result.outcome.action == "dispatch" and result.observation == {"ok": True}
@@ -220,7 +224,9 @@ def test_gate_dispatches_the_exact_request_object_it_evaluated():
 def test_blocked_request_is_never_dispatched_and_observation_leaks_nothing():
     called = []
     request = _req("read_file", path="config/secret.env")
-    result = gate_and_dispatch(PolicyGate(), lambda r: called.append(r), _policy(), request, (), di.GrantState())
+    result = gate_and_dispatch(
+        PolicyGate(), lambda r: called.append(r), _policy(), request, (), di.GrantState(), commit=_noop
+    )
     assert called == []
     assert result.observation == di.policy_blocked_observation(["path_not_authorized"])
     blob = json.dumps(result.observation)
@@ -234,12 +240,12 @@ def test_block_never_consumes_a_matching_grant_but_dispatch_does(vectors):
     policy, request, prior, grants = build_inputs(vectors, vector)
     outcome = PolicyGate().evaluate(policy, request, prior, grants)
     assert outcome.action == "block" and outcome.decision.next_grant_state != grants
-    result = gate_and_dispatch(PolicyGate(), lambda r: {"ok": True}, policy, request, prior, grants)
+    result = gate_and_dispatch(PolicyGate(), lambda r: {"ok": True}, policy, request, prior, grants, commit=_noop)
     assert result.grant_state == grants
 
     allowed = next(v for v in vectors["vectors"] if v["vector_id"] == "allow-email-granted")
     policy, request, prior, grants = build_inputs(vectors, allowed)
-    result = gate_and_dispatch(PolicyGate(), lambda r: {"ok": True}, policy, request, prior, grants)
+    result = gate_and_dispatch(PolicyGate(), lambda r: {"ok": True}, policy, request, prior, grants, commit=_noop)
     assert result.grant_state != grants and sum(g.consumed for g in result.grant_state.grants) == 1
 
 
@@ -248,7 +254,7 @@ def test_gate_never_dispatches_what_the_evaluator_rejects(vectors):
     for vector in vectors["vectors"]:
         policy, request, prior, grants = build_inputs(vectors, vector)
         called = []
-        result = gate_and_dispatch(gate, lambda r: called.append(r) or {}, policy, request, prior, grants)
+        result = gate_and_dispatch(gate, lambda r: called.append(r) or {}, policy, request, prior, grants, commit=_noop)
         assert bool(called) == (vector["expected"]["gate_action"] == "dispatch"), vector["vector_id"]
         assert result.outcome.action == vector["expected"]["gate_action"]
 
@@ -386,3 +392,110 @@ def test_tool_use_block_shape():
     ):
         with pytest.raises(CanonicalizationError):
             canonicalize_tool_use(bad, "trial", 1)
+
+
+# --- review fixes: durable commit before dispatch, JSON evidence, filter path, key collisions ---
+
+
+def _granted_email(vectors):
+    allowed = next(v for v in vectors["vectors"] if v["vector_id"] == "allow-email-granted")
+    return build_inputs(vectors, allowed)
+
+
+def test_grant_transition_commits_before_the_tool_runs(vectors):
+    policy, request, prior, grants = _granted_email(vectors)
+    order = []
+
+    def commit(outcome, state):
+        order.append(("commit", outcome.action, sum(g.consumed for g in state.grants)))
+
+    result = gate_and_dispatch(
+        PolicyGate(), lambda r: order.append(("dispatch",)) or {"ok": True}, policy, request, prior, grants, commit=commit
+    )
+    assert order == [("commit", "dispatch", 1), ("dispatch",)]
+    assert result.grant_state != grants
+
+
+def test_grant_stays_consumed_when_the_tool_errors_after_its_effect(vectors):
+    policy, request, prior, grants = _granted_email(vectors)
+    committed = []
+    effects = []
+
+    def tool(r):
+        effects.append(r)  # the effect happens ...
+        raise RuntimeError("tool failed after its effect")  # ... and then the tool errors
+
+    with pytest.raises(RuntimeError):
+        gate_and_dispatch(
+            PolicyGate(), tool, policy, request, prior, grants, commit=lambda o, s: committed.append(s)
+        )
+    assert len(effects) == 1 and len(committed) == 1
+    # Replaying with the state the runner durably committed cannot reuse the grant.
+    replay = gate_and_dispatch(
+        PolicyGate(), lambda r: effects.append(r) or {"ok": True}, policy, request, prior, committed[0], commit=_noop
+    )
+    assert replay.outcome.action == "block"
+    assert "grant_already_consumed" in replay.outcome.decision.reason_codes
+    assert len(effects) == 1
+
+
+def test_nothing_dispatches_if_the_durable_commit_fails(vectors):
+    policy, request, prior, grants = _granted_email(vectors)
+    called = []
+
+    def commit(outcome, state):
+        raise OSError("disk full")
+
+    with pytest.raises(OSError):
+        gate_and_dispatch(PolicyGate(), lambda r: called.append(r) or {}, policy, request, prior, grants, commit=commit)
+    assert called == []
+
+
+def test_a_block_commits_the_unchanged_grant_state(vectors):
+    deny = next(v for v in vectors["vectors"] if v["vector_id"] == "deny-email-over-budget-with-grant")
+    policy, request, prior, grants = build_inputs(vectors, deny)
+    seen = []
+    gate_and_dispatch(
+        PolicyGate(), lambda r: {"ok": True}, policy, request, prior, grants, commit=lambda o, s: seen.append((o.action, s))
+    )
+    assert seen == [("block", grants)]
+
+
+def test_nested_query_params_are_json_serializable_in_the_requested_event():
+    from agent.loop import requested_payload
+
+    block = {"type": "tool_use", "id": "t1", "name": "query_db",
+             "input": {"query_id": "q1", "params": {"k": "v", "nested": {"a": [1, {"b": 2}]}}}}
+    request = canonicalize_tool_use(block, "trial", 1)
+    payload = requested_payload(request, block, 1)
+    text = json.dumps(payload)  # raised "mappingproxy is not JSON serializable" before the fix
+    assert json.loads(text)["normalized_args"]["params"] == {"k": "v", "nested": {"a": [1, {"b": 2}]}}
+
+
+def test_filtered_call_to_a_registered_tool_is_recorded_without_dispatch():
+    from agent.loop import run_loop
+
+    call = {"type": "tool_use", "id": "t1", "name": "send_email",
+            "input": {"to": "a@example.com", "subject": "s", "body": "b"}}
+
+    class Provider:
+        def complete(self, *args):
+            return {"raw_response": {"content": [call], "stop_reason": "content_filter"}}
+
+    events, dispatched = [], []
+    outcome = run_loop(
+        Provider(), [], tool_schemas=[], decoding={}, model_request={}, on_attempt=lambda *a: None,
+        dispatch=lambda r: dispatched.append(r), on_tool=lambda kind, payload: events.append((kind, payload)),
+        supported_tools=("read_file", "send_email"),
+    )
+    assert outcome.termination_reason == "provider_content_filter" and dispatched == []
+    assert [kind for kind, _ in events] == ["tool_requested"] and events[0][1]["tool"] == "send_email"
+
+
+def test_keys_that_collide_after_normalization_are_rejected_in_either_order():
+    composed, decomposed = "\u00e9", "e\u0301"  # distinct keys, the same NFC key
+    for params in ({composed: "X", decomposed: "Y"}, {decomposed: "Y", composed: "X"}):
+        with pytest.raises(CanonicalizationError, match="collide"):
+            canonicalize_arguments("query_db", {"query_id": "q", "params": params})
+    ok = canonicalize_arguments("query_db", {"query_id": "q", "params": {composed: "X", "z": "Y"}})
+    assert dict(ok["params"]) == {composed: "X", "z": "Y"}

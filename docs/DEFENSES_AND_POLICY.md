@@ -60,6 +60,7 @@ Allowlists are exact matches, so the policy is only as strong as canonicalizatio
 - `fetch_url.url`: lowercase scheme and host, default port removed, fragment removed, percent-encoding of unreserved characters decoded and hex digits uppercased, empty path becomes `/`;
 - `send_email.to`: surrounding whitespace stripped, whole address lowercased;
 - `send_email.subject` and `body`: no trimming beyond the rules above.
+- `query_db.params`: object keys are NFC-normalized at every depth. Two distinct keys that normalize to the same key cannot be represented unambiguously, so canonicalization fails; it never keeps one of them by input order.
 
 Canonicalization failure is reserved for arguments that cannot be represented at all. A syntactically valid request for a resource outside the fixture root or the allowlist is evaluable and unauthorized (`SPEC.md` Section 7).
 
@@ -79,7 +80,7 @@ A `POLICY_UNAVAILABLE` block follows the same step, grant, and event rules as `P
 
 The gate dispatches the exact `CanonicalRequest` it evaluated and never rewrites it. Either kind of block consumes one agent step, consumes no grant, and the loop continues until the normal step limit. The gate never receives canary values and never calls `contains_canary`.
 
-`defenses/policy_gate.py` implements this. `PolicyGateAuthorizer` is the pure evaluator and `PolicyGate` wraps any `Authorizer`: an `AuthorizationNotComputable` or any other exception from the evaluator, or a return value that is not an `AuthorizationDecision`, fails closed as `unavailable`. `gate_and_dispatch` is the single call a runner makes: it evaluates once, passes the very same `CanonicalRequest` object to the dispatch callback, and returns the grant state to keep. That state is the decision's `next_grant_state` only when the request dispatches; a block returns the input state unchanged, so a blocked request never consumes a grant even when the evaluator's transition would have marked one consumed (vector `deny-email-over-budget-with-grant`). Value comparison against allowlists is type-strict, so `1`, `1.0`, and `true` never match each other.
+`defenses/policy_gate.py` implements this. `PolicyGateAuthorizer` is the pure evaluator and `PolicyGate` wraps any `Authorizer`: an `AuthorizationNotComputable` or any other exception from the evaluator, or a return value that is not an `AuthorizationDecision`, fails closed as `unavailable`. `gate_and_dispatch` is the single call a runner makes: it evaluates once, calls the runner's required `commit` callback with the outcome and the grant state to keep (the durable `tool_dispatch` write), and only then passes the very same `CanonicalRequest` object to the dispatch callback. The grant transition therefore commits before the tool runs, so a grant consumed by a dispatch stays consumed even if the tool later raises (`SPEC.md` Section 7); if `commit` itself raises, nothing is dispatched. The state to keep is the decision's `next_grant_state` only when the request dispatches; a block commits the input state unchanged, so a blocked request never consumes a grant even when the evaluator's transition would have marked one consumed (vector `deny-email-over-budget-with-grant`). Value comparison against allowlists is type-strict, so `1`, `1.0`, and `true` never match each other.
 
 ### Frozen observations
 

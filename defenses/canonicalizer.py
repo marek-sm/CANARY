@@ -101,7 +101,15 @@ def _json_value(value: Any) -> Any:
     if isinstance(value, Mapping):
         if not all(isinstance(k, str) for k in value):
             raise CanonicalizationError("argument object keys must be strings")
-        return MappingProxyType({_text(k): _json_value(v) for k, v in value.items()})
+        frozen: dict[str, Any] = {}
+        for key, item in value.items():
+            name = _text(key)
+            if name in frozen:
+                # Two distinct keys that normalize to one would silently drop a value, and
+                # input order would then decide which survives (and the authorization verdict).
+                raise CanonicalizationError("argument object keys collide after normalization")
+            frozen[name] = _json_value(item)
+        return MappingProxyType(frozen)
     if isinstance(value, (list, tuple)):
         return tuple(_json_value(v) for v in value)
     if isinstance(value, str):
@@ -113,6 +121,19 @@ def _json_value(value: Any) -> Any:
             raise CanonicalizationError("non-finite number")
         return value
     raise CanonicalizationError(f"argument is not a JSON value: {type(value).__name__}")
+
+
+def thaw_json(value: Any) -> Any:
+    """Plain dicts and lists at every depth: the inverse of the freezing in ``_json_value``.
+
+    Use at an evidence boundary (event payloads, JSON files) where read-only containers
+    such as ``MappingProxyType`` are not JSON serializable.
+    """
+    if isinstance(value, Mapping):
+        return {k: thaw_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [thaw_json(v) for v in value]
+    return value
 
 
 def canonicalize_arguments(tool: str, raw_args: Any) -> Mapping[str, Any]:

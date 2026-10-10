@@ -16,7 +16,7 @@ Two pieces live here:
 
 ``gate_and_dispatch`` is the single place a runner should call, so the object
 that is authorized is the object that is dispatched and a grant is committed
-only when dispatch commits.
+when dispatch is durably committed, before the tool runs.
 """
 
 from __future__ import annotations
@@ -242,11 +242,24 @@ def gate_and_dispatch(
     request: CanonicalRequest,
     prior_calls: Sequence[PriorCall],
     grant_state: GrantState,
+    *,
+    commit: Callable[[GateOutcome, GrantState], None],
 ) -> GatedResult:
-    """Evaluate once, then dispatch the very same request object or return the block."""
+    """Evaluate once, commit the disposition, then dispatch the very same request object.
+
+    ``commit`` is the runner's durable ``tool_dispatch`` write (docs/DEFENSES_AND_POLICY.md,
+    event table). It receives the outcome and the grant state to keep, and it runs BEFORE the
+    tool does, so a grant consumed by a dispatch stays consumed even if the tool later raises
+    (SPEC.md Section 7). If ``commit`` raises, nothing is dispatched. A block or unavailable
+    outcome commits the unchanged input state, so it never consumes a grant.
+    """
     outcome = gate.evaluate(task_policy, request, prior_calls, grant_state)
     if outcome.action == "dispatch":
         assert outcome.decision is not None
-        result = dispatch(request)
-        return GatedResult(outcome, result, outcome.decision.next_grant_state)
-    return GatedResult(outcome, dict(outcome.observation or {}), grant_state)
+        keep = outcome.decision.next_grant_state
+    else:
+        keep = grant_state
+    commit(outcome, keep)
+    if outcome.action == "dispatch":
+        return GatedResult(outcome, dispatch(request), keep)
+    return GatedResult(outcome, dict(outcome.observation or {}), keep)

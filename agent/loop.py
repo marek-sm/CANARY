@@ -4,7 +4,7 @@ import copy
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Optional, Sequence
 
-from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use
+from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use, thaw_json
 from defenses.interfaces import CanonicalRequest
 
 LOOP_VERSION = "agent-loop-v0.2.0"
@@ -39,7 +39,7 @@ def parse_request(block, trial_id, step, supported_tools: Sequence[str] = SUPPOR
 
 def requested_payload(request: CanonicalRequest, block: Mapping[str, Any], step: int) -> dict[str, Any]:
     return {"call_id": request.call_id, "step": step, "tool": request.tool, "requested_args": block["input"],
-            "normalized_args": dict(request.normalized_args), "normalizer_version": request.normalizer_version}
+            "normalized_args": thaw_json(request.normalized_args), "normalizer_version": request.normalizer_version}
 
 
 def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
@@ -93,7 +93,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             # for audit, but the trial has ended, so it is never dispatched.
             if on_tool is not None and len(calls) == 1:
                 try:
-                    filtered = parse_request(calls[0], logical_trial_id, step)
+                    filtered = parse_request(calls[0], logical_trial_id, step, supported_tools)
                 except ValueError:
                     filtered = None
                 if filtered is not None:
