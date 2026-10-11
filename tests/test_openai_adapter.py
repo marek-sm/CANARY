@@ -11,7 +11,7 @@ import openai
 import pytest
 
 from agent import openai_adapter as adapter_mod
-from agent.loop import run_loop
+from agent.loop import CONTINUATION_PROMPT, run_loop
 from agent.openai_adapter import OpenAIChatAdapter
 from runner import live_smoke
 from runner import mock_slice as base
@@ -332,6 +332,17 @@ def test_failure_then_success_keeps_both_attempts():
     assert [a[2]["outcome"] for a in attempts] == ["no_model_content", "model_response"]
 
 
+def test_length_stop_continues_with_a_user_turn():
+    # The loop follows a cut-off reply with a fixed user turn on every provider
+    # (decision 0010).
+    fake = Fake(text_body("partial", finish_reason="length"), text_body("ok"))
+    outcome = run_loop(fake.adapter(), [{"role": "user", "content": "t"}], tool_schemas=[], decoding=DECODING,
+                       model_request={"model": MODEL}, on_attempt=lambda *a: None)
+    assert outcome.termination_reason == "final_answer" and outcome.final_text == "ok"
+    assert fake.requests[1]["messages"] == [{"role": "user", "content": "t"}, {"role": "assistant", "content": "partial"},
+                                            {"role": "user", "content": CONTINUATION_PROMPT}]
+
+
 # End to end through the ticket runner --------------------------------------
 
 def test_ticket_run_with_adapter_is_schema_valid_and_key_free(tmp_path):
@@ -366,35 +377,39 @@ def _no_client(*args, **kwargs):
     raise AssertionError("client built")
 
 
+def clear_provider_env(monkeypatch):
+    monkeypatch.delenv("CI", raising=False)
+    for name in [n for n in __import__("os").environ if n.startswith(("ANTHROPIC_", "OPENAI_"))]:
+        monkeypatch.delenv(name)
+
+
 def test_live_smoke_refuses_in_ci_before_reading_the_key(tmp_path, monkeypatch):
     env_file = tmp_path / ".env"
     env_file.write_text(f"OPENAI_API_KEY={SENTINEL}\n")
     monkeypatch.setenv("CI", "")
     monkeypatch.setattr(adapter_mod, "build_client", _no_client)
-    monkeypatch.setattr(live_smoke, "load_api_key", lambda path: pytest.fail("key read in CI"))
-    assert live_smoke.main(["--env-file", str(env_file), "--out", str(tmp_path / "o")]) != 0
+    monkeypatch.setattr(live_smoke, "load_api_key", lambda *a: pytest.fail("key read in CI"))
+    assert live_smoke.main(["--provider", "openai", "--env-file", str(env_file), "--out", str(tmp_path / "o")]) != 0
     assert not (tmp_path / "o").exists()
 
 
 def test_live_smoke_refuses_ambient_openai_variables(tmp_path, monkeypatch):
     env_file = tmp_path / ".env"
     env_file.write_text(f"OPENAI_API_KEY={SENTINEL}\n")
-    monkeypatch.delenv("CI", raising=False)
+    clear_provider_env(monkeypatch)
     monkeypatch.setenv("OPENAI_BASE_URL", "https://elsewhere.invalid")
     monkeypatch.setattr(adapter_mod, "build_client", _no_client)
-    assert live_smoke.main(["--env-file", str(env_file), "--out", str(tmp_path / "o")]) != 0
+    assert live_smoke.main(["--provider", "openai", "--env-file", str(env_file), "--out", str(tmp_path / "o")]) != 0
 
 
-@pytest.mark.parametrize("content", [None, "OPENAI_API_KEY=\n"])
+@pytest.mark.parametrize("content", [None, "OPENAI_API_KEY=\n", f"ANTHROPIC_API_KEY={SENTINEL}\n"])
 def test_live_smoke_refuses_missing_or_empty_key(tmp_path, monkeypatch, content):
     env_file = tmp_path / ".env"
     if content is not None:
         env_file.write_text(content)
-    monkeypatch.delenv("CI", raising=False)
-    for name in [n for n in __import__("os").environ if n.startswith("OPENAI_")]:
-        monkeypatch.delenv(name)
+    clear_provider_env(monkeypatch)
     monkeypatch.setattr(adapter_mod, "build_client", _no_client)
-    assert live_smoke.main(["--env-file", str(env_file), "--out", str(tmp_path / "o")]) != 0
+    assert live_smoke.main(["--provider", "openai", "--env-file", str(env_file), "--out", str(tmp_path / "o")]) != 0
 
 
 def test_build_client_disables_retries_pins_the_url_and_ignores_proxy_env(monkeypatch):
@@ -447,13 +462,12 @@ def test_live_summary_prints_unknown_usage_not_zero(tmp_path, monkeypatch, capsy
     fake = Fake(tool_body(), body)
     env_file = tmp_path / ".env"
     env_file.write_text(f"OPENAI_API_KEY={SENTINEL}\n")
-    monkeypatch.delenv("CI", raising=False)
-    for name in [n for n in __import__("os").environ if n.startswith("OPENAI_")]:
-        monkeypatch.delenv(name)
+    clear_provider_env(monkeypatch)
     monkeypatch.setattr(adapter_mod, "build_client", lambda key: fake.adapter()._client)
-    assert live_smoke.main(["--env-file", str(env_file), "--out", str(tmp_path / "o")]) == 0
+    assert live_smoke.main(["--provider", "openai", "--env-file", str(env_file), "--out", str(tmp_path / "o")]) == 0
     printed = capsys.readouterr().out
-    assert "input tokens:     unknown" in printed and SENTINEL not in printed
+    assert "input tokens:     unknown" in printed and "OpenAI usage page" in printed and SENTINEL not in printed
+    assert fake.requests[0]["model"] == MODEL and fake.requests[0]["reasoning_effort"] == "none"
 
 
 def test_no_workflow_runs_the_live_command():

@@ -115,6 +115,7 @@ def test_worker_does_not_inherit_credentials(root, monkeypatch):
         assert kwargs.get('shell', False) is False
         assert '-I' in args[0]
         return real(*args, **kwargs)
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'synthetic-test-sentinel')
     monkeypatch.setenv('OPENAI_API_KEY', 'synthetic-test-sentinel')
     monkeypatch.setattr(runner.subprocess, 'run', inspect)
     req = CanonicalRequest('x', 't', 1, 'read_file', MappingProxyType({'path':'inbox/ticket-100.txt'}), 'test')
@@ -208,14 +209,16 @@ def test_tool_step_bound_and_duplicate_ids():
 
 
 def test_env_example():
-    assert (ticket.ROOT / '.env.example').read_text() == 'OPENAI_API_KEY=\n'
+    assert (ticket.ROOT / '.env.example').read_text() == 'ANTHROPIC_API_KEY=\n'
 
 
 def test_explicit_outer_config_and_mock_never_reads_it(tmp_path, monkeypatch):
     from runner import provider_config
     example = tmp_path / '.env'
-    example.write_text('OPENAI_API_KEY=synthetic-credential-sentinel\n')
-    assert provider_config.load_api_key(example) == 'synthetic-credential-sentinel'
+    example.write_text('ANTHROPIC_API_KEY=synthetic-credential-sentinel\n')
+    assert provider_config.load_api_key(example, 'ANTHROPIC_API_KEY') == 'synthetic-credential-sentinel'
+    with pytest.raises(ValueError):
+        provider_config.load_api_key(example, 'OPENAI_API_KEY')
     def forbidden(*args):
         raise AssertionError('mock loaded provider configuration')
     monkeypatch.setattr(provider_config, 'load_api_key', forbidden)

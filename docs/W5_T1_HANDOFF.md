@@ -66,6 +66,9 @@ read-only root filesystem, and writable temporary run-state storage only.
   it. No automatic loading, OpenAI adapter, SDK dependency, paid call, or model
   selection is introduced. Decision 0005's development candidate remains
   `gpt-6-luna`, independently of this mock-only slice.
+  Note, October 9, 2026: decision 0010 superseded this. `.env.example` now
+  lists only `ANTHROPIC_API_KEY=`, the loader takes the variable name, and the
+  development candidate is `claude-haiku-5-5`.
 
 ## Provisional evidence boundary
 

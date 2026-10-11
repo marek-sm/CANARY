@@ -12,6 +12,9 @@ from defenses.interfaces import CanonicalRequest
 LOOP_VERSION = "agent-loop-v0.3.0"
 NORMALIZER_VERSION = "read-file-normalizer-v0.1.0"
 MAX_STEPS = 8
+# Follows a reply cut off at the output limit. Some providers reject a
+# conversation that ends with an assistant turn (decision 0010).
+CONTINUATION_PROMPT = "Your previous reply was cut off at the output limit. Continue from where it stopped."
 
 
 @dataclass(frozen=True)
@@ -125,5 +128,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
         text = response_text(raw)
         if raw["stop_reason"] == "end_turn":
             return LoopOutcome("final_answer", text, step)
-        history.append({"role": "assistant", "content": text})
+        if text:  # an empty text block is invalid on some providers
+            history.append({"role": "assistant", "content": text})
+        history.append({"role": "user", "content": CONTINUATION_PROMPT})
     return LoopOutcome("max_steps", None, max_steps)
