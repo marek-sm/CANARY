@@ -8,12 +8,14 @@ The client is injected and holds the only credential; this module never reads
 the environment. ``build_client`` is called only by the explicitly named live
 command (``runner.live_smoke``), never by CI or the mock runners. SDK retries
 are off: the agent loop retries a call at most twice, and only when no model
-content came back (SPEC.md Section 9). Every provider error is returned as a
-no-content record, never raised, so each transport attempt is logged.
+content came back (SPEC.md Section 9); it never retries a content-policy
+refusal (decision 0008). Every provider error is returned as a no-content
+record, never raised, so each transport attempt is logged.
 """
 from __future__ import annotations
 
 import json
+import math
 import os
 import time
 from datetime import datetime, timezone
@@ -24,15 +26,25 @@ import openai
 
 # The version also names the fixed request settings: store=False, SDK max_retries=0,
 # a 60 s timeout, and no proxy or CA settings taken from the environment.
-ADAPTER_VERSION = "openai-chat-adapter-v0.1.0"
+ADAPTER_VERSION = "openai-chat-adapter-v0.2.0"
 API_BASE_URL = "https://api.openai.com/v1"
 ENDPOINT = "chat_completions"
 DECODING_KEYS = {"endpoint", "reasoning_effort", "max_completion_tokens"}
 
 # OpenAI finish_reason -> the stop_reason agent/loop.py parses. A content-filter
-# stop is a completed model outcome (SPEC.md Section 9), so it ends the turn.
+# stop is a completed provider content-filter refusal (SPEC.md Section 9,
+# decision 0008), which the loop records as such rather than as a final answer.
 # Anything unmapped passes through and the loop records malformed_model_output.
-STOP_REASONS = {"stop": "end_turn", "tool_calls": "tool_use", "length": "max_tokens", "content_filter": "end_turn"}
+STOP_REASONS = {"stop": "end_turn", "tool_calls": "tool_use", "length": "max_tokens", "content_filter": "content_filter"}
+
+# Provider error codes that identify an HTTP rejection as a content-policy
+# refusal, which SPEC.md Section 9 counts as a completed outcome and the loop
+# never retries (decision 0008). OpenAI's error-code guide names no such code
+# for Chat Completions, so the set starts empty and every HTTP error stays an
+# infrastructure failure. This adapter applies the set to HTTP 400 only. A code
+# joins only from recorded evidence, with an adapter version bump before Gate 3
+# and Section 11 change control after it.
+CONTENT_POLICY_CODES: frozenset[str] = frozenset()
 
 
 def build_client(api_key: str) -> openai.OpenAI:
@@ -70,6 +82,23 @@ def check_decoding(decoding: Mapping[str, Any], has_tools: bool) -> dict[str, An
 
 def _json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _no_constant(name: str) -> Any:
+    raise ValueError(f"{name} is not JSON")
+
+
+def _finite(text: str) -> float:
+    number = float(text)
+    if not math.isfinite(number):
+        raise ValueError(f"{text} is not a finite number")
+    return number
+
+
+def _parse_arguments(arguments: Any) -> Any:
+    """Strict JSON: NaN, infinity, and overflowing numbers count as unparseable,
+    so the canonical evidence hash (decision 0009) never meets them."""
+    return json.loads(arguments, parse_constant=_no_constant, parse_float=_finite)
 
 
 def to_chat_messages(messages: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -125,7 +154,7 @@ def normalize(choice: Mapping[str, Any]) -> dict[str, Any]:
             continue
         arguments = call["function"]["arguments"]
         try:
-            parsed: Any = json.loads(arguments)
+            parsed: Any = _parse_arguments(arguments)
         except (TypeError, ValueError):
             parsed = arguments
         content.append({"type": "tool_use", "id": call["id"], "name": call["function"]["name"], "input": parsed})
@@ -170,9 +199,12 @@ class OpenAIChatAdapter:
             # Any HTTP error returns no model content. It is returned, not raised,
             # so the loop logs every attempt (SPEC.md Section 9); rejected requests
             # are not billed, and the loop's two retries then end the trial as an
-            # infrastructure failure. The error message is never kept.
+            # infrastructure failure, unless the code marks a content-policy
+            # refusal (decision 0008). The error message is never kept.
             record.update(provider_request_id=exc.request_id,
                           error={"type": type(exc).__name__, "status": exc.status_code, "provider_code": exc.code, "provider_type": exc.type})
+            if exc.status_code == 400 and exc.code in CONTENT_POLICY_CODES:
+                record["outcome"] = "provider_content_filter"
         else:
             record["provider_request_id"] = raw.request_id or raw.http_response.headers.get("x-request-id")
             try:
