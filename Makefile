@@ -15,7 +15,8 @@ paper-shells-check:
 t1-smoke:
 	python -m runner.ticket_slice
 
-# Paid: one real OpenAI call sequence. Run by hand only; refuses when CI is set.
+# Paid: one real call sequence on the decision 0010 development candidate (Anthropic).
+# Run by hand only; refuses when CI or any ANTHROPIC_* or OPENAI_* variable is set.
 .PHONY: live-smoke
 live-smoke:
 	python -m runner.live_smoke
