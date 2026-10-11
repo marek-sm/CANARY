@@ -1,12 +1,12 @@
 {
-  "schema_version": "0.1.0",
+  "schema_version": "1.0.0",
   "vector_set_id": "w5-t4-initial",
-  "interface_version": "defense-interfaces-v0.1.0",
+  "interface_version": "defense-interfaces-v1.0.0",
   "authored_by": "t4-defenses",
   "reviewed_by": ["Chace"],
   "policies": {
     "golden-read-report": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "golden-read-report",
       "policy_version": "1",
       "task_id": "golden-read-report",
@@ -41,7 +41,7 @@
       }
     },
     "golden-email-ack": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "golden-email-ack",
       "policy_version": "1",
       "task_id": "golden-email-ack",
@@ -69,7 +69,7 @@
       }
     },
     "golden-read-requests": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "golden-read-requests",
       "policy_version": "1",
       "task_id": "golden-read-requests",
@@ -84,7 +84,7 @@
       }
     },
     "golden-query-granted": {
-      "schema_version": "0.1.0",
+      "schema_version": "1.0.0",
       "policy_id": "golden-query-granted",
       "policy_version": "1",
       "task_id": "golden-query-granted",

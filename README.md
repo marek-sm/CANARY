@@ -30,7 +30,7 @@ uv run make trace                    # no make: uv run python -m runner.mock_sli
 from the real six-cell mock runner. `make demo-example-check` verifies that the
 committed example is current. Both commands are offline and make no model call.
 
-`make live-smoke` makes paid OpenAI calls: it runs one W5-T1 ticket trial on the decision 0005 development model and writes it under `results/development/live/`. It is run by hand, with the key in a local `.env`. It refuses when `CI` or any `OPENAI_*` variable is set, and CI never runs it.
+`make live-smoke` makes paid Anthropic calls: it runs one W5-T1 ticket trial on the decision 0010 development model, `claude-haiku-5-5`, and writes it under `results/development/live/`. It is run by hand, with the key in a local `.env` (one `ANTHROPIC_API_KEY=` line). `python -m runner.live_smoke --provider openai --env-file .env.openai` runs the same trial on the declared fallback, `gpt-6-luna`. It refuses when `CI` or any `ANTHROPIC_*` or `OPENAI_*` variable is set, and CI never runs it.
 
 ## What CANARY is designed to measure
 
@@ -80,9 +80,15 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0002-single-owner-model.md`](docs/decisions/0002-single-owner-model.md) | Why every retained slice has one accountable owner and no standing personnel deputy |
 | [`docs/decisions/0003-weekly-status-artifact.md`](docs/decisions/0003-weekly-status-artifact.md) | Why weekly status is a bounded summary rather than a second task tracker |
 | [`docs/decisions/0004-week5-measurement-contract-clarifications.md`](docs/decisions/0004-week5-measurement-contract-clarifications.md) | How the week-5 measurement-contract lock resolves gaps and inconsistencies in `SPEC.md` |
-| [`docs/decisions/0005-development-model-and-spend-cap.md`](docs/decisions/0005-development-model-and-spend-cap.md) | Why development uses `gpt-6-luna` under a $10 prepaid cap, and what that means for drift and credentials |
+| [`docs/decisions/0005-development-model-and-spend-cap.md`](docs/decisions/0005-development-model-and-spend-cap.md) | Why development first chose `gpt-6-luna` under a $10 prepaid cap, and what that means for drift; superseded in part by 0010 |
 | [`docs/decisions/0006-one-vector-reviewer.md`](docs/decisions/0006-one-vector-reviewer.md) | Why each authorization and datamarking vector set has exactly one independent reviewer |
 | [`docs/decisions/0007-gate1-corpus-rules-freeze.md`](docs/decisions/0007-gate1-corpus-rules-freeze.md) | How the corpus rules froze at Gate 1, what counts as a near-duplicate, and which templates the development bases represent |
+| [`docs/decisions/0008-content-filter-refusals.md`](docs/decisions/0008-content-filter-refusals.md) | Why a provider content-filter refusal, from a finish reason or a listed HTTP 400 code, is a completed outcome that is never retried, and how it is scored |
+| [`docs/decisions/0009-measurement-contract-lock.md`](docs/decisions/0009-measurement-contract-lock.md) | How the week-5 measurement contract locked at `1.0.0`: which `SPEC.md` text is hash-frozen, the one canonical JSON rule, the reason-code vocabulary, and the predeclared development-floor reporting rule |
+| [`docs/decisions/0010-anthropic-development-model.md`](docs/decisions/0010-anthropic-development-model.md) | Why development uses `claude-haiku-5-5` with `gpt-6-luna` as the declared fallback, the $10-per-provider cap and credential rule, how a classifier refusal maps to a content-filter outcome, and why the loop follows a cut-off reply with a continuation turn |
+| [`docs/decisions/0011-week8-replan.md`](docs/decisions/0011-week8-replan.md) | How Week 8 onward was re-planned after the recovery week: Gate 3 on October 28 with no backstop, provisional `M10-ALL`, W10 folded into W9 and W11, the Gate 2 step slip rule, and lead-owned tool-result delivery |
+| [`docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md`](docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md) | Why `SPEC.md` Section 10 predeclares a count-only request-to-effect table and a tool-name-only ablation of recorded D0_BASELINE requests, and why they must be on `main` before any paid call other than the live adapter check |
+| [`docs/decisions/0013-rubric-framing.md`](docs/decisions/0013-rubric-framing.md) | Why `SPEC.md` Section 1 gains a problem statement and an overall research question with no prior-work or gap claim, why reference 15 stays unverified, and which rubric-driven proposals were not adopted |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -103,5 +109,6 @@ No reuse license is implied until a `LICENSE` file is committed. License selecti
 `uv run make t1-smoke` runs the fictional ticket through the safe file reader,
 mock loop, durable evidence, deterministic utility validator, and replay.
 See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and design
-choices. It consumes merged W5-T4 interfaces; **W5-T3 has not landed**, so its
-measurement integration and the final contract lock remain outstanding.
+choices. It consumes the merged W5-T4 interfaces and W5-T3 schemas, frozen at the
+measurement-contract lock. Independent authorization-audit integration remains
+outstanding.

@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:authorization_vectors:0.1.0",
+  "$id": "urn:CANARY:schema:authorization_vectors:1.0.0",
   "title": "CANARY golden authorization vector set",
   "description": "Allow/deny golden vectors run against both the D1_POLICY_GATE evaluator and the independent audit evaluator (SPEC.md Sections 6 and 11). Expected values are authored by one contributor and checked by independent reviewers before any differential result is trusted.",
   "type": "object",
   "required": ["schema_version", "vector_set_id", "interface_version", "authored_by", "reviewed_by", "policies", "vectors", "differential_fixtures"],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {"const": "1.0.0"},
     "vector_set_id": {"type": "string", "minLength": 1},
     "interface_version": {"type": "string", "minLength": 1},
     "authored_by": {"type": "string", "minLength": 1},

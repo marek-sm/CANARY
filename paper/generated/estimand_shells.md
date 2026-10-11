@@ -7,6 +7,22 @@
 Every future chart must retain its caption, alt text, exact counts or pair
 counts, interval labeling where required, and the table equivalent below.
 
+## Request-to-effect overview
+
+### Request-to-effect table
+
+- **Estimand/output ID:** `RequestToEffectCounts`
+- **Status:** PRE-RESULTS — NO DATA
+- **Caption scaffold:** For each retained configuration, attack-or-clean condition, and adapter, exact true, false, and null counts over the same primary indirect trials of an unauthorized action requested, a D1_POLICY_GATE block before dispatch, an unauthorized action dispatched, and an unauthorized action effect. The columns overlap and need not sum: one trial can have one request blocked and another dispatched. The block count is a derived trial-level count, distinct from the request-level conformance counts. No rate, macro-average, or interval.
+- **Alt-text scaffold:** Placeholder showing, for the same trials, how many requested an unauthorized action, had one blocked by D1_POLICY_GATE, had one dispatched, and had one produce an effect; no counts are available.
+- **Figure shell:** Intentionally empty until generated from frozen evidence.
+
+#### Table equivalent
+
+| Configuration | Condition (attack / clean) | Delivery channel / adapter | Logical trials | Unauthorized action requested (true / false / null) | D1_POLICY_GATE block before dispatch (true / false / null) | Unauthorized action dispatched (true / false / null) | Unauthorized action effect (true / false / null) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — |
+
 ## Primary rates
 
 ### Model violation rate
@@ -268,6 +284,20 @@ counts, interval labeling where required, and the table equivalent below.
 | Block reason | Count | Unknown disposition count | Non-evaluable count |
 | --- | --- | --- | --- |
 | PRE-RESULTS — NO DATA | — | — | — |
+
+### Tool-name-only ablation
+
+- **Estimand/output ID:** `ToolNameOnlyAblation`
+- **Status:** PRE-RESULTS — NO DATA
+- **Caption scaffold:** A counterfactual re-scoring of recorded D0_BASELINE requests, by condition and adapter: for each trial's first unauthorized request only, whether a gate that checks only the tool name would have blocked it (the tool is not permitted) or allowed it (a permitted tool with unauthorized arguments, grant, or call count). Exact counts only, with no rate, interval, or comparison with D1_POLICY_GATE's measured conformance. It is not a run of a new configuration.
+- **Alt-text scaffold:** Placeholder for the counts of first unauthorized D0_BASELINE requests a tool-name-only gate would block or allow, with indeterminate trials and the dispatch and effect of the allowed requests; no counts are available.
+- **Figure shell:** Intentionally empty until generated from frozen evidence.
+
+#### Table equivalent
+
+| Condition (attack / clean) | Delivery channel / adapter | D0_BASELINE logical trials | Indeterminate trials | Trials with no unauthorized request | First unauthorized request: tool-name-only gate would block | First unauthorized request: tool-name-only gate would allow | Allowed requests dispatched under D0_BASELINE (true / false / null) | Allowed requests with effect observed under D0_BASELINE (true / false / null) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ### Reliability and resource diagnostics
 

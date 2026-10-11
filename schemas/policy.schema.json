@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:policy:0.1.0",
+  "$id": "urn:CANARY:schema:policy:1.0.0",
   "title": "CANARY declarative task authorization policy",
-  "description": "One trusted, versioned, argument-level task policy consumed by both the D1_POLICY_GATE evaluator and the independent audit evaluator. Meaning is owned by SPEC.md Sections 6-7; evaluation rules are in docs/DEFENSES_AND_POLICY.md. A tool absent from `tools` is not permitted. Every allowlist is exact-match on normalized values. Pre-lock version: additive changes must land with vectors and tests.",
+  "description": "One trusted, versioned, argument-level task policy consumed by both the D1_POLICY_GATE evaluator and the independent audit evaluator. Meaning is owned by SPEC.md Sections 6-7; evaluation rules are in docs/DEFENSES_AND_POLICY.md. A tool absent from `tools` is not permitted. Every allowlist is exact-match on normalized values. Locked at 1.0.0 by decision 0009; after the lock, a change on the docs/DATA_CONTRACTS.md evolution-rules list follows SPEC.md Section 11.",
   "type": "object",
   "required": ["schema_version", "policy_id", "policy_version", "task_id", "call_budget_basis", "tools"],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {"const": "1.0.0"},
     "policy_id": {"$ref": "#/$defs/identifier"},
     "policy_version": {
       "description": "Bound into every high-risk grant's action hash; a grant for another version never matches.",
