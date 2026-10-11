@@ -6,6 +6,8 @@
 >
 > Section 4.6's `RequestToEffectCounts` and `ToolNameOnlyAblation` rows follow [decision 0012](../docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md), approved by the project lead on 2026-10-10.
 >
+> Section 1's problem statement and overall question follow [decision 0013](../docs/decisions/0013-rubric-framing.md), approved by the project lead on 2026-10-10.
+>
 > This file was prepared with AI assistance and approved by the project lead. `TASKS.md` (component portfolios; slice plan) and `AGENTS.md` ("AI assistance") reserve the thesis, scoped contribution, claim language, and metric definitions to the project lead. `SPEC.md` §15 reserves claims, uncertainty, and limitations to humans.
 
 This file supplies the project-lead inputs that `TASKS.md` (slice plan, paper-work split) assigns alongside `W5-T5`: the thesis, the scoped contribution, permitted-claim language, and exact metric definitions. Section numbers such as "paper §7" refer to the ten-section paper structure in `SPEC.md` §14. Estimand headings use the same IDs as the `W5-T5` estimand shells, so each definition lines up with its empty table.
@@ -21,7 +23,11 @@ CANARY measures two layers that must not be collapsed (SPEC §1, Thesis):
 
 CANARY is one measurement instrument, not separate attack and defense products (SPEC §0).
 
+Problem statement (SPEC §1, Problem statement): A defense against prompt injection in a tool-using agent can lower an end-to-end attack-success rate in three different ways: the model may ignore the injected instruction, a control outside the model may block the action it proposed, or the agent may fail at its legitimate task. One success rate can't tell these apart, so on its own it can't show whether a defense made the model safer or made the agent less able, and anyone choosing a defense for a deployed agent needs to know which. CANARY is not a new attack or defense. For the same runs, it records what the model requested, what the policy decided, what was dispatched, and what effect followed, beside exact no-injection twins and tasks that include authorized risky actions.
+
 ### Research questions
+
+Overall question (SPEC §1, Research questions): On one hosted tool-calling model, when source-derived injections arrive through tool results, how often do they produce a model violation beyond the matched clean background, and how often a modeled system compromise? How much does D2_DATAMARKING change the model-violation rate, how much compromise remains when D1_POLICY_GATE, an argument-aware policy gate, checks requests before dispatch, and what does each defense cost in legitimate task completion? RQ1–RQ3 and the secondary questions below answer it in parts, and it adds no estimand.
 
 Primary (SPEC §1, Research questions):
 
