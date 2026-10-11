@@ -85,6 +85,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0011-week8-replan.md`](docs/decisions/0011-week8-replan.md) | How Week 8 onward was re-planned after the recovery week: Gate 3 on October 28 with no backstop, provisional `M10-ALL`, W10 folded into W9 and W11, the Gate 2 step slip rule, and lead-owned tool-result delivery |
 | [`docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md`](docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md) | Why `SPEC.md` Section 10 predeclares a count-only request-to-effect table and a tool-name-only ablation of recorded D0_BASELINE requests, and why they must be on `main` before any paid call other than the live adapter check |
 | [`docs/decisions/0013-rubric-framing.md`](docs/decisions/0013-rubric-framing.md) | Why `SPEC.md` Section 1 gains a problem statement and an overall research question with no prior-work or gap claim, why reference 15 stays unverified, and which rubric-driven proposals were not adopted |
+| [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -108,3 +109,9 @@ See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and desig
 choices. It consumes the merged W5-T4 interfaces and W5-T3 schemas, frozen at the
 measurement-contract lock. Independent authorization-audit integration remains
 outstanding.
+
+### W6-T2 development corpus check
+
+`uv run make corpus-check` re-renders every development base and fails if a
+committed fixture or hash drifted, then checks the candidate ledger against the
+development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).
