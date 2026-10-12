@@ -11,6 +11,10 @@ results.
   Section 10.
 - [`generated/estimand_shells.md`](generated/estimand_shells.md) is generated
   from that manifest and intentionally contains no data.
+- [`venue-checklists.md`](venue-checklists.md) maps the NeurIPS paper
+  checklist and the IEEE conference-paper structure to the `SPEC.md` sections
+  and artifacts that answer them, and marks what is still open. It makes no
+  venue claim.
 
 Regenerate the shells with:
 
