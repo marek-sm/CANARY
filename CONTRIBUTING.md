@@ -19,7 +19,7 @@ Before a retained slice enters `IN PROGRESS`, it has exactly one accountable own
 
 ## Change workflow
 
-1. Start from an issue or `TASKS.md` slice with explicit acceptance evidence.
+1. Start from a `TASKS.md` slice with explicit acceptance evidence.
 2. Keep each change small enough for one reviewer to understand.
 3. Add or update tests with the implementation.
 4. Record whether the change touches a frozen or claim-bearing artifact.
@@ -81,7 +81,7 @@ A corpus item requires a stable source record, human opener, different human rev
 
 ## Scientific and frozen changes
 
-Before freeze, a semantic change must update `SPEC.md`, schemas, tests, and relevant guides together. After freeze, material changes follow Section 11 of `SPEC.md`: preserve old evidence, increment the protocol, create a new experiment or validation identity, rerun symmetrically, and add a dated `docs/protocol_deviations.md` entry.
+Before freeze, a semantic change must update `SPEC.md`, schemas, tests, and relevant guides together. After freeze, material changes follow Section 11 of `SPEC.md`: open a dated `docs/protocol_deviations.md` entry in a pull request before any fix merges or rerun starts, increment the protocol, create a new experiment or validation identity, preserve old evidence, and rerun symmetrically.
 
 ## Results and claims
 

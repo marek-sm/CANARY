@@ -55,7 +55,7 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). The rec
    - Since October 4, a slice that is `BLOCKED` on Monday starts the day its last input lands, with its dates unchanged ([`TASKS.md`](TASKS.md#dependency-discipline)).
    - Since October 7, the only exception to the recovery week's no-W7-work rule is early evaluation intake for `W7-T2`, once `W6-T2` merges.
    - From October 11, each owner whose pull request merged that week explains it in about three minutes at the Sunday check-in.
-   - Weekly slice issues start with the W7 slices on October 12.
+   - Weekly slice issues start with the W7 slices on October 12. *Replaced October 12 by the project lead under [decision 0015](docs/decisions/0015-cut-process-rules.md): a Monday team-channel post lists each slice's owner, reviewer, due date, and `BLOCKED` producers, with a link to its `TASKS.md` row.*
 6. **Risk — W7 starts blocked:** every W7 slice depends on Week 6 work, and none of it is on `main`. Unless a producer merges by Monday, October 12, its consumers start `BLOCKED` and lose days from a week whose pull requests are due Thursday.
 7. **Risk — Gate 2 evidence:**
    - Gate 2 is recorded not passed. Its step needs the live-model development grid, which needs `W6-T1` to `W6-T4` on `main`, tool-result delivery, and a full mock run first.
@@ -80,7 +80,7 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). The rec
 
 ## Next seven days
 
-- Monday, October 12: the W7 slices start, and the project lead opens the five W7 issues, each recording its `BLOCKED` producers. The owners of `W8-T2`, `W9-T2`, `W9-T3`, `W9-T5`, `W11-T1`, and `W11-T4` re-accept their changed slices when those slices' Monday issues open.
+- Monday, October 12: the W7 slices start, and the project lead opens the five W7 issues, each recording its `BLOCKED` producers. The owners of `W8-T2`, `W9-T2`, `W9-T3`, `W9-T5`, `W11-T1`, and `W11-T4` re-accept their changed slices when those slices' Monday issues open. *Changed October 12 by the project lead under [decision 0015](docs/decisions/0015-cut-process-rules.md): the W7 slices go out in the Monday team-channel post instead of issues, and a changed slice is re-accepted by replying to that week's post.*
 - Each open Week 6 pull request takes its next action above and merges as soon as it is reviewed.
 - Tool-result delivery merges once #31 and #32 do (target Wednesday, October 14). The project lead records the date all three parts of the paid-run condition hold. No paid call other than the live adapter check runs before then. *The third part, the request-to-effect table and tool-name-only ablation, was added October 10 by the project lead under [decision 0012](docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md) and targets Tuesday, October 13.*
 - The selection-prefix decision record lands before `W7-T2`'s pull request on Thursday, October 15.

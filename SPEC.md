@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.8.0**  
+**Public project and experimental specification v1.9.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -1295,12 +1295,11 @@ Development cases never enter reported empirical results. Evaluation candidates 
 
 A material defect requires:
 
-1. an issue describing the bug and affected cells or validation checks;
+1. a dated entry in `docs/protocol_deviations.md`, opened in a pull request before any fix merges or any rerun starts, that records the defect, the affected cells or validation checks, the scope determination, and outcome visibility, and that merges complete with the repair;
 2. a protocol-version increment;
 3. a new empirical experiment ID, or a new `ENGINEERING` validation ID/version when only validation evidence is affected;
-4. preservation of old data;
-5. symmetric reruns of every affected empirical condition/configuration, or versioned reruns of every affected `ENGINEERING` validation check; and
-6. a dated entry in `docs/protocol_deviations.md`.
+4. preservation of old data; and
+5. symmetric reruns of every affected empirical condition/configuration, or versioned reruns of every affected `ENGINEERING` validation check.
 
 Never patch only a surprising result. Never overwrite a frozen run. Cosmetic prose or demo wording may change without a protocol version only when it changes no data or claim.
 
