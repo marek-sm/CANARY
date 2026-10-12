@@ -58,7 +58,7 @@ A conflict among these artifacts blocks the affected work. Do not choose whichev
 | Formatting or explanation with no semantic effect | Normal review |
 | New implementation consistent with an unfrozen interface | Normal review plus tests |
 | Schema, oracle, task, corpus, prompt, defense, model, schedule, estimand, or missingness change before freeze | Update every affected authority and test together |
-| Material change after freeze | Follow `SPEC.md` Section 11: issue, version increment, preserved old evidence, symmetric rerun or validation rerun, and protocol-deviation record |
+| Material change after freeze | Follow `SPEC.md` Section 11: protocol-deviation entry opened first, version increment, new experiment or validation ID, preserved old evidence, and symmetric rerun or validation rerun |
 | New feature after freeze | Reject or version as later work unless it is the bounded replay-only exception |
 
 ## Public-repository hygiene

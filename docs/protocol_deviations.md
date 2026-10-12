@@ -2,7 +2,7 @@
 
 One protocol deviation is recorded: DEV-0001, below the entry template.
 
-This append-only log is used only after a scientific or claim-bearing artifact has frozen. Pre-freeze design decisions belong in `docs/decisions/`; current slice state belongs in `TASKS.md`, and the dated weekly rollup belongs in `STATUS.md`.
+This append-only log is used only after a scientific or claim-bearing artifact has frozen. Open each entry in a pull request before any fix merges or any rerun starts, and merge it complete with the repair (`SPEC.md` Section 11). Pre-freeze design decisions belong in `docs/decisions/`; current slice state belongs in `TASKS.md`, and the dated weekly rollup belongs in `STATUS.md`.
 
 ## Entry template
 
