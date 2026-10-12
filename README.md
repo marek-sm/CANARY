@@ -28,6 +28,8 @@ uv run make trace                    # no make: uv run python -m runner.mock_sli
 
 `make live-smoke` makes paid Anthropic calls: it runs one W5-T1 ticket trial on the decision 0010 development model, `claude-haiku-5-5`, and writes it under `results/development/live/`. It is run by hand, with the key in a local `.env` (one `ANTHROPIC_API_KEY=` line). `python -m runner.live_smoke --provider openai --env-file .env.openai` runs the same trial on the declared fallback, `gpt-6-luna`. It refuses when `CI` or any `ANTHROPIC_*` or `OPENAI_*` variable is set, and CI never runs it.
 
+`make floor-count RUN=<run directory>` is the Gate 2 step's `SPEC.md` Section 10 development-floor count over one live development-grid run; add `OUT=<file>` to save the report. It reads records only, refuses mock-provider, evaluation, and other-run records, and makes no provider call.
+
 ## What CANARY is designed to measure
 
 - Model-level unsafe proposals and exact-canary disclosure.

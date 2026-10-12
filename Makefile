@@ -20,3 +20,9 @@ t1-smoke:
 .PHONY: live-smoke
 live-smoke:
 	python -m runner.live_smoke
+
+# Gate 2 step: the SPEC.md Section 10 development-floor count over the live
+# development grid's run directory. Reads records only; makes no provider call.
+.PHONY: floor-count
+floor-count:
+	python -m analysis.floor_count "$(RUN)" $(if $(OUT),--out "$(OUT)")
