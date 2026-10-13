@@ -8,6 +8,7 @@ This guide records the W5-T4 interface freeze for authorization, `D1_POLICY_GATE
 | [`schemas/policy.schema.json`](../schemas/policy.schema.json) | Serialized shape of a declarative task policy |
 | [`schemas/authorization_vectors.schema.json`](../schemas/authorization_vectors.schema.json) | Serialized shape of a golden vector set |
 | [`oracles/authorization/golden/w5-t4-initial.json`](../oracles/authorization/golden/w5-t4-initial.json) | Initial allow/deny golden vectors |
+| [`oracles/authorization/golden/w6-t1-task-suite.json`](../oracles/authorization/golden/w6-t1-task-suite.json) | Additive T1 task-policy vectors; independent review pending |
 | [`oracles/authorization/conformance.py`](../oracles/authorization/conformance.py) | Harness any evaluator runs against the vectors |
 | [`defenses/vectors/datamarking-w5-t4.json`](../defenses/vectors/datamarking-w5-t4.json) | Datamarking specification vectors |
 | [`tests/test_defense_contracts.py`](../tests/test_defense_contracts.py) | Pins all of the above |

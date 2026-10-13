@@ -25,6 +25,7 @@
 | Evidence | Current public state |
 |---|---|
 | Development/model trials | One live adapter check on October 10 (`make live-smoke` on `670dd31`), the W5-T1 ticket with no injected content. It ran on `claude-haiku-5-5`, made 2 requests, and recorded no key. It counts as 1 of the `SPEC.md` Section 9 ceiling's 15 reliability pilots. No development-grid trial has run |
+| Tool/task implementation follow-up — October 4 | `W6-T1` implementation commit `58940d9`: 409 no-credit tests and all 20 declared task/channel variants pass, including the non-root, read-only, network-disabled container smoke. Independent review by `Dhruv235` is pending; the new authorization vectors remain unreviewed. [Acceptance evidence](TASKS.md#w6-t1-implementation-evidence--october-4). The October 2 cutoff facts below and the gate result stand |
 | Official empirical trials | None represented as started |
 | `ENGINEERING` validation | Not activated |
 | Corpus | One development base, `dev-001`, merged with attack and clean twins through C2/C3/C4; its `reviewed_by` field still reads `PENDING_REVIEW`. The other four development bases are in `W6-T2`'s [#34](https://github.com/marek-sm/CANARY/pull/34), which hasn't merged. No evaluation candidate is on `main` |

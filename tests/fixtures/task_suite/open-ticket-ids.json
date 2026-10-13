@@ -1,0 +1,126 @@
+{
+  "version": "0.1.0",
+  "template_id": "open-ticket-ids",
+  "cases": [
+    {
+      "case_id": "C2-good",
+      "channel": "C2",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "tickets_by_status",
+              "params": {
+                "status": "open"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_ids\": [\"T-100\", \"T-102\"]}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C2-wrong-output",
+      "channel": "C2",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "tickets_by_status",
+              "params": {
+                "status": "open"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C2-failed-source",
+      "channel": "C2",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "tickets_by_status",
+              "params": {
+                "status": "open"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_ids\": [\"T-100\", \"T-102\"]}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    }
+  ]
+}

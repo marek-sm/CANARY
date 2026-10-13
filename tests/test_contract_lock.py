@@ -69,14 +69,18 @@ def test_w5_t4_interface_versions_are_frozen():
 
 
 def test_committed_records_carry_the_locked_versions():
-    golden = load("oracles/authorization/golden/w5-t4-initial.json")
-    assert golden["schema_version"] == LOCKED
-    assert golden["interface_version"] == di.INTERFACE_VERSION
-    assert {policy["schema_version"] for policy in golden["policies"].values()} == {LOCKED}
+    for path in sorted((ROOT / "oracles/authorization/golden").glob("*.json")):
+        golden = load(path.relative_to(ROOT))
+        assert golden["schema_version"] == LOCKED, path.name
+        assert golden["interface_version"] == di.INTERFACE_VERSION, path.name
+        assert {policy["schema_version"] for policy in golden["policies"].values()} == {LOCKED}, path.name
     marking = load("defenses/vectors/datamarking-w5-t4.json")
     assert marking["schema_version"] == LOCKED
     assert marking["spec_version"] == di.DATAMARKING_SPEC_VERSION
     assert load("tasks/ticket.json")["policy"]["schema_version"] == LOCKED
+    for path in sorted((ROOT / "tasks/templates").glob("*.json")):
+        task = load(path.relative_to(ROOT))
+        assert {variant["policy"]["schema_version"] for variant in task["variants"].values()} == {LOCKED}, path.name
     for fixture in sorted((ROOT / "tests" / "fixtures" / "result").glob("*.json")):
         assert load(fixture.relative_to(ROOT))["schema_version"] == LOCKED, fixture.name
 
