@@ -66,7 +66,7 @@ A conflict among these artifacts blocks the affected work. Do not choose whichev
 - Do not commit personnel deliberations, private correspondence, personal contact data, credentials, provider-only metadata, raw unsanitized results, or restricted payload text.
 - A `.gitignore` entry is not remediation after a secret enters Git history.
 - Use contributor identifiers in fixtures and examples unless a person has consented to public attribution.
-- Do not claim venue acceptance, peer review, publication, defense efficacy, or completed results without a public or frozen record.
+- Do not claim venue acceptance, peer review, publication, defense efficacy, or completed results without a public or frozen record. `SPEC.md` Sections 1 and 14 list every forbidden claim, Section 0 states CANARY's purpose, and Section 1 says who it is for.
 
 ## Definition of done for a code slice
 
