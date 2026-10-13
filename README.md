@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-CANARY is a controlled engineering evaluation of indirect prompt injection in a deliberately vulnerable but intrinsically safe local tool-using LLM agent. It separates two questions that are often collapsed: what unsafe behavior the model proposes, and what effects the surrounding system permits.
+CANARY is a controlled engineering evaluation of indirect prompt injection in a deliberately vulnerable but intrinsically safe local tool-using LLM agent. It separates two questions that are often collapsed: what unsafe behavior the model proposes, and what effects the surrounding system permits. It is applied research, written for teams that choose prompt-injection safeguards for tool-using agents: for the same runs, it is designed to record what the model requested separately from what the system let happen, and what each safeguard costs in legitimate work ([`SPEC.md`](SPEC.md) Section 1, "Who CANARY is for"). `SPEC.md` Section 14 lists measurement practices such a team can apply to its own agent.
 
 This is a Cal Poly SLO CS + AI Club project. `CANARY` in all caps refers to this project. CANARY builds on established work; its contribution is its scoped implementation, measurement design, execution, and findings.
 
@@ -90,6 +90,8 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0013-rubric-framing.md`](docs/decisions/0013-rubric-framing.md) | Why `SPEC.md` Section 1 gains a problem statement and an overall research question with no prior-work or gap claim, why reference 15 stays unverified, and which rubric-driven proposals were not adopted |
 | [`docs/decisions/0014-selection-prefixes-and-task-order.md`](docs/decisions/0014-selection-prefixes-and-task-order.md) | Why `SPEC.md` Section 5 builds only the prefixes a pool under 20 supports, how the selection order, `task_order`, and recheck sample are fixed in advance, and why this frozen-text change is protocol deviation DEV-0001 |
 | [`docs/decisions/0015-cut-process-rules.md`](docs/decisions/0015-cut-process-rules.md) | Why post-freeze changes open their deviation entry first instead of a separate issue, why the weekly slice issues, the Monday `STATUS.md` update, and the 24-hour blocker action are gone, and which rules stay |
+| [`docs/decisions/0016-practitioner-relevance.md`](docs/decisions/0016-practitioner-relevance.md) | Why `SPEC.md` Section 1 says who CANARY is for, what the pitch to leadership, sponsors, and recruiters may and may not say, and why it isn't a gate item or a decision priority |
+| [`docs/decisions/0017-applied-purpose.md`](docs/decisions/0017-applied-purpose.md) | Why `SPEC.md` Section 0 makes usefulness to teams choosing safeguards CANARY's purpose and a tie-breaker that ranks nothing, why Section 14 adds a measurement checklist and a team-facing paper close, and when a gap sentence may be stated |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
