@@ -1,4 +1,4 @@
-.PHONY: test trace paper-shells paper-shells-check
+.PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check
 test:
 	pytest -q
 
@@ -10,6 +10,12 @@ paper-shells:
 
 paper-shells-check:
 	python -m analysis.report_shells --check
+
+demo-example:
+	python -m demo.accessibility
+
+demo-example-check:
+	python -m demo.accessibility --check
 
 .PHONY: t1-smoke
 t1-smoke:

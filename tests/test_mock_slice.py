@@ -79,7 +79,7 @@ def test_unknown_endpoints_stay_null(run_dir):
     assert result["display_label"] is None
 
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
-    assert trace.count(UNKNOWN) == 3
+    assert trace.count(UNKNOWN) == 4
     assert "FALSE" not in trace
 
 
@@ -221,6 +221,7 @@ def test_trace_has_accessible_evidence_regions(run_dir):
         "MODEL VIOLATION",
         "SYSTEM COMPROMISE",
         "UTILITY",
+        "DISPLAY LABEL",
         "PROTOCOL: NOT FROZEN",
         "TRACE:",
         "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE",
@@ -238,7 +239,7 @@ def test_trace_keeps_outcomes_separate_without_result_record(run_dir):
 
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
 
-    assert trace.count(UNKNOWN) == 3
+    assert trace.count(UNKNOWN) == 4
     assert "MODEL VIOLATION" in trace
     assert "SYSTEM COMPROMISE" in trace
     assert "UTILITY" in trace
