@@ -1,6 +1,6 @@
 # CANARY Defenses and Policy Contract
 
-This guide records the W5-T4 interface freeze for authorization, `D1_POLICY_GATE`, the independent audit, `D2_DATAMARKING`, and event meanings. [`SPEC.md`](../SPEC.md) Sections 6 and 7 own the scientific meaning, and [decision 0004](decisions/0004-week5-measurement-contract-clarifications.md) records the week-5 clarifications applied here; this file records the implementation choices those sections require and cannot change them. Where the two appear to disagree, `SPEC.md` wins and the conflict blocks work until reconciled.
+This guide records the W5-T4 interface freeze for authorization, `D1_POLICY_GATE`, the independent audit, `D2_DATAMARKING`, and event meanings, and the W6-T4 implementations of the canonicalizer, the `D1_POLICY_GATE` evaluator and gate, and the `D2_DATAMARKING` transform. [`SPEC.md`](../SPEC.md) Sections 6 and 7 own the scientific meaning, and [decision 0004](decisions/0004-week5-measurement-contract-clarifications.md) records the week-5 clarifications applied here; this file records the implementation choices those sections require and cannot change them. Where the two appear to disagree, `SPEC.md` wins and the conflict blocks work until reconciled.
 
 | Artifact | Owns |
 |---|---|
@@ -11,6 +11,10 @@ This guide records the W5-T4 interface freeze for authorization, `D1_POLICY_GATE
 | [`oracles/authorization/conformance.py`](../oracles/authorization/conformance.py) | Harness any evaluator runs against the vectors |
 | [`defenses/vectors/datamarking-w5-t4.json`](../defenses/vectors/datamarking-w5-t4.json) | Datamarking specification vectors |
 | [`tests/test_defense_contracts.py`](../tests/test_defense_contracts.py) | Pins all of the above |
+| [`defenses/canonicalizer.py`](../defenses/canonicalizer.py) | The one request canonicalizer (W6-T4) |
+| [`defenses/policy_gate.py`](../defenses/policy_gate.py) | The T4 authorization evaluator, the `D1_POLICY_GATE` gate, and `gate_and_dispatch` (W6-T4) |
+| [`defenses/datamarking.py`](../defenses/datamarking.py) | The `D2_DATAMARKING` transform and coverage helpers (W6-T4) |
+| [`tests/test_policy_gate.py`](../tests/test_policy_gate.py), [`tests/test_datamarking.py`](../tests/test_datamarking.py) | Gate, canonicalizer, and datamarking tests over the W5-T4 vectors (W6-T4) |
 
 Every version here moved from `0.x` to `1.0.0` at the end-of-week-5 measurement-contract lock ([decision 0009](decisions/0009-measurement-contract-lock.md)).
 
@@ -49,13 +53,14 @@ When a decision cannot be computed from known evidence, `authorize` raises `Auth
 
 ### Normalization the canonicalizer must apply (implemented in W6-T4)
 
-Allowlists are exact matches, so the policy is only as strong as canonicalization. The W6-T4 canonicalizer runs once and produces the object that is logged, authorized, and dispatched. Until then, W5-T1's provisional `read_file`-only normalizer (`agent/loop.py`, `read-file-normalizer-v0.1.0`) applies the `read_file.path` rules below and is replaced by the W6-T4 canonicalizer:
+Allowlists are exact matches, so the policy is only as strong as canonicalization. The canonicalizer (`defenses/canonicalizer.py`, `request-canonicalizer-v0.1.0`) runs once and produces the object that is logged, authorized, and dispatched. `agent/loop.py` delegates to it, replacing W5-T1's provisional `read_file`-only normalizer (`read-file-normalizer-v0.1.0`). The loop's `SUPPORTED_TOOLS` still lists only `read_file`, because the W5-T1 dispatch path can only run that tool; W6-T1 widens the list as each safe tool lands. Rules applied to every tool:
 
 - all strings: Unicode NFC; `\r\n` and `\r` become `\n`;
 - `read_file.path`: POSIX path, leading `./` removed, `.` segments dropped, `..` segments resolved lexically where possible, duplicate slashes collapsed. A path that resolves outside the fixture root keeps its leading `/` or `..` (for example `/docs/report.txt` or `../private/keys.txt`) and is then evaluated like any other path (decision 0004 item 4). No allowlist contains such a path, so both evaluators return `path_not_authorized` and the request counts as unauthorized. Containment is unchanged: `read_file` itself still fails closed on traversal, absolute paths, and symlink escape (`SPEC.md` Section 3);
 - `fetch_url.url`: lowercase scheme and host, default port removed, fragment removed, percent-encoding of unreserved characters decoded and hex digits uppercased, empty path becomes `/`;
 - `send_email.to`: surrounding whitespace stripped, whole address lowercased;
 - `send_email.subject` and `body`: no trimming beyond the rules above.
+- `query_db.params`: object keys are NFC-normalized at every depth. Two distinct keys that normalize to the same key cannot be represented unambiguously, so canonicalization fails; it never keeps one of them by input order.
 
 Canonicalization failure is reserved for arguments that cannot be represented at all. A syntactically valid request for a resource outside the fixture root or the allowlist is evaluable and unauthorized (`SPEC.md` Section 7).
 
@@ -74,6 +79,8 @@ A `POLICY_UNAVAILABLE` block follows the same step, grant, and event rules as `P
 `request_evaluable` is true only when canonicalization completed, the independent audit completed, and, under `D1_POLICY_GATE`, the gate evaluator also completed (decision 0004 item 1).
 
 The gate dispatches the exact `CanonicalRequest` it evaluated and never rewrites it. Either kind of block consumes one agent step, consumes no grant, and the loop continues until the normal step limit. The gate never receives canary values and never calls `contains_canary`.
+
+`defenses/policy_gate.py` implements this. `PolicyGateAuthorizer` is the pure evaluator and `PolicyGate` wraps any `Authorizer`: an `AuthorizationNotComputable` or any other exception from the evaluator, or a return value that is not an `AuthorizationDecision`, fails closed as `unavailable`. `gate_and_dispatch` is the single call a runner makes: it evaluates once, calls the runner's required `commit` callback with the outcome and the grant state to keep (the durable `tool_dispatch` write), and only then passes the very same `CanonicalRequest` object to the dispatch callback. The grant transition therefore commits before the tool runs, so a grant consumed by a dispatch stays consumed even if the tool later raises (`SPEC.md` Section 7); if `commit` itself raises, nothing is dispatched. The state to keep is the decision's `next_grant_state` only when the request dispatches; a block commits the input state unchanged, so a blocked request never consumes a grant even when the evaluator's transition would have marked one consumed (vector `deny-email-over-budget-with-grant`). Value comparison against allowlists is type-strict, so `1`, `1.0`, and `true` never match each other.
 
 ### Frozen observations
 
@@ -104,6 +111,8 @@ For each untrusted span, applied exactly once:
 
 **System instruction.** Appended to the system prompt under `D2_DATAMARKING` only; exact text is `DATAMARKING_SYSTEM_INSTRUCTION`, adapted from the Section 3.3 example prompt, and pinned by hash.
 
+**Implementation** (`defenses/datamarking.py`, `d2-datamarking-transform-v0.1.0`). `MarkedSpan.marked_text` is the marked decoded text (steps 1 to 3), so the round trip above holds for every span format; `serialize_span` applies step 4 to produce the escaped form that goes back into the fixture. `pre_sha256` hashes the span text exactly as received and `post_sha256` hashes `marked_text`. `DatamarkingTransform.mark` rejects a repeated `span_id` so a second pass over the same span is loud, and `DatamarkingResult.coverage` counts spans per channel plus markers inserted and removed. `mark_json_strings` (C2) and `mark_html_document` (C4) state the coverage rule executably and back the two-direction coverage tests: every string value, text node, and attribute value is marked; keys, numbers, booleans, nulls, tag names, attribute names, and the doctype are not.
+
 **Known limitations** (for the paper's limitations section): a span with no whitespace receives no marker, which the source itself notes; zero-width and other non-whitespace separators are not marked; and a static marker is weaker than the randomized marking the source suggests against an attacker who knows the scheme. `D2_DATAMARKING` is behavioral guidance, not enforcement.
 
 ## 4. Event meanings
@@ -130,3 +139,4 @@ A later error never erases an earlier event, and missing evidence stays null.
 - Golden vectors and datamarking vectors are authored by T4. `reviewed_by` lists the one independent reviewer, who is not the author. `SPEC.md` Section 6 requires exactly one before any differential result is trusted ([decision 0006](decisions/0006-one-vector-reviewer.md)); `review_complete` in the conformance harness checks this. Chace is the reviewer of both W5-T4 vector sets.
 - `canonical_json_bytes` is the one canonical JSON rule since the lock ([decision 0009](decisions/0009-measurement-contract-lock.md) item 3), and the runner hashes through it.
 - Task policies validate against `schemas/policy.schema.json`: W5-T1's `tasks/ticket.json` policy does, and the W5-T1 runner checks it on every run. W6-T1's policies must too.
+- W6-T4 review points: (1) `post_sha256` hashes the marked decoded text, not the escaped form; confirm this is the hash the result schema wants. (2) `mark_html_document` is a coverage reference built on `html.parser`; W6-T2's C4 parser declares the real spans and may supersede it. (3) `SUPPORTED_TOOLS` in `agent/loop.py` stays `("read_file",)` until W6-T1 lands the other three tools.
