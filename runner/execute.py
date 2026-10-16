@@ -11,24 +11,31 @@ What this stage owns:
 
 * **A2 resume.** One canary map persisted at the run root is reloaded on resume
   and never regenerated (SPEC.md Section 3). A trial whose ``results.jsonl``
-  already exists and schema-validates is skipped, so a resume adds no duplicate
-  and replays no committed dispatch or effect. Every event is durably appended
-  before the next step (the frozen ``EventLog`` fsyncs each line). A runner
-  exception leaves a durable ``trial_ended(status=infrastructure_failure)`` plus
-  result record (ticket_slice pattern), never a half-written trial that
-  refuse-overwrite would then block. The only non-committed leftover possible is
-  a hard process kill mid-trial; on resume that trial directory (no valid
-  ``results.jsonl``) is treated as never-committed and redone from scratch.
+  already exists and schema-validates is skipped, so a resume adds no duplicate.
+  Every event is durably appended before the next step (the frozen ``EventLog``
+  fsyncs each line). A runner exception, including one while rendering or
+  auditing, leaves a durable ``trial_ended(status=infrastructure_failure)`` plus
+  result record (ticket_slice pattern), never a half-written trial. A hard
+  process kill mid-trial is resumed from the last durable event (SPEC.md Section
+  9): stored model responses and tool results are replayed into the loop
+  instead of being requested or dispatched again, so the trial is never
+  restarted after observable model behavior. A tool request whose dispatch
+  outcome was never recorded can't be replayed or safely re-dispatched, so that
+  trial ends as an infrastructure failure.
+* **Containment and configuration.** Every trial directory and corpus file
+  resolves inside its root before it is touched, and a configuration whose
+  defense isn't wired into this runner is rejected before any trial runs.
 * **A3 reset + verify between trials.** Before each trial the fixtures are
   hash-verified against the frozen manifest (reusing ``six_cell.load_template``),
   the per-trial fake email sink is reset to an empty receipt log and verified
   empty, grant state is reset to empty and verified, and agent state does not
   carry over (``run_loop`` deep-copies its messages). Any verification failure
   fails closed and is recorded as an infrastructure failure.
-* **A5 version/hash capture.** Every event carries ``component_versions``; the
-  result ``run_metadata`` carries the code commit, prompt hash, rendered-fixture
-  hash, decoding, max steps, and the schedule index/seed. Records are
-  schema-validated before every append (append-only).
+* **A5 version/hash capture.** Every event carries ``component_versions``,
+  naming the adapter of the provider actually used; the result ``run_metadata``
+  carries the code commit, prompt hash, rendered-fixture hash, decoding, max
+  steps, and the schedule index/seed. Records are schema-validated before every
+  append (append-only).
 
 What this stage does NOT own: the independent post-hoc authorization audit
 (A4). A clean seam is left for it (the ``audit`` callback of ``run_schedule`` /
@@ -41,11 +48,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional, Sequence
 
 from agent.loop import LOOP_VERSION, MAX_STEPS, run_loop
 from channels.render import render_c2, render_c3, render_c4, substitute
@@ -61,6 +68,7 @@ from runner.schedule import (
     ScheduledTrial,
     generate_schedule,
     superblock_groups,
+    validate_trial,
 )
 
 # Reuse the frozen serialization/validation/evidence/result machinery and the
@@ -70,7 +78,6 @@ from runner.mock_slice import (
     REPO_ROOT,
     RESULTS_FILE,
     EventLog,
-    append_jsonl,
     assemble_result as base_assemble_result,
     code_commit,
     or3,
@@ -79,6 +86,7 @@ from runner.mock_slice import (
     sha256_json,
     sha256_text,
     utc_now,
+    validator,
 )
 from runner.six_cell import (
     DECODING,
@@ -102,16 +110,25 @@ SINK_FILE = "sink_receipts.json"
 # placeholder so the required, non-null schema field stays honest about the gap.
 EFFECT_ORACLE_UNAVAILABLE = "effect-oracle-unavailable-v0"
 
-COMPONENT_VERSIONS = {
-    "runner": RUNNER_VERSION,
-    "agent_loop": LOOP_VERSION,
-    "provider_adapter": PROVIDER_ADAPTER_VERSION,
-}
+# Only D0_BASELINE executes here today. D1_POLICY_GATE and D2_DATAMARKING are
+# rejected until their execution paths are wired, so a schedule can never
+# record a baseline run under a defense's label.
+SUPPORTED_CONFIGURATIONS = ("D0_BASELINE",)
 
-# Version/hash capture (A5): the result record documents every code component
-# present in the run, including the independent audit evaluator, even on trials
-# that produced no tool request to score.
-RESULT_COMPONENT_VERSIONS = {**COMPONENT_VERSIONS, "audit_evaluator": AUDIT_EVALUATOR_VERSION}
+
+def component_versions(provider: Any) -> dict[str, str]:
+    """The versions stamped on every event, naming the provider actually used (A5).
+
+    A real adapter exposes ``adapter_version``; the scripted mock predates that
+    attribute and keeps its module constant. A provider with neither can't be
+    recorded honestly, so it is refused before its trial starts.
+    """
+    version = getattr(provider, "adapter_version", None)
+    if version is None and isinstance(provider, MockProvider):
+        version = PROVIDER_ADAPTER_VERSION
+    if not isinstance(version, str) or not version:
+        raise ValueError("the provider exposes no adapter_version to record")
+    return {"runner": RUNNER_VERSION, "agent_loop": LOOP_VERSION, "provider_adapter": version}
 
 _RENDERERS: dict[str, Callable[[str], str]] = {
     "C2": render_c2,
@@ -173,16 +190,63 @@ def reset_trial_environment(
     return sink, grant_state
 
 
+def reopen_trial_environment(trial_dir: Path, base: Mapping[str, Any], template: str) -> FakeSink:
+    """Re-verify fixtures for a resumed trial without erasing its effects.
+
+    The sink's receipts are evidence of effects that already happened, so a
+    resumed trial keeps them. Only a sink that was never created is reset.
+    """
+    reverified = load_template(
+        REPO_ROOT / base["fixture"]["template_path"], base["fixture"]["template_sha256"]
+    )
+    if reverified != template:
+        raise ValueError("fixture template drifted mid-run")
+    sink = FakeSink(trial_dir / SINK_FILE)
+    if not sink.path.exists():
+        sink.reset()
+        sink.verify_empty()
+    return sink
+
+
+# --------------------------------------------------------------------------
+# Durable writes and containment.
+# --------------------------------------------------------------------------
+
+
+def _fsync_dir(directory: Path) -> None:
+    fd = os.open(directory, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _write_durably(path: Path, text: str) -> None:
+    """Write, fsync, atomically replace, then fsync the directory entry."""
+    tmp = path.with_name(path.name + ".tmp")
+    with tmp.open("w", encoding="utf-8") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+    _fsync_dir(path.parent)
+
+
+def _inside(root: Path, path: Path) -> Path:
+    """Return ``path`` if it resolves inside ``root``; refuse it otherwise."""
+    if not path.resolve().is_relative_to(root.resolve()):
+        raise ValueError(f"{path.name!r} resolves outside {root.name!r}")
+    return path
+
+
 # --------------------------------------------------------------------------
 # Canary resolution: one fresh pair per superblock, persisted, reloaded.
 # --------------------------------------------------------------------------
 
 
 def _persist_canary_map(path: Path, canary_map: Mapping[str, Any]) -> None:
-    """Write the whole canary map durably (atomic replace) before the next cell."""
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(canary_map, indent=2, sort_keys=True), encoding="utf-8")
-    tmp.replace(path)
+    """Write the whole canary map durably (fsync, atomic replace) before the next cell."""
+    _write_durably(path, json.dumps(canary_map, indent=2, sort_keys=True))
 
 
 def _resolve_superblock_canaries(
@@ -229,7 +293,8 @@ def _load_base(
 ) -> tuple[Mapping[str, Any], str]:
     if base_case_id in cache:
         return cache[base_case_id]
-    base = json.loads((corpus_root / f"{base_case_id}.json").read_text(encoding="utf-8"))
+    path = _inside(corpus_root, corpus_root / f"{base_case_id}.json")
+    base = json.loads(path.read_text(encoding="utf-8"))
     if "CANARY-" in base["attack"]["canonical_payload"]:
         raise ValueError("canonical payload must not contain a literal canary (SPEC.md Section 5)")
     template = load_template(
@@ -263,6 +328,190 @@ def _trial_complete(trial_dir: Path) -> bool:
     except Exception:
         return False
     return len(records) == 1
+
+
+# --------------------------------------------------------------------------
+# A2 resume from the last durable event (SPEC.md Section 9).
+# --------------------------------------------------------------------------
+
+
+class DispatchOutcomeUnknown(RuntimeError):
+    """A tool request was durable but its dispatch outcome never was."""
+
+
+def _durable_events(path: Path, *, truncate: bool = True) -> list[dict[str, Any]]:
+    """The trial's committed events; a torn final line is dropped.
+
+    ``append_jsonl`` fsyncs whole lines, so a line without its newline was cut
+    off by a kill mid-write and never became durable. With ``truncate=False``
+    the file is only read, never changed.
+    """
+    if not path.exists():
+        return []
+    data = path.read_bytes()
+    complete = data[: data.rfind(b"\n") + 1]
+    if len(complete) != len(data) and truncate:
+        with path.open("r+b") as f:
+            f.truncate(len(complete))
+            f.flush()
+            os.fsync(f.fileno())
+    events = [json.loads(line) for line in complete.split(b"\n") if line]
+    for event in events:
+        validator("event").validate(event)
+    return events
+
+
+def _check_trace_identity(stored: list[Mapping[str, Any]], trial: ScheduledTrial) -> None:
+    """Refuse to continue a trace written for a different trial.
+
+    A trial directory's name leaves out the experiment, model, and seed, so a
+    schedule built from another spec can map onto an old directory. Continuing
+    that trace would replay its dispatches under the wrong trial.
+    """
+    expected = (trial.logical_trial_id, trial.experiment_id, trial.configuration)
+    for event in stored:
+        if (event["logical_trial_id"], event["experiment_id"], event["configuration"]) != expected:
+            raise ValueError("the stored trace belongs to a different trial")
+    started = _first(stored, "trial_started")
+    if started is not None:
+        payload = started["payload"]
+        if (payload["model_requested"], payload["channel"], payload["condition"]) != (
+            trial.model_id,
+            trial.channel,
+            trial.condition,
+        ):
+            raise ValueError("the stored trace belongs to a different trial")
+
+
+class _ReopenedEventLog(EventLog):
+    """The frozen ``EventLog``, continued after its last durable event.
+
+    ``EventLog`` refuses an existing trace so a fresh trial can't append to an
+    old one. A resumed trial must append to its own, so this sets the same
+    fields and continues the sequence; ``append`` is inherited unchanged.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        clock: Callable[[], str],
+        *,
+        sequence: int,
+        logical_trial_id: str,
+        component_versions: Mapping[str, str],
+        experiment_id: str,
+        configuration: str,
+    ) -> None:
+        self.path = path
+        self.logical_trial_id = logical_trial_id
+        self.component_versions = dict(component_versions)
+        self.experiment_id = experiment_id
+        self.configuration = configuration
+        self.clock = clock
+        self.sequence = sequence
+
+
+def _first(events: list[Mapping[str, Any]], event_type: str) -> Optional[Mapping[str, Any]]:
+    return next((e for e in events if e["event_type"] == event_type), None)
+
+
+def _steps_observed(events: list[Mapping[str, Any]]) -> int:
+    return len({e["payload"]["step"] for e in events if e["event_type"] == "provider_attempt"})
+
+
+class _Replay:
+    """Feeds a resumed loop its durable history before anything new happens.
+
+    The loop is deterministic given its responses and tool observations, so
+    replaying the stored provider attempts in order brings it back to the last
+    durable event. Replayed attempts, tool events, and dispatches are not logged
+    or performed again; only what comes after them is.
+    """
+
+    def __init__(self, stored: list[Mapping[str, Any]], log: EventLog) -> None:
+        self.attempts = [e["payload"] for e in stored if e["event_type"] == "provider_attempt"]
+        self.tool_events = {
+            (e["event_type"], e["payload"].get("call_id")): e["payload"]
+            for e in stored
+            if e["payload"].get("call_id") is not None
+        }
+        self.log = log
+        self.replayed = False
+
+    def provider(self, real: Any) -> Any:
+        replay = self
+
+        class Provider:
+            def complete(self, messages, tool_schemas, decoding, model_request):
+                if replay.attempts:
+                    stored = replay.attempts.pop(0)
+                    replay.replayed = True
+                    if isinstance(real, MockProvider):
+                        real.calls += 1  # the mock is scripted by call index
+                    return {
+                        "outcome": stored["outcome"],
+                        "provider_request_id": stored["provider_request_id"],
+                        "model_requested": stored["model_requested"],
+                        "model_resolved": stored["model_resolved"],
+                        "provider_fingerprint": stored["provider_fingerprint"],
+                        "raw_response": stored["raw_response"],
+                        "replayed_step": stored["step"],
+                        "replayed_attempt": stored["attempt_index"],
+                    }
+                replay.replayed = False
+                return real.complete(messages, tool_schemas, decoding, model_request)
+
+        return Provider()
+
+    def on_attempt(self, log_attempt: Callable[[int, int, Mapping[str, Any]], None]) -> Callable:
+        def on_attempt(step: int, attempt_index: int, response: Mapping[str, Any]) -> None:
+            if not self.replayed:
+                log_attempt(step, attempt_index, response)
+            elif (response["replayed_step"], response["replayed_attempt"]) != (step, attempt_index):
+                raise ValueError("resumed loop diverged from the durable trace")
+
+        return on_attempt
+
+    def on_tool(self, event_type: str, payload: Mapping[str, Any]) -> None:
+        if (event_type, payload.get("call_id")) not in self.tool_events:
+            self.log.append(event_type, payload)
+
+    def dispatch(self, real: Callable[[Any], Mapping[str, Any]]) -> Callable:
+        def dispatch(request: Any) -> Mapping[str, Any]:
+            stored = self.tool_events.get(("tool_result", request.call_id))
+            if stored is not None:
+                return stored["observation"]  # completed before the kill: never again
+            if ("tool_requested", request.call_id) in self.tool_events:
+                raise DispatchOutcomeUnknown(request.call_id)
+            observation = real(request)
+            self.log.append(
+                "tool_dispatch",
+                {
+                    "call_id": request.call_id,
+                    "step": request.step,
+                    "blocked": False,
+                    "dispatched": True,
+                    "disposition_observed": True,
+                },
+            )
+            self.log.append(
+                "tool_result",
+                {
+                    "call_id": request.call_id,
+                    "step": request.step,
+                    "execution_succeeded": observation.get("ok"),
+                    "observation": observation,
+                },
+            )
+            return observation
+
+        return dispatch
+
+
+def _commit_result(path: Path, result: Mapping[str, Any]) -> None:
+    """Validate, then commit the single result line atomically."""
+    validator("result").validate(result)
+    _write_durably(path, json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n")
 
 
 # --------------------------------------------------------------------------
@@ -311,62 +560,48 @@ def _build_messages(
 # --------------------------------------------------------------------------
 
 
-def execute_trial(
+def _run_trial_body(
+    log: EventLog,
+    stored: list[Mapping[str, Any]],
     trial_dir: Path,
     trial: ScheduledTrial,
     base: Mapping[str, Any],
     template: str,
-    canaries: list[str],
-    clock: Callable[[], str],
+    provider: Any,
     *,
-    provider_factory: Callable[[ScheduledTrial, list[str]], Any],
     code_commit_value: Optional[str],
-    audit: Optional[Callable[..., Optional[list[dict[str, Any]]]]] = None,
+    dispatch_factory: Optional[Callable[[ScheduledTrial, FakeSink], Callable[[Any], Mapping[str, Any]]]],
+    tool_schemas: Sequence[Mapping[str, Any]],
 ) -> None:
-    """Run one logical trial into a fresh ``trial_dir`` and commit its result.
+    """Start or continue the trial's events up to and including ``trial_ended``."""
+    started = _first(stored, "trial_started")
+    try:
+        messages, untrusted_span, rendered = _build_messages(trial, base, template)
+    except Exception:
+        messages = untrusted_span = rendered = None
+    if started is None:
+        log.append(
+            "trial_started",
+            {
+                "task_prompt": TASK_PROMPT,
+                "prompt_sha256": sha256_json(messages) if messages is not None else None,
+                "model_requested": trial.model_id,
+                "decoding": DECODING,
+                "max_steps": MAX_STEPS,
+                "code_commit": code_commit_value,
+                "tier": None,
+                "channel": trial.channel,
+                "condition": trial.condition,
+                "untrusted_span": untrusted_span,
+                "rendered_sha256": sha256_text(rendered) if rendered is not None else None,
+            },
+        )
+    elif messages is not None and sha256_json(messages) != started["payload"]["prompt_sha256"]:
+        messages = None  # the stored prompt can't be rebuilt, so the trial can't continue
+    if dispatch_factory is None and _first(stored, "tool_requested") is not None:
+        provider = None  # stored tool calls can't be replayed without the tool seam
 
-    The directory is created with ``exist_ok=False`` so an already-committed or
-    in-flight trial is never silently overwritten; ``run_schedule`` decides when
-    a never-committed leftover may be removed on resume.
-
-    Audit seam (A4, next stage): ``audit`` is the INDEPENDENT post-hoc
-    authorization auditor (SPEC.md Section 6, decision 0006). When provided it is
-    called after ``trial_ended`` with the durable stored events and trial context
-    ``audit(events=..., trial=..., base=..., canaries=...)`` and returns the
-    audited ``tool_event`` records (or ``None``). It is scored post-hoc and never
-    affects dispatch in any configuration (decision 0004 item 1). Stage 2 wires
-    an evaluator validated by ``check_authorizer`` against the golden vectors
-    here; today there are no tool calls, so the default (``None``) leaves
-    ``tool_events`` empty and ``authorized`` null, never false.
-    """
-    trial_dir.mkdir(parents=True, exist_ok=False)
-    log = EventLog(
-        trial_dir / EVENTS_FILE,
-        clock,
-        logical_trial_id=trial.logical_trial_id,
-        component_versions=COMPONENT_VERSIONS,
-        experiment_id=trial.experiment_id,
-        configuration=trial.configuration,
-    )
-    messages, untrusted_span, rendered = _build_messages(trial, base, template)
-    log.append(
-        "trial_started",
-        {
-            "task_prompt": TASK_PROMPT,
-            "prompt_sha256": sha256_json(messages),
-            "model_requested": trial.model_id,
-            "decoding": DECODING,
-            "max_steps": MAX_STEPS,
-            "code_commit": code_commit_value,
-            "tier": None,
-            "channel": trial.channel,
-            "condition": trial.condition,
-            "untrusted_span": untrusted_span,
-            "rendered_sha256": sha256_text(rendered),
-        },
-    )
-
-    def on_attempt(step: int, attempt_index: int, response: Mapping[str, Any]) -> None:
+    def log_attempt(step: int, attempt_index: int, response: Mapping[str, Any]) -> None:
         model_call_id = f"{trial.logical_trial_id}:step{step}"
         raw = response["raw_response"]
         log.append(
@@ -386,31 +621,42 @@ def execute_trial(
             raw_sha256=sha256_json(raw),
         )
 
-    try:
-        # A3: reset and verify the per-trial environment before the first call.
-        reset_trial_environment(trial_dir, base, template)
-        provider = provider_factory(trial, canaries)
-        outcome = run_loop(
-            provider,
-            messages,
-            tool_schemas=[],
-            decoding=DECODING,
-            model_request={"model": trial.model_id},
-            on_attempt=on_attempt,
-            logical_trial_id=trial.logical_trial_id,
-        )
-        if outcome.final_text is not None:
-            log.append(
-                "final_output",
-                {"text": outcome.final_text, "text_sha256": sha256_text(outcome.final_text)},
+    termination, steps = "infrastructure_failure", None
+    if messages is not None and provider is not None:
+        replay = _Replay(stored, log)
+        try:
+            # A3: reset and verify the per-trial environment before the first call.
+            if started is None:
+                sink, _ = reset_trial_environment(trial_dir, base, template)
+            else:
+                sink = reopen_trial_environment(trial_dir, base, template)
+            dispatch = replay.dispatch(dispatch_factory(trial, sink)) if dispatch_factory else None
+            outcome = run_loop(
+                replay.provider(provider),
+                messages,
+                tool_schemas=list(tool_schemas),
+                decoding=DECODING,
+                model_request={"model": trial.model_id},
+                on_attempt=replay.on_attempt(log_attempt),
+                logical_trial_id=trial.logical_trial_id,
+                dispatch=dispatch,
+                on_tool=replay.on_tool if dispatch is not None else None,
             )
-        termination, steps = outcome.termination_reason, outcome.steps_used
-    except (OSError, ValueError, RuntimeError):
-        # Keep prior durable evidence. Never persist exception strings, host
-        # paths, or credentials. Steps = provider steps already observed.
-        prior = read_jsonl(trial_dir / EVENTS_FILE, "event")
-        termination = "infrastructure_failure"
-        steps = len({e["payload"]["step"] for e in prior if e["event_type"] == "provider_attempt"})
+            if replay.attempts:
+                raise ValueError("resumed loop diverged from the durable trace")
+            if outcome.final_text is not None and _first(stored, "final_output") is None:
+                log.append(
+                    "final_output",
+                    {"text": outcome.final_text, "text_sha256": sha256_text(outcome.final_text)},
+                )
+            termination, steps = outcome.termination_reason, outcome.steps_used
+        except Exception:
+            # Keep prior durable evidence. Never persist exception strings, host
+            # paths, or credentials.
+            termination, steps = "infrastructure_failure", None
+    if steps is None:
+        # Steps = provider steps already durably observed.
+        steps = _steps_observed(read_jsonl(log.path, "event"))
 
     log.append(
         "trial_ended",
@@ -423,15 +669,102 @@ def execute_trial(
         },
     )
 
-    events = read_jsonl(trial_dir / EVENTS_FILE, "event")
+
+def execute_trial(
+    trial_dir: Path,
+    trial: ScheduledTrial,
+    base: Mapping[str, Any],
+    template: str,
+    canaries: list[str],
+    clock: Callable[[], str],
+    *,
+    provider_factory: Callable[[ScheduledTrial, list[str]], Any],
+    code_commit_value: Optional[str],
+    audit: Optional[Callable[..., Optional[list[dict[str, Any]]]]] = None,
+    dispatch_factory: Optional[
+        Callable[[ScheduledTrial, FakeSink], Callable[[Any], Mapping[str, Any]]]
+    ] = None,
+    tool_schemas: Sequence[Mapping[str, Any]] = (),
+) -> None:
+    """Run one logical trial into ``trial_dir``, or resume it, and commit its result.
+
+    A new trial starts in a fresh directory. A trial left behind by a hard kill
+    resumes from its last durable event (``_Replay``): an ended trial only has
+    its result committed, and an unfinished one continues without requesting a
+    stored model response or dispatching a stored tool call again.
+
+    Tool seam: ``dispatch_factory(trial, sink)`` returns the callable that runs
+    one canonical request. Each real dispatch is durably recorded as
+    ``tool_dispatch`` and ``tool_result`` before the loop continues. Without it
+    the cell body is text-only, as dev-001's is today.
+
+    Audit seam (A4): ``audit`` is the INDEPENDENT post-hoc authorization auditor
+    (SPEC.md Section 6, decision 0006). It is called after ``trial_ended`` with
+    the durable stored events and trial context ``audit(events=..., trial=...,
+    base=..., canaries=...)`` and returns the audited ``tool_event`` records (or
+    ``None``). It is scored post-hoc and never affects dispatch in any
+    configuration (decision 0004 item 1). If it raises, or no audit is given,
+    every request is kept as unevaluable with ``authorized`` null.
+
+    A provider that can't be built, or a leftover trace that belongs to a
+    different trial, stops the run before anything is written for this trial.
+    """
+    if trial.configuration not in SUPPORTED_CONFIGURATIONS:
+        raise ValueError(f"{trial.configuration} is not wired into this runner")
+    # Every file the trial writes must stay in its directory, even through a link.
+    for name in (EVENTS_FILE, SINK_FILE, RESULTS_FILE, RESULTS_FILE + ".tmp"):
+        _inside(trial_dir, trial_dir / name)
+    events_path = trial_dir / EVENTS_FILE
+    _check_trace_identity(_durable_events(events_path, truncate=False), trial)
+    provider = provider_factory(trial, canaries)
+    versions = component_versions(provider)
+    trial_dir.mkdir(parents=True, exist_ok=True)
+    stored = _durable_events(events_path)
+    log_fields = {
+        "logical_trial_id": trial.logical_trial_id,
+        "experiment_id": trial.experiment_id,
+        "configuration": trial.configuration,
+    }
+    if stored:
+        if stored[0]["component_versions"] != versions:
+            # Never mix components within one trial: close it out under the
+            # versions it started with, without calling the new provider.
+            versions, provider = stored[0]["component_versions"], None
+        log: EventLog = _ReopenedEventLog(
+            events_path, clock, sequence=stored[-1]["sequence"], component_versions=versions, **log_fields
+        )
+    else:
+        events_path.unlink(missing_ok=True)  # an empty trace holds nothing durable
+        log = EventLog(events_path, clock, component_versions=versions, **log_fields)
+
+    if _first(stored, "trial_ended") is None:
+        _run_trial_body(
+            log,
+            stored,
+            trial_dir,
+            trial,
+            base,
+            template,
+            provider,
+            code_commit_value=code_commit_value,
+            dispatch_factory=dispatch_factory,
+            tool_schemas=tool_schemas,
+        )
+
+    events = read_jsonl(events_path, "event")
     tool_events: Optional[list[dict[str, Any]]] = None
     if audit is not None:
-        tool_events = audit(events=events, trial=trial, base=base, canaries=canaries)
+        try:
+            tool_events = audit(events=events, trial=trial, base=base, canaries=canaries)
+        except Exception:
+            tool_events = None
+    if tool_events is None and _first(events, "tool_requested") is not None:
+        # No audit ran or it failed: keep every request, unevaluable, authorized null.
+        tool_events = build_tool_events(events, task_policy=None)
     result = assemble_result(
         trial, events, canaries, base["attack"]["attack_family_id"], tool_events=tool_events, base=base
     )
-    (trial_dir / RESULTS_FILE).open("x").close()
-    append_jsonl(trial_dir / RESULTS_FILE, result, "result")
+    _commit_result(trial_dir / RESULTS_FILE, result)
 
 
 def assemble_result(
@@ -501,7 +834,12 @@ def assemble_result(
     meta["rendered_fixture_hash"] = started["payload"]["rendered_sha256"]
     meta["schedule_index"] = trial.schedule_index
     meta["schedule_seed"] = trial.seed
-    meta["component_versions"] = dict(RESULT_COMPONENT_VERSIONS)
+    # The trial's own versions plus the independent audit evaluator, recorded
+    # even on trials with no tool request to score.
+    meta["component_versions"] = {
+        **started["component_versions"],
+        "audit_evaluator": AUDIT_EVALUATOR_VERSION,
+    }
     if base is not None:
         meta["corpus_hash"] = sha256_json(base)
         task = base.get("task")
@@ -517,7 +855,7 @@ def assemble_result(
 def build_tool_events(
     events: list[Mapping[str, Any]],
     *,
-    task_policy: Mapping[str, Any],
+    task_policy: Optional[Mapping[str, Any]],
     authorizer: Any = None,
 ) -> list[dict[str, Any]]:
     """Score every stored ``tool_requested`` event with the independent audit.
@@ -530,7 +868,9 @@ def build_tool_events(
     ``assemble_result``: ``authorized`` is the audit verdict, or ``null`` when the
     audit did not complete (``AuthorizationNotComputable``), never coerced to
     false. A ``read_file`` request for an unassigned or out-of-root resource is
-    evaluable and scores ``authorized = false`` (decision 0004 item 4).
+    evaluable and scores ``authorized = false`` (decision 0004 item 4). With no
+    task policy the audit can't run at all, so every request is kept with
+    ``request_evaluable = false`` and ``authorized = null`` rather than dropped.
 
     Dispatch, execution, effect, and sink facts are read from the durable events
     (``tool_dispatch``, ``tool_result``, ``effect_observation``, ``sink_receipt``);
@@ -558,12 +898,13 @@ def build_tool_events(
             normalized_args=p["normalized_args"],
             normalizer_version=p["normalizer_version"],
         )
-        try:
-            decision = authorizer.authorize(task_policy, canonical, tuple(prior), grant_state)
-            evaluable = True
-        except AuthorizationNotComputable:
-            decision = None
-            evaluable = False
+        decision, evaluable = None, False
+        if task_policy is not None:
+            try:
+                decision = authorizer.authorize(task_policy, canonical, tuple(prior), grant_state)
+                evaluable = True
+            except AuthorizationNotComputable:
+                pass
 
         facts = by_call.get(p["call_id"], {})
         dispatch = facts.get("tool_dispatch", {})
@@ -626,15 +967,13 @@ def default_audit(
     trial with no ``tool_requested`` event (every dev-001 cell today, whose body
     is text-only) yields ``[]``, so ``authorized`` stays null, never false. The
     trusted policy comes from the base corpus task registry (W6-T1); until a base
-    carries one, a trial with tool requests but no policy also yields ``[]`` rather
-    than guessing a policy.
+    carries one, a trial with tool requests keeps each request as unevaluable with
+    ``authorized`` null rather than guessing a policy or dropping the evidence.
     """
     if not any(e["event_type"] == "tool_requested" for e in events):
         return []
     task = base.get("task")
     task_policy = task.get("policy") if isinstance(task, Mapping) else None
-    if task_policy is None:
-        return []
     return build_tool_events(events, task_policy=task_policy)
 
 
@@ -655,26 +994,41 @@ def run_schedule(
     audit: Optional[Callable[..., Optional[list[dict[str, Any]]]]] = None,
     code_commit_value: Optional[str] = None,
     spec: Optional[Mapping[str, Any]] = None,
+    dispatch_factory: Optional[
+        Callable[[ScheduledTrial, FakeSink], Callable[[Any], Mapping[str, Any]]]
+    ] = None,
+    tool_schemas: Sequence[Mapping[str, Any]] = (),
 ) -> Path:
     """Execute ``schedule`` into ``run_dir``; return it.
 
-    A fresh run refuses to overwrite an existing ``run_dir``. A ``resume`` run
-    reuses the directory: it reloads the persisted canary map (never
-    regenerating a superblock's pair), skips every already-committed trial, and
-    redoes only never-committed leftovers. ``provider_factory``, ``canary_factory``,
-    and the schedule's ``experiment_id``/``seed`` are injectable for deterministic
-    tests. When ``spec`` is given on a fresh run it is persisted to
-    ``schedule_spec.json`` so ``--resume`` can regenerate the identical schedule.
+    Before anything is written, every trial is re-validated and every
+    configuration must be wired into this runner. A fresh run refuses to
+    overwrite an existing ``run_dir``. A ``resume`` run reuses the directory: it
+    reloads the persisted canary map (never regenerating a superblock's pair),
+    skips every already-committed trial, and continues each unfinished one from
+    its last durable event. ``provider_factory``, ``canary_factory``,
+    ``dispatch_factory``, and the schedule's ``experiment_id``/``seed`` are
+    injectable for deterministic tests. When ``spec`` is given on a fresh run it
+    is persisted to ``schedule_spec.json`` so ``--resume`` can regenerate the
+    identical schedule.
     """
+    for trial in schedule:
+        validate_trial(trial)
+    unsupported = sorted({t.configuration for t in schedule} - set(SUPPORTED_CONFIGURATIONS))
+    if unsupported:
+        raise ValueError(f"configurations not wired into this runner: {unsupported}")
+
     run_dir = Path(run_dir)
+    stored_spec = run_dir / SPEC_FILE
+    if resume and spec is not None and stored_spec.exists():
+        if json.loads(stored_spec.read_text(encoding="utf-8")) != json.loads(json.dumps(spec)):
+            raise ValueError("the resume spec differs from this run's schedule_spec.json")
     if resume:
         run_dir.mkdir(parents=True, exist_ok=True)
     else:
         run_dir.mkdir(parents=True, exist_ok=False)
         if spec is not None:
-            (run_dir / SPEC_FILE).write_text(
-                json.dumps(spec, indent=2, sort_keys=True), encoding="utf-8"
-            )
+            _write_durably(run_dir / SPEC_FILE, json.dumps(spec, indent=2, sort_keys=True))
 
     corpus_root = Path(corpus_root) if corpus_root is not None else DEFAULT_CORPUS_ROOT
     provider_factory = provider_factory or _default_provider_factory
@@ -690,16 +1044,13 @@ def run_schedule(
             canaries_path, canary_map, superblock_id, trials[0], canary_factory
         )
         for trial in trials:
-            trial_dir = run_dir / trial_slug(trial)
+            trial_dir = _inside(run_dir, run_dir / trial_slug(trial))
             if _trial_complete(trial_dir):
                 continue  # already committed: no duplicate, no replay
-            if trial_dir.exists():
-                # A never-committed leftover (e.g. a hard kill mid-trial). On a
-                # fresh run this is an unexpected collision; on resume it is
-                # redone from scratch since nothing was durably committed.
-                if not resume:
-                    raise FileExistsError(trial_dir)
-                shutil.rmtree(trial_dir)
+            if trial_dir.exists() and not resume:
+                # On a fresh run a leftover is an unexpected collision. On
+                # resume, execute_trial continues it from its durable events.
+                raise FileExistsError(trial_dir)
             execute_trial(
                 trial_dir,
                 trial,
@@ -710,6 +1061,8 @@ def run_schedule(
                 provider_factory=provider_factory,
                 code_commit_value=commit,
                 audit=audit,
+                dispatch_factory=dispatch_factory,
+                tool_schemas=tool_schemas,
             )
     return run_dir
 

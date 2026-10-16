@@ -194,11 +194,11 @@ def test_resume_skips_committed_trials_without_duplicating(tmp_path, monkeypatch
         assert len(recs) == 1  # still exactly one result line, no duplicate
 
 
-def test_resume_redoes_a_never_committed_leftover_and_reloads_canaries(tmp_path):
+def test_resume_commits_a_never_committed_leftover_and_reloads_canaries(tmp_path):
     out = tmp_path / "run"
     schedule = _run(out)
     canaries_before = (out / execute.CANARIES_FILE).read_text()
-    # Simulate a hard kill mid-trial: a trial dir with no valid results.jsonl.
+    # Simulate a hard kill after trial_ended: a trial dir with no valid results.jsonl.
     leftover = out / execute.trial_slug(schedule[2])
     (leftover / RESULTS_FILE).unlink()
     # Resume with a canary factory that would error if used -> proves no regeneration.
@@ -212,13 +212,15 @@ def test_resume_redoes_a_never_committed_leftover_and_reloads_canaries(tmp_path)
     assert (out / execute.CANARIES_FILE).read_text() == canaries_before
     for t in schedule:
         recs = read_jsonl(out / execute.trial_slug(t) / RESULTS_FILE, "result")
-        assert len(recs) == 1  # leftover redone, all others untouched, no gaps
+        assert len(recs) == 1  # leftover committed, all others untouched, no gaps
 
 
 def test_infrastructure_failure_is_durable_not_half_written(tmp_path):
     out = tmp_path / "run"
 
     class Boom:
+        adapter_version = "test-boom-v0"
+
         def complete(self, *a, **k):
             raise RuntimeError("provider exploded")
 
@@ -239,6 +241,8 @@ def test_a_failed_trial_can_be_resumed_over(tmp_path):
     out = tmp_path / "run"
 
     class Boom:
+        adapter_version = "test-boom-v0"
+
         def complete(self, *a, **k):
             raise RuntimeError("boom")
 

@@ -20,18 +20,30 @@ reloads one canary pair per superblock before that superblock's first cell
 
 This module is pure: no I/O, no clock, no randomness beyond the committed seed,
 and it never mutates its inputs. ``generate_schedule`` fails closed if the spec
-would mint two identical ``logical_trial_id`` values (A6: globally unique ids).
+would mint two identical ``logical_trial_id`` values (A6: globally unique ids),
+or if an identifier could name a path outside the run directory or a value
+outside the result schema's channel, condition, and configuration sets.
 """
 
 from __future__ import annotations
 
 import random
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 
 # Development split: no frozen protocol_version exists yet, so the id namespace
 # carries the same sentinel the prototype uses (runner/six_cell.py).
 PROTOCOL_SENTINEL = "unfrozen"
+
+# The result schema's closed sets (schemas/result.schema.json).
+CHANNELS = ("C2", "C3", "C4")
+CONDITIONS = ("attack", "clean")
+CONFIGURATIONS = ("D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING")
+
+# Identifiers become file names and ':'-separated id parts, so they carry no
+# path separator, no ':' and can't be '.' or '..'.
+_SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 _SPEC_KEYS = (
     "experiment_id",
@@ -99,6 +111,16 @@ def comparison_superblock_id(
     )
 
 
+def _check_id(name: str, value: Any) -> None:
+    if not isinstance(value, str) or not _SAFE_ID.fullmatch(value):
+        raise ValueError(f"schedule {name} {value!r} is not a safe identifier")
+
+
+def _check_member(name: str, value: Any, allowed: tuple[str, ...]) -> None:
+    if value not in allowed:
+        raise ValueError(f"schedule {name} {value!r} is not one of {list(allowed)}")
+
+
 def _validate_spec(spec: Mapping[str, Any]) -> None:
     missing = [k for k in _SPEC_KEYS if k not in spec]
     if missing:
@@ -108,6 +130,29 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
             raise ValueError(f"schedule spec '{key}' must be a non-empty list")
     if int(spec["repeats"]) < 1:
         raise ValueError("schedule spec 'repeats' must be at least 1")
+    _check_id("experiment_id", spec["experiment_id"])
+    _check_id("protocol_sentinel", spec.get("protocol_sentinel", PROTOCOL_SENTINEL))
+    for base in spec["base_case_ids"]:
+        _check_id("base_case_id", base)
+    for channel in spec["channels"]:
+        _check_member("channel", channel, CHANNELS)
+    for condition in spec["conditions"]:
+        _check_member("condition", condition, CONDITIONS)
+    for configuration in spec["configurations"]:
+        _check_member("configuration", configuration, CONFIGURATIONS)
+
+
+def validate_trial(trial: "ScheduledTrial") -> None:
+    """Re-check one trial's path-bearing fields, for trials not built by ``generate_schedule``."""
+    _check_id("experiment_id", trial.experiment_id)
+    _check_id("base_case_id", trial.base_case_id)
+    _check_member("channel", trial.channel, CHANNELS)
+    _check_member("condition", trial.condition, CONDITIONS)
+    _check_member("configuration", trial.configuration, CONFIGURATIONS)
+    if not isinstance(trial.run_index, int) or isinstance(trial.run_index, bool) or trial.run_index < 1:
+        raise ValueError(f"schedule run_index {trial.run_index!r} must be a positive integer")
+    if not isinstance(trial.schedule_index, int) or isinstance(trial.schedule_index, bool) or trial.schedule_index < 0:
+        raise ValueError(f"schedule_index {trial.schedule_index!r} must be a non-negative integer")
 
 
 def generate_schedule(spec: Mapping[str, Any]) -> list[ScheduledTrial]:
