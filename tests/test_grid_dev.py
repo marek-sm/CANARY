@@ -13,6 +13,23 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC_PATH = ROOT / "protocol" / "development_grid_spec.json"
 
 
+def test_summary_includes_usage_by_channel_configuration(tmp_path):
+    spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
+    mock_spec = dict(spec)
+    mock_spec["model_id"] = MOCK_MODEL_ID
+    out = tmp_path / "grid"
+    grid_dev.run_mock_grid(
+        out,
+        spec=mock_spec,
+        corpus_root=ROOT / "tests" / "fixtures" / "corpus" / "development",
+    )
+    report = grid_dev.summarize_grid_run(out, spec)
+    assert report["trials_found"] == 90
+    assert report["complete"] is True
+    assert len(report["usage_by_channel_configuration"]) == 9  # 3 channels × 3 configs
+    assert all(v["trials"] == 10 for v in report["usage_by_channel_configuration"].values())
+
+
 def test_verify_matches_mock_run_model_when_spec_lists_live_model(tmp_path):
     spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     assert spec["model_id"] != MOCK_MODEL_ID

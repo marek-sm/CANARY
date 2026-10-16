@@ -34,7 +34,7 @@ live-smoke:
 floor-count:
 	python -m analysis.floor_count "$(RUN)" $(if $(OUT),--out "$(OUT)")
 
-.PHONY: grid-validate grid-check grid-mock grid-verify gate2-budget
+.PHONY: grid-validate grid-check grid-mock grid-verify grid-summary gate2-budget
 grid-validate:
 	python3 -m runner.grid_dev validate
 
@@ -59,6 +59,9 @@ grid-mock-fixtures:
 
 grid-verify:
 	python3 -m runner.grid_dev verify "$(RUN)"
+
+grid-summary:
+	python3 -m runner.grid_dev summary "$(RUN)"
 
 gate2-budget:
 	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" --conservative-c1-trial-cost-usd "$(C1_COST)" $(if $(RESERVE),--reserve-usd "$(RESERVE)",) $(if $(OUT),--out "$(OUT)")
