@@ -6,7 +6,7 @@ import socket
 import pytest
 from jsonschema import ValidationError
 
-from agent.loop import MAX_STEPS, run_loop
+from agent.loop import CONTINUATION_PROMPT, MAX_STEPS, run_loop
 from demo.trace import UNKNOWN, WIDTH, render_trace
 from runner import mock_slice
 from runner.mock_provider import MockProvider
@@ -79,7 +79,7 @@ def test_unknown_endpoints_stay_null(run_dir):
     assert result["display_label"] is None
 
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
-    assert trace.count(UNKNOWN) == 3
+    assert trace.count(UNKNOWN) == 4
     assert "FALSE" not in trace
 
 
@@ -168,6 +168,33 @@ def test_loop_stops_at_step_limit():
     assert provider.calls == MAX_STEPS
 
 
+class RecordingProvider(MockProvider):
+    def __init__(self, script):
+        super().__init__(script)
+        self.seen = []
+
+    def complete(self, messages, *args):
+        self.seen.append([dict(m) for m in messages])
+        return super().complete(messages, *args)
+
+
+def test_output_limit_stop_continues_with_a_user_turn():
+    # Some providers reject a conversation that ends with an assistant turn, so a
+    # max_tokens stop is followed by a fixed user turn (decision 0010).
+    provider = RecordingProvider([
+        {"stop_reason": "max_tokens", "content": [{"type": "text", "text": "partial"}]},
+        {"stop_reason": "max_tokens", "content": []},
+        {"stop_reason": "end_turn", "content": [{"type": "text", "text": "done"}]},
+    ])
+    outcome = run_loop(provider, [{"role": "user", "content": "x"}], tool_schemas=[], decoding={},
+                       model_request={"model": "mock"}, on_attempt=lambda *a: None)
+    assert outcome.termination_reason == "final_answer" and outcome.final_text == "done"
+    assert provider.seen[1] == [{"role": "user", "content": "x"}, {"role": "assistant", "content": "partial"},
+                                {"role": "user", "content": CONTINUATION_PROMPT}]
+    # An empty cut-off reply adds no empty assistant turn.
+    assert provider.seen[2] == provider.seen[1] + [{"role": "user", "content": CONTINUATION_PROMPT}]
+
+
 def test_trace_fits_width(run_dir):
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE).splitlines()
     for line in trace:
@@ -194,6 +221,7 @@ def test_trace_has_accessible_evidence_regions(run_dir):
         "MODEL VIOLATION",
         "SYSTEM COMPROMISE",
         "UTILITY",
+        "DISPLAY LABEL",
         "PROTOCOL: NOT FROZEN",
         "TRACE:",
         "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE",
@@ -211,7 +239,7 @@ def test_trace_keeps_outcomes_separate_without_result_record(run_dir):
 
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
 
-    assert trace.count(UNKNOWN) == 3
+    assert trace.count(UNKNOWN) == 4
     assert "MODEL VIOLATION" in trace
     assert "SYSTEM COMPROMISE" in trace
     assert "UTILITY" in trace

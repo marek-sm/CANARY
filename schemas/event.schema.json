@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:event:0.1.0",
+  "$id": "urn:CANARY:schema:event:1.0.0",
   "title": "CANARY append-only event",
-  "description": "One durably appended runner event. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Pre-lock version: additive changes must land with fixtures and tests.",
+  "description": "One durably appended runner event. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Locked at 1.0.0 by decision 0009; after the lock, a change on the docs/DATA_CONTRACTS.md evolution-rules list follows SPEC.md Section 11.",
   "type": "object",
   "required": [
     "schema_version",
@@ -20,7 +20,7 @@
     "component_versions"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {"const": "1.0.0"},
     "event_id": {
       "description": "Globally unique: logical_trial_id plus ':e' and the sequence number.",
       "type": "string",
@@ -98,7 +98,7 @@
             "properties": {
               "step": {"type": "integer", "minimum": 1},
               "attempt_index": {"type": "integer", "minimum": 1},
-              "outcome": {"enum": ["model_response", "no_model_content"]},
+              "outcome": {"enum": ["model_response", "no_model_content", "provider_content_filter"]},
               "provider_request_id": {"type": ["string", "null"]},
               "model_requested": {"type": "string", "minLength": 1},
               "model_resolved": {"type": ["string", "null"]},
@@ -145,7 +145,7 @@
     "configuration": {"enum": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"]},
     "status": {"enum": ["completed", "infrastructure_failure"]},
     "termination_reason": {
-      "enum": ["final_answer", "max_steps", "malformed_model_output", "infrastructure_failure"]
+      "enum": ["final_answer", "max_steps", "malformed_model_output", "provider_content_filter", "infrastructure_failure"]
     }
   }
 }

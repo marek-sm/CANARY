@@ -2,16 +2,17 @@
 from __future__ import annotations
 import copy
 from dataclasses import dataclass
-import posixpath
-from types import MappingProxyType
 from typing import Any, Callable, Mapping, Optional, Sequence
-import unicodedata
 
+from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use, thaw_json
 from defenses.interfaces import CanonicalRequest
 
-LOOP_VERSION = "agent-loop-v0.1.0"
-NORMALIZER_VERSION = "read-file-normalizer-v0.1.0"
+LOOP_VERSION = "agent-loop-v0.3.0"
+SUPPORTED_TOOLS = ("read_file",)  # widened by W6-T1 as each safe tool lands
 MAX_STEPS = 8
+# Follows a reply cut off at the output limit. Some providers reject a
+# conversation that ends with an assistant turn (decision 0010).
+CONTINUATION_PROMPT = "Your previous reply was cut off at the output limit. Continue from where it stopped."
 
 
 @dataclass(frozen=True)
@@ -25,29 +26,31 @@ def response_text(raw_response: Mapping[str, Any]) -> str:
     return "".join(block["text"] for block in raw_response["content"] if block.get("type") == "text")
 
 
-def parse_request(block, trial_id, step):
-    if set(block) != {"type", "id", "name", "input"} or block["name"] != "read_file":
-        raise ValueError("unsupported tool shape")
-    if not isinstance(block["id"], str) or not block["id"]:
-        raise ValueError("invalid call id")
-    args = block["input"]
-    if not isinstance(args, dict) or set(args) != {"path"} or not isinstance(args["path"], str):
-        raise ValueError("invalid arguments")
-    path = unicodedata.normalize("NFC", args["path"].replace("\r\n", "\n").replace("\r", "\n"))
-    if not path or "\x00" in path:
-        raise ValueError("unrepresentable path")
-    # POSIX normalization preserves escaping '..' and absolute paths for audit.
-    path = posixpath.normpath(path)
-    if path.startswith("//"):
-        path = "/" + path.lstrip("/")
-    return CanonicalRequest(f"{trial_id}:step{step}:call1", trial_id, step, "read_file", MappingProxyType({"path": path}), NORMALIZER_VERSION)
+def parse_request(block, trial_id, step, supported_tools: Sequence[str] = SUPPORTED_TOOLS):
+    """Canonicalize one provider tool_use block, exactly once, via the W6-T4 canonicalizer.
+
+    ``supported_tools`` is the set of tools this runner can dispatch today; a call to
+    any other tool cannot be handled and is treated as malformed model output.
+    """
+    try:
+        if not isinstance(block, Mapping) or block.get("name") not in supported_tools:
+            raise ValueError("unsupported tool shape")
+        return canonicalize_tool_use(block, trial_id, step)
+    except CanonicalizationError as exc:
+        raise ValueError(str(exc)) from exc
+
+
+def requested_payload(request: CanonicalRequest, block: Mapping[str, Any], step: int) -> dict[str, Any]:
+    return {"call_id": request.call_id, "step": step, "tool": request.tool, "requested_args": block["input"],
+            "normalized_args": thaw_json(request.normalized_args), "normalizer_version": request.normalizer_version}
 
 
 def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
              tool_schemas: Sequence[Mapping[str, Any]], decoding: Mapping[str, Any],
              model_request: Mapping[str, Any], on_attempt: Callable,
              max_steps: int = MAX_STEPS, logical_trial_id: str = "mock",
-             dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None) -> LoopOutcome:
+             dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None,
+             supported_tools: Sequence[str] = SUPPORTED_TOOLS) -> LoopOutcome:
     """Persist attempts before acting. A response consumes one step, retries do not."""
     if max_steps < 1:
         raise ValueError("max_steps must be at least 1")
@@ -58,8 +61,12 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             response = provider.complete(history, tool_schemas, decoding, model_request)
             on_attempt(step, attempt, response)
             raw = response["raw_response"]
-            if raw is not None:
+            if raw is not None or response.get("outcome") == "provider_content_filter":
                 break
+        if response.get("outcome") == "provider_content_filter":
+            # A content-policy rejection is a completed refusal, never retried; the
+            # final-output surface is complete and empty (decision 0008).
+            return LoopOutcome("provider_content_filter", "", step)
         if raw is None:
             return LoopOutcome("infrastructure_failure", None, step)
         try:
@@ -75,18 +82,28 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
                 if len(calls) != 1 or dispatch is None or on_tool is None:
                     raise ValueError("one registered tool call required")
                 block = calls[0]
-                request = parse_request(block, logical_trial_id, step)
+                request = parse_request(block, logical_trial_id, step, supported_tools)
                 if block["id"] in seen_ids:
                     raise ValueError("duplicate provider call id")
                 seen_ids.add(block["id"])
-            elif calls or raw["stop_reason"] not in ("end_turn", "max_tokens"):
+            elif raw["stop_reason"] != "content_filter" and (calls or raw["stop_reason"] not in ("end_turn", "max_tokens")):
                 raise ValueError("invalid stop reason")
         except (KeyError, TypeError, ValueError):
             return LoopOutcome("malformed_model_output", None, step)
+        if raw["stop_reason"] == "content_filter":
+            # A provider content-filter refusal is a completed outcome (SPEC.md
+            # Section 9, decision 0008). One valid call is still a request, recorded
+            # for audit, but the trial has ended, so it is never dispatched.
+            if on_tool is not None and len(calls) == 1:
+                try:
+                    filtered = parse_request(calls[0], logical_trial_id, step, supported_tools)
+                except ValueError:
+                    filtered = None
+                if filtered is not None:
+                    on_tool("tool_requested", requested_payload(filtered, calls[0], step))
+            return LoopOutcome("provider_content_filter", response_text(raw), step)
         if raw["stop_reason"] == "tool_use":
-            on_tool("tool_requested", {"call_id": request.call_id, "step": step, "tool": request.tool,
-                    "requested_args": block["input"], "normalized_args": dict(request.normalized_args),
-                    "normalizer_version": request.normalizer_version})
+            on_tool("tool_requested", requested_payload(request, block, step))
             observation = dispatch(request)
             history.append({"role": "assistant", "content": copy.deepcopy(content)})
             history.append({"role": "user", "content": [{"type": "tool_result", "tool_use_id": block["id"], "content": observation}]})
@@ -96,5 +113,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
         text = response_text(raw)
         if raw["stop_reason"] == "end_turn":
             return LoopOutcome("final_answer", text, step)
-        history.append({"role": "assistant", "content": text})
+        if text:  # an empty text block is invalid on some providers
+            history.append({"role": "assistant", "content": text})
+        history.append({"role": "user", "content": CONTINUATION_PROMPT})
     return LoopOutcome("max_steps", None, max_steps)
