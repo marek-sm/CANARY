@@ -2,6 +2,7 @@
 
 **Title:** W7-T3: ninety-cell development grid orchestration and Gate 2 budget evaluation
 
+**PR:** [#49](https://github.com/marek-sm/CANARY/pull/49)  
 **Base (until #47 merges):** `lead/w6-t3-part-a`  
 **Reviewer:** @milesshoe (Miles, T5)
 
@@ -20,6 +21,6 @@
 
 ## Test plan
 
-- [ ] `make test` and `make grid-check` green in CI
+- [x] `make test` and `grid-check` green in CI on [#49](https://github.com/marek-sm/CANARY/pull/49) (run [38969928984](https://github.com/marek-sm/CANARY/actions/runs/38969928984))
 - [ ] `make grid-mock-fixtures` locally (optional)
 - [ ] Confirm no `state/` in the PR diff
