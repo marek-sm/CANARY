@@ -96,6 +96,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0015-cut-process-rules.md`](docs/decisions/0015-cut-process-rules.md) | Why post-freeze changes open their deviation entry first instead of a separate issue, why the weekly slice issues, the Monday `STATUS.md` update, and the 24-hour blocker action are gone, and which rules stay |
 | [`docs/decisions/0016-practitioner-relevance.md`](docs/decisions/0016-practitioner-relevance.md) | Why `SPEC.md` Section 1 says who CANARY is for, what the pitch to leadership, sponsors, and recruiters may and may not say, and why it isn't a gate item or a decision priority |
 | [`docs/decisions/0017-applied-purpose.md`](docs/decisions/0017-applied-purpose.md) | Why `SPEC.md` Section 0 makes usefulness to teams choosing safeguards CANARY's purpose and a tie-breaker that ranks nothing, why Section 14 adds a measurement checklist and a team-facing paper close, and when a gap sentence may be stated |
+| [`docs/decisions/0018-c1-control-order.md`](docs/decisions/0018-c1-control-order.md) | Why a tier takes its C1 controls in a hash order over the records that pass source review, how a shortfall is counted, and why the set is fixed before any C1 control runs live |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
