@@ -34,6 +34,8 @@ committed example is current. Both commands are offline and make no model call.
 
 `make floor-count RUN=<run directory>` is the Gate 2 step's `SPEC.md` Section 10 development-floor count over one live development-grid run; add `OUT=<file>` to save the report. It reads records only, refuses mock-provider, evaluation, and other-run records, and makes no provider call.
 
+`make grid-validate` checks that `protocol/development_grid_spec.json` expands to the Section 9 ninety-cell grid. `make grid-mock` runs that grid on the mock provider (W7-T3 preflight; needs all five development bases under `corpus/development/`, which lands with W6-T2 merge #34). Until then, `make grid-mock-fixtures` runs the same preflight against `tests/fixtures/corpus/development/`. Until tool-result delivery is on `main`, the executor still inlines untrusted content in the user turn (same as the W6-T3 text-only path), so mock and live grid runs are orchestration and resume preflight, not yet the indirect-injection instrument Gate 2 counts. `python -m runner.grid_dev live` makes paid provider calls on the full grid only when `CANARY_PAID_RUN_ACK=1` is set (after the lead confirms tool-result delivery and ablation on `main`, and after mock preflight). `make grid-verify RUN=<run directory>` checks trial coverage and resume invariants; `make grid-summary RUN=<run directory>` prints per-channel/configuration usage aggregates. `make gate2-budget RUN=<run directory> BALANCE=<usd> C1_COST=<usd>` evaluates the Section 9 budget inequality on a live grid run.
+
 ## What CANARY is designed to measure
 
 - Model-level unsafe proposals and exact-canary disclosure.
