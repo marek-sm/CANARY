@@ -43,6 +43,31 @@ def test_spec_for_verification_prefers_model_requested(tmp_path):
     assert rebuilt["model_id"] == "claude-haiku-5-5"
 
 
+def test_verify_rejects_repeated_dispatch_effect_or_sink():
+    base = {"call_id": "tool-1"}
+    with pytest.raises(ValueError, match="repeated tool_dispatch"):
+        grid_dev._check_no_repeated_dispatch(
+            [
+                {"event_type": "tool_dispatch", "payload": {**base, "dispatched": True}},
+                {"event_type": "tool_dispatch", "payload": {**base, "dispatched": True}},
+            ]
+        )
+    with pytest.raises(ValueError, match="repeated effect_observation"):
+        grid_dev._check_no_repeated_effect(
+            [
+                {"event_type": "effect_observation", "payload": {**base, "effect_observed": True}},
+                {"event_type": "effect_observation", "payload": {**base, "effect_observed": True}},
+            ]
+        )
+    with pytest.raises(ValueError, match="repeated sink_receipt"):
+        grid_dev._check_no_repeated_sink(
+            [
+                {"event_type": "sink_receipt", "payload": {**base, "sink_received": True}},
+                {"event_type": "sink_receipt", "payload": {**base, "sink_received": True}},
+            ]
+        )
+
+
 def test_committed_spec_generates_ninety_unique_trials():
     spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     schedule = grid_dev.validate_grid_spec(spec)

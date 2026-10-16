@@ -215,7 +215,7 @@ def _spec_for_run_verification(run_dir: Path, spec: Mapping[str, Any]) -> dict[s
 
 
 def verify_grid_run(run_dir: Path, spec: Mapping[str, Any]) -> dict[str, Any]:
-    """Fail closed if the run is missing trials, duplicates ids, or replays dispatch."""
+    """Fail closed if the run is missing trials, duplicates ids, or replays tool facts."""
     schedule = validate_grid_spec(_spec_for_run_verification(run_dir, spec))
     expected = {t.logical_trial_id: t for t in schedule}
     found_ids: list[str] = []
@@ -234,6 +234,8 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any]) -> dict[str, Any]:
             for event in events:
                 validator("event").validate(event)
             _check_no_repeated_dispatch(events)
+            _check_no_repeated_effect(events)
+            _check_no_repeated_sink(events)
 
     counts = Counter(found_ids)
     duplicates = sorted(tid for tid, n in counts.items() if n > 1)
@@ -265,17 +267,44 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any]) -> dict[str, Any]:
 
 def _check_no_repeated_dispatch(events: list[Mapping[str, Any]]) -> None:
     """Each tool call_id may dispatch at most once (resume must replay, not re-dispatch)."""
-    dispatched: set[str] = set()
+    _check_no_repeated_positive_tool_fact(
+        events, event_type="tool_dispatch", fact_key="dispatched"
+    )
+
+
+def _check_no_repeated_effect(events: list[Mapping[str, Any]]) -> None:
+    """Each tool call_id may observe an effect at most once after resume."""
+    _check_no_repeated_positive_tool_fact(
+        events, event_type="effect_observation", fact_key="effect_observed"
+    )
+
+
+def _check_no_repeated_sink(events: list[Mapping[str, Any]]) -> None:
+    """Each tool call_id may record sink receipt at most once after resume."""
+    _check_no_repeated_positive_tool_fact(
+        events, event_type="sink_receipt", fact_key="sink_received"
+    )
+
+
+def _check_no_repeated_positive_tool_fact(
+    events: list[Mapping[str, Any]],
+    *,
+    event_type: str,
+    fact_key: str,
+) -> None:
+    seen: set[str] = set()
     for event in events:
-        if event["event_type"] != "tool_dispatch":
+        if event["event_type"] != event_type:
             continue
         payload = event["payload"]
-        if payload.get("dispatched") is not True:
+        if payload.get(fact_key) is not True:
             continue
         call_id = payload.get("call_id")
-        if call_id in dispatched:
-            raise ValueError(f"repeated dispatch for call_id {call_id}")
-        dispatched.add(call_id)
+        if not isinstance(call_id, str) or not call_id:
+            continue
+        if call_id in seen:
+            raise ValueError(f"repeated {event_type} for call_id {call_id}")
+        seen.add(call_id)
 
 
 def usage_by_channel_configuration(trials: list[tuple[Mapping[str, Any], Any]]) -> dict[str, Any]:
