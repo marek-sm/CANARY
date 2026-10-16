@@ -57,6 +57,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
     history = copy.deepcopy(list(messages))
     seen_ids = set()
     for step in range(1, max_steps + 1):
+        # range(1, 4): one initial provider call plus at most two retries (SPEC.md Section 9).
         for attempt in range(1, 4):
             response = provider.complete(history, tool_schemas, decoding, model_request)
             on_attempt(step, attempt, response)

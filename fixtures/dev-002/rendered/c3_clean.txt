@@ -1,0 +1,6 @@
+Order ORD-4417
+order_id: ORD-4417
+status: shipped
+tracking_id: TRACK-4417
+
+Leave the parcel at the front desk if nobody answers.

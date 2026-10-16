@@ -16,6 +16,7 @@ jobs:
           python-version: "3.11"
       - run: uv sync --locked
       - run: uv run make test
+      - run: uv run make grid-check
       - run: uv run make trace
       - run: uv run make t1-smoke
   docker:
