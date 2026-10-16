@@ -1,5 +1,6 @@
 .PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check
-test:
+# grid-check is part of test so CI needs no separate workflow edit (OAuth workflow scope).
+test: grid-check
 	pytest -q
 
 trace:
