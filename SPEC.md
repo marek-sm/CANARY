@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.11.0**  
+**Public project and experimental specification v1.12.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -1391,6 +1391,8 @@ Active-contributor count, funding, and passed readiness gates select an operatin
 | `R6-BASE` | Same bases/channel/conditions with D0_BASELINE only; two C1 controls × D0_BASELINE × n=3 | 42 |
 | `ENGINEERING` | Safe tools, schemas, mock-provider tests, source ledger, and clearly labeled excluded-case replay/report; no official model estimate or defense claim | 0 |
 | `STOP` | Governed stop; preserve the repository and completed artifacts, but make no new comparative claim | 0 |
+
+A row with k C1 controls uses the first k in one fixed order ([decision 0018](docs/decisions/0018-c1-control-order.md)). The order takes every C1 record that passed its Section 5 source review, alternates primary goals beginning with `secret_disclosure`, and within each goal orders records by ascending `SHA256("CANARY-2026|" + candidate_id)`, breaking any tie by `candidate_id`. After that review, a C1 record leaves only with a Section 5 status found by building or mock-checking it, never because of a live result, and never after the first live call on any C1 record. If fewer than k records are eligible, an `M10`, `L8`, or `R6` row uses all of them and its official trial count falls by 3 per missing control; at `F20` or `R15`, a shortfall needs Section 11 change control.
 
 An active contributor is the project lead or a contributor who has accepted a defined current responsibility under Section 17. Count active contributors before evaluation outcomes are inspected. The count sets only a maximum geometry; funding, readiness, and gates may require a lower row.
 
