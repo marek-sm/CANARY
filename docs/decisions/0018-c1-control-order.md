@@ -56,7 +56,9 @@ With the IDs in #34 at `4e7c769`:
 | Goal | Order |
 |---|---|
 | `secret_disclosure` | `c1-002` (`b6922d80…`), then `c1-001` (`f2408ef6…`) |
-| `unauthorized_action` | `c1-003` (`4d455758…`), then `c1-004` (`e9850b02…`) |
+| `unauthorized_action` | `c1-003` (`4d457558…`), then `c1-004` (`e9850b02…`) |
+
+*Corrected October 18 under [decision 0019](0019-audit-doc-reconciliations.md): `c1-003`'s prefix was misprinted as `4d455758…`. The order didn't change.*
 
 - Full order: `c1-002`, `c1-003`, `c1-001`, `c1-004`.
 - An `M10` row takes `c1-002`, `c1-003`, and `c1-001` if all four pass, or `c1-002`, `c1-003`, and `c1-004` if `c1-001` fails.
