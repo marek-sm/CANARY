@@ -92,8 +92,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     responses = [a for a in attempts if a["outcome"] == "model_response"]
 
     def total(kind):
-        values = [(a.get("usage") or {}).get(kind) for a in responses]
-        return "unknown" if any(v is None for v in values) else sum(values)  # never print unknown as 0
+        # Every attempt counts: a timed-out or failed request's usage is unknown,
+        # so the total is too. Never print unknown as 0.
+        values = [(a.get("usage") or {}).get(kind) for a in attempts]
+        return "unknown" if any(v is None for v in values) else sum(values)
 
     tokens = {kind: total(kind) for kind in ("input_tokens", "output_tokens")}
     print(f"output:           {out}")

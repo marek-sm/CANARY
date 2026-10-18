@@ -21,7 +21,7 @@ import subprocess
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping, Optional
+from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 
 from jsonschema import Draft202012Validator
 
@@ -29,7 +29,7 @@ from agent.loop import LOOP_VERSION, MAX_STEPS, run_loop
 from defenses.interfaces import canonical_json_bytes
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 
-RUNNER_VERSION = "mock-slice-v0"
+RUNNER_VERSION = "mock-slice-v0.1.0"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_DIR = REPO_ROOT / "schemas"
 DEFAULT_OUT_ROOT = REPO_ROOT / "results" / "development" / "mock"
@@ -88,12 +88,32 @@ def read_jsonl(path: Path, schema_name: str) -> list[dict[str, Any]]:
 
 
 def append_jsonl(path: Path, record: Mapping[str, Any], schema_name: str) -> None:
-    """Validate, then append one line and fsync before returning."""
+    """Validate, then append one line and fsync before returning.
+
+    A failed write or fsync truncates the file back to where it was, so no
+    partial or unacknowledged line stays behind and the trace can still be read.
+    """
     validator(schema_name).validate(record)
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
-        f.flush()
-        os.fsync(f.fileno())
+    data = (json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
+    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o666)
+    try:
+        start = os.lseek(fd, 0, os.SEEK_END)
+        try:
+            view = memoryview(data)
+            while view:  # os.write may write only part of the line
+                view = view[os.write(fd, view):]
+            os.fsync(fd)
+        except BaseException:
+            try:
+                os.ftruncate(fd, start)
+            except OSError:
+                pass  # keep the original error
+            raise
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass  # after a successful fsync the line is already durable
 
 
 class EventLog:
@@ -116,13 +136,15 @@ class EventLog:
         attempt_id: Optional[str] = None,
         raw_sha256: Optional[str] = None,
     ) -> None:
-        self.sequence += 1
+        # The sequence advances only once the event is durable, so a failed
+        # append leaves no gap.
+        sequence = self.sequence + 1
         append_jsonl(
             self.path,
             {
                 "schema_version": "1.0.0",
-                "event_id": f"{self.logical_trial_id}:e{self.sequence}",
-                "sequence": self.sequence,
+                "event_id": f"{self.logical_trial_id}:e{sequence}",
+                "sequence": sequence,
                 "event_type": event_type,
                 "experiment_id": self.experiment_id,
                 "logical_trial_id": self.logical_trial_id,
@@ -136,6 +158,7 @@ class EventLog:
             },
             "event",
         )
+        self.sequence = sequence
 
 
 def or3(*values: Optional[bool]) -> Optional[bool]:
@@ -225,6 +248,23 @@ def code_commit() -> Optional[str]:
     return out.stdout.strip() or None
 
 
+def _total(values: Iterable[Any]) -> Optional[int]:
+    """The sum of per-attempt counts, or null when any count is unknown."""
+    values = list(values)
+    if not values or any(not isinstance(v, int) or isinstance(v, bool) for v in values):
+        return None
+    return sum(values)
+
+
+def _resolved_model(attempts: Sequence[Mapping[str, Any]]) -> Optional[str]:
+    """The one model the trial's responses resolved to, from every attempt, not
+    just the last. Null when none resolved, or when more than one did: a
+    mid-trial change is Section 9's stop condition, and each call keeps its own
+    value in ``model_calls``."""
+    resolved = {a["payload"]["model_resolved"] for a in attempts if a["payload"]["model_resolved"] is not None}
+    return resolved.pop() if len(resolved) == 1 else None
+
+
 def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     """Derive the result record from stored events; accepts no hand-set scores."""
     events = list(events)
@@ -277,7 +317,7 @@ def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             "schedule_index": None,
             "schedule_seed": None,
             "model_requested": started["payload"]["model_requested"],
-            "model_resolved": attempts[-1]["payload"]["model_resolved"] if attempts else None,
+            "model_resolved": _resolved_model(attempts),
             "provider_request_ids": [a["payload"]["provider_request_id"] for a in attempts],
             # Real-provider decoding sends no sampling parameters (decision 0005): null, not a default.
             "temperature": started["payload"]["decoding"].get("temperature"),
@@ -329,11 +369,13 @@ def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             "pass": None,
             "reason_codes": ["no_utility_oracle_registered"],
         },
+        # Summed over every attempt the provider adapter measured; a mock attempt,
+        # or one whose usage or latency wasn't returned, makes the total unknown.
         "usage": {
             "provider_requests": len(attempts),
-            "input_tokens": None,
-            "output_tokens": None,
-            "latency_ms": None,
+            "input_tokens": _total((a["payload"].get("usage") or {}).get("input_tokens") for a in attempts),
+            "output_tokens": _total((a["payload"].get("usage") or {}).get("output_tokens") for a in attempts),
+            "latency_ms": _total(a["payload"].get("latency_ms") for a in attempts),
         },
         "display_label": None,
     }
@@ -403,7 +445,7 @@ def run_mock_trial(
     log.append(
         "trial_ended",
         {
-            "status": "completed",
+            "status": "infrastructure_failure" if outcome.termination_reason == "infrastructure_failure" else "completed",
             "termination_reason": outcome.termination_reason,
             "steps_used": outcome.steps_used,
         },

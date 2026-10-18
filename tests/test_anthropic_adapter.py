@@ -292,6 +292,37 @@ def test_non_finite_tool_input_is_a_logged_malformed_model_output(tmp_path, valu
     assert of_type(events, "tool_dispatch") == []
 
 
+# A lone UTF-16 surrogate escape passes json.dumps but not the canonical UTF-8
+# hash (decision 0009 item 3), so it must end as a logged malformed call, never
+# as an evidence-hash failure that drops the attempt (SPEC.md Section 9).
+LONE_SURROGATE = "inbox/\\ud800"
+
+
+def surrogate_body(content):
+    return ('{"id":"msg_1","type":"message","role":"assistant","model":"m","stop_reason":"tool_use",'
+            '"content":[%s],"usage":{"input_tokens":11,"output_tokens":7}}' % content).encode()
+
+
+SURROGATE_TOOL = '{"type":"tool_use","id":"toolu_1","name":"read_file","input":{"path":"%s"}}' % LONE_SURROGATE
+SURROGATE_TEXT = '{"type":"text","text":"x\\ud800"}'
+
+
+def test_hash_hostile_tool_input_stays_unparsed():
+    response = call(Fake(surrogate_body(SURROGATE_TOOL)))
+    assert isinstance(response["raw_response"]["content"][0]["input"], str)
+    assert isinstance(response["provider_response"], str)
+    base.sha256_json(response)
+
+
+@pytest.mark.parametrize("content", [SURROGATE_TOOL, SURROGATE_TEXT])
+def test_hash_hostile_content_is_a_logged_malformed_model_output(tmp_path, content):
+    events, result = run_ticket(tmp_path, Fake(surrogate_body(content)))
+    [attempt] = of_type(events, "provider_attempt")
+    assert attempt["payload"]["outcome"] == "model_response" and isinstance(attempt["payload"]["provider_response"], str)
+    assert result["status"] == "completed" and result["termination_reason"] == "malformed_model_output"
+    assert result["usage"]["provider_requests"] == 1 and of_type(events, "tool_dispatch") == []
+
+
 @pytest.mark.parametrize("content", [[{"type": "text"}], ["not-an-object"], None])
 def test_unusable_content_structure(content):
     body = message([], "end_turn")
@@ -613,6 +644,17 @@ def test_live_smoke_runs_the_anthropic_path_and_prints_unknown_usage(tmp_path, m
     printed = capsys.readouterr().out
     assert "input tokens:     unknown" in printed and "Claude Console" in printed and SENTINEL not in printed
     assert fake.requests[0]["model"] == MODEL and fake.requests[0]["thinking"] == {"type": "disabled"}
+
+
+def test_live_smoke_prints_unknown_tokens_when_an_attempt_timed_out(tmp_path, monkeypatch, capsys):
+    # A timed-out request's usage is unknown, so the totals can't be definite.
+    fake = Fake(httpx2.TimeoutException("slow"), tool_body(), text_body('{"ticket_id":"T-100","status":"open"}'))
+    clear_provider_env(monkeypatch)
+    monkeypatch.setattr(adapter_mod, "build_client", lambda key: fake.adapter()._client)
+    assert live_smoke.main(["--env-file", str(env_file(tmp_path)), "--out", str(tmp_path / "o")]) == 0
+    printed = capsys.readouterr().out
+    assert "attempts:         3" in printed
+    assert "input tokens:     unknown" in printed and "output tokens:    unknown" in printed
 
 
 def test_live_smoke_never_reads_unknown_usage_as_below_the_price_step(tmp_path, monkeypatch, capsys):

@@ -13,7 +13,9 @@ passing silently:
 
 - an "Active-contributor count" row that starts with the count;
 - an "Active/provisional tier" row whose first backticked tier ID is the tier;
-- at least one "Gate N result" row;
+- at least one "Gate N result" row (a dated label such as "Gate 2 result
+  (October 17)" also counts), whose value opens with "Passed" or "Met" for a
+  pass claim, or with "Not" or "None" otherwise;
 - owner-outcome rows labelled "T<n> — <name>";
 - until `protocol/active.json` exists, "Current protocol or run ID" and
   "Official empirical trials" rows that open with "Not" or "None";
@@ -34,15 +36,16 @@ SPEC = ROOT / "SPEC.md"
 SLICE_ROW = re.compile(r"^\| (W(\d+)-T(\d))(?: †)? \|")
 SLICE_REF = re.compile(r"\bW\d+-T\d+\b")
 OWNER_ROW = re.compile(r"^T(\d+) — (.+)$")
-GATE_ROW = re.compile(r"^Gate (\d+) result$")
+GATE_ROW = re.compile(r"^Gate (\d+) result(?: \([^)]*\))?$")
 BACKTICKED = re.compile(r"`([^`]+)`")
 TIER_SHAPE = re.compile(r"[FRML]\d+(?:-[A-Z]+)?|ENGINEERING|STOP")
 SPEC_HEADER = re.compile(r"^\*\*Public project and experimental specification v(\d+\.\d+\.\d+)\*\*", re.M)
-SPEC_CLAIM = re.compile(r"`SPEC\.md` (?:is now )?v(\d+\.\d+\.\d+)")
+# A version named within a short clause after `SPEC.md`, however it's worded.
+SPEC_CLAIM = re.compile(r"`SPEC\.md`[^.|\n]{0,40}?\bv(\d+\.\d+\.\d+)")
 GATE1_CAP = re.compile(r"\*\*Gate 1 fails:\*\*.*?`([A-Z0-9-]+)` or smaller")
 NOT_YET = re.compile(r"^[*_]*(?:not|none)\b", re.I)
 NOT_PASSED = re.compile(r"\bnot passed\b", re.I)
-PASS_WORD = re.compile(r"(?<!not )\b(?:passed|met)\b", re.I)
+PASS_OPENING = re.compile(r"^[*_]*(?:passed|met)\b", re.I)
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 
 
@@ -237,18 +240,20 @@ def gate_checklist(tasks, gate):
     return None
 
 
-def claims_pass(value):
-    return not NOT_PASSED.search(value) and bool(PASS_WORD.search(value))
-
-
 def gate_conflicts(status, tasks):
+    """A gate result opens with a fixed word, so no wording can claim a pass
+    unnoticed: "Passed" or "Met" is a pass claim, "Not" or "None" isn't, and
+    anything else ("Pass", "Done", "Moved to …") is rejected as unreadable."""
     gates = [(GATE_ROW.match(label), value) for label, value in table_rows(status).items()]
     gates = [(int(match.group(1)), value) for match, value in gates if match]
     if not gates:
         return ["STATUS.md has no 'Gate N result' row"]
     conflicts = []
     for gate, value in gates:
-        if not claims_pass(value):
+        if NOT_YET.match(value):
+            continue
+        if not PASS_OPENING.match(value):
+            conflicts.append(f"Gate {gate} result must open with Passed, Met, Not, or None")
             continue
         items = gate_checklist(tasks, gate)
         if items is None:
@@ -481,6 +486,30 @@ def test_reads_unmet_and_not_met_as_open_and_met_as_a_pass_claim():
 
     assert gate_conflicts(with_row(FIXTURE, "Gate 1 result", "Not met; two items unmet"), TASKS_FIXTURE) == []
     assert gate_conflicts(with_row(FIXTURE, "Gate 1 result", "Met at the lock commit `abc1234`"), all_ticked) == []
+
+
+def test_a_gate_result_must_open_with_a_fixed_word():
+    for value in ("**Pass** on October 17", "**Done** October 17: every check green", "Moved to October 24 under the slip rule"):
+        assert gate_conflicts(with_row(FIXTURE, "Gate 1 result", value), TASKS_FIXTURE) == [
+            "Gate 1 result must open with Passed, Met, Not, or None"
+        ], value
+    for value in ("Not yet run", "**Not passed** on October 17; moved to October 24", "None"):
+        assert gate_conflicts(with_row(FIXTURE, "Gate 1 result", value), TASKS_FIXTURE) == [], value
+
+
+def test_a_dated_gate_row_is_still_checked():
+    relabelled = edited("| Gate 1 result |", "| Gate 1 result (October 17) |", with_row(FIXTURE, "Gate 1 result", "Passed"))
+    assert gate_conflicts(relabelled, TASKS_FIXTURE) == [
+        "Gate 1 is reported passed but TASKS.md leaves open: Lead's lock commit: the measurement contract is versioned."
+    ]
+    other_label = edited("| Gate 1 result |", "| Gate 1 result date |")
+    assert gate_conflicts(other_label, TASKS_FIXTURE) == ["STATUS.md has no 'Gate N result' row"]
+
+
+def test_rejects_any_wording_of_a_spec_version_ahead_of_spec_md():
+    spec = SPEC_HEADER.sub("**Public project and experimental specification v1.10.0**", SPEC.read_text(encoding="utf-8"))
+    ahead = edited("`SPEC.md` is now v1.3.0", "`SPEC.md` has moved to v1.99.0")
+    assert spec_version_conflicts(ahead, spec) == ["STATUS.md cites SPEC.md v1.99.0, newer than v1.10.0"]
 
 
 def test_rejects_a_broken_link_and_an_anchor_with_no_heading():
