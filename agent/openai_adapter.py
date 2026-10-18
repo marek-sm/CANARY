@@ -24,9 +24,11 @@ from typing import Any, Mapping, Optional, Sequence
 import httpx2
 import openai
 
+from defenses.interfaces import canonical_json_bytes
+
 # The version also names the fixed request settings: store=False, SDK max_retries=0,
 # a 60 s timeout, and no proxy or CA settings taken from the environment.
-ADAPTER_VERSION = "openai-chat-adapter-v0.2.0"
+ADAPTER_VERSION = "openai-chat-adapter-v0.2.1"
 API_BASE_URL = "https://api.openai.com/v1"
 ENDPOINT = "chat_completions"
 DECODING_KEYS = {"endpoint", "reasoning_effort", "max_completion_tokens"}
@@ -96,9 +98,26 @@ def _finite(text: str) -> float:
 
 
 def _parse_arguments(arguments: Any) -> Any:
-    """Strict JSON: NaN, infinity, and overflowing numbers count as unparseable,
-    so the canonical evidence hash (decision 0009) never meets them."""
-    return json.loads(arguments, parse_constant=_no_constant, parse_float=_finite)
+    """Strict JSON: NaN, infinity, overflowing numbers, and anything else the
+    canonical evidence hash (decision 0009) can't take, such as a lone surrogate
+    or nesting too deep to parse, count as unparseable."""
+    try:
+        parsed = json.loads(arguments, parse_constant=_no_constant, parse_float=_finite)
+    except RecursionError as exc:
+        raise ValueError("arguments nest too deeply") from exc
+    if not _hashable(parsed):
+        raise ValueError("arguments can't be hashed")
+    return parsed
+
+
+def _hashable(value: Any) -> bool:
+    """True when the canonical evidence hash (decision 0009) can take it. A lone
+    surrogate passes json.loads but fails the hash's UTF-8 encoding."""
+    try:
+        canonical_json_bytes(value)
+    except (ValueError, TypeError, RecursionError):
+        return False
+    return True
 
 
 def to_chat_messages(messages: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -209,11 +228,12 @@ class OpenAIChatAdapter:
             record["provider_request_id"] = raw.request_id or raw.http_response.headers.get("x-request-id")
             try:
                 body = raw.http_response.json()
-            except ValueError:
+            except (ValueError, RecursionError):
                 body = None
                 record["provider_response"] = raw.http_response.text
             if isinstance(body, dict):
-                record["provider_response"] = body
+                # A body the evidence hash can't take is logged as its text.
+                record["provider_response"] = body if _hashable(body) else raw.http_response.text
                 record["model_resolved"] = body.get("model")
                 record["provider_fingerprint"] = body.get("system_fingerprint")
                 usage = body.get("usage") or {}
@@ -223,8 +243,11 @@ class OpenAIChatAdapter:
                 try:
                     normalized = normalize(choices[0])
                 except (KeyError, TypeError, AttributeError):
-                    # Content came back but its structure is unusable: a completed
-                    # model outcome the loop rejects as malformed, never dispatched.
+                    normalized = None
+                if normalized is None or not _hashable(normalized):
+                    # Content came back but its structure is unusable, or the evidence
+                    # hash can't take it: a completed model outcome the loop rejects
+                    # as malformed, never dispatched.
                     normalized = {"stop_reason": None, "content": [{"type": "unparseable_provider_response"}]}
                 record.update(outcome="model_response", raw_response=normalized)
             else:
