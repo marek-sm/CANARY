@@ -58,6 +58,7 @@ A conflict among these artifacts blocks the affected work. Do not choose whichev
 | Formatting or explanation with no semantic effect | Normal review |
 | New implementation consistent with an unfrozen interface | Normal review plus tests |
 | Schema, oracle, task, corpus, prompt, defense, model, schedule, estimand, or missingness change before freeze | Update every affected authority and test together |
+| Before the full freeze, an edit to text a decision hash-pinned (decisions 0007, 0009, and 0012) or a locked schema change on the `docs/DATA_CONTRACTS.md` evolution list (decision 0009) | Not the row above: follow `SPEC.md` Section 11 change control, as the pinning or locking decision requires, and update any pin deliberately; decision 0014 and DEV-0001 show how that applied before the full freeze |
 | Material change after freeze | Follow `SPEC.md` Section 11: protocol-deviation entry opened first, version increment, new experiment or validation ID, preserved old evidence, and symmetric rerun or validation rerun |
 | New feature after freeze | Reject or version as later work unless it is the bounded replay-only exception |
 

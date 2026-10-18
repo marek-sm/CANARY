@@ -81,7 +81,7 @@ A corpus item requires a stable source record, human opener, different human rev
 
 ## Scientific and frozen changes
 
-Before freeze, a semantic change must update `SPEC.md`, schemas, tests, and relevant guides together. After freeze, material changes follow Section 11 of `SPEC.md`: open a dated `docs/protocol_deviations.md` entry in a pull request before any fix merges or rerun starts, increment the protocol, create a new experiment or validation identity, preserve old evidence, and rerun symmetrically.
+Before freeze, a semantic change must update `SPEC.md`, schemas, tests, and relevant guides together. The exception is text a decision hash-pinned (decisions 0007, 0009, and 0012) and a locked schema change on the `docs/DATA_CONTRACTS.md` evolution list (decision 0009): those follow Section 11 change control even before the full freeze, as the pinning or locking decision requires, with any pin updated deliberately. Decision 0014 and DEV-0001 show how that applied before the full freeze. After freeze, material changes follow Section 11 of `SPEC.md`: open a dated `docs/protocol_deviations.md` entry in a pull request before any fix merges or rerun starts, increment the protocol, create a new experiment or validation identity, preserve old evidence, and rerun symmetrically.
 
 ## Results and claims
 

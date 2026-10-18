@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.12.0**  
+**Public project and experimental specification v1.13.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -1048,7 +1048,7 @@ The analysis code and empty table/figure shells freeze at Gate 3 before official
 
 `protocol/active.json` is the single machine-readable statement of the tier that actually runs. It records:
 
-- active-contributor count, selected tier, and non-personal selection-reason category;
+- active-contributor count, selected tier, the row's exact components and arithmetic, non-personal selection-reason category, and accountable roles (Section 12 step 5);
 - ordered base-case IDs and count;
 - retained channels and C1 controls;
 - retained configurations and run indices;
@@ -1056,7 +1056,7 @@ The analysis code and empty table/figure shells freeze at Gate 3 before official
 - common task-registry, prompt/tool, code/container, schema, and oracle/scorer hashes; plus empirical model/defense/corpus/analysis hashes or explicit null-with-reason official fields and a non-null source-ledger hash at `ENGINEERING`;
 - frozen `ENGINEERING` fallback validation-plan, validation-schema, and report-generator hashes for every non-`STOP` tier, dormant while an empirical tier remains active;
 - exact official trial count; empirical schedule seed/concurrency or null-with-reason at `ENGINEERING`; budget cap; and data cutoff;
-- at an empirical tier, the Section 10 development-floor counts and outcome copied from the Gate 2 step or the model-change rerun; and
+- at an empirical tier, the Section 10 development-floor counts and outcome copied from the Gate 2 step or the model-change rerun, with the model, endpoint, and reasoning effort those cells ran on; and
 - the protocol ID and either the official empirical experiment ID or the `ENGINEERING` validation ID.
 
 At `ENGINEERING`, set the official base, channel, C1-control, condition, configuration, run-index, schedule, and `stage_configurations` lists to empty; set the official trial count and `K` to `0`; set `experiment_id`, schedule seed/concurrency, and official model/defense/corpus/analysis fields explicitly null with reasons; activate the already frozen fallback plan; and identify the non-null frozen `validation_id`, source-ledger hash, and validation-plan/manifest hashes. Do not populate an empty empirical geometry with development or demo cases.
@@ -1639,7 +1639,7 @@ No fabricated, inferred, or unopened citation enters the corpus or paper. Becaus
 | Integration failure | Gate 1 or Gate 2 misses | Activate the gate cut immediately; stop corpus expansion |
 | Partial/duplicated sweep | Resume test fails or cells are missing | Fix idempotency before official evaluation; never repair rows manually |
 | Corpus cherry-picking | A selected case disappears or changes after outcomes | Preserve ledger, increment protocol, and invalidate/rerun affected experiment |
-| Adaptation drift | Port changes the attack goal | Reject it and take the next precomputed eligible candidate |
+| Adaptation drift | Port changes the attack goal | Preserve the rejection and rerun the Section 5 step 8 search over the remaining eligible candidates, in the same goal order (Section 5 step 6) |
 | Live demo failure | Provider, network, latency, or device problem | Switch to actual-run replay immediately, then offline video |
 | Error imbalance | More than 5% unresolved in a comparison | Remove it from headline, diagnose, and symmetrically rerun |
 | Citation/license failure | Source or redistribution status cannot be verified | Reject the case; never fill N with it |
@@ -1759,7 +1759,7 @@ These files are created and reviewed before implementation begins so their safet
 |---|---|
 | `README.md` | Gives public readers an accurate pre-results landing page and document map |
 | `SPEC.md` | Supplies the complete authoritative contract |
-| `TASKS.md` | Turns the protocol into 16 dependency-ordered build slices and gate checks |
+| `TASKS.md` | Turns the protocol into dependency-ordered build slices and gate checks |
 | `STATUS.md` | Supplies the single weekly team, sprint-review, and leadership snapshot without becoming a second task tracker |
 | `AGENTS.md` | Applies the same safety, evidence, and change rules to every coding session |
 | `CLAUDE.md` | Routes Claude to the shared instructions without creating a second rule set |
