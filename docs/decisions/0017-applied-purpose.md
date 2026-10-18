@@ -20,7 +20,9 @@ Verified constraints:
 - `tests/test_contract_lock.py`, `tests/test_corpus_rules_freeze.py`, and `tests/test_request_effect.py` pin no part of Section 0, "Who CANARY is for", "Claims CANARY may not make", or Section 14. `tests/test_paper_scaffold.py` checks only the outline's first eleven `##` headings.
 - Section 11's "After freeze" lets prose change without a protocol version only when it changes no data or claim.
 - No `LICENSE` exists, so nothing may imply that others can reuse CANARY's code.
-- Decision 0004 item 19 governs reference 15, and decision 0013 numbers new Section 18 entries after it.
+- Decision 0004 item 19 governs reference 15, and new Section 18 entries are numbered after it.
+
+  *Corrected October 18: this line credited the numbering to decision 0013, which has no such rule. The numbering didn't change.*
 
 ## Options considered
 
