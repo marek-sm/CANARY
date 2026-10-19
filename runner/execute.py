@@ -318,7 +318,7 @@ def trial_slug(trial: ScheduledTrial) -> str:
     return f"t{trial.schedule_index:04d}_{body}"
 
 
-def _trial_complete(trial_dir: Path) -> bool:
+def _trial_complete(trial_dir: Path, trial: ScheduledTrial, canaries: Sequence[str]) -> bool:
     """True iff a schema-valid single result is durably committed for this trial."""
     results = trial_dir / RESULTS_FILE
     if not results.exists():
@@ -327,7 +327,52 @@ def _trial_complete(trial_dir: Path) -> bool:
         records = read_jsonl(results, "result")
     except Exception:
         return False
-    return len(records) == 1
+    if len(records) != 1:
+        return False
+    _check_result_identity(records[0], trial, canaries)
+    return True
+
+
+def _check_result_identity(
+    result: Mapping[str, Any], trial: ScheduledTrial, canaries: Sequence[str]
+) -> None:
+    """Refuse to skip a trial over a result committed for a different one.
+
+    The trial directory's name leaves out the experiment, model, and seed, so a
+    result from another spec can sit where this trial's belongs. Skipping it
+    would count a trial that never ran as complete.
+    """
+    meta = result["run_metadata"]
+    stored = (
+        result["logical_trial_id"],
+        result["experiment_id"],
+        result["comparison_superblock_id"],
+        result["base_case_id"],
+        result["channel"],
+        result["condition"],
+        result["configuration"],
+        result["run_index"],
+        meta["model_requested"],
+        meta["schedule_index"],
+        meta["schedule_seed"],
+        result["canaries"],
+    )
+    expected = (
+        trial.logical_trial_id,
+        trial.experiment_id,
+        trial.comparison_superblock_id,
+        trial.base_case_id,
+        trial.channel,
+        trial.condition,
+        trial.configuration,
+        trial.run_index,
+        trial.model_id,
+        trial.schedule_index,
+        trial.seed,
+        list(canaries),
+    )
+    if stored != expected:
+        raise ValueError("the stored result belongs to a different trial")
 
 
 # --------------------------------------------------------------------------
@@ -1005,7 +1050,8 @@ def run_schedule(
     configuration must be wired into this runner. A fresh run refuses to
     overwrite an existing ``run_dir``. A ``resume`` run reuses the directory: it
     reloads the persisted canary map (never regenerating a superblock's pair),
-    skips every already-committed trial, and continues each unfinished one from
+    skips every trial whose committed result matches it, refuses one whose
+    result belongs to a different trial, and continues each unfinished one from
     its last durable event. ``provider_factory``, ``canary_factory``,
     ``dispatch_factory``, and the schedule's ``experiment_id``/``seed`` are
     injectable for deterministic tests. When ``spec`` is given on a fresh run it
@@ -1045,8 +1091,8 @@ def run_schedule(
         )
         for trial in trials:
             trial_dir = _inside(run_dir, run_dir / trial_slug(trial))
-            if _trial_complete(trial_dir):
-                continue  # already committed: no duplicate, no replay
+            if _trial_complete(trial_dir, trial, canaries):
+                continue  # this trial's result is committed: no duplicate, no replay
             if trial_dir.exists() and not resume:
                 # On a fresh run a leftover is an unexpected collision. On
                 # resume, execute_trial continues it from its durable events.

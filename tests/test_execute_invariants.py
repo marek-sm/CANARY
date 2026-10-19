@@ -468,6 +468,42 @@ def test_resume_refuses_a_trace_that_belongs_to_another_trial(tmp_path, override
     assert (out / execute.trial_slug(trial) / EVENTS_FILE).read_bytes() == before
 
 
+@pytest.mark.parametrize(
+    "override", [{"experiment_id": "exp-other"}, {"model_id": "other-model"}, {"seed": "other-seed"}]
+)
+def test_resume_refuses_a_committed_result_that_belongs_to_another_trial(tmp_path, override):
+    out = tmp_path / "run"
+    (trial,) = _run(out, _spec(**ONE_CELL))
+    before = (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes()
+    (other,) = sched.generate_schedule(_spec(**ONE_CELL, **override))
+    assert execute.trial_slug(other) == execute.trial_slug(trial)  # same directory
+    calls = []
+    with pytest.raises(ValueError):
+        execute.run_schedule(  # no spec, so only the result identity can catch it
+            out,
+            [other],
+            clock=FIXED_CLOCK,
+            canary_factory=_canaries(),
+            code_commit_value=COMMIT,
+            provider_factory=_mock_factory(calls=calls),
+            resume=True,
+        )
+    assert calls == []
+    assert (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes() == before
+
+
+def test_resume_refuses_a_committed_result_with_another_canary_pair(tmp_path):
+    spec = _spec(**ONE_CELL)
+    out = tmp_path / "run"
+    (trial,) = _run(out, spec)
+    before = (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes()
+    (out / execute.CANARIES_FILE).unlink()  # the resumed run mints a new pair
+    fresh = iter(["e5e5e5e5", "f6f6f6f6"])
+    with pytest.raises(ValueError):
+        _run(out, spec, canary_factory=lambda: next(fresh), resume=True)
+    assert (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes() == before
+
+
 def test_resume_without_the_tool_seam_fails_closed_over_stored_tool_calls(tmp_path):
     spec = _spec(**ONE_CELL)
     out = tmp_path / "run"
