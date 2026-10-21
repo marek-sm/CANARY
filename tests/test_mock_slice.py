@@ -79,7 +79,7 @@ def test_unknown_endpoints_stay_null(run_dir):
     assert result["display_label"] is None
 
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
-    assert trace.count(UNKNOWN) == 3
+    assert trace.count(UNKNOWN) == 4
     assert "FALSE" not in trace
 
 
@@ -221,6 +221,7 @@ def test_trace_has_accessible_evidence_regions(run_dir):
         "MODEL VIOLATION",
         "SYSTEM COMPROMISE",
         "UTILITY",
+        "DISPLAY LABEL",
         "PROTOCOL: NOT FROZEN",
         "TRACE:",
         "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE",
@@ -238,7 +239,7 @@ def test_trace_keeps_outcomes_separate_without_result_record(run_dir):
 
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
 
-    assert trace.count(UNKNOWN) == 3
+    assert trace.count(UNKNOWN) == 4
     assert "MODEL VIOLATION" in trace
     assert "SYSTEM COMPROMISE" in trace
     assert "UTILITY" in trace
@@ -304,3 +305,137 @@ def test_no_provider_credential_is_read(tmp_path, monkeypatch):
     for path in out.iterdir():
         assert SENTINEL not in path.read_text(encoding="utf-8")
     assert SENTINEL not in trace
+
+
+# Result derivation from stored attempts --------------------------------------
+
+
+class Scripted:
+    """Provider records shaped like the real adapters', with usage and latency."""
+
+    adapter_version = "scripted-test"
+
+    def __init__(self, *records):
+        self.records = list(records)
+
+    def complete(self, messages, tool_schemas, decoding, model_request):
+        return dict(self.records.pop(0), model_requested=model_request["model"])
+
+
+def reply(stop="end_turn", model="dev-model-2026-01", usage=(100, 10), latency=250):
+    tokens = {"input_tokens": usage[0], "output_tokens": usage[1]} if usage else {"input_tokens": None, "output_tokens": None}
+    return {"outcome": "model_response", "provider_request_id": "req", "model_resolved": model, "provider_fingerprint": None,
+            "raw_response": {"stop_reason": stop, "content": [{"type": "text", "text": "{}"}]}, "usage": tokens,
+            "provider_response": {"stub": True}, "requested_at": None, "completed_at": None, "latency_ms": latency, "error": None}
+
+
+def no_content():
+    return {"outcome": "no_model_content", "provider_request_id": None, "model_resolved": None, "provider_fingerprint": None,
+            "raw_response": None, "usage": {"input_tokens": None, "output_tokens": None}, "provider_response": None,
+            "requested_at": None, "completed_at": None, "latency_ms": 5, "error": {"type": "APITimeoutError", "status": None}}
+
+
+def ticket_result(tmp_path, provider):
+    from runner import ticket_slice
+
+    out = ticket_slice.run(tmp_path / "run", provider, model="dev-model", decoding={}, experiment_id="dev-test")
+    (result,) = lines(out / mock_slice.RESULTS_FILE)
+    return result
+
+
+def test_exhausted_retries_end_the_trial_as_an_infrastructure_failure(tmp_path):
+    out = mock_slice.run_mock_trial(tmp_path / "run", provider=Scripted(no_content(), no_content(), no_content()))
+    (result,) = lines(out / mock_slice.RESULTS_FILE)
+    assert (result["status"], result["termination_reason"]) == ("infrastructure_failure", "infrastructure_failure")
+
+
+def test_resolved_model_survives_an_outage_at_the_last_step(tmp_path):
+    result = ticket_result(tmp_path, Scripted(reply("max_tokens"), no_content(), no_content(), no_content()))
+    assert result["termination_reason"] == "infrastructure_failure"
+    assert result["run_metadata"]["model_resolved"] == "dev-model-2026-01"
+
+
+def test_conflicting_resolved_models_are_not_collapsed_to_one(tmp_path):
+    result = ticket_result(tmp_path, Scripted(reply("max_tokens"), reply(model="dev-model-2026-02")))
+    assert result["run_metadata"]["model_resolved"] is None
+    assert [c["model_resolved"] for c in result["model_calls"]] == ["dev-model-2026-01", "dev-model-2026-02"]
+
+
+def test_usage_is_summed_from_the_recorded_attempts(tmp_path):
+    result = ticket_result(tmp_path, Scripted(reply("max_tokens", usage=(100, 10)), reply(usage=(200, 20))))
+    assert result["usage"] == {"provider_requests": 2, "input_tokens": 300, "output_tokens": 30, "latency_ms": 500}
+
+
+def test_usage_is_unknown_when_any_attempt_is(tmp_path):
+    result = ticket_result(tmp_path, Scripted(no_content(), reply()))
+    assert result["usage"] == {"provider_requests": 2, "input_tokens": None, "output_tokens": None, "latency_ms": 255}
+
+
+# Append durability ------------------------------------------------------------
+
+
+def final_output(text="x"):
+    return {"text": text, "text_sha256": mock_slice.sha256_text(text)}
+
+
+def test_a_failed_append_leaves_the_trace_unchanged_and_no_sequence_gap(tmp_path, monkeypatch):
+    path = tmp_path / "events.jsonl"
+    log = mock_slice.EventLog(path, mock_slice.utc_now)
+    log.append("trial_started", {})
+    before = path.read_bytes()
+    real_fsync = os.fsync
+
+    def disk_full(fd):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(mock_slice.os, "fsync", disk_full)
+    with pytest.raises(OSError):
+        log.append("final_output", final_output())
+    assert path.read_bytes() == before
+    monkeypatch.setattr(mock_slice.os, "fsync", real_fsync)
+    log.append("final_output", final_output())
+    assert [e["sequence"] for e in lines(path)] == [1, 2]
+
+
+def test_a_partial_write_is_rolled_back(tmp_path, monkeypatch):
+    path = tmp_path / "events.jsonl"
+    log = mock_slice.EventLog(path, mock_slice.utc_now)
+    log.append("trial_started", {})
+    before = path.read_bytes()
+    real_write = os.write
+
+    def short_then_fail(fd, data):
+        real_write(fd, bytes(data[:10]))
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(mock_slice.os, "write", short_then_fail)
+    with pytest.raises(OSError):
+        log.append("final_output", final_output())
+    assert path.read_bytes() == before
+
+
+def test_short_writes_still_append_the_whole_line(tmp_path, monkeypatch):
+    path = tmp_path / "events.jsonl"
+    real_write = os.write
+    monkeypatch.setattr(mock_slice.os, "write", lambda fd, data: real_write(fd, bytes(data[:10])))
+    log = mock_slice.EventLog(path, mock_slice.utc_now)
+    log.append("trial_started", {})
+    log.append("final_output", final_output())
+    assert [e["sequence"] for e in lines(path)] == [1, 2]
+
+
+def test_every_append_is_fsynced(tmp_path, monkeypatch):
+    synced = []
+    real_fsync = os.fsync
+    monkeypatch.setattr(mock_slice.os, "fsync", lambda fd: (synced.append(fd), real_fsync(fd)))
+    out = mock_slice.run_mock_trial(tmp_path / "run")
+    appended = len(lines(out / mock_slice.EVENTS_FILE)) + len(lines(out / mock_slice.RESULTS_FILE))
+    assert len(synced) == appended
+
+
+def test_reading_a_trace_back_rejects_a_schema_invalid_line(run_dir):
+    path = run_dir / mock_slice.EVENTS_FILE
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"event_type": "trial_ended"}) + "\n")
+    with pytest.raises(ValidationError):
+        mock_slice.read_jsonl(path, "event")

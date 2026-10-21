@@ -74,6 +74,6 @@
   "notes": [
     "task.template_id is from the lead's development-base task assignment (decision 0007). task_id and the oracle refs are W6-T1's and get filled once its task registry (#32) is on main.",
     "The benign facts in fixture.wrapper match W6-T1's fixtures for this template, so the expected answer is the same on every channel.",
-    "reviewed_by is PENDING_REVIEW until T3's independent source review under SPEC.md Section 5; this record doesn't merge before that."
+    "reviewed_by is PENDING_REVIEW until the project lead's independent source review under SPEC.md Section 5 (the lead took T2's review on October 15, T3 capacity reassignment in TASKS.md); this record doesn't merge before that."
   ]
 }

@@ -10,7 +10,8 @@ selection.
 - `dedup_key`, `jaccard_3gram`, and `duplicate_groups` are step 4, exactly as
   decision 0007 froze it.
 - `check_ledger` makes sure every considered candidate has one allowed status
-  and a reason when it isn't kept, so nothing gets dropped silently.
+  and a reason when it isn't kept, so nothing gets dropped silently. It also
+  enforces the reviewer rules and the duplicate keeper rule.
 """
 
 from __future__ import annotations
@@ -43,7 +44,18 @@ KEPT_STATUSES = ("development", "evaluation")
 # paths, so a URL's path or an email's dots aren't half-replaced first.
 _URL = re.compile(r"\b(?:https?|ftp)://\S+|\bwww\.\S+", re.I)
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-_PATH = re.compile(r"(?<![\w/])(?:~|\.{1,2})?/[\w.\-]+(?:/[\w.\-]*)*")
+# A file path is any of:
+#   - rooted: /x, ./x, ../x, ~/x
+#   - relative with a slash whose last part has an extension: config/api_keys.env
+#   - a bare file name with an extension: tempfile.txt
+# The (?<![...<]) lookbehinds keep markup like </INFORMATION> from counting,
+# and the extension requirement keeps "and/or" or "C2/C3/C4" from counting.
+_EXT = r"[A-Za-z][A-Za-z0-9]{1,4}"
+_PATH = re.compile(
+    r"(?<![\w/<])(?:~|\.{1,2})?/[\w.\-]+(?:/[\w.\-]*)*"
+    rf"|(?<![\w/<.])[\w\-]+(?:/[\w.\-]+)*/[\w\-]+\.{_EXT}\b"
+    rf"|(?<![\w/<.@])[\w\-]{{2,}}\.{_EXT}\b(?![@\w]|\.\w)"
+)
 _DIGITS = re.compile(r"\d+")
 _PUNCT = re.compile(r"[^\w\s]")
 _SPACE = re.compile(r"\s+")
@@ -149,8 +161,18 @@ def reserved_collisions(
     return hits
 
 
-def check_ledger(rows: Iterable[dict]) -> list[str]:
-    """Return a list of problems; empty means the ledger is consistent."""
+PENDING = "PENDING_REVIEW"
+
+
+def check_ledger(rows: Iterable[dict], reserved_ids: Iterable[str] = ()) -> list[str]:
+    """Return a list of problems; empty means the ledger is consistent.
+
+    `reserved_ids` are the dev, C1, and demo base IDs a `duplicate` row may
+    name as its kept case.
+    """
+    rows = list(rows)
+    reserved_ids = set(reserved_ids)
+    by_id = {row.get("candidate_id"): row for row in rows}
     problems = []
     seen = set()
     for n, row in enumerate(rows, 1):
@@ -168,34 +190,73 @@ def check_ledger(rows: Iterable[dict]) -> list[str]:
         if cid in seen:
             problems.append(f"{where}: repeated candidate_id")
         seen.add(cid)
+
         status = row.get("status")
+        kept = status in KEPT_STATUSES
         if status not in STATUSES:
             problems.append(f"{where}: unknown status {status!r}")
-        elif status not in KEPT_STATUSES and not row.get("rejection_reason"):
+        elif not kept and not row.get("rejection_reason"):
             problems.append(f"{where}: status {status} needs a rejection_reason")
+
         for field in ("opened_by", "opened_at", "reviewed_by"):
             if not src.get(field):
                 problems.append(f"{where}: source.{field} is empty")
-        if row.get("adapted_payload_sha256") is not None:
-            adapter = row.get("adapted_by")
-            reviewer = row.get("reviewed_by")
-            if not adapter:
-                problems.append(f"{where}: adapted but adapted_by is empty")
-            if reviewer and reviewer != "PENDING_REVIEW" and reviewer in (
-                adapter,
-                src.get("opened_by"),
-            ):
-                problems.append(f"{where}: reviewer must differ from opener and adapter")
+        adapter = row.get("adapted_by")
+        if row.get("adapted_payload_sha256") is not None and not adapter:
+            problems.append(f"{where}: adapted but adapted_by is empty")
+        problems += review_problems(where, src.get("opened_by"), adapter, (src.get("reviewed_by"), row.get("reviewed_by")), kept)
+
+        if status == "evaluation":
+            payload = row.get("canonical_payload")
+            if not payload:
+                problems.append(f"{where}: evaluation row has no canonical_payload, so it can't be deduplicated")
+            elif row.get("adapted_payload_sha256") not in (None, sha256_text(payload)):
+                problems.append(f"{where}: canonical_payload doesn't match adapted_payload_sha256")
+
+        if status == "duplicate":
+            keeper = row.get("duplicate_of")
+            if not keeper:
+                problems.append(f"{where}: duplicate row must name the kept case in duplicate_of")
+            elif keeper in by_id:
+                if by_id[keeper].get("status") == "duplicate":
+                    problems.append(f"{where}: duplicate_of {keeper} is itself a duplicate")
+                if selection_hash(keeper) > selection_hash(cid):
+                    problems.append(f"{where}: keeper {keeper} doesn't have the lowest selection hash; {cid} should be kept")
+            elif keeper not in reserved_ids:
+                problems.append(f"{where}: duplicate_of {keeper} isn't a ledger candidate or reserved base")
     return problems
 
 
-def exact_hash_duplicates(rows: Iterable[dict]) -> list[str]:
-    """Kept rows that share an original or adapted payload hash."""
+def review_problems(where, opener, adapter, reviewers, kept) -> list[str]:
+    """Reviewer checks for one ledger row or reserved record.
+
+    Every named reviewer must differ from the opener and the adapter, and a
+    kept case can't still be waiting on its review.
+    """
+    problems = []
+    for reviewer in reviewers:
+        if not reviewer:
+            continue
+        if reviewer == PENDING:
+            if kept:
+                problems.append(f"{where}: still {PENDING}")
+        elif reviewer in (opener, adapter):
+            problems.append(f"{where}: reviewer {reviewer} must differ from opener and adapter")
+    return sorted(set(problems))
+
+
+def exact_hash_duplicates(rows: Iterable[dict], reserved: dict[str, dict] | None = None) -> list[str]:
+    """Kept rows that share a payload hash or candidate ID with each other or
+    with a reserved (dev, C1, demo) record.
+
+    `reserved` maps a base ID to {"candidate_id", "original_payload_sha256",
+    "canonical_payload_sha256"}. A development row is allowed to match its own
+    development record.
+    """
     problems = []
     seen: dict[tuple[str, str], str] = {}
-    for row in rows:
-        if row.get("status") not in KEPT_STATUSES:
-            continue
+    kept_rows = [row for row in rows if row.get("status") in KEPT_STATUSES]
+    for row in kept_rows:
         for field in ("original_payload_sha256", "adapted_payload_sha256"):
             value = row.get(field)
             if value is None:
@@ -203,7 +264,39 @@ def exact_hash_duplicates(rows: Iterable[dict]) -> list[str]:
             other = seen.setdefault((field, value), row["candidate_id"])
             if other != row["candidate_id"]:
                 problems.append(f"{row['candidate_id']}: same {field} as {other}")
+
+    for row in kept_rows:
+        cid = row["candidate_id"]
+        hashes = {row.get("original_payload_sha256"), row.get("adapted_payload_sha256")} - {None}
+        for base, rec in sorted((reserved or {}).items()):
+            if row.get("status") == "development" and base.startswith("dev-") and rec["candidate_id"] == cid:
+                continue
+            if rec["candidate_id"] == cid:
+                problems.append(f"{cid}: same candidate_id as reserved base {base}")
+            elif hashes & {rec["original_payload_sha256"], rec["canonical_payload_sha256"]}:
+                problems.append(f"{cid}: same payload hash as reserved base {base}")
     return problems
+
+
+def load_reserved(root) -> dict[str, dict]:
+    """Every dev, C1, and demo record, keyed by base ID."""
+    reserved = {}
+    for pattern in ("development/dev-*.json", "c1/*.json", "demo/*.json"):
+        for path in sorted((root / "corpus").glob(pattern)):
+            reserved_rec = json.loads(path.read_text(encoding="utf-8"))
+            reserved[reserved_rec["base_case_id"]] = reserved_rec
+    return reserved
+
+
+def reserved_summary(rec: dict) -> dict:
+    src, attack = rec["source"], rec["attack"]
+    return {
+        "candidate_id": rec.get("candidate_id") or candidate_id(
+            src["citation_key"], src["source_version"], src["source_case_id"], attack["original_payload_sha256"]
+        ),
+        "original_payload_sha256": attack["original_payload_sha256"],
+        "canonical_payload_sha256": attack["canonical_payload_sha256"],
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -216,14 +309,19 @@ def main(argv: list[str] | None = None) -> int:
         for line in (root / "corpus" / "candidates.jsonl").read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-    problems = check_ledger(rows) + exact_hash_duplicates(rows)
+    records = load_reserved(root)
+    summaries = {base: reserved_summary(rec) for base, rec in records.items()}
+    problems = check_ledger(rows, reserved_ids=records) + exact_hash_duplicates(rows, summaries)
 
-    reserved = {}
-    for pattern in ("development/dev-*.json", "c1/*.json", "demo/*.json"):
-        for path in sorted((root / "corpus").glob(pattern)):
-            rec = json.loads(path.read_text(encoding="utf-8"))
-            reserved[rec["base_case_id"]] = rec["attack"]["canonical_payload"]
+    # Reserved records are kept cases too, so the same reviewer rules apply.
+    for base, rec in sorted(records.items()):
+        src, attack = rec["source"], rec["attack"]
+        problems += review_problems(
+            base, src.get("opened_by"), attack.get("adapted_by"),
+            (src.get("reviewed_by"), attack.get("reviewed_by")), kept=True,
+        )
 
+    reserved = {base: rec["attack"]["canonical_payload"] for base, rec in records.items()}
     evaluation = {
         row["candidate_id"]: row["canonical_payload"]
         for row in rows

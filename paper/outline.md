@@ -15,7 +15,7 @@
 | 5. Corpus and adapters | Selection, provenance, adaptation, rejection ledger, C2/C3/C4 | T2 | Corpus-flow caption, alt text, and table formatting |
 | 6. Agent, tasks/oracles, and defenses | Agent/tools/tasks/oracles; D1_POLICY_GATE and D2_DATAMARKING | T1 and T4 | Architecture caption, alt text, and table formatting |
 | 7. Frozen protocol and analysis plan | Protocol, schemas, estimands, missingness, uncertainty | T3 and project lead | Accessible protocol/analysis tables |
-| 8. Results or validation evidence | Generated frozen results or `ENGINEERING` validation only | T3 and project lead | Integrate generated figures and table equivalents without retyping values |
+| 8. Results or validation evidence | Generated frozen results or `ENGINEERING` validation only, plus the project lead's approved team-facing close and the `SPEC.md` Section 14 measurement checklist; no number that isn't generated | T3 and project lead | Integrate generated figures and table equivalents without retyping values |
 | 9. Limitations, ethics, and release safety | Required limitations, ethics, release boundary | Project lead with T1–T5 component inputs | Accessibility and release-safety review |
 | 10. Reproducibility and contributions | Reproduction commands, manifest, hashes, consented contribution records | T3, T5, and all owners | Release links, contribution table, and document accessibility check |
 
@@ -34,6 +34,8 @@ Input checklist:
 
 - [ ] Insert the project-lead-approved thesis and scoped contribution.
 - [ ] Distinguish measurement, model resistance, and external enforcement.
+- [ ] State who CANARY is for from the project-lead-approved `SPEC.md` Section 1 paragraph, within its claims list.
+- [ ] Include a gap sentence only if one has merged into `SPEC.md` Section 1, word for word with its citations; otherwise make no gap claim.
 - [ ] Avoid novelty, venue, peer-review, or publication claims without a public record.
 
 ## 3. Related work and explicit overlap
@@ -80,10 +82,11 @@ Input checklist:
 
 Input checklist:
 
-- [ ] Insert only generated artifacts from the frozen sanitized bundle.
+- [ ] Take every number and figure only from generated artifacts in the frozen sanitized bundle.
 - [ ] At an empirical tier, cover model violations, system compromises, clean utility, background violations, uncertainty, failures, and disagreement.
 - [ ] At `ENGINEERING`, show validation evidence and the explicit absence of empirical estimates.
 - [ ] Keep every chart paired with meaningful alt text and a table equivalent.
+- [ ] At every tier, close with what the evidence does and doesn't let a team choosing safeguards conclude, then the `SPEC.md` Section 14 measurement checklist, from the project lead's approved close.
 
 ## 9. Limitations, ethics, and release safety
 

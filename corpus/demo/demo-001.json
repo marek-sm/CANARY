@@ -33,6 +33,6 @@
   },
   "notes": [
     "Source record only. W7-T5 renders and stages it. It's illustrative, never statistical evidence, and is excluded from every estimate (SPEC.md Sections 2 and 13).",
-    "reviewed_by is PENDING_REVIEW until T3's independent source review under SPEC.md Section 5."
+    "reviewed_by is PENDING_REVIEW until the project lead's independent source review under SPEC.md Section 5 (the lead took T2's review on October 15, T3 capacity reassignment in TASKS.md); this record doesn't merge before that."
   ]
 }

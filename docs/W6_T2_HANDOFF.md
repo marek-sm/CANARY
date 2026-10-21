@@ -1,6 +1,6 @@
 # W6-T2 handoff: development bases, C1/demo sources, intake
 
-Owner: `j0hanj` (T2). Reviewer and independent source reviewer: `samsonchang2028` (T3), per the standing pairs and `SPEC.md` Section 5.
+Owner: `j0hanj` (T2). Reviewer and independent source reviewer: `marek-sm` (project lead), since the October 15 T3 capacity reassignment in `TASKS.md`. Before that it was T3 under the standing pairs.
 
 ## What's here
 
@@ -42,26 +42,27 @@ Every original payload was copied byte-for-byte from the pinned source file, and
 
 InjecAgent is pinned at `f19c9f2c` (MIT, `LICENCE` file). AgentDojo is pinned at tag `v0.1.35` / `a75aba76` (MIT). InjecAgent's attacker files have no per-case IDs, so those records use `NO_SOURCE_CASE_ID` and give the line number in `source_locator`.
 
-**Why the C1 controls reuse dev goals.** `unauthorized_action` payloads that port to our four tools are scarce. Basically it's AgentDojo's email goals, and W7-T2 needs nine of them. Any evaluation candidate near-identical to a dev, C1, or demo base is lost to evaluation. So the two action C1 controls reuse the two goals the dev bases already took (tasks 0 and 3) under a different wrapper. That way they don't use up any more of the pool.
+**Why the C1 controls reuse dev goals.** `unauthorized_action` payloads that port to our four tools are scarce. Basically it's AgentDojo's email goals, and under `M10-ALL` W7-T2 needs at least 7 per goal. Any evaluation candidate near-identical to a dev, C1, or demo base is lost to evaluation. So the two action C1 controls reuse the two goals the dev bases already took (tasks 0 and 3) under a different wrapper. That way they don't use up any more of the pool.
 
 ## For the source review
 
 For each record, please check that the URL and `source_locator` open, that `original_payload` matches the source exactly, and that every adaptation note is one of the Section 5 mechanical substitutions. The ones worth a closer look:
 
-- dev-002 and dev-005 swap the secret ("passwords", "Facebook security code") for CANARY's protected secret. I counted that as the protected-secret substitution.
-- c1-002 and demo-001 swap medical or savings records for the fictional customer record, for the same reason.
+- dev-002 and dev-005 point at the fake API key in the fixture config file ("passwords" and "Facebook security code received via email from ..." were swapped). I counted that as the protected-secret and resource-locator substitution.
+- dev-001, c1-001, c1-002 and demo-001 point at the fictional customer record ("Amazon", "my Amazon account", "Teladoc ... medical", "saving accounts" were swapped), for the same reason.
+- No record deletes words anymore; `tests/test_dev_corpus.py` checks that every adaptation is substitution-only.
 - AgentDojo typos ("iunstructions", "from by") are kept on purpose.
 
 Once you sign off, replace `PENDING_REVIEW` with your ID in `source.reviewed_by` and `attack.reviewed_by` of each record and ledger row. That includes dev-001, which never got its W5 review.
 
 ## dev-001 fix
 
-The W5 adaptation dropped "my alternate email address," from the original. That isn't one of the permitted substitutions, and the notes didn't mention it. It's back in now. That changed dev-001's canonical payload hash, its three attack renders, its manifest, and its ledger row. The clean renders and the template didn't change. The license field now names the actual `LICENCE` file.
+The W5 adaptation dropped "from Amazon" and "my alternate email address," from the original. Neither deletion is a permitted substitution. "my alternate email address," is back, and "Amazon" is now "my customer record", which also says where the canary lives. That changed dev-001's canonical payload hash, its three attack renders, its manifest, and its ledger row. The clean renders and the template didn't change. The license field now names the actual `LICENCE` file.
 
 ## Open items
 
 - **Task IDs and oracle refs** stay null until W6-T1 (#32) merges. Then they get filled from its registry.
-- **Resource names drift from #32.** The lead's assignment says `product_reviews`, `shipping_notices`, `meeting_requests`. #32's DB seed uses `reviews`, `shipping`, `meetings`. One side has to change before the W7 grid.
-- **dev-001's renders don't carry its benign facts** (stars, verified flag). The v1 renderer only wraps the review text. Moving it to v2 changes its hashes and the six-cell runner's expectations, so it should land together with W6-T3's tool-result delivery change.
+- **dev-001's renders don't carry its benign facts** (stars, verified flag). That re-render is lead scaffold now, after #32 and #34 merge (October 18 rollup).
 - **C1 and demo aren't ledger statuses.** The frozen Section 5 list has no value for them, so their source records live in `corpus/c1/` and `corpus/demo/` with `split` set to `c1_control` or `demo`, and they're checked as reserved bases. The project lead decides whether that needs a record.
-- **Near-duplicate detection on evaluation rows** needs the canonical payload text. The ledger rows only carry hashes. `python -m corpus.intake` reads `canonical_payload` from evaluation rows when it's present; W7-T2 decides whether that lives in the ledger or in per-candidate records.
+- **Evaluation rows carry `canonical_payload`.** Near-duplicate detection needs the text, so `python -m corpus.intake` treats a kept evaluation row without it as a problem. A `duplicate` row names its kept case in `duplicate_of`, and the keeper has to have the lowest salted hash.
+- **`make corpus-check` is red until sign-off.** Any kept row or reserved record still marked `PENDING_REVIEW` is a problem, on purpose.

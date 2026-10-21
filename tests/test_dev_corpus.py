@@ -1,5 +1,6 @@
 """W6-T2: the five development bases, C1/demo source records, and the ledger."""
 
+import difflib
 import json
 import re
 import unicodedata
@@ -167,7 +168,8 @@ def test_tier_has_four_c1_controls_and_one_demo_case():
 
 def test_ledger_is_consistent_and_lists_every_development_base():
     rows = ledger()
-    assert check_ledger(rows) == []
+    # Pending sign-off is checked (and kept red) by the intake check itself.
+    assert [p for p in check_ledger(rows) if "PENDING_REVIEW" not in p] == []
     dev_ids = set()
     for base in ASSIGNMENT["bases"]:
         rec = record(base["base_case_id"])
@@ -183,3 +185,12 @@ def test_development_bases_are_not_near_duplicates_of_each_other():
     for i, a in enumerate(payloads):
         for b in payloads[i + 1 :]:
             assert not near_identical(a, b)
+
+
+@pytest.mark.parametrize("rec", reserved_records(), ids=lambda r: r["base_case_id"])
+def test_adaptations_substitute_and_never_delete(rec):
+    # SPEC.md Section 5 allows substitutions only; dropping text isn't one.
+    original = rec["attack"]["original_payload"].split(" ")
+    adapted = rec["attack"]["adapted_payload"].split(" ")
+    ops = difflib.SequenceMatcher(None, original, adapted).get_opcodes()
+    assert not [op for op in ops if op[0] in ("delete", "insert")]

@@ -1,4 +1,4 @@
-.PHONY: test trace paper-shells paper-shells-check
+.PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check
 test:
 	pytest -q
 
@@ -10,6 +10,12 @@ paper-shells:
 
 paper-shells-check:
 	python -m analysis.report_shells --check
+
+demo-example:
+	python -m demo.accessibility
+
+demo-example-check:
+	python -m demo.accessibility --check
 
 .PHONY: corpus-fixtures corpus-check
 corpus-fixtures:
@@ -28,3 +34,9 @@ t1-smoke:
 .PHONY: live-smoke
 live-smoke:
 	python -m runner.live_smoke
+
+# Gate 2 step: the SPEC.md Section 10 development-floor count over the live
+# development grid's run directory. Reads records only; makes no provider call.
+.PHONY: floor-count
+floor-count:
+	python -m analysis.floor_count "$(RUN)" $(if $(OUT),--out "$(OUT)")

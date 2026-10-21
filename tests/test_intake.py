@@ -6,6 +6,7 @@ from corpus.intake import (
     check_ledger,
     dedup_key,
     duplicate_groups,
+    PENDING,
     exact_hash_duplicates,
     main,
     jaccard_3gram,
@@ -122,7 +123,7 @@ def test_ledger_rejects_silent_drops_and_bad_ids():
 
 def test_ledger_rejects_self_review():
     row = _row(adapted_payload_sha256=sha256_text("x"), adapted_by="a", reviewed_by="a")
-    assert any("reviewer must differ" in p for p in check_ledger([row]))
+    assert any("must differ from opener and adapter" in p for p in check_ledger([row]))
 
 
 def test_exact_hash_duplicates_among_kept_rows_are_flagged():
@@ -132,5 +133,105 @@ def test_exact_hash_duplicates_among_kept_rows_are_flagged():
     assert exact_hash_duplicates([a, b, c]) == ["b: same adapted_payload_sha256 as a"]
 
 
+# --- Review fixes from #34 -------------------------------------------------
+
+
+def test_path_placeholder_covers_relative_paths_and_bare_file_names():
+    # Review item 6: config/api_keys.env wasn't replaced.
+    assert dedup_key("read config/api_keys.env now") == "read pathplaceholder now"
+    assert dedup_key("save it to tempfile.txt.") == "save it to pathplaceholder"
+    assert dedup_key("move ~/Documents/Private to /tmp") == "move pathplaceholder to pathplaceholder"
+
+
+def test_closing_tags_and_slashed_words_are_not_paths():
+    # Review item 6: </INFORMATION> was treated as a path.
+    assert dedup_key("</INFORMATION>") == "information"
+    assert dedup_key("and/or C2/C3") == "andor c digitsplaceholder c digitsplaceholder"
+    assert dedup_key("e.g. this") == "eg this"
+
+
+def _eval_row(payload, **over):
+    fields = dict(
+        status="evaluation",
+        rejection_reason=None,
+        adapted_payload_sha256=sha256_text(payload),
+        adapted_by="a",
+        reviewed_by="b",
+        canonical_payload=payload,
+    )
+    fields.update(over)
+    return _row(**fields)
+
+
+def test_evaluation_row_without_payload_text_is_a_problem():
+    # Review item 1: rows with only hashes were silently skipped.
+    row = _eval_row("x")
+    del row["canonical_payload"]
+    assert any("no canonical_payload" in p for p in check_ledger([row]))
+    assert check_ledger([_eval_row("x")]) == []
+
+
+def test_evaluation_row_copying_a_reserved_record_is_a_problem():
+    # Review item 2: an evaluation row that copies c1-004 reported 0 problems.
+    reserved = {"c1-004": {"candidate_id": "c" * 20, "original_payload_sha256": "o" * 64, "canonical_payload_sha256": "p" * 64}}
+    by_hash = {"candidate_id": "x", "status": "evaluation", "original_payload_sha256": "o" * 64, "adapted_payload_sha256": "z"}
+    by_id = {"candidate_id": "c" * 20, "status": "evaluation", "original_payload_sha256": "q", "adapted_payload_sha256": "r"}
+    assert exact_hash_duplicates([by_hash], reserved) == ["x: same payload hash as reserved base c1-004"]
+    assert exact_hash_duplicates([by_id], reserved) == ["cccccccccccccccccccc: same candidate_id as reserved base c1-004"]
+
+
+def test_development_row_may_match_its_own_development_record():
+    reserved = {"dev-002": {"candidate_id": "d" * 20, "original_payload_sha256": "o" * 64, "canonical_payload_sha256": "p" * 64}}
+    row = {"candidate_id": "d" * 20, "status": "development", "original_payload_sha256": "o" * 64, "adapted_payload_sha256": "p" * 64}
+    assert exact_hash_duplicates([row], reserved) == []
+
+
+def test_source_reviewer_is_checked_even_before_adaptation():
+    # Review item 3: source.reviewed_by vs opened_by was never compared, and
+    # nothing was checked when adapted_payload_sha256 was null.
+    row = _row()
+    row["source"]["reviewed_by"] = row["source"]["opened_by"]
+    assert row["adapted_payload_sha256"] is None
+    assert any("must differ from opener and adapter" in p for p in check_ledger([row]))
+
+
+def test_pending_review_on_a_kept_row_is_a_problem():
+    # Review item 4: keep CI red until the sign-off push.
+    row = _eval_row("x", reviewed_by=PENDING)
+    assert any("still PENDING_REVIEW" in p for p in check_ledger([row]))
+    rejected = _row()
+    rejected["source"]["reviewed_by"] = PENDING
+    assert not any("PENDING" in p for p in check_ledger([rejected]))
+
+
+def _twin(cid_seed, status, **over):
+    original = sha256_text(cid_seed)
+    row = _row(original_payload_sha256=original, status=status, **over)
+    row["candidate_id"] = candidate_id("k", "v", NO_SOURCE_CASE_ID, original)
+    return row
+
+
+def test_duplicate_row_must_name_its_keeper():
+    # Review item 5.
+    dup = _twin("a", "duplicate", rejection_reason="near-identical")
+    assert any("must name the kept case" in p for p in check_ledger([dup]))
+    dup["duplicate_of"] = "nobody"
+    assert any("isn't a ledger candidate or reserved base" in p for p in check_ledger([dup]))
+    dup["duplicate_of"] = "dev-002"
+    assert check_ledger([dup], reserved_ids={"dev-002"}) == []
+
+
+def test_keeper_must_have_the_lowest_selection_hash():
+    # Review item 5: marking the lower-hash twin duplicate used to pass.
+    a, b = _twin("a", "evaluation", rejection_reason=None), _twin("b", "evaluation", rejection_reason=None)
+    low, high = sorted((a, b), key=lambda r: selection_hash(r["candidate_id"]))
+    wrong = dict(low, status="duplicate", rejection_reason="near-identical", duplicate_of=high["candidate_id"])
+    right = dict(high, status="duplicate", rejection_reason="near-identical", duplicate_of=low["candidate_id"])
+    assert any("doesn't have the lowest selection hash" in p for p in check_ledger([wrong, high]))
+    assert not any("selection hash" in p for p in check_ledger([low, right]))
+
+
 def test_committed_ledger_passes_the_intake_check():
+    # Red until the source reviewer signs off and every PENDING_REVIEW is
+    # replaced; that's on purpose, so nothing merges unreviewed.
     assert main([]) == 0
