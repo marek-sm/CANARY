@@ -56,15 +56,19 @@ from typing import Any, Callable, Mapping, Optional, Sequence
 
 from agent.loop import LOOP_VERSION, MAX_STEPS, run_loop
 from channels.render import render_c2, render_c3, render_c4, substitute
+from defenses.datamarking import DatamarkingTransform
 from defenses.interfaces import (
     AuthorizationNotComputable,
     CanonicalRequest,
+    DATAMARKING_SYSTEM_INSTRUCTION,
     GrantState,
     PriorCall,
+    UntrustedSpan,
 )
 from oracles.authorization.audit import AUDIT_EVALUATOR_VERSION, AuditAuthorizer
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 from runner.schedule import (
+    CONFIGURATIONS,
     ScheduledTrial,
     generate_schedule,
     superblock_groups,
@@ -110,10 +114,11 @@ SINK_FILE = "sink_receipts.json"
 # placeholder so the required, non-null schema field stays honest about the gap.
 EFFECT_ORACLE_UNAVAILABLE = "effect-oracle-unavailable-v0"
 
-# Only D0_BASELINE executes here today. D1_POLICY_GATE and D2_DATAMARKING are
-# rejected until their execution paths are wired, so a schedule can never
-# record a baseline run under a defense's label.
-SUPPORTED_CONFIGURATIONS = ("D0_BASELINE",)
+# Every configuration in the Section 9 development grid may run. D1_POLICY_GATE
+# enforcement applies only when tool dispatch is wired; D2_DATAMARKING marks
+# untrusted spans before render on the text-only path used until tool-result
+# delivery lands.
+SUPPORTED_CONFIGURATIONS = CONFIGURATIONS
 
 
 def component_versions(provider: Any) -> dict[str, str]:
@@ -584,10 +589,24 @@ def _build_messages(
         else base["fixture"]["clean_replacement"]
     )
     untrusted_span = substitute(template, value)
+    system_content = SYSTEM_PROMPT
+    if trial.configuration == "D2_DATAMARKING":
+        marked = DatamarkingTransform().mark(
+            [
+                UntrustedSpan(
+                    span_id=f"{trial.base_case_id}:{trial.channel}:untrusted",
+                    channel=trial.channel,
+                    span_format="text",
+                    text=untrusted_span,
+                )
+            ]
+        )
+        untrusted_span = marked.spans[0].marked_text
+        system_content = f"{SYSTEM_PROMPT}\n\n{DATAMARKING_SYSTEM_INSTRUCTION}"
     rendered = _RENDERERS[trial.channel](untrusted_span)
     channel_spec = base["channels"][trial.channel]
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_content},
         {
             "role": "user",
             "content": (
