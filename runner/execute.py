@@ -79,6 +79,8 @@ from runner.mock_slice import (
     RESULTS_FILE,
     EventLog,
     assemble_result as base_assemble_result,
+    check_record_ids,
+    check_trace,
     code_commit,
     or3,
     read_jsonl,
@@ -403,6 +405,7 @@ def _durable_events(path: Path, *, truncate: bool = True) -> list[dict[str, Any]
     events = [json.loads(line) for line in complete.split(b"\n") if line]
     for event in events:
         validator("event").validate(event)
+    check_trace(events)
     return events
 
 
@@ -556,6 +559,7 @@ class _Replay:
 def _commit_result(path: Path, result: Mapping[str, Any]) -> None:
     """Validate, then commit the single result line atomically."""
     validator("result").validate(result)
+    check_record_ids(result)
     _write_durably(path, json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n")
 
 
