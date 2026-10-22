@@ -87,9 +87,9 @@ def record(configuration="D0_BASELINE", condition="attack", channel="C2", events
     if requested is UNSET:
         requested = or3(*(is_false(e["authorized"]) for e in events))
     if dispatched is UNSET:
-        dispatched = or3(*(and3(e["request_evaluable"], is_false(e["authorized"]), e["dispatched"]) for e in events))
+        dispatched = or3(*(and3(is_false(e["authorized"]), e["dispatched"]) for e in events))
     if effect is UNSET:
-        effect = or3(*(and3(e["request_evaluable"], is_false(e["authorized"]), e["effect_observed"]) for e in events))
+        effect = or3(*(and3(is_false(e["authorized"]), e["effect_observed"]) for e in events))
     rec.update(
         split=split,
         analysis_role=role,

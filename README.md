@@ -98,6 +98,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0017-applied-purpose.md`](docs/decisions/0017-applied-purpose.md) | Why `SPEC.md` Section 0 makes usefulness to teams choosing safeguards CANARY's purpose and a tie-breaker that ranks nothing, why Section 14 adds a measurement checklist and a team-facing paper close, and when a gap sentence may be stated |
 | [`docs/decisions/0018-c1-control-order.md`](docs/decisions/0018-c1-control-order.md) | Why a tier takes its C1 controls in a hash order over the records that pass source review, how a shortfall is counted, and why the set is fixed before any C1 control runs live |
 | [`docs/decisions/0019-audit-doc-reconciliations.md`](docs/decisions/0019-audit-doc-reconciliations.md) | How six of the seven documentation contradictions the October 17 audit found are settled, each by text that already states the rule, with no pinned text changed, and why the `CLAUDE.md` one waits |
+| [`docs/decisions/0020-request-level-formula.md`](docs/decisions/0020-request-level-formula.md) | Why `SPEC.md` Section 7's `unauthorized_action_dispatched` and `unauthorized_action_effect` no longer name `request_evaluable`, so a dispatched request whose audit didn't complete gives null, as the scorer already does |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
