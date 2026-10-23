@@ -217,7 +217,7 @@ Conditional and derived limitations:
 
 ### 3.6 Measurement checklist and the team-facing close (SPEC §14)
 
-At every tier, paper §8 closes with what the evidence does and doesn't let a team choosing safeguards conclude, under the SPEC §10 interpretation rules (Section 4.7), followed by the checklist below. The close adds no number that isn't generated. The project lead supplies its content with the November 15 claim language.
+At every tier, paper §8 closes with what the evidence does and doesn't let a team choosing safeguards conclude, under the SPEC §10 interpretation rules (Section 4.7), followed by the checklist below. The close adds no number that isn't generated. The project lead supplies its content with the December 1 claim language (decision 0021).
 
 The checklist lists practices CANARY's design follows, which a team can apply when it evaluates safeguards for its own agent. It describes a method, not CANARY's code. It isn't complete or validated, it doesn't make an agent secure, and CANARY doesn't claim the practices are new (SPEC §14, Measurement checklist for teams):
 

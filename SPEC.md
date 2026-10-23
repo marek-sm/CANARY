@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.14.0**  
+**Public project and experimental specification v1.15.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -9,7 +9,7 @@ This is the public, human-readable authority for CANARY's scope, measurement sem
 
 Versioned JSON Schemas define serialized structure, and `protocol/active.json` identifies the exact tier, artifacts, hashes, and schedule used for a release. Neither may contradict this specification. Any conflict blocks release until the documents, schemas, tests, and implementation are reconciled through the change-control process in Section 11.
 
-All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 on Wednesday, October 28, 2026, in club week 10, before official outcomes are inspected, official data locks no later than November 8, 2026, and the public release freezes November 22, 2026. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
+All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 on Wednesday, November 11, 2026, in club week 12, before official outcomes are inspected, official data locks no later than November 22, 2026, and the public release freezes December 6, 2026. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
 
 ---
 
@@ -43,10 +43,10 @@ When options are otherwise equal under this list, choose the one more useful to 
 | Quantitative utility | Ten deterministic task templates, including legitimate authorized high-risk actions |
 | Development split | Five separate base cases that never enter reported estimates |
 | Contract lock | End of club week 5 |
-| Full protocol freeze | Gate 3, Wednesday, October 28, 2026, before official outcomes are inspected |
-| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved in club week 10, after the October 28 freeze |
-| Absolute data cutoff | Sunday, November 8, 2026 |
-| Public release freeze | Sunday, November 22, 2026 |
+| Full protocol freeze | Gate 3, Wednesday, November 11, 2026, before official outcomes are inspected |
+| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved in club week 12, after the November 11 freeze |
+| Absolute data cutoff | Sunday, November 22, 2026 |
+| Public release freeze | Sunday, December 6, 2026 |
 | Required public proof | Repository, sanitized frozen evidence, no-key report/replay, captioned video, and accessible paper/report |
 
 ### Reading guide
@@ -207,7 +207,7 @@ The list below is the planned full scope. Section 12 and the frozen `protocol/ac
 - A live dashboard or any static page outside the bounded replay-only exception below.
 - An external workshop submission during the term.
 
-D1_POLICY_GATE+D2_DATAMARKING composition may begin after Demo Day only as a new, separately versioned experiment. A no-backend static replay page is the sole optional fall exception. It is eligible only after an empirical Gate 4 passes by November 1 and only if the generated-results paper draft, terminal replay, video script, accessibility pipeline, and every required release artifact pass their checks. The project lead may authorize it no later than Tuesday, November 3. It may consume at most four total person-hours and all work on it ends by November 8. It is ineligible at `ENGINEERING`, may display only frozen sanitized data, and may not add a model call, experimental condition, public input surface, or dependency that can delay a required artifact. It is cut automatically if Gate 4 uses its contingency window or any prerequisite slips.
+D1_POLICY_GATE+D2_DATAMARKING composition may begin after Demo Day only as a new, separately versioned experiment. A no-backend static replay page is the sole optional fall exception. It is eligible only after an empirical Gate 4 passes by November 15 and only if the generated-results paper draft, terminal replay, video script, accessibility pipeline, and every required release artifact pass their checks. The project lead may authorize it no later than Tuesday, November 17. It may consume at most four total person-hours and all work on it ends by November 22. It is ineligible at `ENGINEERING`, may display only frozen sanitized data, and may not add a model call, experimental condition, public input surface, or dependency that can delay a required artifact. It is cut automatically if Gate 4 uses its contingency window or any prerequisite slips.
 
 ---
 
@@ -1291,7 +1291,7 @@ Presentation criteria may change presentation emphasis or demo wording. They do 
 
 ### End of week 8 — full protocol freeze
 
-This freeze is Gate 3, on Wednesday, October 28, 2026. Elsewhere in this specification, "the week-8 freeze" and "freeze … in week 8" name it, whatever club week it falls in.
+This freeze is Gate 3, on Wednesday, November 11, 2026. Elsewhere in this specification, "the week-8 freeze" and "freeze … in week 8" name it, whatever club week it falls in.
 
 Freeze and hash the artifacts applicable to the selected tier:
 
@@ -1358,16 +1358,16 @@ Gate status is evidence-based and recorded against a commit, manifest, and date.
 |---|---|---|
 | Gate 1 — vertical slice and contract lock | September 27 | One excluded base renders as attack and exact clean twin through C2/C3/C4; all six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`; structural diff, payload round-trip, schemas, deterministic scores, mock CI, and no-key replay pass; the measurement contract is versioned |
 | Gate 2 — development instrument | October 11 | The 90-cell one-repeat development grid and 15 clean task-coverage smokes complete; forced stop/resume creates no gaps, duplicates, or repeated effects; D1_POLICY_GATE/D2_DATAMARKING receive binary readiness decisions; cost and context-window forecasts support the proposed tier; demo/replay succeeds twice |
-| Gate 3 — protocol freeze | October 28 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container, fixtures, and hashes reconcile in `protocol/active.json` |
-| Gate 4 — data or validation integrity | November 1 target; November 8 absolute cutoff | Scheduled cells or validation checks, missingness, comparability, IDs, hashes, resets, attempt histories, raw-to-endpoint recomputation, sanitized manifests, and generated outputs pass; all claims match the active tier |
-| Gate 5 — release candidate | November 15 | Fresh-clone `make report` and `make replay` pass without a key or network in under five minutes; citations, licenses, accessibility, offline media, replay, and failure-mode rehearsals pass; release hashes agree |
+| Gate 3 — protocol freeze | November 11 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container, fixtures, and hashes reconcile in `protocol/active.json` |
+| Gate 4 — data or validation integrity | November 15 target; November 22 absolute cutoff | Scheduled cells or validation checks, missingness, comparability, IDs, hashes, resets, attempt histories, raw-to-endpoint recomputation, sanitized manifests, and generated outputs pass; all claims match the active tier |
+| Gate 5 — release candidate | December 3 | Fresh-clone `make report` and `make replay` pass without a key or network in under five minutes; citations, licenses, accessibility, offline media, replay, and failure-mode rehearsals pass; release hashes agree |
 
 Mandatory responses are outcome-blind:
 
 - **Gate 1 fails:** make the next work window integration recovery, cap the empirical ceiling at `R15` or smaller, and stop nonessential corpus and presentation growth.
 - **Gate 2 fails:** do not freeze evaluation until idempotent resume and D0_BASELINE readiness pass. Choose only a tier supported by the binary defense checks, budget, and capacity; if no comparable D0_BASELINE baseline is ready by Gate 3, choose `ENGINEERING` or `STOP`.
 - **Gate 3 fails:** use only a smaller precomputed and independently verified prefix. Never fill N with unaudited cases. If no empirical prefix or viable funded model is complete, choose `ENGINEERING` or `STOP`.
-- **Gate 4 fails:** never publish an asymmetric, incomplete, or cross-version comparison. Permit only the Section 9 symmetric repair rule through November 8, or activate the unchanged `ENGINEERING` fallback plan frozen at Gate 3 under a new validation ID. Otherwise choose `STOP`.
+- **Gate 4 fails:** never publish an asymmetric, incomplete, or cross-version comparison. Permit only the Section 9 symmetric repair rule through November 22, or activate the unchanged `ENGINEERING` fallback plan frozen at Gate 3 under a new validation ID. Otherwise choose `STOP`.
 - **Gate 5 fails:** stop all feature and data-producing work. Repair only reproducibility, replay/video reliability, report correctness, accessibility, citations, attribution, and release packaging; remove any broken optional artifact.
 
 ---
@@ -1479,7 +1479,7 @@ The table is the `F20` script. A `ONE` tier omits the absent defense and spends 
 - If no first model response arrives within ten seconds, or authentication/network/provider fails, press one key and visibly switch to **RECORDED TRACE**.
 - If D0_BASELINE unexpectedly resists, say one run is not evidence, show the representative replay, and continue to the aggregate. If a defense fails, do not conceal it; say mitigation is not elimination and continue.
 - At an empirical tier, a live-first demo requires the intended development/demo-case stage behavior in at least 9 of 10 complete dry runs across all `K` retained stage configurations. At `F20`, those consume the 30-trial rehearsal allowance and the on-stage D0_BASELINE/D1_POLICY_GATE/D2_DATAMARKING set consumes the separate three-trial reserve; lower empirical tiers consume `10K` and `K`. Replays cost neither allowance. Otherwise the planned presentation is replay-first. `ENGINEERING` has `K = 0` and is always replay-first.
-- Rehearse provider timeout, defense failure, no network, terminal resize, presentation-equivalent hardware in week 12, confirmation hardware in week 13, and a second tested device.
+- Rehearse provider timeout, defense failure, no network, terminal resize, presentation-equivalent hardware in club week 15, confirmation hardware in club week 16 before the event, and a second tested device.
 
 Every replay is schema-valid, tied to a code/configuration hash, and visibly labeled. A trace may be selected for clarity and stability, but it is never substituted for the applicable empirical aggregate or `ENGINEERING` validation bundle, nor silently presented as live.
 
@@ -1489,8 +1489,8 @@ Every replay is schema-valid, tied to a code/configuration hash, and visibly lab
 
 ### Required artifacts
 
-1. **Accessible paper/report.** Target a six-to-eight-page main body plus generated appendices unless the collection supplies another template. It is submission-ready by November 22.
-2. **Public repository.** Code, schemas, corpus metadata and payloads as licensing permits, adaptation/rejection ledger, frozen sanitized results or engineering-validation evidence, analysis, tables where applicable, replay, Docker instructions, and contribution statements. An immutable November 22 release tag/commit and manifest identify the frozen package.
+1. **Accessible paper/report.** Target a six-to-eight-page main body plus generated appendices unless the collection supplies another template. It is submission-ready by December 6.
+2. **Public repository.** Code, schemas, corpus metadata and payloads as licensing permits, adaptation/rejection ledger, frozen sanitized results or engineering-validation evidence, analysis, tables where applicable, replay, Docker instructions, and contribution statements. An immutable December 6 release tag/commit and manifest identify the frozen package.
 3. **Captioned demo video.** Two to three minutes, offline-capable, with transcript and the tier-appropriate frozen aggregate result or `ENGINEERING` validation summary.
 4. **Optional static replay page.** Only under the bounded replay-only rule in Section 2; its absence is not a project failure.
 
