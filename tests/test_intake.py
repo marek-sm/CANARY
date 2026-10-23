@@ -150,6 +150,37 @@ def test_closing_tags_and_slashed_words_are_not_paths():
     assert dedup_key("e.g. this") == "eg this"
 
 
+# October 22 review: every file path, and nothing else.
+
+
+def test_relative_path_without_extension_is_a_path():
+    assert dedup_key("read config/secrets now") == "read pathplaceholder now"
+
+
+def test_relative_path_from_a_home_folder_is_a_path():
+    assert dedup_key("move Documents/Private") == "move pathplaceholder"
+
+
+def test_dotfile_is_a_path():
+    assert dedup_key("open .env") == "open pathplaceholder"
+    assert dedup_key("copy .ssh/id_rsa") == "copy pathplaceholder"
+
+
+def test_bare_domain_is_not_a_path():
+    assert dedup_key("log in to amazon.com") == "log in to amazoncom"
+    assert dedup_key("facebook.com login") == "facebookcom login"
+
+
+def test_product_name_with_a_dot_is_not_a_path():
+    assert dedup_key("built on node.js") == "built on nodejs"
+
+
+def test_missing_space_after_a_period_is_not_a_path():
+    assert dedup_key("the end.Next one") == "the endnext one"
+    # dev-005's source has "'...'.The subject"; that ".The" isn't a dotfile.
+    assert dedup_key("to 'x'.The subject") == "to xthe subject"
+
+
 def _eval_row(payload, **over):
     fields = dict(
         status="evaluation",
@@ -229,6 +260,20 @@ def test_keeper_must_have_the_lowest_selection_hash():
     right = dict(high, status="duplicate", rejection_reason="near-identical", duplicate_of=low["candidate_id"])
     assert any("doesn't have the lowest selection hash" in p for p in check_ledger([wrong, high]))
     assert not any("selection hash" in p for p in check_ledger([low, right]))
+
+
+def test_adapted_kept_row_needs_a_reviewer():
+    row = _eval_row("x", reviewed_by=None)
+    assert any("needs a reviewed_by" in p for p in check_ledger([row]))
+
+
+def test_keeper_cannot_be_a_duplicate_or_a_rejected_row():
+    keeper_dup = _twin("a", "duplicate", rejection_reason="near-identical", duplicate_of="dev-002")
+    keeper_rejected = _twin("b", "unsupported_capability", rejection_reason="needs a smart lock")
+    for keeper, message in ((keeper_dup, "is itself a duplicate"), (keeper_rejected, "was rejected")):
+        dup = _twin("c" + keeper["candidate_id"], "duplicate", rejection_reason="near-identical",
+                    duplicate_of=keeper["candidate_id"])
+        assert any(message in p for p in check_ledger([keeper, dup], reserved_ids={"dev-002"}))
 
 
 def test_committed_ledger_passes_the_intake_check():

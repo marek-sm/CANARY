@@ -53,7 +53,7 @@ For each record, please check that the URL and `source_locator` open, that `orig
 - No record deletes words anymore; `tests/test_dev_corpus.py` checks that every adaptation is substitution-only.
 - AgentDojo typos ("iunstructions", "from by") are kept on purpose.
 
-Once you sign off, replace `PENDING_REVIEW` with your ID in `source.reviewed_by` and `attack.reviewed_by` of each record and ledger row. That includes dev-001, which never got its W5 review.
+The source review passed on October 22 for all ten records, dev-001 included. After the reviewer's sign-off, the owner writes the reviewer's ID (`marek-sm`) into `source.reviewed_by` and `attack.reviewed_by` in every record, and into `source.reviewed_by` and `reviewed_by` in every ledger row, and pushes; the reviewer approves that push.
 
 ## dev-001 fix
 
@@ -65,4 +65,4 @@ The W5 adaptation dropped "from Amazon" and "my alternate email address," from t
 - **dev-001's renders don't carry its benign facts** (stars, verified flag). That re-render is lead scaffold now, after #32 and #34 merge (October 18 rollup).
 - **C1 and demo aren't ledger statuses.** The frozen Section 5 list has no value for them, so their source records live in `corpus/c1/` and `corpus/demo/` with `split` set to `c1_control` or `demo`, and they're checked as reserved bases. The project lead decides whether that needs a record.
 - **Evaluation rows carry `canonical_payload`.** Near-duplicate detection needs the text, so `python -m corpus.intake` treats a kept evaluation row without it as a problem. A `duplicate` row names its kept case in `duplicate_of`, and the keeper has to have the lowest salted hash.
-- **`make corpus-check` is red until sign-off.** Any kept row or reserved record still marked `PENDING_REVIEW` is a problem, on purpose.
+- **`make corpus-check` stays red while anything is unreviewed.** Any kept row or reserved record marked `PENDING_REVIEW` is a problem, on purpose, so the next intake round can't merge unreviewed either.

@@ -13,7 +13,7 @@
     "source_locator": "ethz-spylab/agentdojo@a75aba7631d3ca5fb7ab938965c97ead2f9ff84b, src/agentdojo/default_suites/v1/workspace/injection_tasks.py InjectionTask0.GOAL, wrapped by src/agentdojo/attacks/baseline_attacks.py (DirectAttack)",
     "opened_by": "j0hanj",
     "opened_at": "2026-10-05",
-    "reviewed_by": "PENDING_REVIEW"
+    "reviewed_by": "marek-sm"
   },
   "attack": {
     "attack_family_id": "todo-directive",
@@ -28,10 +28,10 @@
       "No persuasive language added; goal, structure, wording, and any typos in the original kept as-is."
     ],
     "adapted_by": "j0hanj",
-    "reviewed_by": "PENDING_REVIEW"
+    "reviewed_by": "marek-sm"
   },
   "notes": [
     "Source record only. W7-T1 builds this into a trusted-task-prompt C1 control; it runs under D0_BASELINE only and never enters an indirect estimate (SPEC.md Section 3).",
-    "reviewed_by is PENDING_REVIEW until the project lead's independent source review under SPEC.md Section 5 (the lead took T2's review on October 15, T3 capacity reassignment in TASKS.md); this record doesn't merge before that."
+    "Source review (SPEC.md Sections 5 and 15) by marek-sm, the project lead and T2's reviewer since the October 15 T3 capacity reassignment, in #34 on October 22."
   ]
 }

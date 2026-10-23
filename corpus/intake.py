@@ -45,17 +45,50 @@ KEPT_STATUSES = ("development", "evaluation")
 _URL = re.compile(r"\b(?:https?|ftp)://\S+|\bwww\.\S+", re.I)
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 # A file path is any of:
-#   - rooted: /x, ./x, ../x, ~/x
-#   - relative with a slash whose last part has an extension: config/api_keys.env
-#   - a bare file name with an extension: tempfile.txt
-# The (?<![...<]) lookbehinds keep markup like </INFORMATION> from counting,
-# and the extension requirement keeps "and/or" or "C2/C3/C4" from counting.
-_EXT = r"[A-Za-z][A-Za-z0-9]{1,4}"
-_PATH = re.compile(
-    r"(?<![\w/<])(?:~|\.{1,2})?/[\w.\-]+(?:/[\w.\-]*)*"
-    rf"|(?<![\w/<.])[\w\-]+(?:/[\w.\-]+)*/[\w\-]+\.{_EXT}\b"
-    rf"|(?<![\w/<.@])[\w\-]{{2,}}\.{_EXT}\b(?![@\w]|\.\w)"
+#   - rooted: /tmp, ./x, ../x, ~/Documents/Private
+#   - a dotfile, optionally with more parts: .env, .ssh/id_rsa
+#   - relative, two or more parts joined by "/": config/secrets, config/api_keys.env
+#   - a bare file name whose extension is a known file type: tempfile.txt
+# and nothing else. Bare domains (amazon.com), product names (node.js), a
+# missing space after a period (end.Next, '.The'), slashed words (and/or, his/her),
+# short codes (C2/C3/C4, 24/7), and closing tags (</INFORMATION>) are not paths.
+_PATH_TOKEN = re.compile(r"(?<![\w/<.@~-])(?:~|\.{1,2})?/?[\w.\-]+(?:/[\w.\-]*)*")
+_FILE_EXTENSIONS = frozenset(
+    "txt csv tsv json jsonl env md pdf doc docx xls xlsx ppt pptx log yaml yml ini cfg conf toml xml "
+    "html htm sql db sqlite key pem crt bak zip tar gz mp3 mp4 wav mov png jpg jpeg gif".split()
 )
+_SLASHED_WORDS = frozenset(
+    "and/or either/or his/her he/she s/he him/her yes/no on/off true/false input/output "
+    "read/write pass/fail before/after".split()
+)
+
+
+def _is_path(token: str) -> bool:
+    if token.startswith(("/", "./", "../", "~/")):
+        return len(token) > 1
+    if token.startswith(".") and len(token) > 1 and token[1].islower():
+        return True  # dotfile; ".The" after a run-on sentence or ".NET" isn't one
+    if "/" in token:
+        parts = [part for part in token.split("/") if part]
+        if len(parts) < 2 or token.casefold() in _SLASHED_WORDS:
+            return False
+        # short codes like C2/C3/C4 or 24/7 aren't paths
+        return any(len(part) >= 3 and any(c.isalpha() for c in part) for part in parts)
+    stem, dot, ext = token.rpartition(".")
+    return bool(dot) and len(stem) >= 1 and ext in _FILE_EXTENSIONS
+
+
+def _replace_paths(text: str) -> str:
+    def swap(match: re.Match) -> str:
+        token = match.group(0)
+        trail = ""
+        while token and token[-1] in ".-" and token not in ("..", "."):
+            token, trail = token[:-1], token[-1] + trail  # sentence-final period
+        return (" pathplaceholder " + trail) if _is_path(token) else match.group(0)
+
+    return _PATH_TOKEN.sub(swap, text)
+
+
 _DIGITS = re.compile(r"\d+")
 _PUNCT = re.compile(r"[^\w\s]")
 _SPACE = re.compile(r"\s+")
@@ -85,10 +118,13 @@ def selection_hash(cid: str) -> str:
 
 
 def dedup_key(payload: str) -> str:
-    text = unicodedata.normalize("NFKC", payload).casefold()
+    # Placeholders go in before case folding so the path rule can still see
+    # case (".env" is a dotfile, ".The" after a run-on sentence isn't). The
+    # placeholders are lowercase, so the key is the same either way.
+    text = unicodedata.normalize("NFKC", payload)
     text = _URL.sub(" urlplaceholder ", text)
     text = _EMAIL.sub(" emailplaceholder ", text)
-    text = _PATH.sub(" pathplaceholder ", text)
+    text = _replace_paths(text).casefold()
     text = _DIGITS.sub(" digitsplaceholder ", text)
     text = _PUNCT.sub("", text)
     return _SPACE.sub(" ", text).strip()
@@ -202,8 +238,11 @@ def check_ledger(rows: Iterable[dict], reserved_ids: Iterable[str] = ()) -> list
             if not src.get(field):
                 problems.append(f"{where}: source.{field} is empty")
         adapter = row.get("adapted_by")
-        if row.get("adapted_payload_sha256") is not None and not adapter:
-            problems.append(f"{where}: adapted but adapted_by is empty")
+        if row.get("adapted_payload_sha256") is not None:
+            if not adapter:
+                problems.append(f"{where}: adapted but adapted_by is empty")
+            if kept and not row.get("reviewed_by"):
+                problems.append(f"{where}: adapted kept row needs a reviewed_by")
         problems += review_problems(where, src.get("opened_by"), adapter, (src.get("reviewed_by"), row.get("reviewed_by")), kept)
 
         if status == "evaluation":
@@ -218,8 +257,11 @@ def check_ledger(rows: Iterable[dict], reserved_ids: Iterable[str] = ()) -> list
             if not keeper:
                 problems.append(f"{where}: duplicate row must name the kept case in duplicate_of")
             elif keeper in by_id:
-                if by_id[keeper].get("status") == "duplicate":
+                keeper_status = by_id[keeper].get("status")
+                if keeper_status == "duplicate":
                     problems.append(f"{where}: duplicate_of {keeper} is itself a duplicate")
+                elif keeper_status not in KEPT_STATUSES:
+                    problems.append(f"{where}: duplicate_of {keeper} was rejected ({keeper_status}), so it can't be the kept case")
                 if selection_hash(keeper) > selection_hash(cid):
                     problems.append(f"{where}: keeper {keeper} doesn't have the lowest selection hash; {cid} should be kept")
             elif keeper not in reserved_ids:

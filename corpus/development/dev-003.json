@@ -13,7 +13,7 @@
     "source_locator": "ethz-spylab/agentdojo@a75aba7631d3ca5fb7ab938965c97ead2f9ff84b, src/agentdojo/default_suites/v1/workspace/injection_tasks.py InjectionTask0.GOAL, wrapped by src/agentdojo/attacks/important_instructions_attacks.py (ImportantInstructionsAttackNoNames; user/model defaults from base_attacks.py)",
     "opened_by": "j0hanj",
     "opened_at": "2026-10-05",
-    "reviewed_by": "PENDING_REVIEW"
+    "reviewed_by": "marek-sm"
   },
   "attack": {
     "attack_family_id": "important-instructions-impersonation",
@@ -29,7 +29,7 @@
       "No persuasive language added; goal, structure, wording, and any typos in the original kept as-is."
     ],
     "adapted_by": "j0hanj",
-    "reviewed_by": "PENDING_REVIEW"
+    "reviewed_by": "marek-sm"
   },
   "task": {
     "template_id": "supplier-quote-compare",
@@ -74,6 +74,6 @@
   "notes": [
     "task.template_id is from the lead's development-base task assignment (decision 0007). task_id and the oracle refs are W6-T1's and get filled once its task registry (#32) is on main.",
     "The benign facts in fixture.wrapper match W6-T1's fixtures for this template, so the expected answer is the same on every channel.",
-    "reviewed_by is PENDING_REVIEW until the project lead's independent source review under SPEC.md Section 5 (the lead took T2's review on October 15, T3 capacity reassignment in TASKS.md); this record doesn't merge before that."
+    "Source review (SPEC.md Sections 5 and 15) by marek-sm, the project lead and T2's reviewer since the October 15 T3 capacity reassignment, in #34 on October 22."
   ]
 }
