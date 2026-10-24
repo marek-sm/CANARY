@@ -77,13 +77,41 @@ def validator(name: str) -> Draft202012Validator:
     return Draft202012Validator(schema)
 
 
+def check_trace(events: Sequence[Mapping[str, Any]]) -> None:
+    """One trial's trace: unique event IDs, sequences 1..n in file order (audit C-08).
+
+    A duplicated, dropped, or reordered line is refused rather than assembled.
+    """
+    ids = [event["event_id"] for event in events]
+    if len(set(ids)) != len(ids):
+        raise ValueError("duplicate event_id in trace")
+    if [event["sequence"] for event in events] != list(range(1, len(events) + 1)):
+        raise ValueError("trace sequence is not 1..n in order")
+
+
+def check_record_ids(record: Mapping[str, Any]) -> None:
+    """Attempt, model-call, and tool-call IDs are unique within a record (audit C-08).
+
+    The result schema can't express uniqueness of one field across array items,
+    so this check runs wherever a result is written or read.
+    """
+    for field, key in (("attempts", "attempt_id"), ("model_calls", "model_call_id"), ("tool_events", "call_id")):
+        values = [item[key] for item in record.get(field) or []]
+        if len(set(values)) != len(values):
+            raise ValueError(f"duplicate {key} in {field}")
+
+
 def read_jsonl(path: Path, schema_name: str) -> list[dict[str, Any]]:
     records = []
     with path.open(encoding="utf-8") as f:
         for line in f:
             record = json.loads(line)
             validator(schema_name).validate(record)
+            if schema_name == "result":
+                check_record_ids(record)
             records.append(record)
+    if schema_name == "event":
+        check_trace(records)
     return records
 
 
@@ -94,6 +122,8 @@ def append_jsonl(path: Path, record: Mapping[str, Any], schema_name: str) -> Non
     partial or unacknowledged line stays behind and the trace can still be read.
     """
     validator(schema_name).validate(record)
+    if schema_name == "result":
+        check_record_ids(record)
     data = (json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
     fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o666)
     try:
