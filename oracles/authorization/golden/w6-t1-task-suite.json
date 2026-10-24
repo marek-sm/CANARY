@@ -3,7 +3,7 @@
   "vector_set_id": "w6-t1-task-suite-v0.1.0",
   "interface_version": "defense-interfaces-v1.0.0",
   "authored_by": "nkuhanas",
-  "reviewed_by": [],
+  "reviewed_by": ["Dhruv235"],
   "policies": {
     "invoice-receipt-email-c3": {
       "schema_version": "1.0.0",
@@ -3685,7 +3685,7 @@
     },
     {
       "vector_id": "url-encoded",
-      "description": "url encoded",
+      "description": "Direct evaluator test without canonicalization: exact matching denies the supplied %4D. The shared canonicalizer decodes the equivalent raw URL to M before end-to-end authorization.",
       "policy_id": "meeting-confirm-email-c4",
       "request": {
         "tool": "fetch_url",

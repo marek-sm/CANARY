@@ -10,7 +10,7 @@ import subprocess
 import uuid
 
 from agent.loop import run_loop
-from agent.task_requests import parse_request, VERSION as PARSER_VERSION
+from defenses.canonicalizer import NORMALIZER_VERSION as PARSER_VERSION
 from oracles.utility.task_suite import validate, VERSION as UTILITY_VERSION
 from runner import mock_slice as base
 from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
@@ -21,7 +21,7 @@ from tools.fetch_url import VERSION as FETCH_VERSION
 from tools.send_email import SINK_NAME, VERSION as EMAIL_VERSION
 from tools.local_fs import read_bytes
 
-VERSION = "task-suite-runner-v0.2.0"
+VERSION = "task-suite-runner-v0.3.0"
 
 
 class Text(HTMLParser):
@@ -212,7 +212,8 @@ def run(out: Path, template_id: str, channel: str, provider=None):
             outcome = run_loop(provider, messages, tool_schemas=registry.TOOL_SCHEMAS, decoding=base.DECODING,
                                model_request={"model": MOCK_MODEL_ID}, on_attempt=on_attempt, max_steps=template["max_steps"],
                                logical_trial_id=trial, dispatch=dispatch, on_tool=on_tool,
-                               request_parser=parse_request, effect_observer=effect)
+                               supported_tools=tuple(schema["name"] for schema in registry.TOOL_SCHEMAS),
+                               effect_observer=effect)
             termination, steps = outcome.termination_reason, outcome.steps_used
             if outcome.final_text is not None:
                 log.append("final_output", {"text": outcome.final_text, "text_sha256": base.sha256_text(outcome.final_text)})

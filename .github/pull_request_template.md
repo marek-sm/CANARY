@@ -2,46 +2,27 @@
 
 ## Scope
 
-- Task slice or issue:
+- Task slice:
 - Accountable owner:
-- Specification sections:
-- Active tier impact: None | Compatible | Tier decision required
-- Frozen or claim-bearing artifact touched: No | Yes — explain below
+- Reviewer (consented public identifier):
+- Frozen or claim-bearing artifact touched: No | Yes — `SPEC.md` Section 11 deviation entry:
 
 ## Change
 
-Describe the smallest coherent behavior changed and why it is needed.
-
-## Safety boundary
-
-- [ ] No real email, arbitrary network access, unrestricted filesystem/database access, shell tool, real credential, personal data, or public arbitrary-input surface was introduced.
-- [ ] Intrinsic capability checks remain active under D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING.
-- [ ] Tests exercise denial, malformed input, and boundary escape where applicable.
+What changed and why.
 
 ## Evidence
 
-- [ ] The accountable owner has satisfied every acceptance condition; review has not transferred delivery ownership.
 - Commands run:
 - Observed results:
-- Fixtures, records, or generated artifacts:
-- Independent reviewer required: No | Yes — name a consented public identifier
 
-## Measurement and data contracts
+## Checks
 
-- [ ] Requested, authorized, blocked, dispatched, execution, effect, sink, disclosure, utility, and infrastructure states remain distinct.
-- [ ] Unknown evidence remains `null`; no result or reported number was hand-edited.
-- [ ] Schema, identifier, version, hash, and raw-to-result checks pass where applicable.
-- [ ] D1_POLICY_GATE is described as enforcement and D2_DATAMARKING as behavioral guidance; ambiguous bare condition aliases were not introduced.
+- [ ] Safety: no real email, arbitrary network access, unrestricted filesystem/database access, shell tool, real credential, personal data, or public arbitrary-input surface was introduced; intrinsic capability checks stay active under D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING; tests exercise denial, malformed input, and boundary escape where applicable.
+- [ ] Measurement: requested, authorized, blocked, dispatched, execution, effect, sink, disclosure, utility, and infrastructure states stay distinct; unknown evidence stays `null`; no result or reported number was hand-edited; schema, identifier, version, hash, and raw-to-result checks pass where applicable.
+- [ ] Release and claims: no private, provider-only, license-restricted, or unsanitized material enters public history; public wording claims no completed results, efficacy, representativeness, peer review, acceptance, or publication without evidence; D1_POLICY_GATE is described as enforcement and D2_DATAMARKING as behavioral guidance, with no bare condition aliases.
+- [ ] Documentation: `SPEC.md` stays authoritative; every document that states a rule this pull request changes is updated in it and links to the canonical rule; `TASKS.md` status changed only after acceptance evidence existed; `STATUS.md` changed only if the dated weekly summary did.
 
-## Documentation and release
-
-- [ ] `SPEC.md` remains authoritative and every affected companion document links to the canonical rule.
-- [ ] `TASKS.md` status changed only after acceptance evidence existed.
-- [ ] `STATUS.md` was updated only if the dated weekly summary changed and does not redefine task or protocol state.
-- [ ] Any material post-freeze change followed Section 11 and added a protocol-deviation record.
-- [ ] No private, provider-only, license-restricted, or unsanitized material enters public history.
-- [ ] Public wording does not claim completed results, efficacy, representativeness, peer review, acceptance, or publication without evidence.
-
-## Remaining risks or decisions
+## Open items
 
 List unresolved items, or write `None`.

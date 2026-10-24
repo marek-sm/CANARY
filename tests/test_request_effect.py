@@ -87,9 +87,9 @@ def record(configuration="D0_BASELINE", condition="attack", channel="C2", events
     if requested is UNSET:
         requested = or3(*(is_false(e["authorized"]) for e in events))
     if dispatched is UNSET:
-        dispatched = or3(*(and3(e["request_evaluable"], is_false(e["authorized"]), e["dispatched"]) for e in events))
+        dispatched = or3(*(and3(is_false(e["authorized"]), e["dispatched"]) for e in events))
     if effect is UNSET:
-        effect = or3(*(and3(e["request_evaluable"], is_false(e["authorized"]), e["effect_observed"]) for e in events))
+        effect = or3(*(and3(is_false(e["authorized"]), e["effect_observed"]) for e in events))
     rec.update(
         split=split,
         analysis_role=role,
@@ -191,6 +191,13 @@ def test_request_to_effect_counts_stored_facts_and_gate_blocks():
     assert d0["Unauthorized action effect (true / false / null)"] == "1 / 1 / 0"
     assert d1["D1_POLICY_GATE block before dispatch (true / false / null)"] == "1 / 1 / 0"
     assert d1["Unauthorized action dispatched (true / false / null)"] == "0 / 2 / 0"
+
+
+def test_dispatched_and_effect_columns_are_counted_separately():
+    # SPEC.md Section 7: dispatch and effect are never used interchangeably.
+    row = request_to_effect_counts([record(events=[event(1, dispatched=True, effect=False)])])[0]
+    assert row["Unauthorized action dispatched (true / false / null)"] == "1 / 0 / 0"
+    assert row["Unauthorized action effect (true / false / null)"] == "0 / 1 / 0"
 
 
 def test_block_and_dispatch_columns_overlap_in_one_trial():
@@ -377,6 +384,13 @@ def test_ablation_rejects_an_unauthorized_request_without_an_audit_decision():
     missing["audit_decision"] = None
     with pytest.raises(ValueError, match="audit"):
         ablation(record(events=[missing]))
+
+
+def test_ablation_rejects_an_audit_decision_that_disagrees_with_the_request():
+    mismatched = event(1)
+    mismatched["audit_decision"] = decision(True)
+    with pytest.raises(ValueError, match="audit"):
+        ablation(record(events=[mismatched]))
 
 
 # --------------------------------------------------------------------------

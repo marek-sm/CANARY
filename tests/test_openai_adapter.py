@@ -47,8 +47,8 @@ def tool_body(arguments='{"path": "inbox/ticket-100.txt"}', call_id="call_1"):
 
 
 class Fake:
-    """Scripted transport: each entry is a response body, an int status, a
-    (status, provider error code) pair, or an exception."""
+    """Scripted transport: each entry is a response body, a ready response, an
+    int status, a (status, provider error code) pair, or an exception."""
 
     def __init__(self, *script):
         self.script = list(script)
@@ -59,6 +59,8 @@ class Fake:
         item = self.script.pop(0)
         if isinstance(item, Exception):
             raise item
+        if isinstance(item, httpx2.Response):
+            return item
         if isinstance(item, tuple):
             status, code = item
             return httpx2.Response(status, json={"error": {"message": "fake", "type": "fake", "code": code}},
@@ -199,6 +201,38 @@ def test_non_finite_arguments_are_a_logged_malformed_model_output(tmp_path, argu
     assert len(of_type(events, "provider_attempt")) == 1
     assert result["status"] == "completed" and result["termination_reason"] == "malformed_model_output"
     assert of_type(events, "tool_dispatch") == []
+
+
+# A lone UTF-16 surrogate escape passes json.loads but not the canonical UTF-8
+# hash, and deep nesting overflows the parser: both are model-written, so both
+# end as a logged malformed call (decision 0009 item 3), never a dropped attempt.
+HASH_HOSTILE = [pytest.param('{"path": "inbox/\\ud800"}', id="lone_surrogate"),
+                pytest.param("[" * 3000 + "]" * 3000, id="nested_3000")]
+
+
+@pytest.mark.parametrize("arguments", HASH_HOSTILE)
+def test_hash_hostile_arguments_stay_unparsed(arguments):
+    response = call(Fake(tool_body(arguments=arguments)))
+    assert response["raw_response"]["content"][0]["input"] == arguments
+    base.sha256_json(response)
+
+
+@pytest.mark.parametrize("arguments", HASH_HOSTILE)
+def test_hash_hostile_arguments_are_a_logged_malformed_model_output(tmp_path, arguments):
+    events, result = run_ticket(tmp_path, Fake(tool_body(arguments=arguments)))
+    assert len(of_type(events, "provider_attempt")) == 1
+    assert result["status"] == "completed" and result["termination_reason"] == "malformed_model_output"
+    assert of_type(events, "tool_dispatch") == []
+
+
+def test_hash_hostile_text_is_a_logged_malformed_model_output(tmp_path):
+    raw = (b'{"id":"chatcmpl-1","object":"chat.completion","model":"m","choices":[{"index":0,'
+           b'"message":{"role":"assistant","content":"x\\ud800"},"finish_reason":"stop"}]}')
+    fake = Fake(httpx2.Response(200, content=raw, headers={"x-request-id": "req_123", "content-type": "application/json"}))
+    events, result = run_ticket(tmp_path, fake)
+    [attempt] = of_type(events, "provider_attempt")
+    assert attempt["payload"]["outcome"] == "model_response" and isinstance(attempt["payload"]["provider_response"], str)
+    assert result["status"] == "completed" and result["termination_reason"] == "malformed_model_output"
 
 
 # Errors and retries ---------------------------------------------------------

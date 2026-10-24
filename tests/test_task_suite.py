@@ -11,8 +11,9 @@ import pytest
 
 from agent.loop import LOOP_VERSION
 from agent.task_requests import parse_request
+from defenses.canonicalizer import NORMALIZER_VERSION, canonicalize_tool_use, thaw_json
 from defenses.interfaces import action_hash, TOOL_ARGUMENTS
-from oracles.authorization.conformance import TASK_VECTORS, load_vectors, review_complete
+from oracles.authorization.conformance import TASK_VECTORS, check_authorizer, load_vectors, review_complete
 from oracles.utility.task_suite import validate, VERSION as UTILITY_VERSION
 from runner import mock_slice as base
 from runner import task_suite as runner
@@ -181,7 +182,8 @@ def test_grants_only_from_trusted_task_bound_to_exact_action_and_policy():
 
 def test_golden_vectors_cover_every_task_tool_argument_and_grant():
     doc = load_vectors(TASK_VECTORS)
-    assert not review_complete(doc)  # independent review has not happened
+    assert review_complete(doc)
+    assert doc["reviewed_by"] == ["Dhruv235"]  # PR #32's October 11 expectation review
     ids = [v["vector_id"] for v in doc["vectors"]]
     assert len(ids) == len(set(ids))
     policies = {v["policy"]["policy_id"]:v["policy"] for task in TEMPLATES.values() for v in task["variants"].values()}
@@ -196,6 +198,18 @@ def test_golden_vectors_cover_every_task_tool_argument_and_grant():
                      "body_field_not_authorized", "grant_missing", "grant_already_consumed"}
     assert {v["request"]["tool"] for v in allows} == set(TOOL_ARGUMENTS)
     assert any(v["expected"]["authorized"] is None for v in doc["vectors"])
+
+
+@pytest.mark.parametrize("evaluator", ["gate", "audit"])
+def test_task_vectors_match_merged_evaluators(evaluator):
+    """Engineering compatibility only; no readiness or independent-review claim."""
+    if evaluator == "gate":
+        from defenses.policy_gate import PolicyGateAuthorizer
+        authorizer = PolicyGateAuthorizer()
+    else:
+        from oracles.authorization.audit import AuditAuthorizer
+        authorizer = AuditAuthorizer()
+    assert check_authorizer(authorizer, TASK_VECTORS) == []
 
 
 def test_worker_and_fixture_service_never_inherit_credentials(tmp_path, monkeypatch):
@@ -260,6 +274,53 @@ def test_nested_canonical_arguments_are_immutable():
     request = parse_request({"type":"tool_use", "id":"x", "name":"query_db", "input":{"query_id":"orders", "params":{"order_id":"ORD-4417"}}}, "test", 1)
     with pytest.raises(TypeError):
         request.normalized_args["params"]["order_id"] = "different"
+
+
+@pytest.mark.parametrize("tool,args", [
+    ("fetch_url", {"url": "HTTP://SERVICE.FIXTURE.TEST:80/%68ours/H-100#details"}),
+    ("query_db", {"query_id": "orders", "params": {"e\u0301": [None, 1.5, {"value": "e\u0301\r\n"}]}}),
+])
+def test_task_parser_matches_shared_canonicalizer(tool, args):
+    block = {"type": "tool_use", "id": "canonical", "name": tool, "input": args}
+    assert parse_request(block, "trial", 1) == canonicalize_tool_use(block, "trial", 1)
+
+
+def test_task_runner_logs_and_dispatches_the_same_canonical_url(tmp_path, monkeypatch):
+    variant = TEMPLATES["service-hours-extract"]["variants"]["C4"]
+    raw_url = "HTTP://SERVICE.FIXTURE.TEST:80/%68ours/H-100#details"
+    seen = []
+    real = registry.worker
+
+    def capture(root, state, port, request):
+        seen.append(request)
+        return real(root, state, port, request)
+
+    monkeypatch.setattr(registry, "worker", capture)
+    out = runner.run(tmp_path / "run", "service-hours-extract", "C4",
+                     scripted([{"tool": "fetch_url", "args": {"url": raw_url}}], variant["expected_output"]))
+    result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    request, = seen
+    recorded, = result["tool_events"]
+    assert recorded["requested_args"] == {"url": raw_url}
+    assert recorded["normalized_args"] == thaw_json(request.normalized_args) == variant["required_calls"][0]["args"]
+    assert recorded["normalizer_version"] == request.normalizer_version == NORMALIZER_VERSION
+    assert recorded["effect_observed"] is True and result["utility"]["pass"] is True
+
+
+def test_filtered_nested_json_is_recorded_without_dispatch(tmp_path, monkeypatch):
+    def never_dispatch(*args):
+        pytest.fail("filtered requests must not dispatch")
+
+    monkeypatch.setattr(registry, "worker", never_dispatch)
+    args = {"query_id": "orders", "params": {"e\u0301": [None, 1.5, {"value": "e\u0301\r\n"}]}}
+    provider = MockProvider([filtered_response({"tool": "query_db", "args": args})])
+    out = runner.run(tmp_path / "run", "order-status-extract", "C2", provider)
+    result, = base.read_jsonl(out / base.RESULTS_FILE, "result")
+    recorded, = result["tool_events"]
+    assert recorded["requested_args"] == args
+    assert recorded["normalized_args"] == {"query_id": "orders", "params": {"\u00e9": [None, 1.5, {"value": "\u00e9\n"}]}}
+    assert recorded["normalizer_version"] == NORMALIZER_VERSION
+    assert recorded["dispatched"] is False and recorded["effect_observed"] is False
 
 
 def scripted(calls, final):
@@ -376,7 +437,7 @@ def test_later_filter_preserves_prior_effect_and_missing_evidence(tmp_path):
 
 @pytest.mark.parametrize("call", [
     {"tool": "query_db", "args": {"query_id": "orders", "params": []}},
-    {"tool": "query_db", "args": {"query_id": "orders", "params": {"id": 1.5}}},
+    {"tool": "query_db", "args": {"query_id": 7, "params": {}}},
     {"tool": "send_email", "args": {"to": "fictional@fixture.test"}},
     {"tool": "read_file", "args": '{"path":'},
     {"tool": "shell", "args": {"command": "fictional"}},

@@ -27,6 +27,14 @@
     paths); approved.
   - Acceptance evidence: GitHub review approval.
   - Independent reviewer: Not applicable to this review activity.
+- Pull request/commit/artifact: branch for W6-T4 (pull request to be opened),
+  [defenses and policy contract](../DEFENSES_AND_POLICY.md)
+  - Work performed: implemented the single request canonicalizer, the
+    D1_POLICY_GATE evaluator and dispatch-or-block gate, and the D2_DATAMARKING
+    transform with coverage helpers; tested them over the W5-T4 golden and
+    datamarking vectors.
+  - Acceptance evidence: `make test` passing.
+  - Independent reviewer: `nkuhanas` (review requested with PR).
 
 ## Approved public description
 

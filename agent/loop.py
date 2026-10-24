@@ -2,15 +2,13 @@
 from __future__ import annotations
 import copy
 from dataclasses import dataclass
-import posixpath
-from types import MappingProxyType
 from typing import Any, Callable, Mapping, Optional, Sequence
-import unicodedata
 
+from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use, thaw_json
 from defenses.interfaces import CanonicalRequest
 
-LOOP_VERSION = "agent-loop-v0.3.0"
-NORMALIZER_VERSION = "read-file-normalizer-v0.1.0"
+LOOP_VERSION = "agent-loop-v0.4.0"
+SUPPORTED_TOOLS = ("read_file",)  # widened by W6-T1 as each safe tool lands
 MAX_STEPS = 8
 # Follows a reply cut off at the output limit. Some providers reject a
 # conversation that ends with an assistant turn (decision 0010).
@@ -28,34 +26,23 @@ def response_text(raw_response: Mapping[str, Any]) -> str:
     return "".join(block["text"] for block in raw_response["content"] if block.get("type") == "text")
 
 
-def plain_args(value):
-    """Preserve nested immutable canonical arguments in serialized evidence."""
-    if isinstance(value, Mapping):
-        return {key: plain_args(item) for key, item in value.items()}
-    return value
+def parse_request(block, trial_id, step, supported_tools: Sequence[str] = SUPPORTED_TOOLS):
+    """Canonicalize one provider tool_use block, exactly once, via the W6-T4 canonicalizer.
 
-
-def parse_request(block, trial_id, step):
-    if set(block) != {"type", "id", "name", "input"} or block["name"] != "read_file":
-        raise ValueError("unsupported tool shape")
-    if not isinstance(block["id"], str) or not block["id"]:
-        raise ValueError("invalid call id")
-    args = block["input"]
-    if not isinstance(args, dict) or set(args) != {"path"} or not isinstance(args["path"], str):
-        raise ValueError("invalid arguments")
-    path = unicodedata.normalize("NFC", args["path"].replace("\r\n", "\n").replace("\r", "\n"))
-    if not path or "\x00" in path:
-        raise ValueError("unrepresentable path")
-    # POSIX normalization preserves escaping '..' and absolute paths for audit.
-    path = posixpath.normpath(path)
-    if path.startswith("//"):
-        path = "/" + path.lstrip("/")
-    return CanonicalRequest(f"{trial_id}:step{step}:call1", trial_id, step, "read_file", MappingProxyType({"path": path}), NORMALIZER_VERSION)
+    ``supported_tools`` is the set of tools this runner can dispatch today; a call to
+    any other tool cannot be handled and is treated as malformed model output.
+    """
+    try:
+        if not isinstance(block, Mapping) or block.get("name") not in supported_tools:
+            raise ValueError("unsupported tool shape")
+        return canonicalize_tool_use(block, trial_id, step)
+    except CanonicalizationError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def requested_payload(request: CanonicalRequest, block: Mapping[str, Any], step: int) -> dict[str, Any]:
     return {"call_id": request.call_id, "step": step, "tool": request.tool, "requested_args": block["input"],
-            "normalized_args": plain_args(request.normalized_args), "normalizer_version": request.normalizer_version}
+            "normalized_args": thaw_json(request.normalized_args), "normalizer_version": request.normalizer_version}
 
 
 def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
@@ -63,7 +50,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
              model_request: Mapping[str, Any], on_attempt: Callable,
              max_steps: int = MAX_STEPS, logical_trial_id: str = "mock",
              dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None,
-             request_parser: Callable = parse_request,
+             supported_tools: Sequence[str] = SUPPORTED_TOOLS,
              effect_observer: Optional[Callable] = None) -> LoopOutcome:
     """Persist attempts before acting. A response consumes one step, retries do not."""
     if max_steps < 1:
@@ -96,7 +83,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
                 if len(calls) != 1 or dispatch is None or on_tool is None:
                     raise ValueError("one registered tool call required")
                 block = calls[0]
-                request = request_parser(block, logical_trial_id, step)
+                request = parse_request(block, logical_trial_id, step, supported_tools)
                 if block["id"] in seen_ids:
                     raise ValueError("duplicate provider call id")
                 seen_ids.add(block["id"])
@@ -110,7 +97,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             # for audit, but the trial has ended, so it is never dispatched.
             if on_tool is not None and len(calls) == 1:
                 try:
-                    filtered = request_parser(calls[0], logical_trial_id, step)
+                    filtered = parse_request(calls[0], logical_trial_id, step, supported_tools)
                 except (KeyError, TypeError, ValueError):
                     filtered = None
                 if filtered is not None:

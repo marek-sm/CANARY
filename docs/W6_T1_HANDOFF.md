@@ -116,10 +116,15 @@ high-risk grants, wrong action/policy/version binding, and consumed grants. The
 existing `check_authorizer` harness can run either evaluator against
 `TASK_VECTORS`; it also verifies single-use grant transitions.
 
-`reviewed_by` is intentionally empty until `Dhruv235` independently reviews the
-expected decisions. A compatibility run against the open W6-T4 gate is an
-engineering check, not independent review or a Gate 2 differential result.
-T3's audit and W7-T4's differential/readiness work remain separate slices.
+`Dhruv235` independently checked all 112 expectations and five differential
+fixtures in the [October 11 review](https://github.com/marek-sm/CANARY/pull/32#pullrequestreview-5484870032)
+at `def33e9` and approved the PR on October 12. The vector set records that
+reviewer; its inputs and expected decisions have not changed. The `url-encoded`
+description explicitly labels a direct evaluator test: `%4D` is denied when
+supplied as a canonical argument, while the shared canonicalizer converts the
+equivalent raw URL to `M` before authorization. Compatibility checks against the
+merged gate and audit are engineering checks, not a Gate 2 readiness result.
+The repaired code still needs normal PR review.
 
 ## Acceptance commands
 
@@ -143,9 +148,34 @@ evaluation candidate, or raw evidence bundle is required.
 
 This is excluded mock acceptance evidence. Authorization and security facts stay
 null; no D1_POLICY_GATE/D2_DATAMARKING readiness decision is claimed. The
-provisional four-tool shape parser permits the offline loop to exercise the
-tools; W6-T4 supplies the full production canonicalizer through the new loop
-hook. W6-T2 supplies source-reviewed attack/clean renders; these clean task
-fixtures do not replace that corpus. W6-T3 supplies the data-driven schedule,
-comparison-superblock canaries, independent audit, and resume semantics. This
-runner refuses an existing output directory rather than attempting resume.
+task suite uses the production W6-T4 canonicalizer with all four tools explicitly
+registered; `agent/task_requests.py` is a compatibility entry point to that same
+implementation. W6-T2 supplies source-reviewed attack/clean renders; these clean
+task fixtures do not replace that corpus. W6-T3's merged runner supplies the
+data-driven schedule, comparison-superblock canaries, independent audit, and
+resume semantics. This excluded acceptance runner does not run those production
+features and refuses an existing output directory rather than attempting resume.
+
+## Current-main repair — October 24
+
+The repair incorporates `main` at `293f8d4`, including decisions 0014–0021,
+the production gate/canonicalizer, independent audit, and trace-integrity checks.
+Conflicts retain main's dated status rollup, current capacity and schedule,
+and Make targets, together with this branch's task-suite target and historical
+acceptance evidence.
+
+The original `d78d18d` head passes 606 tests. Four new regression cases fail
+against the provisional task parser: equivalent raw URLs are not canonicalized,
+nested JSON is rejected despite being representable, and filtered nested requests
+lose their requested evidence. All four pass with the shared canonicalizer.
+The task runner logs and dispatches the same canonical arguments, including URL
+case/default-port/unreserved-escape/fragment normalization. Filtering retains
+canonical nested JSON evidence without dispatch. Intrinsic tool containment,
+task policies, prompts, fixture hashes, utility expectations, locked schemas,
+and pinned specification text are unchanged.
+
+The loop advances to `agent-loop-v0.4.0` and the excluded acceptance runner to
+`task-suite-runner-v0.3.0`; parser evidence records
+`request-canonicalizer-v0.1.0`. The PR records current validation and CI evidence.
+PR #34 remains a separate, unmerged dependency; this repair does not change its
+corpus or perform a live model call.

@@ -105,9 +105,12 @@ The [`offline acceptance runner`](../runner/task_suite.py) dispatches through
 only `PATH` and `LANG`. The private HTTP service gets the same credential-free
 environment. The runner rejects a non-mock provider and emits development records
 with `analysis_role = excluded_mock`. Its authorization and security facts remain
-null until T3 integrates the independent audit. Its provisional shape parser is
-replaceable through `run_loop(request_parser=..., effect_observer=...)`; the
-production canonicalizer and gate remain W6-T4's responsibility.
+null because this excluded mock runner does not perform an authorization audit.
+It uses W6-T4's shared canonicalizer through `run_loop(supported_tools=...)` for
+all four registered tools. The same immutable request is logged and dispatched;
+`effect_observer` supplies the tool-specific effect and sink evidence. The
+production gate and audit are on `main`; their paid-run integration remains
+separate from this mock acceptance runner.
 
 ## Utility boundary
 
