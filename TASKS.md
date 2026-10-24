@@ -192,6 +192,60 @@ including `split`. The measurement-contract lock is still outstanding.
 
 Lead scaffold, not a member slice: the OpenAI provider adapter under decision 0005, merged by Friday, October 2, so `W7-T1` and `W7-T3` can use it from Monday. Under [decision 0010](docs/decisions/0010-anthropic-development-model.md), the Anthropic adapter for the new development candidate is a second lead scaffold, due Sunday, October 11. The OpenAI adapter stays as the declared fallback. If the Anthropic adapter misses that date, the W7 paid steps are recorded as blocked under the missing-input rule above.
 
+### W6-T1 implementation evidence — October 4
+
+**State: IN PROGRESS.** Chace remains the accountable owner on branch
+`feat/w6-t1-safe-tools-task-suite`; `Dhruv235` is the independent reviewer.
+Implementation commit [`58940d9`](https://github.com/marek-sm/CANARY/commit/58940d917a51723ff4871cf67b340d85d34cd92e)
+completes the three remaining intrinsically safe tools, ten versioned task
+templates, good/bad utility fixtures, and the additive authorization vectors.
+The [W6-T1 handoff](docs/W6_T1_HANDOFF.md) maps every Committed item to its
+implementation and acceptance command.
+
+Acceptance evidence: Python 3.11 `.venv/bin/python -m pytest -q` — **409 passed**;
+`make t1-suite` with the locked virtual environment on `PATH` —
+**20/20 declared task/channel variants passed**;
+`make trace t1-smoke paper-shells-check` with that environment — passed;
+`docker build --tag canary:w6-t1 .` and the handoff's non-root,
+read-only, `--network none` task-suite command — **20/20 passed**.
+All runs are excluded no-credit mock checks, not the paid development grid or
+W7-T1's coverage smokes. No full-protocol or corpus-freeze artifact was changed.
+
+**C2 naming correction in [#32](https://github.com/marek-sm/CANARY/pull/32).**
+The seed and query registry now use the assignment's exact C2 resource IDs,
+including `supplier_quotes`. The new five-base integration check reproduced
+four failures before the fix and now passes all five. The full no-credit suite
+passes **414 tests**, and the corrected non-root, read-only, `--network none`
+container passes all **20 task/channel variants**. The query tool and source
+fixture manifest are version `0.1.1`; the manifest and all ten task fixture hashes
+were regenerated. The authoritative assignment is unchanged.
+
+**Locked-contract compatibility check — October 8.** The local integration of
+current `main` through `4195d70` adopts decisions 0008/0009 in [#32](https://github.com/marek-sm/CANARY/pull/32):
+the 20 task policies and W6 vectors use contract `1.0.0`, and provider-filtered
+calls preserve requested, dispatch, effect, sink, and utility evidence under the
+locked rules. The [handoff](docs/W6_T1_HANDOFF.md#locked-contract-compatibility--october-8)
+records the independent implementation versions and unchanged fixture hashes.
+On Python 3.11.17, `uv sync --locked`, `uv run make test` (**476 passed**), and
+`uv run make trace t1-smoke t1-suite paper-shells-check` passed; the task-suite
+command passed all **20 variants**, and `git diff --check` passed. All checks
+were excluded, no-credit mock checks. Container checks were **not run** for this
+update: this cloud environment has no Docker or Podman executable. This local
+evidence does not replace the required CI container checks or human review.
+
+**Review and current-main repair — October 24.** `Dhruv235` independently
+checked all 112 vector expectations and the five differential fixtures on
+October 11 at `def33e9` ([review](https://github.com/marek-sm/CANARY/pull/32#pullrequestreview-5484870032)),
+and approved the PR on October 12. The unchanged vector expectations now carry
+that reviewer, and the encoded-URL description clarifies the direct-evaluator
+scope requested in that review. Current `main` at `293f8d4` supplies the production
+canonicalizer, gate, audit, and decision 0021 schedule. The repair resolves its
+four merge conflicts and replaces the provisional task parser with the shared
+canonicalizer; four new regression cases reproduce the URL/nested-JSON drift
+before the fix and pass after it. The [handoff](docs/W6_T1_HANDOFF.md#current-main-repair--october-24)
+records implementation boundaries. `W6-T1` stays `IN PROGRESS` while the repaired
+PR awaits review and merge; no W7 run or readiness result is claimed.
+
 W6 is the heaviest week in the plan and is the week the lattice makes visible: 34.75 member hours against 12.5 hours of committed member capacity, or 39.75 once the lead's pairing on `W6-T3` is counted. Every deliverable in it is fixed by `SPEC.md` Section 9 and does not shrink with the selected tier. See the capacity section below.
 
 ### W7 — Gate 2, development matrix and defense readiness (October 12–18)
