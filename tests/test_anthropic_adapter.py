@@ -536,6 +536,16 @@ def test_unlisted_400_is_still_an_infrastructure_failure(tmp_path, policy_code):
     assert result["status"] == "infrastructure_failure" and result["termination_reason"] == "infrastructure_failure"
 
 
+def test_a_listed_code_on_a_non_400_status_is_still_an_infrastructure_failure(tmp_path, policy_code):
+    # Audit A-11: decision 0008 lists content-policy codes for HTTP 400 only.
+    rejection = (429, "rate_limit_error", POLICY_CODE)
+    fake = Fake(rejection, rejection, rejection)
+    _, result = run_ticket(tmp_path, fake)
+    assert len(fake.requests) == 3
+    assert result["status"] == "infrastructure_failure" and result["termination_reason"] == "infrastructure_failure"
+
+
+
 # End to end through the ticket runner --------------------------------------
 
 def test_ticket_run_with_adapter_is_schema_valid_and_key_free(tmp_path):
@@ -570,6 +580,9 @@ def test_build_client_disables_retries_pins_the_url_and_ignores_proxy_env(monkey
     assert adapter_mod.build_client(SENTINEL) == "client"
     assert seen["api_key"] == SENTINEL and seen["max_retries"] == 0 and seen["base_url"] == "https://api.anthropic.com"
     assert seen["http_client"]._trust_env is False
+    # Audit A-11: a bounded request, and no redirect that could carry x-api-key elsewhere.
+    assert seen["timeout"] == 60.0
+    assert seen["http_client"].follow_redirects is False
 
 
 @pytest.mark.parametrize("name", ["ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "ANTHROPIC_CUSTOM_HEADERS"])
