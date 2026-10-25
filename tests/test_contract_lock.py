@@ -63,6 +63,24 @@ def test_contract_schemas_are_versioned_at_the_lock():
         assert schema["properties"]["schema_version"] == {"const": LOCKED}
 
 
+# SHA-256 of each locked schema's canonical JSON (audit C-01). A version number
+# doesn't stop a quiet edit (decision 0009), so any edit fails here and updates
+# this value deliberately; an evolution-list change also needs SPEC.md Section 11
+# change control first (decision 0009 item 9).
+SCHEMA_SHA256 = {
+    "event": "ee2b66c2dd35659dd4562375046718da2113f2b47d38431a4ada4b86d1cef3a8",
+    "result": "5b41c8039690c232cd02adce4a617b1b93aedec816029ca7595c41867292eb16",
+    "policy": "741ed96f111d572bced45ed1aeadc61517670ae95ea0c7b66f6ae63ff7031e70",
+    "authorization_vectors": "2439f12583f2d828e7bc20e5ba16fd4eb712940809e56fb3c8c1f46203cb37e7",
+}
+
+
+@pytest.mark.parametrize("name", CONTRACT_SCHEMAS)
+def test_contract_schema_content_matches_the_lock(name):
+    schema = load(f"schemas/{name}.schema.json")
+    assert hashlib.sha256(di.canonical_json_bytes(schema)).hexdigest() == SCHEMA_SHA256[name]
+
+
 def test_w5_t4_interface_versions_are_frozen():
     assert di.INTERFACE_VERSION == "defense-interfaces-v1.0.0"
     assert di.POLICY_OBSERVATION_VERSION == "policy-observation-v1.0.0"

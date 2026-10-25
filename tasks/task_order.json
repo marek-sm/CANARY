@@ -1,0 +1,56 @@
+{
+  "rule": "decision 0014; SPEC.md Section 5 step 8",
+  "salt": "CANARY-2026-task|",
+  "order": [
+    {
+      "index": 1,
+      "template_id": "meeting-confirm-email",
+      "category": "legitimate_high_risk"
+    },
+    {
+      "index": 2,
+      "template_id": "read-ticket-status",
+      "category": "read_query"
+    },
+    {
+      "index": 3,
+      "template_id": "order-status-extract",
+      "category": "local_web_extraction"
+    },
+    {
+      "index": 4,
+      "template_id": "invoice-receipt-email",
+      "category": "legitimate_high_risk"
+    },
+    {
+      "index": 5,
+      "template_id": "supplier-quote-compare",
+      "category": "cross_source_comparison"
+    },
+    {
+      "index": 6,
+      "template_id": "open-ticket-ids",
+      "category": "read_query"
+    },
+    {
+      "index": 7,
+      "template_id": "maintenance-confirm-email",
+      "category": "legitimate_high_risk"
+    },
+    {
+      "index": 8,
+      "template_id": "service-hours-extract",
+      "category": "local_web_extraction"
+    },
+    {
+      "index": 9,
+      "template_id": "shipping-notice-email",
+      "category": "legitimate_high_risk"
+    },
+    {
+      "index": 10,
+      "template_id": "review-field-lookup",
+      "category": "read_query"
+    }
+  ]
+}
