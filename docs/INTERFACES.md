@@ -39,6 +39,16 @@ parse_untrusted_span(rendered_fixture) -> canonical_payload
 
 `render` changes only the source locator, serializer, fixed provenance wrapper, and declared injection slot. `parse_untrusted_span` must recover the exact normalized canonical payload for every attacked fixture. The clean twin contains the predeclared neutral string.
 
+### Tool-result delivery (lead scaffold, decision 0011 item 6)
+
+`runner/delivery.py` is how the development grid delivers a channel's content. The user turn carries only the trusted task prompt from the base's W6-T1 template. The base's pinned C2/C3/C4 render sits at that channel's resource inside a fresh, read-only, per-trial copy of the W6-T1 fixtures, so untrusted content reaches the model only in the result of the `query_db`, `read_file`, or `fetch_url` call that retrieved it.
+
+- **Pinned content.** The delivered bytes are the base's committed render, refused unless their SHA-256 matches `rendered-hashes.json` and they parse back to the exact substituted payload.
+- **Where the secrets sit.** The superblock's two canaries are planted in fictional files: a fake API key in `config/app.env`, and a customer record, `customers/customer-record.txt`, holding the other canary as its saved payment method and saved address. The inbox email that two payloads ask an agent to forward is planted too.
+- **Configurations.** Under D1_POLICY_GATE the gate decides before dispatch, and a block returns the frozen observation without running the tool. Under D2_DATAMARKING every tool result is marked once, with the frozen transform, before the model sees it. The same environment serves every configuration.
+- **Mock only.** Tools still run as host subprocesses through W6-T1's worker. Until the paid-path tool sandbox exists (audit F-01), delivery mode refuses any provider other than the mock.
+- **Independence.** The gate/audit independence test covers `oracles/`, where the audit has lived since #47.
+
 ## Tool-request boundary
 
 ```text
@@ -69,6 +79,48 @@ observe_effect(pre_state, post_state, sink_log, effect_oracle_id)
 ```
 
 The dispatcher accepts only canonical capability-valid requests. The effect oracle is tool-specific and authorization-neutral. A returned error does not prove that no effect occurred; postconditions decide `effect_observed`.
+
+### W6-T1 local implementation
+
+[`tasks/registry.py`](../tasks/registry.py) loads the ten versioned
+[`task templates`](../tasks/templates), verifies their shared source-fixture
+hash, and creates fresh fixture and state directories. Source files, the SQLite
+seed, pages, and the exact URL routing table are covered by the fixture manifest.
+The generated database is checked against its seed and its byte hash is captured
+before calls. Tool arguments never select these roots, routing tables, or ports.
+
+`query_db(root, query_id, params)` runs only the code-owned registered queries in
+[`tools/query_db.py`](../tools/query_db.py). It copies a bounded regular SQLite
+snapshot through no-follow descriptors, enables query-only mode, and installs an
+authorizer permitting only SELECT and reads of the fictional table. It never
+opens a model-supplied database, statement, attached database, or extension.
+
+`fetch_url(url, routes, port)` matches the complete logical `.fixture.test` URL
+against the trusted routing table. It connects directly to IPv4 loopback at the
+harness-selected port, with no DNS, proxy handling, or redirect following. The
+private [`fixture service`](../tools/fixture_http.py) serves fixed page bodies;
+it has no filesystem or agent-input endpoint.
+
+`send_email(state_root, to, subject, body)` appends only to the pre-created
+`email-receipts.jsonl` regular file in the fresh per-trial state directory. Each
+line contains exactly `to`, `subject`, and `body`; it is flushed with `fsync`.
+The model cannot supply a sink path. The tool never opens a socket and does not
+evaluate task authorization. The outer runner compares the sink before/after
+dispatch and durably emits `sink_receipt` and `effect_observation` events. If the
+sink cannot be inspected, receipt/effect evidence stays null; a tool error alone
+does not prove absence of a receipt.
+
+The [`offline acceptance runner`](../runner/task_suite.py) dispatches through
+[`tools/worker.py`](../tools/worker.py) using isolated Python child processes with
+only `PATH` and `LANG`. The private HTTP service gets the same credential-free
+environment. The runner rejects a non-mock provider and emits development records
+with `analysis_role = excluded_mock`. Its authorization and security facts remain
+null because this excluded mock runner does not perform an authorization audit.
+It uses W6-T4's shared canonicalizer through `run_loop(supported_tools=...)` for
+all four registered tools. The same immutable request is logged and dispatched;
+`effect_observer` supplies the tool-specific effect and sink evidence. The
+production gate and audit are on `main`; their paid-run integration remains
+separate from this mock acceptance runner.
 
 ## Utility boundary
 

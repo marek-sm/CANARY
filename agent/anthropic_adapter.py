@@ -25,9 +25,11 @@ from typing import Any, Mapping, Sequence
 import anthropic
 import httpx2
 
+from defenses.interfaces import canonical_json_bytes
+
 # The version also names the fixed request settings: SDK max_retries=0, a 60 s
 # timeout, no prompt caching, and no proxy or CA settings taken from the environment.
-ADAPTER_VERSION = "anthropic-messages-adapter-v0.1.0"
+ADAPTER_VERSION = "anthropic-messages-adapter-v0.1.1"
 API_BASE_URL = "https://api.anthropic.com"
 ENDPOINT = "messages"
 DECODING_KEYS = {"endpoint", "thinking", "effort", "max_tokens"}
@@ -101,11 +103,10 @@ def _strict_json(text: str) -> Any:
 
 
 def _tool_input(value: Any) -> Any:
-    """A tool input that isn't finite JSON stays a raw string, so the loop's
-    parser rejects it without dispatch."""
-    try:
-        json.dumps(value, allow_nan=False)
-    except ValueError:
+    """A tool input the canonical evidence hash can't take (NaN, infinity, or a
+    lone surrogate) stays a raw string, so the loop's parser rejects it without
+    dispatch."""
+    if not _hashable(value):
         return json.dumps(value)
     return value
 
@@ -187,11 +188,12 @@ def _error_code(body: Any) -> Any:
     return _text(details.get("error_code")) if isinstance(details, dict) else None
 
 
-def _hashable(normalized: dict[str, Any]) -> bool:
-    """True when the canonical evidence hash (decision 0009) can take it."""
+def _hashable(value: Any) -> bool:
+    """True when the canonical evidence hash (decision 0009) can take it. A lone
+    surrogate passes json.dumps but fails the hash's UTF-8 encoding."""
     try:
-        json.dumps(normalized, allow_nan=False)
-    except (ValueError, RecursionError):
+        canonical_json_bytes(value)
+    except (ValueError, TypeError, RecursionError):
         return False
     return True
 
@@ -248,7 +250,8 @@ class AnthropicMessagesAdapter:
             text = raw.http_response.text
             try:
                 body = _strict_json(text)
-                record["provider_response"] = body
+                # A body the evidence hash can't take is logged as its text.
+                record["provider_response"] = body if _hashable(body) else text
             except (ValueError, RecursionError):
                 # Unparseable, or JSON carrying NaN or infinity: keep the text.
                 record["provider_response"] = text

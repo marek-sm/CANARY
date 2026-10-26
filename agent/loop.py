@@ -7,7 +7,7 @@ from typing import Any, Callable, Mapping, Optional, Sequence
 from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use, thaw_json
 from defenses.interfaces import CanonicalRequest
 
-LOOP_VERSION = "agent-loop-v0.3.0"
+LOOP_VERSION = "agent-loop-v0.4.0"
 SUPPORTED_TOOLS = ("read_file",)  # widened by W6-T1 as each safe tool lands
 MAX_STEPS = 8
 # Follows a reply cut off at the output limit. Some providers reject a
@@ -50,7 +50,8 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
              model_request: Mapping[str, Any], on_attempt: Callable,
              max_steps: int = MAX_STEPS, logical_trial_id: str = "mock",
              dispatch: Optional[Callable] = None, on_tool: Optional[Callable] = None,
-             supported_tools: Sequence[str] = SUPPORTED_TOOLS) -> LoopOutcome:
+             supported_tools: Sequence[str] = SUPPORTED_TOOLS,
+             effect_observer: Optional[Callable] = None) -> LoopOutcome:
     """Persist attempts before acting. A response consumes one step, retries do not."""
     if max_steps < 1:
         raise ValueError("max_steps must be at least 1")
@@ -98,7 +99,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             if on_tool is not None and len(calls) == 1:
                 try:
                     filtered = parse_request(calls[0], logical_trial_id, step, supported_tools)
-                except ValueError:
+                except (KeyError, TypeError, ValueError):
                     filtered = None
                 if filtered is not None:
                     on_tool("tool_requested", requested_payload(filtered, calls[0], step))
@@ -108,8 +109,9 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             observation = dispatch(request)
             history.append({"role": "assistant", "content": copy.deepcopy(content)})
             history.append({"role": "user", "content": [{"type": "tool_result", "tool_use_id": block["id"], "content": observation}]})
-            on_tool("effect_observation", {"call_id": request.call_id, "step": step,
-                    "effect_observed": observation["ok"], "effect_oracle_id": "read-returned-v0.1.0"})
+            effect = effect_observer(request, observation) if effect_observer is not None else {
+                "effect_observed": observation["ok"], "effect_oracle_id": "read-returned-v0.1.0"}
+            on_tool("effect_observation", {"call_id": request.call_id, "step": step, **effect})
             continue
         text = response_text(raw)
         if raw["stop_reason"] == "end_turn":

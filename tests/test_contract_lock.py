@@ -20,10 +20,11 @@ CONTRACT_SCHEMAS = ("event", "result", "policy", "authorization_vectors")
 
 # The SPEC.md v1.4.0 text that Section 11 freezes at this lock. Changing any of
 # it needs Section 11 change control, then a deliberate update of its value.
+# Section 7 was re-pinned at v1.14.0 by decision 0020 (DEV-0002).
 FROZEN_SECTIONS = {
     "### Predeclared result sentence": "e68400d435e3765c0c0174fdafe79c4edb3b78395b9e7230703f59ec42f23f07",
     "## 3. Threat model and safety boundary": "8b1e24d3a171101efa71bb9d1e5fd078f1c43d544e7b25df1f6f407461e967e3",
-    "## 7. Deterministic oracles and event model": "00b83dfa3182bf9f68a9973212f0bd2febad8ff28278ca8ab1eb04fd490f89b5",
+    "## 7. Deterministic oracles and event model": "fd48f5ffb24bf9a860721939e086d3950b0a02f3f44fb322b4fa19fa1fd3d795",
     "## 8. Data contracts": "f5f662783b51312dca18bcf602dc0fc5acd6a7e2a256915b5d2824f8e2e18e37",
     "### Model selection and pinning": "1f76713f72586c3f004a8d15d28e04a587ee493c3e61a4684efdebec88fb21af",
     "### Trial generation": "08741e828df688a468229a7e02ed9fb697b2f47b947c5a9c68e6297b605e4b4a",
@@ -62,6 +63,24 @@ def test_contract_schemas_are_versioned_at_the_lock():
         assert schema["properties"]["schema_version"] == {"const": LOCKED}
 
 
+# SHA-256 of each locked schema's canonical JSON (audit C-01). A version number
+# doesn't stop a quiet edit (decision 0009), so any edit fails here and updates
+# this value deliberately; an evolution-list change also needs SPEC.md Section 11
+# change control first (decision 0009 item 9).
+SCHEMA_SHA256 = {
+    "event": "ee2b66c2dd35659dd4562375046718da2113f2b47d38431a4ada4b86d1cef3a8",
+    "result": "5b41c8039690c232cd02adce4a617b1b93aedec816029ca7595c41867292eb16",
+    "policy": "741ed96f111d572bced45ed1aeadc61517670ae95ea0c7b66f6ae63ff7031e70",
+    "authorization_vectors": "2439f12583f2d828e7bc20e5ba16fd4eb712940809e56fb3c8c1f46203cb37e7",
+}
+
+
+@pytest.mark.parametrize("name", CONTRACT_SCHEMAS)
+def test_contract_schema_content_matches_the_lock(name):
+    schema = load(f"schemas/{name}.schema.json")
+    assert hashlib.sha256(di.canonical_json_bytes(schema)).hexdigest() == SCHEMA_SHA256[name]
+
+
 def test_w5_t4_interface_versions_are_frozen():
     assert di.INTERFACE_VERSION == "defense-interfaces-v1.0.0"
     assert di.POLICY_OBSERVATION_VERSION == "policy-observation-v1.0.0"
@@ -69,14 +88,18 @@ def test_w5_t4_interface_versions_are_frozen():
 
 
 def test_committed_records_carry_the_locked_versions():
-    golden = load("oracles/authorization/golden/w5-t4-initial.json")
-    assert golden["schema_version"] == LOCKED
-    assert golden["interface_version"] == di.INTERFACE_VERSION
-    assert {policy["schema_version"] for policy in golden["policies"].values()} == {LOCKED}
+    for path in sorted((ROOT / "oracles/authorization/golden").glob("*.json")):
+        golden = load(path.relative_to(ROOT))
+        assert golden["schema_version"] == LOCKED, path.name
+        assert golden["interface_version"] == di.INTERFACE_VERSION, path.name
+        assert {policy["schema_version"] for policy in golden["policies"].values()} == {LOCKED}, path.name
     marking = load("defenses/vectors/datamarking-w5-t4.json")
     assert marking["schema_version"] == LOCKED
     assert marking["spec_version"] == di.DATAMARKING_SPEC_VERSION
     assert load("tasks/ticket.json")["policy"]["schema_version"] == LOCKED
+    for path in sorted((ROOT / "tasks/templates").glob("*.json")):
+        task = load(path.relative_to(ROOT))
+        assert {variant["policy"]["schema_version"] for variant in task["variants"].values()} == {LOCKED}, path.name
     for fixture in sorted((ROOT / "tests" / "fixtures" / "result").glob("*.json")):
         assert load(fixture.relative_to(ROOT))["schema_version"] == LOCKED, fixture.name
 

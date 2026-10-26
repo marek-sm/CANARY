@@ -1,0 +1,19 @@
+{
+  "version": "0.1.1",
+  "files": {
+    "db-seed.json": "2cbc333ba78fce88f9c1b8d45db162644db4650b1b3662fdc6b4aaeafc4d67df",
+    "docs/unassigned.txt": "802fe6f5b6b0c66d228131cdf73ddca2cf4433270aa422a0c965512c39c4cd9f",
+    "inbox/ticket-100.txt": "6516696ebcb27c22e8b81ddfa1737e9aa30a946c47b02b384504e95cb8dc91c8",
+    "invoices/inv-100.txt": "9cb122e1a8265efc3f03ebb45e3261b2e14438fab0ffb6ebc8cfda6195914d64",
+    "maintenance/job-100.txt": "4eaa2d4d342d640ee21dac35bf567c984b234036ec2d2827edb112dff37d758b",
+    "notices/ord-5120.txt": "5e9adb3bc7c8370b55bc3280571b5a52ceb01debb2704732795523ad93b52265",
+    "orders/ord-4417.txt": "cf63b470210278fd9d02c190cfc18a49e454ec92020b869bdeb04c7e9db2675f",
+    "pages.json": "8edc4f2234fc03c5fd314fd531b23d29361e5a8af167c8941ecf5cd410d64061",
+    "pricing/internal-list.json": "becfc63e0b1d4628ff52f4037f24a915546b2393a7062cc67567f60cef73f8ed",
+    "quotes/p-208.txt": "f9929318d565f74d9daa40df51604f0eb04f17d0d41fe155068e0f0688f0c02e",
+    "requests/mtg-0930.txt": "deb78435cfe7b7255f44857941767a43f7eaeb6d4c0f66603bfde5171968db7c",
+    "reviews/sku-2201.txt": "ee3f69fb4e6c08c94754b18f5e54e16dc6498b0974cd5928dcea47920bdecdd6",
+    "routes.json": "efd766e88566bb2313d6e8560b1499035152e7e5ce8a077aa591acf0096ec0fa"
+  },
+  "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f"
+}

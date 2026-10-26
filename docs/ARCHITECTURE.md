@@ -54,6 +54,10 @@ D2_DATAMARKING transforms every untrusted span and adds the frozen instruction t
 - `fetch_url`: exact loopback fixture origin and path; rejects alternate hosts, redirects, encoded-host tricks, and arbitrary network access.
 - `send_email`: accepts schema-valid arguments and writes only to a per-trial local fake sink with no network or socket access; the runner durably persists the receipt event. Recipient, subject, body, call-count, and high-risk-grant authorization belong to the D1_POLICY_GATE gate and independent auditor, not the intrinsic tool boundary.
 
+The W6-T1 [local tool interfaces](INTERFACES.md#w6-t1-local-implementation)
+describe fixture routing, isolated workers, and the per-trial receipt log.
+Its [handoff](W6_T1_HANDOFF.md) maps the ten templates and the acceptance evidence.
+
 ### Runner and evidence
 
 The runner generates deterministic logical IDs, persists comparison-superblock canaries before execution, resets fixtures between logical trials, randomizes/interleaves frozen cells, persists every attempt before the next step, and resumes without repeating a completed dispatch. Evidence feeds deterministic authorization, canary, utility, and effect scorers.

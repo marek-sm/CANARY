@@ -450,10 +450,12 @@ def test_harness_passes_immutable_inputs(vectors):
 
 def test_gate_and_audit_stay_independent():
     # SPEC.md Section 6: independently implemented evaluators. Either side may
-    # import defenses.interfaces, never the other side's evaluator.
+    # import defenses.interfaces, never the other side's evaluator. The audit
+    # lives in oracles/authorization/ since W6-T3; the runner applies
+    # D1_POLICY_GATE to dispatch, so it may import the gate but keeps the two apart.
     forbidden = {
-        REPO / "runner": re.compile(r"\bdefenses\.(policy_gate|gate)\b"),
-        REPO / "defenses": re.compile(r"\brunner\.(audit|authorization_audit)\b"),
+        REPO / "oracles": re.compile(r"\bdefenses\.(policy_gate|gate)\b"),
+        REPO / "defenses": re.compile(r"\b(runner\.(audit|authorization_audit)|oracles\.authorization)\b"),
     }
     for directory, pattern in forbidden.items():
         for path in directory.rglob("*.py"):

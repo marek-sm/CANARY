@@ -42,6 +42,10 @@ SETTINGS = ("model_requested", "model_resolved", "endpoint", "thinking", "effort
 # The loop's normalized stop reason for a reply cut off at the output limit
 # (Anthropic `max_tokens`, OpenAI `length`).
 OUTPUT_LIMIT_STOP = "max_tokens"
+# Settings an endpoint doesn't have, so a null there is a known absence rather
+# than an unrecorded value: Chat Completions (the OpenAI fallback) has no
+# `thinking` setting.
+NOT_APPLICABLE = {"chat_completions": frozenset({"thinking"})}
 
 Trial = tuple[Mapping[str, Any], Sequence[Mapping[str, Any]]]
 
@@ -60,18 +64,22 @@ def _is_mock(record: Mapping[str, Any], events: Sequence[Mapping[str, Any]]) -> 
     return MOCK_MODEL_ID in models
 
 
-def _settings(record: Mapping[str, Any], events: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def _settings(record: Mapping[str, Any], events: Sequence[Mapping[str, Any]]) -> dict[str, list[Any]]:
+    """Each setting's recorded values in one cell. The resolved model comes from
+    every model call, so a mid-trial change shows as two values; a cell with no
+    resolved call falls back to its run metadata, which may be null."""
     started = next((e for e in events if e["event_type"] == "trial_started"), None)
     decoding = (started or {}).get("payload", {}).get("decoding") or {}
     meta = record["run_metadata"]
+    resolved = [c["model_resolved"] for c in record["model_calls"] if c.get("model_resolved") is not None]
     return {
-        "model_requested": meta.get("model_requested"),
-        "model_resolved": meta.get("model_resolved"),
-        "endpoint": decoding.get("endpoint"),
-        "thinking": decoding.get("thinking"),
+        "model_requested": [meta.get("model_requested")],
+        "model_resolved": resolved or [meta.get("model_resolved")],
+        "endpoint": [decoding.get("endpoint")],
+        "thinking": [decoding.get("thinking")],
         # The OpenAI fallback names its effort setting `reasoning_effort`.
-        "effort": decoding.get("effort", decoding.get("reasoning_effort")),
-        "max_tokens": decoding.get("max_tokens", decoding.get("max_completion_tokens")),
+        "effort": [decoding.get("effort", decoding.get("reasoning_effort"))],
+        "max_tokens": [decoding.get("max_tokens", decoding.get("max_completion_tokens"))],
     }
 
 
@@ -87,6 +95,22 @@ def _hit_output_limit(events: Sequence[Mapping[str, Any]]) -> bool:
 
 def _distinct(values: Iterable[Any]) -> list[Any]:
     return sorted(set(values), key=lambda v: (v is None, str(v)))
+
+
+def _consistent(ran_on: Mapping[str, list[Any]]) -> Optional[bool]:
+    """Three-valued: false if a setting took two recorded values across the
+    floor cells; otherwise null if any cell left a setting unrecorded that the
+    endpoint has, or no floor cell is present; else true. A null is unknown, so
+    it never counts as consistent or as a second value."""
+    known = {name: [v for v in values if v is not None] for name, values in ran_on.items()}
+    if any(len(values) > 1 for values in known.values()):
+        return False
+    if not ran_on["endpoint"]:
+        return None  # no floor cell is present
+    absent = NOT_APPLICABLE.get(known["endpoint"][0], frozenset()) if known["endpoint"] else frozenset()
+    if any(None in values and name not in absent for name, values in ran_on.items()):
+        return None
+    return True
 
 
 def floor_count(trials: Iterable[Trial]) -> dict[str, Any]:
@@ -142,7 +166,7 @@ def floor_count(trials: Iterable[Trial]) -> dict[str, Any]:
     unknown = counts["null"] + counts["missing"]
     floor_applies = counts["true"] < FLOOR_THRESHOLD
     settings = [_settings(*cells[cell]) for cell in present]
-    ran_on = {name: _distinct(s[name] for s in settings) for name in SETTINGS}
+    ran_on = {name: _distinct(v for s in settings for v in s[name]) for name in SETTINGS}
     return {
         "experiment_id": next(iter(runs), None),
         "cell_trials": {base: {channel: cells[(base, channel)][0]["logical_trial_id"] if (base, channel) in cells else None
@@ -155,9 +179,9 @@ def floor_count(trials: Iterable[Trial]) -> dict[str, Any]:
         "floor_applies": floor_applies,
         "unknown_decides": floor_applies and counts["true"] + unknown >= FLOOR_THRESHOLD,
         "ran_on": ran_on,
-        # One recorded value per setting across the floor cells. A setting the
-        # provider doesn't have (OpenAI has no `thinking`) is one null value.
-        "ran_on_consistent": all(len(values) == 1 for values in ran_on.values()),
+        # One recorded value per setting across the floor cells, or null when a
+        # setting the endpoint has was never recorded (decision 0010 item 9).
+        "ran_on_consistent": _consistent(ran_on),
         "output_limit": {
             "trials": sum(c["trials"] for c in limit.values()),
             "trials_hit": sum(c["trials_hit"] for c in limit.values()),

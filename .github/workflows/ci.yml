@@ -18,6 +18,7 @@ jobs:
       - run: uv run make test
       - run: uv run make trace
       - run: uv run make t1-smoke
+      - run: uv run make t1-suite
   docker:
     runs-on: ubuntu-latest
     steps:
@@ -25,3 +26,4 @@ jobs:
       - run: docker build --tag canary:ci .
       - run: docker run --rm --network none --read-only --tmpfs /app/results/development:uid=10001,gid=10001 --tmpfs /tmp canary:ci
       - run: docker run --rm --network none --read-only --tmpfs /app/results/development:uid=10001,gid=10001 --tmpfs /tmp canary:ci python -m runner.ticket_slice
+      - run: docker run --rm --network none --read-only --tmpfs /tmp canary:ci python -m runner.task_suite --out /tmp/task-suite

@@ -47,8 +47,8 @@ def tool_body(arguments='{"path": "inbox/ticket-100.txt"}', call_id="call_1"):
 
 
 class Fake:
-    """Scripted transport: each entry is a response body, an int status, a
-    (status, provider error code) pair, or an exception."""
+    """Scripted transport: each entry is a response body, a ready response, an
+    int status, a (status, provider error code) pair, or an exception."""
 
     def __init__(self, *script):
         self.script = list(script)
@@ -59,6 +59,8 @@ class Fake:
         item = self.script.pop(0)
         if isinstance(item, Exception):
             raise item
+        if isinstance(item, httpx2.Response):
+            return item
         if isinstance(item, tuple):
             status, code = item
             return httpx2.Response(status, json={"error": {"message": "fake", "type": "fake", "code": code}},
@@ -201,6 +203,38 @@ def test_non_finite_arguments_are_a_logged_malformed_model_output(tmp_path, argu
     assert of_type(events, "tool_dispatch") == []
 
 
+# A lone UTF-16 surrogate escape passes json.loads but not the canonical UTF-8
+# hash, and deep nesting overflows the parser: both are model-written, so both
+# end as a logged malformed call (decision 0009 item 3), never a dropped attempt.
+HASH_HOSTILE = [pytest.param('{"path": "inbox/\\ud800"}', id="lone_surrogate"),
+                pytest.param("[" * 3000 + "]" * 3000, id="nested_3000")]
+
+
+@pytest.mark.parametrize("arguments", HASH_HOSTILE)
+def test_hash_hostile_arguments_stay_unparsed(arguments):
+    response = call(Fake(tool_body(arguments=arguments)))
+    assert response["raw_response"]["content"][0]["input"] == arguments
+    base.sha256_json(response)
+
+
+@pytest.mark.parametrize("arguments", HASH_HOSTILE)
+def test_hash_hostile_arguments_are_a_logged_malformed_model_output(tmp_path, arguments):
+    events, result = run_ticket(tmp_path, Fake(tool_body(arguments=arguments)))
+    assert len(of_type(events, "provider_attempt")) == 1
+    assert result["status"] == "completed" and result["termination_reason"] == "malformed_model_output"
+    assert of_type(events, "tool_dispatch") == []
+
+
+def test_hash_hostile_text_is_a_logged_malformed_model_output(tmp_path):
+    raw = (b'{"id":"chatcmpl-1","object":"chat.completion","model":"m","choices":[{"index":0,'
+           b'"message":{"role":"assistant","content":"x\\ud800"},"finish_reason":"stop"}]}')
+    fake = Fake(httpx2.Response(200, content=raw, headers={"x-request-id": "req_123", "content-type": "application/json"}))
+    events, result = run_ticket(tmp_path, fake)
+    [attempt] = of_type(events, "provider_attempt")
+    assert attempt["payload"]["outcome"] == "model_response" and isinstance(attempt["payload"]["provider_response"], str)
+    assert result["status"] == "completed" and result["termination_reason"] == "malformed_model_output"
+
+
 # Errors and retries ---------------------------------------------------------
 
 @pytest.mark.parametrize("failure", [500, 503, 429, "timeout", "connect"])
@@ -277,6 +311,15 @@ def test_listed_content_policy_rejection_is_one_completed_refusal(tmp_path, poli
 
 def test_unlisted_400_is_still_an_infrastructure_failure(tmp_path, policy_code):
     fake = Fake((400, "other_code"), (400, "other_code"), (400, "other_code"))
+    events, result = run_ticket(tmp_path, fake)
+    assert len(fake.requests) == 3
+    assert {a["payload"]["outcome"] for a in of_type(events, "provider_attempt")} == {"no_model_content"}
+    assert result["status"] == "infrastructure_failure" and result["termination_reason"] == "infrastructure_failure"
+
+
+def test_a_listed_code_on_a_non_400_status_is_still_an_infrastructure_failure(tmp_path, policy_code):
+    # Audit A-11: decision 0008 lists content-policy codes for HTTP 400 only.
+    fake = Fake((429, POLICY_CODE), (429, POLICY_CODE), (429, POLICY_CODE))
     events, result = run_ticket(tmp_path, fake)
     assert len(fake.requests) == 3
     assert {a["payload"]["outcome"] for a in of_type(events, "provider_attempt")} == {"no_model_content"}
@@ -420,6 +463,18 @@ def test_build_client_disables_retries_pins_the_url_and_ignores_proxy_env(monkey
     assert adapter_mod.build_client(SENTINEL) == "client"
     assert seen["max_retries"] == 0 and seen["base_url"] == "https://api.openai.com/v1"
     assert seen["http_client"]._trust_env is False
+    # Audit A-11: a bounded request, and no redirect that could carry the key elsewhere.
+    assert seen["timeout"] == 60.0
+    assert seen["http_client"].follow_redirects is False
+
+
+def test_build_client_refuses_an_empty_key(monkeypatch):
+    # Audit A-11.
+    for name in [n for n in __import__("os").environ if n.startswith("OPENAI_")]:
+        monkeypatch.delenv(name)
+    monkeypatch.setattr(adapter_mod.openai, "OpenAI", _no_client)
+    with pytest.raises(ValueError):
+        adapter_mod.build_client("")
 
 
 def test_build_client_refuses_ambient_openai_variables(monkeypatch):

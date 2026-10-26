@@ -7,8 +7,9 @@ is owned by SPEC.md Sections 6-7.
 Two pieces live here:
 
   * ``PolicyGateAuthorizer``: the pure, argument-level ``Authorizer``. It is the
-    T4 half of the gate/audit pair. The audit evaluator (T3, ``runner/``) is a
-    separate implementation and this module never imports it.
+    T4 half of the gate/audit pair. The audit evaluator (T3,
+    ``oracles/authorization/audit.py``) is a separate implementation and this
+    module never imports it.
   * ``PolicyGate``: wraps an ``Authorizer`` and returns a ``GateOutcome`` for one
     canonical request. It dispatches the exact request it evaluated or blocks it
     with the frozen observation. It never rewrites a request, never sees canary

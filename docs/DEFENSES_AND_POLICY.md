@@ -8,6 +8,7 @@ This guide records the W5-T4 interface freeze for authorization, `D1_POLICY_GATE
 | [`schemas/policy.schema.json`](../schemas/policy.schema.json) | Serialized shape of a declarative task policy |
 | [`schemas/authorization_vectors.schema.json`](../schemas/authorization_vectors.schema.json) | Serialized shape of a golden vector set |
 | [`oracles/authorization/golden/w5-t4-initial.json`](../oracles/authorization/golden/w5-t4-initial.json) | Initial allow/deny golden vectors |
+| [`oracles/authorization/golden/w6-t1-task-suite.json`](../oracles/authorization/golden/w6-t1-task-suite.json) | Additive T1 task-policy vectors; October 11 expectation review linked in the [handoff](W6_T1_HANDOFF.md#authorization-vectors-and-review) |
 | [`oracles/authorization/conformance.py`](../oracles/authorization/conformance.py) | Harness any evaluator runs against the vectors |
 | [`defenses/vectors/datamarking-w5-t4.json`](../defenses/vectors/datamarking-w5-t4.json) | Datamarking specification vectors |
 | [`tests/test_defense_contracts.py`](../tests/test_defense_contracts.py) | Pins all of the above |
@@ -25,7 +26,7 @@ authorize(task_policy, request: CanonicalRequest, prior_calls: [PriorCall], gran
   -> AuthorizationDecision { authorized, reason_codes, next_grant_state, evaluator_version }
 ```
 
-Two independent implementations satisfy this: the `D1_POLICY_GATE` evaluator (T4, `defenses/`) and the post-hoc audit evaluator (T3, `runner/`). Neither imports the other; both may import `defenses/interfaces.py`, and a test enforces that. Both must be pure: no I/O, clock, randomness, or canary values, and no mutation of inputs. The conformance harness passes read-only mappings to prove it.
+Two independent implementations satisfy this: the `D1_POLICY_GATE` evaluator (T4, `defenses/`) and the post-hoc audit evaluator (T3, `oracles/authorization/audit.py`, moved from `runner/` with #47). Neither imports the other; both may import `defenses/interfaces.py`, and a test enforces that. Both must be pure: no I/O, clock, randomness, or canary values, and no mutation of inputs. The conformance harness passes read-only mappings to prove it.
 
 The audit is post-hoc. It scores each request against the pre-dispatch state and never affects dispatch in any configuration; only the gate, under `D1_POLICY_GATE`, decides dispatch. `authorized` records the audit decision whenever the audit completed, even if the gate failed.
 

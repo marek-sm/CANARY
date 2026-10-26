@@ -91,13 +91,19 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0008-content-filter-refusals.md`](docs/decisions/0008-content-filter-refusals.md) | Why a provider content-filter refusal, from a finish reason or a listed HTTP 400 code, is a completed outcome that is never retried, and how it is scored |
 | [`docs/decisions/0009-measurement-contract-lock.md`](docs/decisions/0009-measurement-contract-lock.md) | How the week-5 measurement contract locked at `1.0.0`: which `SPEC.md` text is hash-frozen, the one canonical JSON rule, the reason-code vocabulary, and the predeclared development-floor reporting rule |
 | [`docs/decisions/0010-anthropic-development-model.md`](docs/decisions/0010-anthropic-development-model.md) | Why development uses `claude-haiku-5-5` with `gpt-6-luna` as the declared fallback, the $10-per-provider cap and credential rule, how a classifier refusal maps to a content-filter outcome, and why the loop follows a cut-off reply with a continuation turn |
-| [`docs/decisions/0011-week8-replan.md`](docs/decisions/0011-week8-replan.md) | How Week 8 onward was re-planned after the recovery week: Gate 3 on October 28 with no backstop, provisional `M10-ALL`, W10 folded into W9 and W11, the Gate 2 step slip rule, and lead-owned tool-result delivery |
+| [`docs/decisions/0011-week8-replan.md`](docs/decisions/0011-week8-replan.md) | How Week 8 onward was re-planned after the recovery week: Gate 3 on October 28 with no backstop (re-dated by decision 0021), provisional `M10-ALL`, W10 folded into W9 and W11, the Gate 2 step slip rule, and lead-owned tool-result delivery |
 | [`docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md`](docs/decisions/0012-request-to-effect-table-and-tool-name-ablation.md) | Why `SPEC.md` Section 10 predeclares a count-only request-to-effect table and a tool-name-only ablation of recorded D0_BASELINE requests, and why they must be on `main` before any paid call other than the live adapter check |
 | [`docs/decisions/0013-rubric-framing.md`](docs/decisions/0013-rubric-framing.md) | Why `SPEC.md` Section 1 gains a problem statement and an overall research question with no prior-work or gap claim, why reference 15 stays unverified, and which rubric-driven proposals were not adopted |
 | [`docs/decisions/0014-selection-prefixes-and-task-order.md`](docs/decisions/0014-selection-prefixes-and-task-order.md) | Why `SPEC.md` Section 5 builds only the prefixes a pool under 20 supports, how the selection order, `task_order`, and recheck sample are fixed in advance, and why this frozen-text change is protocol deviation DEV-0001 |
 | [`docs/decisions/0015-cut-process-rules.md`](docs/decisions/0015-cut-process-rules.md) | Why post-freeze changes open their deviation entry first instead of a separate issue, why the weekly slice issues, the Monday `STATUS.md` update, and the 24-hour blocker action are gone, and which rules stay |
 | [`docs/decisions/0016-practitioner-relevance.md`](docs/decisions/0016-practitioner-relevance.md) | Why `SPEC.md` Section 1 says who CANARY is for, what the pitch to leadership, sponsors, and recruiters may and may not say, and why it isn't a gate item or a decision priority |
 | [`docs/decisions/0017-applied-purpose.md`](docs/decisions/0017-applied-purpose.md) | Why `SPEC.md` Section 0 makes usefulness to teams choosing safeguards CANARY's purpose and a tie-breaker that ranks nothing, why Section 14 adds a measurement checklist and a team-facing paper close, and when a gap sentence may be stated |
+| [`docs/decisions/0018-c1-control-order.md`](docs/decisions/0018-c1-control-order.md) | Why a tier takes its C1 controls in a hash order over the records that pass source review, how a shortfall is counted, and why the set is fixed before any C1 control runs live |
+| [`docs/decisions/0019-audit-doc-reconciliations.md`](docs/decisions/0019-audit-doc-reconciliations.md) | How six of the seven documentation contradictions the October 17 audit found are settled, each by text that already states the rule, with no pinned text changed, and why the `CLAUDE.md` one waits |
+| [`docs/decisions/0020-request-level-formula.md`](docs/decisions/0020-request-level-formula.md) | Why `SPEC.md` Section 7's `unauthorized_action_dispatched` and `unauthorized_action_effect` no longer name `request_evaluable`, so a dispatched request whose audit didn't complete gives null, as the scorer already does |
+| [`docs/decisions/0021-two-week-shift.md`](docs/decisions/0021-two-week-shift.md) | Why every lattice week from W7 on moves two working weeks later, once, with Gate 3 on November 11, the data cutoff November 22, and the release freeze December 6, and the 48-hour turnaround rule it sets for every owner |
+| [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
+| [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -121,3 +127,19 @@ See [the W5-T1 handoff](docs/W5_T1_HANDOFF.md) for acceptance commands and desig
 choices. It consumes the merged W5-T4 interfaces and W5-T3 schemas, frozen at the
 measurement-contract lock. Independent authorization-audit integration remains
 outstanding.
+
+### W6-T1 safe-tool and task acceptance
+
+`uv run make t1-suite` runs all ten deterministic templates through their 20
+declared task/channel variants using only the mock provider. Each trial gets
+verified fictional fixtures, a private loopback page service, and an empty local
+email sink. Outputs go to a fresh temporary directory. These are excluded
+engineering checks; they do not count as the Week 7 paid development grid or
+coverage smokes. See the [W6-T1 handoff](docs/W6_T1_HANDOFF.md) for the registry,
+tool boundaries, utility evidence, and independent-review requirements.
+
+### W6-T2 development corpus check
+
+`uv run make corpus-check` re-renders every development base and fails if a
+committed fixture or hash drifted, then checks the candidate ledger against the
+development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).

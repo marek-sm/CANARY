@@ -207,6 +207,62 @@ def test_output_limit_hits_are_counted_per_trial_over_the_whole_grid():
     assert report["output_limit"]["by_configuration"]["D1_POLICY_GATE"] == {"trials": 30, "trials_hit": 0}
 
 
+def test_an_output_limit_hit_after_a_tool_call_is_counted():
+    trials = grid()
+    for index, (record, _) in enumerate(trials):
+        if record["configuration"] == "D1_POLICY_GATE":
+            trials[index] = (record, events(record, stops=("tool_use", "max_tokens", "end_turn")))
+    report = floor_count(trials)
+    assert report["output_limit"]["by_configuration"]["D1_POLICY_GATE"] == {"trials": 30, "trials_hit": 30}
+
+
+def test_unrecorded_deciding_settings_are_not_reported_consistent():
+    # Decision 0010 item 9: the floor names the settings it ran on. A setting no
+    # cell recorded is unknown, not one consistent value.
+    report = floor_count(grid(decoding={"temperature": 0, "top_p": 1}))
+    assert report["ran_on"]["thinking"] == [None] and report["ran_on"]["effort"] == [None]
+    assert report["ran_on_consistent"] is None
+
+
+def floor_cell(trials, base="dev-003", channel="C2"):
+    return next(i for i, (r, _) in enumerate(trials) if (r["base_case_id"], r["channel"], r["condition"], r["configuration"])
+                == (base, channel, "attack", "D0_BASELINE"))
+
+
+def test_one_unrecorded_cell_is_unknown_not_a_second_value():
+    trials = grid()
+    index = floor_cell(trials)
+    record, _ = trials[index]
+    trials[index] = (record, events(record, decoding=None))
+    report = floor_count(trials)
+    assert report["ran_on"]["endpoint"] == ["messages", None]
+    assert report["ran_on_consistent"] is None
+
+
+def test_an_unresolved_model_is_unknown_not_a_second_value():
+    trials = grid()
+    record, log = trials[floor_cell(trials)]
+    record["run_metadata"]["model_resolved"] = None
+    assert floor_count(trials)["ran_on_consistent"] is None
+
+
+def test_a_model_change_inside_one_cell_is_inconsistent():
+    trials = grid()
+    record, log = trials[floor_cell(trials)]
+    call = {"model_call_id": "c", "step": 1, "model_requested": MODEL, "provider_fingerprint": None,
+            "raw_response_sha256": "0" * 64, "artifact_ref": None, "parser_version": None}
+    record["model_calls"] = [dict(call, model_resolved=MODEL), dict(call, model_call_id="d", step=2, model_resolved="claude-haiku-5-6")]
+    record["run_metadata"]["model_resolved"] = None
+    report = floor_count(trials)
+    assert report["ran_on"]["model_resolved"] == ["claude-haiku-5-5", "claude-haiku-5-6"]
+    assert report["ran_on_consistent"] is False
+
+
+def test_no_floor_cell_leaves_consistency_unknown():
+    trials = [t for t in grid() if not (t[0]["condition"] == "attack" and t[0]["configuration"] == "D0_BASELINE")]
+    assert floor_count(trials)["ran_on_consistent"] is None
+
+
 def test_load_run_reads_each_trial_directory_and_main_writes_json(tmp_path, capsys):
     for record, log in grid({("dev-004", "C3"): True}):
         trial_dir = tmp_path / record["logical_trial_id"].replace(":", "_")
