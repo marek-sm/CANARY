@@ -3,7 +3,7 @@
     python -m corpus.render_fixtures          # write fixtures + hash manifests
     python -m corpus.render_fixtures --check  # fail if anything on disk drifted
 
-dev-001 predates wrappers and keeps its v1 renders, so it's skipped here.
+Every development base carries a wrapper since dev-001's re-render on 2026-10-21.
 Every render is parsed back before it's written; a base whose parser doesn't
 recover the exact substituted content fails loudly instead of being written.
 """

@@ -13,6 +13,7 @@ from __future__ import annotations
 import html
 import json
 import re
+from typing import Callable
 
 INSERTION_MARKER = "{{INJECTION_SLOT}}"
 
@@ -81,17 +82,17 @@ def parse_c4(rendered: str) -> str:
     return html.unescape(match.group(1))
 
 
-# --- v2: record renderers for dev-002 onward -------------------------------
+# --- v2: record renderers for every development base ------------------------
 #
-# The v1 functions above stay as they are: dev-001's committed rendered hashes
-# and the six-cell runner both depend on those exact bytes. From dev-002 on,
-# each base carries a `fixture.wrapper` block in its record instead of
-# hard-coded constants:
+# The v1 functions above stay for reference; no committed base uses them since
+# dev-001's re-render on 2026-10-21. Each base carries a `fixture.wrapper`
+# block in its record instead of hard-coded constants:
 #
 #   {"title": "...", "facts": {"field": "value", ...}, "text_field": "note"}
 #
 # `facts` are the benign facts the task's expected answer comes from. Every
 # channel prints all of them, in record order, so C2/C3/C4 agree on the answer.
+# A non-string fact prints as JSON (`true`, `4`) on C3 and C4, as it reads on C2.
 # The substituted content only ever lands in `text_field`.
 
 RECORD_EXTRACTOR_VERSIONS = {
@@ -124,11 +125,16 @@ def parse_record_c2(rendered: str, wrapper: dict) -> str:
     return json.loads(rendered)[wrapper["text_field"]]
 
 
+def fact_text(value) -> str:
+    """How C3 and C4 print one fact: strings as they are, anything else as JSON."""
+    return value if isinstance(value, str) else json.dumps(value)
+
+
 def render_record_c3(content: str, wrapper: dict) -> str:
     """`read_file` body: title and `field: value` lines, blank line, then text."""
     _check_wrapper(wrapper)
     header = wrapper["title"] + "\n"
-    header += "".join(f"{k}: {v}\n" for k, v in wrapper["facts"].items())
+    header += "".join(f"{k}: {fact_text(v)}\n" for k, v in wrapper["facts"].items())
     return header + "\n" + content + "\n"
 
 
@@ -144,7 +150,7 @@ def render_record_c4(content: str, wrapper: dict) -> str:
     _check_wrapper(wrapper)
     esc = html.escape
     facts = "".join(
-        f"<dt>{esc(str(k))}</dt><dd>{esc(str(v))}</dd>"
+        f"<dt>{esc(str(k))}</dt><dd>{esc(fact_text(v))}</dd>"
         for k, v in wrapper["facts"].items()
     )
     return (
@@ -169,3 +175,13 @@ RECORD_RENDERERS = {
     "C3": (render_record_c3, parse_record_c3),
     "C4": (render_record_c4, parse_record_c4),
 }
+
+
+def record_renderer(record: dict, channel: str) -> tuple[Callable[[str], str], Callable[[str], str]]:
+    """(render, parse) for one base's channel: the v2 record renderers when the
+    base carries a `fixture.wrapper`, else the v1 functions above."""
+    wrapper = record["fixture"].get("wrapper")
+    if wrapper is None:
+        return {"C2": (render_c2, parse_c2), "C3": (render_c3, parse_c3), "C4": (render_c4, parse_c4)}[channel]
+    render, parse = RECORD_RENDERERS[channel]
+    return (lambda content: render(content, wrapper)), (lambda rendered: parse(rendered, wrapper))
