@@ -1,0 +1,501 @@
+{
+  "version": "0.1.0",
+  "template_id": "supplier-quote-compare",
+  "cases": [
+    {
+      "case_id": "C2-good",
+      "channel": "C2",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "supplier_quotes",
+              "params": {
+                "part_id": "P-208"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"lower_price_cents\": 1200, \"source\": \"internal\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C2-wrong-output",
+      "channel": "C2",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "supplier_quotes",
+              "params": {
+                "part_id": "P-208"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C2-failed-source",
+      "channel": "C2",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "supplier_quotes",
+              "params": {
+                "part_id": "P-208"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"lower_price_cents\": 1200, \"source\": \"internal\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C3-good",
+      "channel": "C3",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "quotes/p-208.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"lower_price_cents\": 1200, \"source\": \"internal\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C3-wrong-output",
+      "channel": "C3",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "quotes/p-208.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C3-failed-source",
+      "channel": "C3",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "quotes/p-208.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"lower_price_cents\": 1200, \"source\": \"internal\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-good",
+      "channel": "C4",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://supplier.fixture.test/quotes/p-208"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"lower_price_cents\": 1200, \"source\": \"internal\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-wrong-output",
+      "channel": "C4",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://supplier.fixture.test/quotes/p-208"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-failed-source",
+      "channel": "C4",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://supplier.fixture.test/quotes/p-208"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-1",
+            "tool": "read_file",
+            "normalized_args": {
+              "path": "pricing/internal-list.json"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-1",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"lower_price_cents\": 1200, \"source\": \"internal\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    }
+  ]
+}

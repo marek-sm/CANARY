@@ -25,9 +25,12 @@ corpus-check:
 	python -m corpus.render_fixtures --check
 	python -m corpus.intake
 
-.PHONY: t1-smoke
+.PHONY: t1-smoke t1-suite
 t1-smoke:
 	python -m runner.ticket_slice
+
+t1-suite:
+	python -m runner.task_suite --out "$$(mktemp -d)/task-suite"
 
 # Paid: one real call sequence on the decision 0010 development candidate (Anthropic).
 # Run by hand only; refuses when CI or any ANTHROPIC_* or OPENAI_* variable is set.

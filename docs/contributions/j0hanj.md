@@ -1,7 +1,7 @@
 # Contributor: j0hanj
 
-- Public-name consent: Pending
-- Preferred public name: Pending
+- Public-name consent: Yes
+- Preferred public name: Johan Jijo
 - Component or research role: T2 corpus, sources, and C2/C3/C4 adapters
 - Active interval: September 2026 onward
 
@@ -22,9 +22,9 @@
 
 ## Approved public description
 
-Pending.
+Johan Jijo built CANARY's T2 corpus: the five development bases, C1 control and demo source records sourced from InjecAgent and AgentDojo, the C2/C3/C4 attack/clean renderers, and the candidate intake and deduplication checks; no result or efficacy claim is made by this record.
 
 ## Final review
 
-- Contributor reviewed this record: No
-- Review date: Pending
+- Contributor reviewed this record: Yes
+- Review date: 2026-10-25

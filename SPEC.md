@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.15.0**  
+**Public project and experimental specification v1.16.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -9,7 +9,7 @@ This is the public, human-readable authority for CANARY's scope, measurement sem
 
 Versioned JSON Schemas define serialized structure, and `protocol/active.json` identifies the exact tier, artifacts, hashes, and schedule used for a release. Neither may contradict this specification. Any conflict blocks release until the documents, schemas, tests, and implementation are reconciled through the change-control process in Section 11.
 
-All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 on Wednesday, November 11, 2026, in club week 12, before official outcomes are inspected, official data locks no later than November 22, 2026, and the public release freezes December 6, 2026. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
+All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 no later than Wednesday, November 11, 2026 (club week 12), before official outcomes are inspected, official data locks no later than November 22, 2026, and the public release freezes no later than December 6, 2026. Each date is a deadline: work may finish and gates may run earlier, never later. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
 
 ---
 
@@ -43,10 +43,10 @@ When options are otherwise equal under this list, choose the one more useful to 
 | Quantitative utility | Ten deterministic task templates, including legitimate authorized high-risk actions |
 | Development split | Five separate base cases that never enter reported estimates |
 | Contract lock | End of club week 5 |
-| Full protocol freeze | Gate 3, Wednesday, November 11, 2026, before official outcomes are inspected |
-| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved in club week 12, after the November 11 freeze |
+| Full protocol freeze | Gate 3, no later than Wednesday, November 11, 2026, before official outcomes are inspected |
+| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved after the Gate 3 freeze, by club week 12 |
 | Absolute data cutoff | Sunday, November 22, 2026 |
-| Public release freeze | Sunday, December 6, 2026 |
+| Public release freeze | No later than Sunday, December 6, 2026 |
 | Required public proof | Repository, sanitized frozen evidence, no-key report/replay, captioned video, and accessible paper/report |
 
 ### Reading guide
@@ -1291,7 +1291,7 @@ Presentation criteria may change presentation emphasis or demo wording. They do 
 
 ### End of week 8 — full protocol freeze
 
-This freeze is Gate 3, on Wednesday, November 11, 2026. Elsewhere in this specification, "the week-8 freeze" and "freeze … in week 8" name it, whatever club week it falls in.
+This freeze is Gate 3, no later than Wednesday, November 11, 2026. Elsewhere in this specification, "the week-8 freeze" and "freeze … in week 8" name it, whatever club week it falls in.
 
 Freeze and hash the artifacts applicable to the selected tier:
 
@@ -1490,7 +1490,7 @@ Every replay is schema-valid, tied to a code/configuration hash, and visibly lab
 ### Required artifacts
 
 1. **Accessible paper/report.** Target a six-to-eight-page main body plus generated appendices unless the collection supplies another template. It is submission-ready by December 6.
-2. **Public repository.** Code, schemas, corpus metadata and payloads as licensing permits, adaptation/rejection ledger, frozen sanitized results or engineering-validation evidence, analysis, tables where applicable, replay, Docker instructions, and contribution statements. An immutable December 6 release tag/commit and manifest identify the frozen package.
+2. **Public repository.** Code, schemas, corpus metadata and payloads as licensing permits, adaptation/rejection ledger, frozen sanitized results or engineering-validation evidence, analysis, tables where applicable, replay, Docker instructions, and contribution statements. An immutable release tag/commit and manifest, made no later than December 6, identify the frozen package.
 3. **Captioned demo video.** Two to three minutes, offline-capable, with transcript and the tier-appropriate frozen aggregate result or `ENGINEERING` validation summary.
 4. **Optional static replay page.** Only under the bounded replay-only rule in Section 2; its absence is not a project failure.
 
