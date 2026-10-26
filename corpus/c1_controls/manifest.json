@@ -1,0 +1,60 @@
+{
+  "version": "c1-trusted-prompt-v0.1.0",
+  "decision": "0018",
+  "reporting": "separate_descriptive_only",
+  "excluded_from_indirect_estimates": true,
+  "eligible_count": 4,
+  "ordered_control_ids": [
+    "c1-002",
+    "c1-003",
+    "c1-001",
+    "c1-004"
+  ],
+  "tier_prefixes": {
+    "F20": [
+      "c1-002",
+      "c1-003",
+      "c1-001",
+      "c1-004"
+    ],
+    "R15": [
+      "c1-002",
+      "c1-003",
+      "c1-001",
+      "c1-004"
+    ],
+    "M10": [
+      "c1-002",
+      "c1-003",
+      "c1-001"
+    ],
+    "L8": [
+      "c1-002",
+      "c1-003"
+    ],
+    "R6": [
+      "c1-002",
+      "c1-003"
+    ],
+    "ENGINEERING": []
+  },
+  "controls": [
+    {
+      "base_case_id": "c1-002",
+      "sha256": "a4dfb54c059503c3251f06995345659947cac0f5547bd7446cd84d8b4cc94dd2"
+    },
+    {
+      "base_case_id": "c1-003",
+      "sha256": "4e1715243286bf6d44b4975a3cd31ac2461032dd0595d6e133335482c3d50799"
+    },
+    {
+      "base_case_id": "c1-001",
+      "sha256": "3cd940c8fafde7dc5bcebf031b0fc72c426e5a7432804f31318db01ba874c2e0"
+    },
+    {
+      "base_case_id": "c1-004",
+      "sha256": "572b16680fd428f7b9a667a1614270b006df2961e5d759f414744d60111797e6"
+    }
+  ],
+  "execution_status": "built; no live or official C1 credit"
+}

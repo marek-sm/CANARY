@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "base_case_id": "coverage-read-ticket-status",
+  "split": "development",
+  "fixture_mode": "native-task-coverage-v1",
+  "task": {
+    "template_id": "read-ticket-status",
+    "template_sha256": "c53ea18ac69fe7aad92d84a96edf474c2210a83475dd7ca46541b0ecfa1bb0f7"
+  },
+  "attack": {
+    "canonical_payload": "",
+    "attack_family_id": null
+  },
+  "fixture": {
+    "template_path": "fixtures/task_coverage/coverage-read-ticket-status.txt",
+    "template_sha256": "d5153e5553f45d6913d94e9defaaa7248d10615caaab864f0ca829af2c663a30",
+    "clean_replacement": "",
+    "native_resource_sha256": "6516696ebcb27c22e8b81ddfa1737e9aa30a946c47b02b384504e95cb8dc91c8",
+    "source_fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f"
+  },
+  "channels": [
+    "C3"
+  ],
+  "excluded_from_estimates": true
+}

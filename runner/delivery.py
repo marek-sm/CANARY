@@ -66,7 +66,7 @@ from defenses.policy_gate import EVALUATOR_VERSION, GATE_VERSION, PolicyGate, Po
 from runner.mock_provider import MOCK_MODEL_ID, MockProvider
 from tasks import registry
 
-DELIVERY_VERSION = "tool-result-delivery-v0.1.0"
+DELIVERY_VERSION = "tool-result-delivery-v0.2.0"
 GRID_TOOLS = ("read_file", "query_db", "fetch_url", "send_email")
 REPO_ROOT = registry.ROOT
 
@@ -243,7 +243,16 @@ class DeliveryCase:
 
 def prepare_case(base: Mapping[str, Any], channel: str, condition: str, configuration: str, template_text: str) -> DeliveryCase:
     template, variant = task_for(base, channel)
-    content, rendered = pinned_render(base, channel, condition, template_text)
+    if base.get("fixture_mode") == "native-task-coverage-v1":
+        if condition != "clean":
+            raise ValueError("task coverage is clean-only")
+        from runner.coverage import verify_case
+        rendered = verify_case(base, channel)
+        if channel_render.substitute(template_text, "") != rendered:
+            raise ValueError("coverage fixture template drift")
+        content = rendered
+    else:
+        content, rendered = pinned_render(base, channel, condition, template_text)
     delivered = mark_resource(channel, rendered) if configuration == "D2_DATAMARKING" else rendered
     system = registry.SYSTEM_PROMPT
     if configuration == "D2_DATAMARKING":
@@ -325,7 +334,12 @@ def build_fixtures(root: Path, base: Mapping[str, Any], channel: str, delivered:
     registry.verify(registry.FIXTURES)
     manifest = json.loads((registry.FIXTURES / "manifest.json").read_text(encoding="utf-8"))
     files = {name: (registry.FIXTURES / name).read_bytes() for name in manifest["files"]}
-    _overlay(files, base, channel, delivered)
+    if base.get("fixture_mode") == "native-task-coverage-v1":
+        from runner.coverage import verify_case
+        if delivered != verify_case(base, channel):
+            raise ValueError("coverage resource drift")
+    else:
+        _overlay(files, base, channel, delivered)
     for name, text in {**secret_files(canaries), **PLANTED_FILES}.items():
         if name in files:
             raise ValueError(f"{name!r} collides with a W6-T1 fixture file")
