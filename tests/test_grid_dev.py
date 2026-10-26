@@ -21,7 +21,7 @@ def test_summary_includes_usage_by_channel_configuration(tmp_path):
     grid_dev.run_mock_grid(
         out,
         spec=mock_spec,
-        corpus_root=ROOT / "tests" / "fixtures" / "corpus" / "development",
+        corpus_root=ROOT / "corpus" / "development",
     )
     report = grid_dev.summarize_grid_run(out, spec)
     assert report["trials_found"] == 90
@@ -39,7 +39,7 @@ def test_verify_matches_mock_run_model_when_spec_lists_live_model(tmp_path):
     grid_dev.run_mock_grid(
         out,
         spec=mock_spec,
-        corpus_root=ROOT / "tests" / "fixtures" / "corpus" / "development",
+        corpus_root=ROOT / "corpus" / "development",
     )
     report = grid_dev.verify_grid_run(out, spec)
     assert report["trials_found"] == 90
@@ -131,7 +131,7 @@ def test_mock_grid_runs_dev001_only_spec(tmp_path):
         schedule,
         corpus_root=ROOT / "corpus" / "development",
         spec=spec,
-        audit=execute.default_audit,
+        delivery=True,
     )
     results = list(out.glob("*/results.jsonl"))
     assert len(results) == 18
@@ -142,7 +142,7 @@ def test_mock_grid_runs_dev001_only_spec(tmp_path):
     assert configs == {"D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"}
 
 
-def test_d2_configuration_marks_untrusted_span_differently_from_d0(tmp_path):
+def test_d2_configuration_delivers_marked_content_and_d0_the_pinned_render(tmp_path):
     from runner import execute
     from runner.mock_provider import MOCK_MODEL_ID
     from runner.schedule import generate_schedule
@@ -164,7 +164,7 @@ def test_d2_configuration_marks_untrusted_span_differently_from_d0(tmp_path):
         schedule,
         corpus_root=ROOT / "corpus" / "development",
         spec=spec,
-        audit=execute.default_audit,
+        delivery=True,
     )
     d0 = json.loads(
         (out / execute.trial_slug(schedule[0]) / "results.jsonl").read_text(encoding="utf-8").splitlines()[0]
@@ -180,5 +180,7 @@ def test_d2_configuration_marks_untrusted_span_differently_from_d0(tmp_path):
     )
     assert d0["configuration"] == "D0_BASELINE"
     assert d2["configuration"] == "D2_DATAMARKING"
-    assert d0_events["payload"]["prompt_sha256"] != d2_events["payload"]["prompt_sha256"]
-    assert d0_events["payload"]["untrusted_span"] != d2_events["payload"]["untrusted_span"]
+    # Both cells pin the same render; only D2_DATAMARKING delivers it marked.
+    assert d0_events["payload"]["rendered_sha256"] == d2_events["payload"]["rendered_sha256"]
+    assert d0_events["payload"]["delivered_sha256"] == d0_events["payload"]["rendered_sha256"]
+    assert d2_events["payload"]["delivered_sha256"] != d2_events["payload"]["rendered_sha256"]

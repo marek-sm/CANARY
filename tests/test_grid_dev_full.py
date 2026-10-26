@@ -1,4 +1,4 @@
-"""W7-T3: ninety-cell mock grid, resume, and verification (fixture corpus)."""
+"""W7-T3: ninety-cell mock grid, resume, and verification (the merged development corpus)."""
 
 import json
 import shutil
@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from runner import execute, grid_dev
+from runner import delivery, execute, grid_dev
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
 from runner.schedule import generate_schedule
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE_CORPUS = ROOT / "tests" / "fixtures" / "corpus" / "development"
+CORPUS = ROOT / "corpus" / "development"
 SPEC_PATH = ROOT / "protocol" / "development_grid_spec.json"
 FIXED_CLOCK = lambda: "2020-01-01T00:00:00Z"  # noqa: E731
 COMMIT = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
@@ -34,13 +34,19 @@ def _mock_spec():
 
 
 def _killing_factory(kill_trial_id: str, *, kill_at_call: int = 1):
+    """Delivery's own task mock, killed before its call number ``kill_at_call``."""
+
     def factory(trial, canaries):
-        provider = execute.MockProvider(execute.build_script(trial.condition, canaries[1]))
+        base = json.loads((CORPUS / f"{trial.base_case_id}.json").read_text(encoding="utf-8"))
+        template, _ = delivery.task_for(base, trial.channel)
+        provider = delivery.DeliveryTaskMock(template, trial.channel)
         original = provider.complete
+        made = {"calls": 0}
 
         def complete(*args, **kwargs):
-            if trial.logical_trial_id == kill_trial_id and provider.calls == kill_at_call:
+            if trial.logical_trial_id == kill_trial_id and made["calls"] == kill_at_call:
                 raise Killed()
+            made["calls"] += 1
             return original(*args, **kwargs)
 
         provider.complete = complete
@@ -54,14 +60,14 @@ def _run(spec, out, *, resume=False, provider_factory=None):
     execute.run_schedule(
         out,
         schedule,
-        corpus_root=FIXTURE_CORPUS,
+        corpus_root=CORPUS,
         resume=resume,
         spec=spec,
-        audit=execute.default_audit,
         provider_factory=provider_factory,
         clock=FIXED_CLOCK,
         code_commit_value=COMMIT,
         canary_factory=_canaries(),
+        delivery=True,
     )
     return schedule
 

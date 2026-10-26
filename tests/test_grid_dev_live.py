@@ -9,7 +9,7 @@ from runner import grid_dev
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC_PATH = ROOT / "protocol" / "development_grid_spec.json"
-FIXTURE_CORPUS = ROOT / "tests" / "fixtures" / "corpus" / "development"
+CORPUS = ROOT / "corpus" / "development"
 
 
 def _spec():
@@ -17,8 +17,8 @@ def _spec():
 
 
 def test_live_run_refusal_without_ack():
-    assert grid_dev.live_run_refusal(FIXTURE_CORPUS, _spec()) is not None
-    assert "CANARY_PAID_RUN_ACK" in grid_dev.live_run_refusal(FIXTURE_CORPUS, _spec())
+    assert grid_dev.live_run_refusal(CORPUS, _spec()) is not None
+    assert "CANARY_PAID_RUN_ACK" in grid_dev.live_run_refusal(CORPUS, _spec())
 
 
 def test_live_main_refuses_without_ack_before_run(tmp_path, monkeypatch):
@@ -72,7 +72,7 @@ def test_live_run_refusal_missing_corpus_bases(tmp_path, monkeypatch):
     partial = tmp_path / "corpus"
     partial.mkdir()
     (partial / "dev-001.json").write_text(
-        (FIXTURE_CORPUS / "dev-001.json").read_text(encoding="utf-8"),
+        (CORPUS / "dev-001.json").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     reason = grid_dev.live_run_refusal(partial, _spec())

@@ -1,8 +1,12 @@
 """W7-T3: the Section 9 ninety-cell development grid orchestration.
 
 Loads the committed schedule spec, validates trial count and identifiers, and
-runs the W6-T3 executor. Mock runs use ``MockProvider``; live runs refuse unless
-the caller supplies a real ``provider_factory`` (paid-run condition).
+runs the W6-T3 executor with tool-result delivery (``runner.delivery``), so each
+configuration runs its real defense path: D1_POLICY_GATE decides before every
+dispatch and D2_DATAMARKING marks every tool result. ``verify`` checks that
+behavior in the stored events, not just the configuration label. Mock runs use
+the delivery mock; live runs refuse until paid runs open (the paid-run condition
+and the paid-path tool sandbox, audit F-01).
 
 Usage:
   python -m runner.grid_dev validate [--spec PATH]
@@ -23,6 +27,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from analysis.floor_count import load_run
+from defenses.interfaces import DATAMARK_MARKER
 from runner import execute
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, REPO_ROOT, read_jsonl, validator
@@ -87,8 +92,8 @@ def run_mock_grid(
         corpus_root=root,
         resume=resume,
         spec=mock_spec,
-        audit=execute.default_audit,
         provider_factory=provider_factory,
+        delivery=True,
     )
 
 
@@ -102,8 +107,19 @@ def _provider_env_refusal() -> Optional[str]:
     return None
 
 
+PAID_RUNS_CLOSED = (
+    "paid grid runs are closed: they open only once the paid-path tool sandbox "
+    "(audit F-01) exists and the project lead records the date the paid-run "
+    "condition holds (TASKS.md); CANARY_PAID_RUN_ACK alone is never enough"
+)
+
+
 def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
-    """Fail closed before any paid call unless the paid-run gate and corpus are satisfied."""
+    """Fail closed before any paid call. Paid runs stay closed until the paid-path
+    tool sandbox and the project lead's paid-run record exist; delivery mode
+    refuses any non-mock provider on its own as well. The specific reasons below
+    come first so an operator sees what else is wrong; none of them alone ever
+    opens the path."""
     if os.environ.get("CANARY_PAID_RUN_ACK") != "1":
         return (
             "set CANARY_PAID_RUN_ACK=1 only after the project lead confirms "
@@ -119,7 +135,7 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str
             f"corpus/development missing development bases {absent}; "
             "merge W6-T2 (#34) before a live grid run"
         )
-    return None
+    return PAID_RUNS_CLOSED
 
 
 def _adapter_with_pinned_decoding(adapter: Any, decoding: Mapping[str, Any]) -> Any:
@@ -190,8 +206,8 @@ def run_live_grid(
         corpus_root=root,
         resume=resume,
         spec=dict(spec),
-        audit=execute.default_audit,
         provider_factory=factory,
+        delivery=True,
     )
 
 
@@ -236,6 +252,7 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any]) -> dict[str, Any]:
             _check_no_repeated_dispatch(events)
             _check_no_repeated_effect(events)
             _check_no_repeated_sink(events)
+            _check_defense_behavior(record, events)
 
     counts = Counter(found_ids)
     duplicates = sorted(tid for tid, n in counts.items() if n > 1)
@@ -263,6 +280,56 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any]) -> dict[str, Any]:
         "trials_found": len(found_ids),
         "complete": len(missing) == 0 and len(duplicates) == 0,
     }
+
+
+def _check_defense_behavior(record: Mapping[str, Any], events: list[Mapping[str, Any]]) -> None:
+    """Each configuration's label must match its defense path in the stored evidence.
+
+    Every trial ran through tool-result delivery and its own audit: each event
+    names the delivery version, and each tool record carries the audit's
+    decision. Under D1_POLICY_GATE the events name the gate's version and the
+    gate decided every dispatched call; no other configuration has either.
+    Under D2_DATAMARKING the events name the transform's version and every tool
+    result stores the hash of its unmarked observation; no other configuration
+    has either, and no other configuration's tool result carries the datamark.
+    """
+    trial_id = record.get("logical_trial_id")
+    configuration = record.get("configuration")
+    started = next((e for e in events if e["event_type"] == "trial_started"), None)
+    versions = (started or {}).get("component_versions") or {}
+    if started is None or "tool_result_delivery" not in versions:
+        raise ValueError(f"{trial_id}: not run through tool-result delivery")
+    for tool_event in record.get("tool_events") or []:
+        decision = tool_event.get("audit_decision") or {}
+        if not decision.get("evaluator_version"):
+            raise ValueError(f"{trial_id}: tool call {tool_event.get('call_id')} has no audit decision")
+
+    decided = {
+        e["payload"].get("call_id") for e in events if e["event_type"] == "authorization_decision"
+    }
+    dispatched = {e["payload"].get("call_id") for e in events if e["event_type"] == "tool_dispatch"}
+    if configuration == "D1_POLICY_GATE":
+        if "d1_policy_gate" not in versions:
+            raise ValueError(f"{trial_id}: D1_POLICY_GATE ran without the gate")
+        if not dispatched <= decided:
+            raise ValueError(f"{trial_id}: D1_POLICY_GATE dispatch without a gate decision")
+    elif decided or "d1_policy_gate" in versions:
+        raise ValueError(f"{trial_id}: {configuration} ran the D1_POLICY_GATE gate")
+
+    results = [e["payload"] for e in events if e["event_type"] == "tool_result"]
+    if configuration == "D2_DATAMARKING":
+        if "d2_datamarking" not in versions:
+            raise ValueError(f"{trial_id}: D2_DATAMARKING ran without the transform")
+        if any(not r.get("unmarked_observation_sha256") for r in results):
+            raise ValueError(f"{trial_id}: D2_DATAMARKING tool result was never marked")
+    else:
+        marked = any(
+            "unmarked_observation_sha256" in r
+            or DATAMARK_MARKER in json.dumps(r.get("observation"), ensure_ascii=False)
+            for r in results
+        )
+        if "d2_datamarking" in versions or marked:
+            raise ValueError(f"{trial_id}: {configuration} delivered datamarked content")
 
 
 def _check_no_repeated_dispatch(events: list[Mapping[str, Any]]) -> None:

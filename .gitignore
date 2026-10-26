@@ -29,6 +29,3 @@ htmlcov/
 
 # Local agent skills / tooling (not project code)
 skills/
-
-# Local multi-agent orchestration packs (not slice deliverables)
-state/

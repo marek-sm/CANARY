@@ -140,17 +140,17 @@ def test_trial_directory_containment_holds_on_its_own(tmp_path):
     assert sorted(p.name for p in outside.iterdir()) == ["keep.txt"]
 
 
-def test_execute_trial_runs_d1_configuration_on_text_only_path(tmp_path):
+def test_execute_trial_rejects_an_unwired_configuration_itself(tmp_path):
     trial = dataclasses.replace(
         sched.generate_schedule(_spec())[0], configuration="D1_POLICY_GATE"
     )
     base, template = execute._load_base({}, execute.DEFAULT_CORPUS_ROOT, "dev-001")
-    execute.execute_trial(
-        tmp_path / "trial", trial, base, template, ["CANARY-a", "CANARY-b"], FIXED_CLOCK,
-        provider_factory=execute._default_provider_factory, code_commit_value=COMMIT,
-    )
-    (result,) = read_jsonl(tmp_path / "trial" / execute.RESULTS_FILE, "result")
-    assert result["configuration"] == "D1_POLICY_GATE"
+    with pytest.raises(ValueError):
+        execute.execute_trial(
+            tmp_path / "trial", trial, base, template, ["CANARY-a", "CANARY-b"], FIXED_CLOCK,
+            provider_factory=execute._default_provider_factory, code_commit_value=COMMIT,
+        )
+    assert not (tmp_path / "trial").exists()
 
 
 # --- 2. resume from the last durable event --------------------------------
@@ -468,6 +468,42 @@ def test_resume_refuses_a_trace_that_belongs_to_another_trial(tmp_path, override
     assert (out / execute.trial_slug(trial) / EVENTS_FILE).read_bytes() == before
 
 
+@pytest.mark.parametrize(
+    "override", [{"experiment_id": "exp-other"}, {"model_id": "other-model"}, {"seed": "other-seed"}]
+)
+def test_resume_refuses_a_committed_result_that_belongs_to_another_trial(tmp_path, override):
+    out = tmp_path / "run"
+    (trial,) = _run(out, _spec(**ONE_CELL))
+    before = (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes()
+    (other,) = sched.generate_schedule(_spec(**ONE_CELL, **override))
+    assert execute.trial_slug(other) == execute.trial_slug(trial)  # same directory
+    calls = []
+    with pytest.raises(ValueError):
+        execute.run_schedule(  # no spec, so only the result identity can catch it
+            out,
+            [other],
+            clock=FIXED_CLOCK,
+            canary_factory=_canaries(),
+            code_commit_value=COMMIT,
+            provider_factory=_mock_factory(calls=calls),
+            resume=True,
+        )
+    assert calls == []
+    assert (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes() == before
+
+
+def test_resume_refuses_a_committed_result_with_another_canary_pair(tmp_path):
+    spec = _spec(**ONE_CELL)
+    out = tmp_path / "run"
+    (trial,) = _run(out, spec)
+    before = (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes()
+    (out / execute.CANARIES_FILE).unlink()  # the resumed run mints a new pair
+    fresh = iter(["e5e5e5e5", "f6f6f6f6"])
+    with pytest.raises(ValueError):
+        _run(out, spec, canary_factory=lambda: next(fresh), resume=True)
+    assert (out / execute.trial_slug(trial) / RESULTS_FILE).read_bytes() == before
+
+
 def test_resume_without_the_tool_seam_fails_closed_over_stored_tool_calls(tmp_path):
     spec = _spec(**ONE_CELL)
     out = tmp_path / "run"
@@ -504,16 +540,15 @@ def test_resume_refuses_a_symlinked_file_inside_the_trial(tmp_path):
     assert outside.read_bytes().endswith(b'{"torn')  # never truncated through the link
 
 
-# --- 3. defense configurations run on the text-only path (W7-T3) ----------
+# --- 3. an unwired defense configuration fails closed ---------------------
 
 
 @pytest.mark.parametrize("configuration", ["D1_POLICY_GATE", "D2_DATAMARKING"])
-def test_defense_configurations_execute_before_tool_dispatch_is_wired(tmp_path, configuration):
+def test_unwired_defense_configuration_is_rejected_before_any_trial(tmp_path, configuration):
     out = tmp_path / "run"
-    schedule = _run(out, _spec(configurations=["D0_BASELINE", configuration]))
-    configs = {read_jsonl(out / execute.trial_slug(t) / execute.RESULTS_FILE, "result")[0]["configuration"]
-               for t in schedule}
-    assert configuration in configs
+    with pytest.raises(ValueError):
+        _run(out, _spec(configurations=["D0_BASELINE", configuration]))
+    assert not out.exists()
 
 
 # --- 4. tool-request evidence survives a missing task policy --------------
