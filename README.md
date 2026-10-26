@@ -101,6 +101,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0020-request-level-formula.md`](docs/decisions/0020-request-level-formula.md) | Why `SPEC.md` Section 7's `unauthorized_action_dispatched` and `unauthorized_action_effect` no longer name `request_evaluable`, so a dispatched request whose audit didn't complete gives null, as the scorer already does |
 | [`docs/decisions/0021-two-week-shift.md`](docs/decisions/0021-two-week-shift.md) | Why every lattice week from W7 on moves two working weeks later, once, with Gate 3 on November 11, the data cutoff November 22, and the release freeze December 6, and the 48-hour turnaround rule it sets for every owner |
 | [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
+| [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -134,3 +135,9 @@ email sink. Outputs go to a fresh temporary directory. These are excluded
 engineering checks; they do not count as the Week 7 paid development grid or
 coverage smokes. See the [W6-T1 handoff](docs/W6_T1_HANDOFF.md) for the registry,
 tool boundaries, utility evidence, and independent-review requirements.
+
+### W6-T2 development corpus check
+
+`uv run make corpus-check` re-renders every development base and fails if a
+committed fixture or hash drifted, then checks the candidate ledger against the
+development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).

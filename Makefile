@@ -17,6 +17,14 @@ demo-example:
 demo-example-check:
 	python -m demo.accessibility --check
 
+.PHONY: corpus-fixtures corpus-check
+corpus-fixtures:
+	python -m corpus.render_fixtures
+
+corpus-check:
+	python -m corpus.render_fixtures --check
+	python -m corpus.intake
+
 .PHONY: t1-smoke t1-suite
 t1-smoke:
 	python -m runner.ticket_slice
