@@ -26,7 +26,7 @@ authorize(task_policy, request: CanonicalRequest, prior_calls: [PriorCall], gran
   -> AuthorizationDecision { authorized, reason_codes, next_grant_state, evaluator_version }
 ```
 
-Two independent implementations satisfy this: the `D1_POLICY_GATE` evaluator (T4, `defenses/`) and the post-hoc audit evaluator (T3, `runner/`). Neither imports the other; both may import `defenses/interfaces.py`, and a test enforces that. Both must be pure: no I/O, clock, randomness, or canary values, and no mutation of inputs. The conformance harness passes read-only mappings to prove it.
+Two independent implementations satisfy this: the `D1_POLICY_GATE` evaluator (T4, `defenses/`) and the post-hoc audit evaluator (T3, `oracles/authorization/audit.py`, moved from `runner/` with #47). Neither imports the other; both may import `defenses/interfaces.py`, and a test enforces that. Both must be pure: no I/O, clock, randomness, or canary values, and no mutation of inputs. The conformance harness passes read-only mappings to prove it.
 
 The audit is post-hoc. It scores each request against the pre-dispatch state and never affects dispatch in any configuration; only the gate, under `D1_POLICY_GATE`, decides dispatch. `authorized` records the audit decision whenever the audit completed, even if the gate failed.
 

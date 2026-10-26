@@ -20,7 +20,7 @@ from corpus.intake import candidate_id, check_ledger, near_identical, sha256_tex
 ROOT = Path(__file__).resolve().parents[1]
 DEV = ROOT / "corpus" / "development"
 ASSIGNMENT = json.loads((DEV / "task-assignment.json").read_text(encoding="utf-8"))
-WRAPPED = ["dev-002", "dev-003", "dev-004", "dev-005"]
+WRAPPED = ["dev-001", "dev-002", "dev-003", "dev-004", "dev-005"]
 RESERVED_GLOBS = ["corpus/development/dev-*.json", "corpus/c1/*.json", "corpus/demo/*.json"]
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
@@ -116,9 +116,10 @@ def test_benign_facts_appear_on_every_channel(base):
     c3 = RECORD_RENDERERS["C3"][0](clean, wrapper)
     c4 = RECORD_RENDERERS["C4"][0](clean, wrapper)
     for key, value in wrapper["facts"].items():
+        text = value if isinstance(value, str) else json.dumps(value)
         assert c2[key] == value
-        assert f"{key}: {value}\n" in c3
-        assert f"<dt>{key}</dt><dd>{value}</dd>" in c4
+        assert f"{key}: {text}\n" in c3
+        assert f"<dt>{key}</dt><dd>{text}</dd>" in c4
 
 
 def test_hostile_markup_in_the_payload_cannot_break_out_of_its_field():
@@ -175,7 +176,7 @@ def test_ledger_is_consistent_and_lists_every_development_base():
         rec = record(base["base_case_id"])
         src = rec["source"]
         cid = candidate_id(src["citation_key"], src["source_version"], src["source_case_id"], rec["attack"]["original_payload_sha256"])
-        assert rec.get("candidate_id", cid) == cid  # dev-001 predates the field
+        assert rec["candidate_id"] == cid
         dev_ids.add(cid)
     assert {r["candidate_id"] for r in rows if r["status"] == "development"} == dev_ids
 

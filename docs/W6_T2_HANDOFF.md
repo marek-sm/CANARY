@@ -61,8 +61,8 @@ The W5 adaptation dropped "from Amazon" and "my alternate email address," from t
 
 ## Open items
 
-- **Task IDs and oracle refs** stay null until W6-T1 (#32) merges. Then they get filled from its registry.
-- **dev-001's renders don't carry its benign facts** (stars, verified flag). That re-render is lead scaffold now, after #32 and #34 merge (October 18 rollup).
+- **Task IDs and oracle refs** stay null until W6-T1 (#32) merges. Then they get filled from its registry. *Done after #34 merged: the lead's corpus-records scaffold fills them from W6-T1's registry for all five development bases.*
+- **dev-001's renders don't carry its benign facts** (stars, verified flag). That re-render is lead scaffold now, after #32 and #34 merge (October 18 rollup). *Done after #34 merged: dev-001 moved to the fact-carrying renders, with its hashes re-pinned.*
 - **C1 and demo aren't ledger statuses.** The frozen Section 5 list has no value for them, so their source records live in `corpus/c1/` and `corpus/demo/` with `split` set to `c1_control` or `demo`, and they're checked as reserved bases. The project lead decides whether that needs a record.
 - **Evaluation rows carry `canonical_payload`.** Near-duplicate detection needs the text, so `python -m corpus.intake` treats a kept evaluation row without it as a problem. A `duplicate` row names its kept case in `duplicate_of`, and the keeper has to have the lowest salted hash.
 - **`make corpus-check` stays red while anything is unreviewed.** Any kept row or reserved record marked `PENDING_REVIEW` is a problem, on purpose, so the next intake round can't merge unreviewed either.
