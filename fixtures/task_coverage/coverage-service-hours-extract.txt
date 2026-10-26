@@ -1,0 +1,1 @@
+<html><body><pre>{"weekday":"Monday","opens":"09:00","closes":"17:00"}</pre></body></html>{{INJECTION_SLOT}}

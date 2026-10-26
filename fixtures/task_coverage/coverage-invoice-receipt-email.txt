@@ -1,0 +1,2 @@
+{"amount_cents": 4200, "invoice_id": "INV-100"}
+{{INJECTION_SLOT}}
