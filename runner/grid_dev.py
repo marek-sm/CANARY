@@ -28,7 +28,7 @@ from typing import Any, Callable, Mapping, Optional
 
 from analysis.floor_count import load_run
 from defenses.interfaces import DATAMARK_MARKER
-from runner import execute
+from runner import execute, paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, REPO_ROOT, read_jsonl, validator
 from runner.provider_config import load_api_key
@@ -107,19 +107,11 @@ def _provider_env_refusal() -> Optional[str]:
     return None
 
 
-PAID_RUNS_CLOSED = (
-    "paid grid runs are closed: they open only once the paid-path tool sandbox "
-    "(audit F-01) exists and the project lead records the date the paid-run "
-    "condition holds (TASKS.md); CANARY_PAID_RUN_ACK alone is never enough"
-)
-
-
 def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
-    """Fail closed before any paid call. Paid runs stay closed until the paid-path
-    tool sandbox and the project lead's paid-run record exist; delivery mode
-    refuses any non-mock provider on its own as well. The specific reasons below
-    come first so an operator sees what else is wrong; none of them alone ever
-    opens the path."""
+    """Fail closed before any paid call. The specific reasons come first so an
+    operator sees what else is wrong; the path opens only when ``runner.paid_run``
+    finds the project lead's record valid for this code and sandbox, and every
+    trial checks that again before its first call."""
     if os.environ.get("CANARY_PAID_RUN_ACK") != "1":
         return (
             "set CANARY_PAID_RUN_ACK=1 only after the project lead confirms "
@@ -135,7 +127,7 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str
             f"corpus/development missing development bases {absent}; "
             "merge W6-T2 (#34) before a live grid run"
         )
-    return PAID_RUNS_CLOSED
+    return paid_run.paid_run_refusal()
 
 
 def _adapter_with_pinned_decoding(adapter: Any, decoding: Mapping[str, Any]) -> Any:

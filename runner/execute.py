@@ -46,8 +46,9 @@ on, the cell body is ``runner.delivery``'s instead of the text-only one. The
 user turn carries only the trusted task prompt; each channel's untrusted content
 reaches the model only in the result of the tool call that retrieved it; every
 configuration in the grid runs, D1_POLICY_GATE deciding before dispatch and
-D2_DATAMARKING marking the delivered content; and only the mock provider is
-accepted until the paid-path tool sandbox exists.
+D2_DATAMARKING marking the delivered content; every tool process runs in the
+tool sandbox, and a non-mock provider runs only through delivery and only with
+a valid paid-run record (``runner.paid_run``, decision 0023).
 
 Usage: python -m runner.execute [--out DIR] [--resume] [--spec SPEC.json] [--delivery]
 """
@@ -72,6 +73,7 @@ from defenses.interfaces import (
 )
 from oracles.authorization.audit import AUDIT_EVALUATOR_VERSION, AuditAuthorizer
 from oracles.utility import task_suite as task_utility
+from runner import paid_run
 from runner import delivery as tool_delivery
 from tasks import registry
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
@@ -782,14 +784,15 @@ def _run_delivery_loop(
 ) -> Any:
     """One delivery cell: its tool state, the fixture service, gated dispatch."""
     state = tool_delivery.create_state(_inside(trial_dir, trial_dir / ENV_DIR / "state"), fresh=fresh)
-    with registry.fixture_service(fixture_root) as port:
+    socket_dir = _inside(trial_dir, trial_dir / ENV_DIR / "sock")
+    with registry.fixture_service(fixture_root, socket_dir) as endpoint:
         tools = tool_delivery.TrialTools(
             configuration=trial.configuration,
             policy=case.policy,
             grant_state=registry.grants(case.template, trial.channel),
             root=fixture_root,
             state=state,
-            port=port,
+            endpoint=endpoint,
             log=log.append,
             sync_sink=sink.sync,
             stored=replay.tool_events,
@@ -851,8 +854,10 @@ def execute_trial(
     different trial, stops the run before anything is written for this trial.
 
     With ``delivery`` the cell body is tool-result delivery (``runner.delivery``):
-    every grid configuration runs, and only the mock provider is accepted, because
-    tools still run as host subprocesses until the paid-path sandbox exists.
+    every grid configuration runs, and every tool process runs in the sandbox
+    (``tools.sandbox``). A non-mock provider is accepted only through delivery and
+    only when ``runner.paid_run`` finds the project lead's paid-run record valid
+    for this code and sandbox (decision 0023).
     """
     if trial.configuration not in supported_configurations(delivery):
         raise ValueError(f"{trial.configuration} is not wired into this runner")
@@ -862,8 +867,12 @@ def execute_trial(
     events_path = trial_dir / EVENTS_FILE
     _check_trace_identity(_durable_events(events_path, truncate=False), trial)
     provider = provider_factory(trial, canaries)
-    if delivery and not isinstance(provider, MockProvider):
-        raise ValueError("tool-result delivery runs only on the mock provider until the paid-path tool sandbox exists")
+    if paid_run.is_paid(provider):
+        if not delivery:
+            raise paid_run.PaidRunRefused(
+                "paid calls run only through tool-result delivery; the text-only body measures direct injection"
+            )
+        paid_run.require_paid_run(provider)
     versions = component_versions(provider)
     if delivery:
         versions.update(tool_delivery.component_versions(trial.configuration))

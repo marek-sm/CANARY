@@ -216,7 +216,8 @@ def test_worker_and_fixture_service_never_inherit_credentials(tmp_path, monkeypa
     real_run, real_popen = subprocess.run, subprocess.Popen
     environments = []
     def inspect_run(*args, **kwargs):
-        assert kwargs["env"] in ({"PATH": os.defpath}, {"PATH": os.defpath, "LANG":"C.UTF-8"})
+        env = kwargs["env"]
+        assert env.get("PATH") == os.defpath and set(env) <= {"PATH", "LANG", "TMPDIR"}
         assert not kwargs.get("shell", False)
         return real_run(*args, **kwargs)
     def inspect_popen(*args, **kwargs):

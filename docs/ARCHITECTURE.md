@@ -26,7 +26,7 @@ The diagram shows possible integration points, not defense composition. Fall con
 | Untrusted model-visible data | C2 tool/database text, C3 local document body, C4 local fixture-page text | Data only; never authority |
 | Untrusted model output | Final text and proposed tool calls | Parsed and recorded; never trusted merely because it is well formed |
 | Enforcement boundary | Canonicalizer, D1_POLICY_GATE evaluator, atomic grant/call-state transition, dispatcher | Authorization occurs on the exact object that may be dispatched |
-| Intrinsically safe effect plane | Fictional filesystem, SQLite fixture, local page server, per-trial local fake email sink | Cannot cause an external real-world effect even under D0_BASELINE |
+| Intrinsically safe effect plane | Fictional filesystem, SQLite fixture, local page server on a per-trial Unix socket, per-trial local fake email sink, all reached only by sandboxed tool processes | Cannot cause an external real-world effect even under D0_BASELINE |
 | Evidence plane | Append-only attempts, events, raw references, results, manifests, sanitized release | Claim-bearing data is immutable and reproducible |
 
 ## Components
@@ -51,8 +51,10 @@ D2_DATAMARKING transforms every untrusted span and adds the frozen instruction t
 
 - `read_file`: normalized path beneath a temporary fixture root; rejects absolute paths, traversal, and symlink escape.
 - `query_db`: registered read-only query identifiers and parameters; rejects mutation, attachment, extension loading, and free-form statements.
-- `fetch_url`: exact loopback fixture origin and path; rejects alternate hosts, redirects, encoded-host tricks, and arbitrary network access.
+- `fetch_url`: exact logical `.fixture.test` URL from the trusted routing table, served by the trial's private fixture service on its Unix socket; rejects alternate hosts, redirects, encoded-host tricks, and every network route.
 - `send_email`: accepts schema-valid arguments and writes only to a per-trial local fake sink with no network or socket access; the runner durably persists the receipt event. Recipient, subject, body, call-count, and high-risk-grant authorization belong to the D1_POLICY_GATE gate and independent auditor, not the intrinsic tool boundary.
+
+Every tool process, and the fixture service, runs in the tool sandbox, [`tools/sandbox.py`](../tools/sandbox.py) ([decision 0023](decisions/0023-tool-sandbox.md)), under every configuration and in mock runs and CI. It denies by default (`sandbox-exec` on macOS, `bwrap` on Linux, and a refusal anywhere else or as root) and allows only running the interpreter, reading the interpreter, `tools/`, the system libraries, and the trial's fixture root, writing only the process's own directory (the trial's tool state or fixture-socket directory), and reaching only the trial's `fixture.sock` by path. Tools have no TCP or UDP route at all, get only `PATH`, `LANG`, and `TMPDIR`, and never receive a provider variable. Because each tool writes only its own directory, the trial's `events.jsonl`, `results.jsonl`, sink mirror, and the repository are unwritable by tools.
 
 The W6-T1 [local tool interfaces](INTERFACES.md#w6-t1-local-implementation)
 describe fixture routing, isolated workers, and the per-trial receipt log.
@@ -80,3 +82,5 @@ Analysis operates only on validated records under `protocol/active.json`. It imp
 ## Change rule
 
 An architectural explanation may change freely while accurate. A change to a trust boundary, defense layer, event meaning, tool capability, or evidence flow is a scientific change governed by `SPEC.md` Section 11, not a documentation-only edit.
+
+**Changed October 28 by [decision 0023](decisions/0023-tool-sandbox.md):** under this rule, the tool sandbox's tightening of the tool trust boundary, which moves fixture pages from loopback TCP to a per-trial Unix socket and puts every tool process in a deny-by-default sandbox, was handled through that decision record before the Gate 3 freeze rather than as a documentation edit. It enforces `SPEC.md` Section 3's existing tool containment and changes no pinned text, tool description, tool schema, or fixture hash.

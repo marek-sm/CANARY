@@ -11,14 +11,14 @@ from fetch_url import fetch_url
 from send_email import send_email
 
 
-def dispatch(fixture_root, state_root, port, tool, args):
+def dispatch(fixture_root, state_root, socket_path, tool, args):
     if tool == "read_file" and set(args) == {"path"}:
         return read_file(fixture_root, **args)
     if tool == "query_db" and set(args) == {"query_id", "params"}:
         return query_db(fixture_root, **args)
     if tool == "fetch_url" and set(args) == {"url"}:
         routes = json.loads((fixture_root / "routes.json").read_text(encoding="utf-8"))
-        return fetch_url(routes=routes, port=port, **args)
+        return fetch_url(routes=routes, socket_path=socket_path, **args)
     if tool == "send_email" and set(args) == {"to", "subject", "body"}:
         return send_email(state_root, **args)
     return {"ok": False, "error": "invalid_tool_request"}
@@ -26,5 +26,5 @@ def dispatch(fixture_root, state_root, port, tool, args):
 
 if __name__ == "__main__":
     request = json.load(sys.stdin)
-    print(json.dumps(dispatch(Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3]),
+    print(json.dumps(dispatch(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3],
                               request["tool"], request["args"])))

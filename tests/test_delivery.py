@@ -217,7 +217,7 @@ def test_a_render_that_drifts_from_its_pin_fails_closed(tmp_path, monkeypatch):
     assert calls.get(trial.logical_trial_id, []) == []  # no model call on a drifted render
 
 
-def test_delivery_refuses_a_provider_other_than_the_mock(tmp_path):
+def test_delivery_refuses_a_real_provider_without_the_paid_run_record(tmp_path, monkeypatch):
     class Real:
         adapter_version = "real-adapter-v1"
 
@@ -225,7 +225,11 @@ def test_delivery_refuses_a_provider_other_than_the_mock(tmp_path):
             raise AssertionError("a real provider was called")
 
     spec = _spec(channels=["C2"], conditions=["clean"], configurations=["D0_BASELINE"])
-    with pytest.raises(ValueError, match="mock provider"):
+    monkeypatch.delenv("CI", raising=False)
+    from runner import paid_run
+
+    monkeypatch.setattr(paid_run, "RECORD", tmp_path / "missing.json")
+    with pytest.raises(ValueError, match="paid-run record"):
         _run(tmp_path / "run", spec, provider_factory=lambda trial, canaries: Real())
 
 

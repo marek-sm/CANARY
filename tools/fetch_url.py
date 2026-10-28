@@ -1,27 +1,36 @@
-"""Exact fixture URL routing to a trusted loopback service; no DNS or redirects."""
+"""Exact fixture URL routing to the trial's fixture service; no DNS, network, or redirects.
+
+The service listens on a Unix socket in the trial's socket directory (decision
+0023), so this tool needs no network route at all: the sandbox denies every
+TCP and UDP connection and allows only that socket path.
+"""
 from __future__ import annotations
 
 from http.client import HTTPConnection, HTTPException
 import socket
 from urllib.parse import urlsplit
 
-VERSION = "fetch-url-v0.1.0"
+VERSION = "fetch-url-v0.2.0"
 MAX_BYTES = 65536
 
 
-class LoopbackConnection(HTTPConnection):
-    """Connect a numeric IPv4 socket directly; do not consult DNS or proxies."""
+class FixtureSocketConnection(HTTPConnection):
+    """Connect to the fixture service's Unix socket; never DNS, a proxy, or TCP."""
+    def __init__(self, socket_path: str, timeout: float):
+        super().__init__("fixture.test", timeout=timeout)
+        self.socket_path = socket_path
+
     def connect(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         try:
             self.sock.settimeout(self.timeout)
-            self.sock.connect(("127.0.0.1", self.port))
+            self.sock.connect(self.socket_path)
         except OSError:
             self.sock.close()
             raise
 
 
-def fetch_url(url: str, routes: dict[str, str], port: int) -> dict:
+def fetch_url(url: str, routes: dict[str, str], socket_path: str) -> dict:
     # Membership is on the complete URL, including origin, path and query.
     if not isinstance(url, str) or url not in routes:
         return {"ok": False, "error": "url_outside_fixture_allowlist"}
@@ -34,9 +43,9 @@ def fetch_url(url: str, routes: dict[str, str], port: int) -> dict:
         valid = False
     if not valid:
         return {"ok": False, "error": "invalid_fixture_url"}
-    if type(port) is not int or not 1 <= port <= 65535:
+    if type(socket_path) is not str or not socket_path or "\x00" in socket_path:
         return {"ok": False, "error": "fixture_service_unavailable"}
-    connection = LoopbackConnection("127.0.0.1", port, timeout=3)
+    connection = FixtureSocketConnection(socket_path, timeout=3)
     try:
         connection.request("GET", routes[url], headers={"Host": parsed.hostname})
         response = connection.getresponse()

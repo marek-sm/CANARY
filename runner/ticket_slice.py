@@ -13,6 +13,8 @@ from oracles.utility.ticket import validate, VERSION as UTILITY_VERSION
 from tasks import ticket
 from runner import mock_slice as base
 from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
+from runner import paid_run
+from tools import sandbox
 
 VERSION = "ticket-runner-v0.2.0"
 # Present only in real-provider responses (agent/anthropic_adapter.py, agent/openai_adapter.py); the mock has none.
@@ -42,10 +44,12 @@ class TicketProvider(MockProvider):
 
 
 def worker(root, request):
+    """The read tool, sandboxed (decision 0023): it reads only ``root`` and writes nothing."""
+    argv = [sys.executable, "-I", str(ticket.ROOT / "tools/read_file.py"), str(root)]
     completed = subprocess.run(
-        [sys.executable, "-I", str(ticket.ROOT / "tools/read_file.py"), str(root)],
+        sandbox.wrap(argv, cwd=root, read=[root]), cwd=root,
         input=json.dumps(dict(request.normalized_args)), capture_output=True, text=True,
-        env={"PATH": os.defpath, "LANG": "C.UTF-8"}, timeout=5, check=True,
+        env=sandbox.environment(), timeout=5, check=True,
     )
     return json.loads(completed.stdout)
 
@@ -85,14 +89,16 @@ def assemble(events, analysis_role="excluded_mock"):
 
 
 def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING, experiment_id=base.EXPERIMENT_ID,
-        analysis_role="excluded_mock"):
-    out.mkdir(parents=True, exist_ok=False)
+        analysis_role="excluded_mock", live_smoke=False):
     provider = provider or TicketProvider()
+    # Any real provider passes the paid-run gate first; the live smoke is its one exception (decision 0023).
+    paid_run.require_paid_run(provider, live_smoke=live_smoke)
+    out.mkdir(parents=True, exist_ok=False)
     fixture = ticket.reset(out / "fixtures")
     manifest = ticket.manifest()
     base.validator("policy").validate(manifest["policy"])
     trial = f"{experiment_id}:unfrozen:{model}:{ticket.TASK_ID}:none:none:D0_BASELINE:r1"
-    log = base.EventLog(out / base.EVENTS_FILE, base.utc_now, logical_trial_id=trial, experiment_id=experiment_id, component_versions={**base.COMPONENT_VERSIONS, "provider_adapter": getattr(provider, "adapter_version", PROVIDER_ADAPTER_VERSION), "runner": VERSION, "read_file": "read-file-v0.1.0", "utility": str(UTILITY_VERSION)})
+    log = base.EventLog(out / base.EVENTS_FILE, base.utc_now, logical_trial_id=trial, experiment_id=experiment_id, component_versions={**base.COMPONENT_VERSIONS, "provider_adapter": getattr(provider, "adapter_version", PROVIDER_ADAPTER_VERSION), "runner": VERSION, "read_file": "read-file-v0.1.0", "utility": str(UTILITY_VERSION), "tool_sandbox": sandbox.describe()})
     messages = [{"role": "system", "content": ticket.SYSTEM_PROMPT}, {"role": "user", "content": ticket.TASK_PROMPT}]
     log.append("trial_started", {"task_prompt": ticket.TASK_PROMPT, "prompt_sha256": base.sha256_json(messages),
                "model_requested": model, "decoding": dict(decoding), "max_steps": manifest["max_steps"],

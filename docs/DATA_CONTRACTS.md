@@ -12,6 +12,7 @@ This is a readable index, not a duplicate schema. `SPEC.md` Section 8 owns field
 | `result.schema.json` | One logical empirical trial and derived endpoints | Exact schedule keys, requested/resolved model, canaries or references, Boolean-or-null facts, utility, infrastructure status, attempts |
 | `engineering_validation.schema.json` | One frozen `ENGINEERING` check | Validation ID, check ID, deterministic evidence, Boolean-or-null `passed`, failure/indeterminate reasons, versions and hashes; no empirical model estimate |
 | `active_protocol.schema.json` | Machine-readable active tier | Active-contributor count, exact tier, ordered cases, channels, conditions, configurations, repeats, counts, seeds, hashes, cutoffs, model or null-with-reason fields |
+| `paid_run_record.schema.json` | The project lead's dated paid-run record ([decision 0023](decisions/0023-tool-sandbox.md)) | Recorder, commit, tool sandbox, each paid-run condition's evidence, and the SHA-256 of every hashed file; `runner.paid_run` refuses any paid call that doesn't match it |
 | `manifest.schema.json` | Raw, sanitized, validation, report, or release bundle | File paths, sizes, hashes, producing commit/configuration, bundle type, sanitizer version |
 
 Names may change before the first schema commit, but the families and semantics may not disappear. Once referenced by frozen data, filenames and schema IDs are versioned rather than silently repurposed.

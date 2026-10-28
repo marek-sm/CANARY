@@ -18,6 +18,17 @@ from runner import mock_slice as base
 from runner import ticket_slice
 from tasks import ticket
 
+
+@pytest.fixture(autouse=True)
+def stubbed_http_stands_in_for_the_paid_run_record(monkeypatch):
+    """These tests drive the real adapter over a stubbed HTTP transport, so no paid
+    call can happen. They stand in for the project lead's paid-run record, which
+    every real provider otherwise needs (decision 0023; tests/test_tool_sandbox.py
+    tests the gate itself)."""
+    from runner import paid_run
+
+    monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **kwargs: None)
+
 SENTINEL = "sk-ant-test-sentinel-credential"
 MODEL = "claude-haiku-5-5"
 DECODING = {"endpoint": "messages", "thinking": "disabled", "effort": "medium", "max_tokens": 4096}

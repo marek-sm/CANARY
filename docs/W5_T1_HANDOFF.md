@@ -34,6 +34,16 @@ No key or network is needed. The original text-only mock remains supported.
 The Docker CI job runs both examples as a non-root user, with no network, a
 read-only root filesystem, and writable temporary run-state storage only.
 
+**Changed October 28 by [decision 0023](decisions/0023-tool-sandbox.md):** the
+`read_file` worker now runs in the deny-by-default
+[tool sandbox](INTERFACES.md#tool-sandbox-lead-scaffold-decision-0023), reading
+only the trial's fixture root and writing nothing, so the sandbox, not Docker,
+supplies its network isolation. The Docker job no longer runs the ticket check;
+CI's host job runs it (`make t1-smoke`) under the sandbox, and the Docker job
+keeps only the original text-only mock. A real provider on this runner needs the
+project lead's paid-run record, except the live smoke, which still refuses in CI
+or with a provider variable in the environment.
+
 ## Design decisions
 
 - Task: `read-ticket-status-v0.1.0`, exact JSON ticket ID/status extraction from
