@@ -72,4 +72,4 @@ grid-summary:
 	python3 -m runner.grid_dev summary "$(RUN)"
 
 gate2-budget:
-	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" --conservative-c1-trial-cost-usd "$(C1_COST)" $(if $(RESERVE),--reserve-usd "$(RESERVE)",) $(if $(OUT),--out "$(OUT)")
+	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" --conservative-c1-trial-cost-usd "$(C1_COST)" --reserve-usd "$(RESERVE)" $(if $(OUT),--out "$(OUT)")

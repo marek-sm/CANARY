@@ -130,29 +130,9 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str
     return paid_run.paid_run_refusal()
 
 
-def _adapter_with_pinned_decoding(adapter: Any, decoding: Mapping[str, Any]) -> Any:
-    """execute.run_schedule passes mock decoding; live runs pin decision 0010 settings."""
-
-    class _Provider:
-        adapter_version = adapter.adapter_version
-
-        def complete(
-            self,
-            messages: Any,
-            tool_schemas: Any,
-            _decoding: Mapping[str, Any],
-            model_request: Mapping[str, Any],
-        ) -> dict[str, Any]:
-            return adapter.complete(messages, tool_schemas, decoding, model_request)
-
-    return _Provider()
-
-
-def build_live_provider_factory(adapter: Any, decoding: Mapping[str, Any]) -> Callable[..., Any]:
-    provider = _adapter_with_pinned_decoding(adapter, decoding)
-
+def build_live_provider_factory(adapter: Any) -> Callable[..., Any]:
     def factory(_trial: ScheduledTrial, _canaries: list[str]) -> Any:
-        return provider
+        return adapter
 
     return factory
 
@@ -191,15 +171,16 @@ def run_live_grid(
     del key
 
     schedule = validate_grid_spec(spec)
-    factory = build_live_provider_factory(adapter, provider_cfg["decoding"])
+    # Decision 0010's settings are sent with every request and recorded in every trial.
     return execute.run_schedule(
         out_dir,
         schedule,
         corpus_root=root,
         resume=resume,
         spec=dict(spec),
-        provider_factory=factory,
+        provider_factory=build_live_provider_factory(adapter),
         delivery=True,
+        decoding=provider_cfg["decoding"],
     )
 
 
@@ -380,10 +361,14 @@ def usage_by_channel_configuration(trials: list[tuple[Mapping[str, Any], Any]]) 
                 "input_tokens": 0,
                 "output_tokens": 0,
                 "steps_used": 0,
+                "usage_unknown_trials": 0,
             },
         )
         totals["trials"] += 1
         totals["provider_requests"] += int(usage.get("provider_requests") or 0)
+        # A null total is unknown, not zero: count it apart so the sums aren't read as complete.
+        if any(not isinstance(usage.get(k), int) for k in ("input_tokens", "output_tokens")):
+            totals["usage_unknown_trials"] += 1
         totals["input_tokens"] += int(usage.get("input_tokens") or 0)
         totals["output_tokens"] += int(usage.get("output_tokens") or 0)
         ended = next((e for e in events if e["event_type"] == "trial_ended"), None)

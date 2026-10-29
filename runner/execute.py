@@ -642,6 +642,7 @@ def _run_trial_body(
     tool_schemas: Sequence[Mapping[str, Any]],
     delivery: bool = False,
     canaries: Sequence[str] = (),
+    decoding: Mapping[str, Any] = DECODING,
 ) -> None:
     """Start or continue the trial's events up to and including ``trial_ended``."""
     started = _first(stored, "trial_started")
@@ -663,7 +664,7 @@ def _run_trial_body(
             "task_prompt": None if delivery else TASK_PROMPT,
             "prompt_sha256": sha256_json(messages) if messages is not None else None,
             "model_requested": trial.model_id,
-            "decoding": DECODING,
+            "decoding": dict(decoding),
             "max_steps": MAX_STEPS,
             "code_commit": code_commit_value,
             "tier": None,
@@ -699,6 +700,11 @@ def _run_trial_body(
                 "model_resolved": response["model_resolved"],
                 "provider_fingerprint": response["provider_fingerprint"],
                 "raw_response": raw,
+                # The adapter's measurements: results sum usage and latency, and
+                # the Gate 2 budget equation prices each trial from them.
+                "usage": response.get("usage"),
+                "latency_ms": response.get("latency_ms"),
+                "error": response.get("error"),
             },
             model_call_id=model_call_id,
             attempt_id=f"{model_call_id}:a{attempt_index}",
@@ -718,7 +724,7 @@ def _run_trial_body(
             if case is not None:
                 outcome = _run_delivery_loop(
                     log, replay, trial_dir, trial, case, provider, sink, fixture_root, log_attempt,
-                    fresh=started is None,
+                    fresh=started is None, decoding=decoding,
                 )
             else:
                 dispatch = replay.dispatch(dispatch_factory(trial, sink)) if dispatch_factory else None
@@ -726,7 +732,7 @@ def _run_trial_body(
                     replay.provider(provider),
                     messages,
                     tool_schemas=list(tool_schemas),
-                    decoding=DECODING,
+                    decoding=decoding,
                     model_request={"model": trial.model_id},
                     on_attempt=replay.on_attempt(log_attempt),
                     logical_trial_id=trial.logical_trial_id,
@@ -781,6 +787,7 @@ def _run_delivery_loop(
     log_attempt: Callable[[int, int, Mapping[str, Any]], None],
     *,
     fresh: bool,
+    decoding: Mapping[str, Any],
 ) -> Any:
     """One delivery cell: its tool state, the fixture service, gated dispatch."""
     state = tool_delivery.create_state(_inside(trial_dir, trial_dir / ENV_DIR / "state"), fresh=fresh)
@@ -801,7 +808,7 @@ def _run_delivery_loop(
             replay.provider(provider),
             case.messages,
             tool_schemas=registry.TOOL_SCHEMAS,
-            decoding=DECODING,
+            decoding=decoding,
             model_request={"model": trial.model_id},
             on_attempt=replay.on_attempt(log_attempt),
             max_steps=case.template["max_steps"],
@@ -829,6 +836,7 @@ def execute_trial(
     ] = None,
     tool_schemas: Sequence[Mapping[str, Any]] = (),
     delivery: bool = False,
+    decoding: Mapping[str, Any] = DECODING,
 ) -> None:
     """Run one logical trial into ``trial_dir``, or resume it, and commit its result.
 
@@ -909,6 +917,7 @@ def execute_trial(
             tool_schemas=tool_schemas,
             delivery=delivery,
             canaries=canaries,
+            decoding=decoding,
         )
 
     events = read_jsonl(events_path, "event")
@@ -1273,6 +1282,7 @@ def run_schedule(
     ] = None,
     tool_schemas: Sequence[Mapping[str, Any]] = (),
     delivery: bool = False,
+    decoding: Mapping[str, Any] = DECODING,
 ) -> Path:
     """Execute ``schedule`` into ``run_dir``; return it.
 
@@ -1289,7 +1299,9 @@ def run_schedule(
     identical schedule.
 
     With ``delivery`` every cell uses tool-result delivery; the provider defaults
-    to the grid mock and the audit to ``delivery_audit``.
+    to the grid mock and the audit to ``delivery_audit``. ``decoding`` is both
+    sent to the provider and recorded in each ``trial_started`` event, so the
+    record is the setting the cell ran under.
     """
     for trial in schedule:
         validate_trial(trial)
@@ -1352,6 +1364,7 @@ def run_schedule(
                 dispatch_factory=dispatch_factory,
                 tool_schemas=tool_schemas,
                 delivery=delivery,
+                decoding=decoding,
             )
     return run_dir
 
