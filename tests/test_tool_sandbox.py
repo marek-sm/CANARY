@@ -317,3 +317,26 @@ def test_every_runner_path_refuses_a_real_provider_without_the_record(clean_envi
         with pytest.raises(paid_run.PaidRunRefused):
             execute.run_schedule(tmp_path / f"grid-{delivery}", sched.generate_schedule(spec), spec=spec,
                                  delivery=delivery, provider_factory=lambda trial, canaries: RealProvider())
+
+
+def test_tools_launch_from_a_relative_run_directory(tmp_path, monkeypatch):
+    """``--out results/...`` is relative to the operator's directory; each tool runs
+    from its own directory in the sandbox, so its paths must not stay relative."""
+    from runner import execute, grid_dev, ticket_slice
+    from runner.mock_provider import MOCK_MODEL_ID
+
+    spec = json.loads((ROOT / "protocol" / "development_grid_spec.json").read_text(encoding="utf-8"))
+    spec["model_id"] = MOCK_MODEL_ID
+    trial = grid_dev.validate_grid_spec(spec)[0]
+    monkeypatch.chdir(tmp_path)
+    execute.run_schedule(Path("grid"), [trial], corpus_root=execute.DEFAULT_CORPUS_ROOT, spec=spec, delivery=True)
+    events = (Path("grid") / execute.trial_slug(trial) / "events.jsonl").read_text(encoding="utf-8").splitlines()
+    assert json.loads(events[-1])["payload"]["status"] == "completed"
+    tool_results = [json.loads(line)["payload"] for line in events if json.loads(line)["event_type"] == "tool_result"]
+    # A relative path that reached the worker would read as a denial, not a failure.
+    assert tool_results and all(r["observation"].get("ok") is True for r in tool_results)
+
+    ticket_slice.run(Path("ticket"))
+    ticket_events = [json.loads(line) for line in (Path("ticket") / "events.jsonl").read_text(encoding="utf-8").splitlines()]
+    results = [e["payload"] for e in ticket_events if e["event_type"] == "tool_result"]
+    assert results and all(r["observation"].get("ok") is True for r in results)

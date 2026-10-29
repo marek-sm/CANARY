@@ -45,6 +45,7 @@ class TicketProvider(MockProvider):
 
 def worker(root, request):
     """The read tool, sandboxed (decision 0023): it reads only ``root`` and writes nothing."""
+    root = Path(root).resolve()  # the tool runs from ``root``, so the path can't stay relative
     argv = [sys.executable, "-I", str(ticket.ROOT / "tools/read_file.py"), str(root)]
     completed = subprocess.run(
         sandbox.wrap(argv, cwd=root, read=[root]), cwd=root,

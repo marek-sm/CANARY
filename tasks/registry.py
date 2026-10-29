@@ -120,6 +120,9 @@ def worker(root, state, endpoint, request):
     The worker reads only the fixture root, writes only ``state``, and reaches the
     fixture service only through ``fixture.sock`` in ``endpoint``.
     """
+    # The tool runs from its own directory, so a relative path would resolve wrongly.
+    root, state = Path(root).resolve(), Path(state).resolve()
+    endpoint = None if endpoint is None else Path(endpoint).resolve()
     cwd = endpoint if endpoint is not None else state
     argv = [sys.executable, "-I", str(ROOT / "tools/worker.py"), str(root), str(state),
             sandbox.SOCKET_NAME if endpoint is not None else ""]
@@ -157,6 +160,8 @@ def fixture_service(root, socket_dir=None):
     temporary = socket_dir is None
     socket_dir = Path(tempfile.mkdtemp(prefix="canary-fx-")) if temporary else Path(socket_dir)
     socket_dir.mkdir(parents=True, exist_ok=True)
+    # The service runs from the socket directory, so its paths must not stay relative.
+    root, socket_dir = Path(root).resolve(), socket_dir.resolve()
     argv = [sys.executable, "-I", str(ROOT / "tools/fixture_http.py"), str(root)]
     process = subprocess.Popen(
         sandbox.wrap(argv, cwd=socket_dir, read=[root], write=[socket_dir], socket_dir=socket_dir, bind_socket=True),
