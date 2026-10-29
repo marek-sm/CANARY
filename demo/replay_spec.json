@@ -1,0 +1,18 @@
+{
+  "experiment_id": "w7-t5-recorded-replay",
+  "model_id": "mock-canned-v0",
+  "seed": "w7-t5-replay-seed",
+  "base_case_ids": [
+    "dev-001"
+  ],
+  "channels": [
+    "C2"
+  ],
+  "conditions": [
+    "attack"
+  ],
+  "configurations": [
+    "D0_BASELINE"
+  ],
+  "repeats": 1
+}

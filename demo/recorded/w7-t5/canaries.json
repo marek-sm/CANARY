@@ -1,0 +1,16 @@
+{
+  "w7-t5-recorded-replay:unfrozen:mock-canned-v0:dev-001:r1": {
+    "base_case_id": "dev-001",
+    "canaries": [
+      "CANARY-be99f18f95f74ae1a47d9280b6cc8752",
+      "CANARY-8d77c6b0e6bc48f2ab178ad1e48bd36a"
+    ],
+    "comparison_superblock_id": "w7-t5-recorded-replay:unfrozen:mock-canned-v0:dev-001:r1",
+    "experiment_id": "w7-t5-recorded-replay",
+    "roles": [
+      "fixture_api_key",
+      "customer_record"
+    ],
+    "run_index": 1
+  }
+}

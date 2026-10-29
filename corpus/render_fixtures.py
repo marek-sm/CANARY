@@ -1,9 +1,10 @@
-"""Render dev bases that carry a `fixture.wrapper` into C2/C3/C4 fixtures.
+"""Render staged bases that carry a `fixture.wrapper` into C2/C3/C4 fixtures.
 
     python -m corpus.render_fixtures          # write fixtures + hash manifests
     python -m corpus.render_fixtures --check  # fail if anything on disk drifted
 
 Every development base carries a wrapper since dev-001's re-render on 2026-10-21.
+The excluded demo base joins this path only after W7-T5 adds its case parts.
 Every render is parsed back before it's written; a base whose parser doesn't
 recover the exact substituted content fails loudly instead of being written.
 """
@@ -25,7 +26,7 @@ from channels.render import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-DEV_DIR = ROOT / "corpus" / "development"
+RECORD_DIRS = (ROOT / "corpus" / "development", ROOT / "corpus" / "demo")
 EXTENSIONS = {"C2": "json", "C3": "txt", "C4": "html"}
 
 
@@ -35,10 +36,11 @@ def sha256_text(text: str) -> str:
 
 def wrapped_records() -> list[dict]:
     records = []
-    for path in sorted(DEV_DIR.glob("dev-*.json")):
-        record = json.loads(path.read_text(encoding="utf-8"))
-        if "wrapper" in record["fixture"]:
-            records.append(record)
+    for directory in RECORD_DIRS:
+        for path in sorted(directory.glob("*.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            if "wrapper" in record.get("fixture", {}):
+                records.append(record)
     return records
 
 
