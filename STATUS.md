@@ -46,6 +46,14 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Under d
 | T5 — Miles | `W6-T5`: [#28](https://github.com/marek-sm/CANARY/pull/28) merged October 13 | `W7-T5`: no pull request yet; `BLOCKED` on `W6-T2`'s demo case. `W6-T3`'s records are on `main` |
 | Project lead — Marek | Merged #47 (`W6-T3` Part A), #56 (audit C-08), #57 (decision 0020, `SPEC.md` v1.14.0, DEV-0002), #58 (decision 0021, `SPEC.md` v1.15.0), and the `task_order` file with a hash check on the locked schemas. Finished the #34 source review | Still open: tool-result delivery, the corpus-record schemas, and `dev-001`'s re-render, all built and landing after #34; the paid-run condition's date; the Gate 2 step on October 31; the tier, budget, and model decision on November 1; the gap sentence and the license and author order on November 8; and decision 0012's wiring by November 10 |
 
+**October 29 W7-T5 progress note.** The W6-T2 demo source and lead-owned
+tool-result-delivery inputs are now on `main`, so the October 25 T5 blocker above
+is resolved. Miles confirmed two separate no-notes starts of the read-only mock
+replay without provider access. The W7-T5 branch stages the excluded demo case,
+adds a current-schema fallback and plain-language presentation summary, and
+keeps all output explicitly illustrative. The slice awaits pull-request review;
+this note records no empirical result or defense claim.
+
 ## Public decisions, risks, and external asks
 
 1. **Project presentation:** use `CANARY` in all caps and make no uniqueness or novelty claim. Under decisions [0016](docs/decisions/0016-practitioner-relevance.md) and [0017](docs/decisions/0017-applied-purpose.md), CANARY is applied research for teams choosing prompt-injection safeguards. It claims a gap in published work only in a sentence scoped to sources the project lead has opened, now due November 8, and never a market gap.

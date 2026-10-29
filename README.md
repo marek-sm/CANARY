@@ -20,11 +20,16 @@ cd CANARY
 uv sync --locked                     # installs the exact uv.lock versions into .venv, including the dev group
 uv run make test                     # no make: uv run pytest -q
 uv run make trace                    # no make: uv run python -m runner.mock_slice
+uv run make replay                   # no make: uv run python -m demo.replay
 ```
 
 `uv sync --locked` stops with an error instead of re-resolving when `uv.lock` no longer matches `pyproject.toml`. After changing a dependency, run `uv lock` and commit `uv.lock` in the same pull request.
 
 `make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
+
+`make replay` is the immediate read-only fallback. It schema-validates and
+renders the staged W6-T3 mock development record without a key, network access,
+or writes. The trace is explicitly labeled excluded and illustrative.
 
 `make demo-example` regenerates the accessible W6 development-output example
 from the real six-cell mock runner. `make demo-example-check` verifies that the
@@ -102,6 +107,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0021-two-week-shift.md`](docs/decisions/0021-two-week-shift.md) | Why every lattice week from W7 on moves two working weeks later, once, with Gate 3 on November 11, the data cutoff November 22, and the release freeze December 6, and the 48-hour turnaround rule it sets for every owner |
 | [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
+| [`docs/W7_T5_HANDOFF.md`](docs/W7_T5_HANDOFF.md) | Replay fallback, excluded demo staging, operator evidence, and paper-lead notes |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
