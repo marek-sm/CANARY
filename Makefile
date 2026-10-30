@@ -43,3 +43,11 @@ live-smoke:
 .PHONY: floor-count
 floor-count:
 	python -m analysis.floor_count "$(RUN)" $(if $(OUT),--out "$(OUT)")
+
+# Gate 2 step: the binary D1_POLICY_GATE and D2_DATAMARKING readiness checks
+# (SPEC.md Section 12, rule 3) over the same run directory. Reads records and
+# runs the committed defense tests; makes no provider call. CONTEXT and RESERVE
+# are the model's context window and the output/tool-loop reserve, in tokens.
+.PHONY: defense-readiness
+defense-readiness:
+	python -m analysis.defense_readiness "$(RUN)" --context-window "$(CONTEXT)" --output-reserve "$(RESERVE)" $(if $(OUT),--out "$(OUT)")
