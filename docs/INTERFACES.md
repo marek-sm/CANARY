@@ -142,12 +142,17 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
 
 - `wrap(argv, *, cwd, read=(), write=(), socket_dir=None, bind_socket=False)`
   returns the sandboxed argv. It denies by default and allows only running the
-  interpreter; reading the interpreter, its virtual environment, `tools/`, the
-  system libraries, and the `read` paths; writing only the `write` paths; and
-  reaching only `fixture.sock` in `socket_dir`, which the fixture service binds
-  (`bind_socket=True`) and the worker connects to. On macOS it runs
-  `sandbox-exec` with a `(deny default)` profile; on Linux, `bwrap` with every
-  namespace unshared and only the named paths mounted.
+  interpreter; reading the interpreter, `tools/`, the system libraries, and the
+  `read` paths; writing only the `write` paths; and reaching only `fixture.sock`
+  in `socket_dir`, which the fixture service binds (`bind_socket=True`) and the
+  worker connects to. The interpreter is its own files (its binary and the links
+  to it, `pyvenv.cfg`, the standard library, and its installation's shared
+  libraries), never the folders that hold them. On macOS it runs `sandbox-exec`
+  with a `(deny default)` profile; on Linux, `bwrap` with every namespace
+  unshared and only the named paths mounted. On Linux the worker gets
+  `fixture.sock` alone, never its folder, and `wrap` raises `SandboxUnavailable`
+  when any other socket sits in a folder it would mount, root-owned system
+  library folders aside.
 - `environment(write=())` is the only environment a tool process gets: `PATH`,
   `LANG`, and `TMPDIR` set to its first writable directory. No provider variable
   ever enters it.
@@ -166,14 +171,21 @@ provider's first call, in `execute.execute_trial`, `ticket_slice.run`, and
 `ANTHROPIC_*` and `OPENAI_*` variable are absent from the environment, the
 sandbox is available, `protocol/paid_run_record.json` validates against the
 `paid_run_record` schema, the running sandbox equals the record's, no hashed file
-has uncommitted changes, and every hash matches. The hashed files are the
+has uncommitted or untracked changes, and every hash matches. The hashed files are the
 git-tracked files under `agent/`, `channels/`, `defenses/`, `oracles/`,
 `runner/`, `tasks/`, `tools/`, `corpus/`, `fixtures/`, and `schemas/`, plus
 `protocol/development_grid_spec.json` and `uv.lock`, so any change to the code,
 corpus, fixtures, schemas, grid spec, or locked dependencies closes paid runs
 until the project lead records again. The live smoke passes `live_smoke=True`, which
-skips only the record checks. `grid_dev.live_run_refusal` ends with the same
-check. The project lead writes the record from a verified mock grid with:
+skips only the record checks. `grid_dev.live_run_refusal` refuses any corpus
+other than `corpus/development`, then ends with the same check.
+
+Every `execute.run_schedule` invocation appends its code's commit, uncommitted
+hashed paths, digest, and corpus to `code_provenance.jsonl` in the run directory
+as it starts and again as it stops. `build_record` refuses unless every
+invocation of the mock grid ran this checkout's hashed code, clean, through
+tool-result delivery, on `corpus/development`, with each start matched by a stop.
+The project lead writes the record from a verified mock grid with:
 
 ```sh
 python -m runner.paid_run record MOCK_RUN --delivery PR --sandbox PR --request-to-effect PR

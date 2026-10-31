@@ -13,6 +13,8 @@ arbitrary external endpoint (SPEC.md Section 11, Gate 3).
 
 import json
 import os
+import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -63,6 +65,9 @@ attempt("write_tmp", write("/tmp/canary-sandbox-probe"))
 attempt("tcp_loopback", tcp("127.0.0.1", targets["tcp_port"]))
 attempt("tcp_external", tcp("192.0.2.1", 9))  # TEST-NET-1 (RFC 5737): routed nowhere, even unsandboxed
 attempt("foreign_socket", unix(targets["foreign_socket"]))
+attempt("sibling_socket", unix("sibling.sock"))  # a listener beside fixture.sock in the socket directory
+if "planted_socket" in targets:
+    attempt("planted_socket", unix(targets["planted_socket"]))
 # An exec probe counts as allowed if the program ran at all, whatever its exit code.
 attempt("exec_shell", lambda: subprocess.run(["/bin/sh", "-c", "true"], timeout=3, capture_output=True))
 # The exec probes never name a URL: even if a sandbox failed, they reach nothing.
@@ -74,7 +79,8 @@ print(json.dumps(out))
 
 FORBIDDEN = (
     "read_key_file", "read_repository", "write_evidence", "write_repository",
-    "write_tmp", "tcp_loopback", "tcp_external", "foreign_socket", "exec_shell", "exec_curl", "exec_open",
+    "write_tmp", "tcp_loopback", "tcp_external", "foreign_socket", "sibling_socket",
+    "exec_shell", "exec_curl", "exec_open",
 )
 
 
@@ -97,6 +103,9 @@ def trial(tmp_path, monkeypatch):
     own = socket.socket(socket.AF_UNIX)
     own.bind("fixture.sock")
     own.listen(4)
+    sibling = socket.socket(socket.AF_UNIX)
+    sibling.bind("sibling.sock")
+    sibling.listen(4)
     monkeypatch.chdir(outside)
     foreign = socket.socket(socket.AF_UNIX)
     foreign.bind("foreign.sock")
@@ -104,16 +113,16 @@ def trial(tmp_path, monkeypatch):
     tcp = socket.socket()
     tcp.bind(("127.0.0.1", 0))
     tcp.listen(4)
-    listeners += [own, foreign, tcp]
+    listeners += [own, sibling, foreign, tcp]
     yield {
         "fixtures": fixtures, "state": state, "sock": sock, "outside": outside,
-        "tcp_port": tcp.getsockname()[1],
+        "tcp_port": tcp.getsockname()[1], "listeners": listeners,
     }
     for listener in listeners:
         listener.close()
 
 
-def _probe(trial):
+def _probe(trial, **extra):
     targets = {
         "fixture_file": str(trial["fixtures"] / "doc.txt"),
         "state_file": str(trial["state"] / "receipt.txt"),
@@ -126,6 +135,7 @@ def _probe(trial):
         # Relative to the probe's working directory: a Unix socket path must stay
         # under 104 bytes on macOS, or the connect fails for length, not the sandbox.
         "foreign_socket": os.path.relpath(trial["outside"] / "foreign.sock", trial["sock"]),
+        **extra,
     }
     argv = [sys.executable, "-I", "-c", PROBE, json.dumps(targets)]
     completed = subprocess.run(
@@ -147,7 +157,8 @@ def test_a_sandboxed_tool_reaches_only_its_fixtures_state_and_socket(trial):
     # directory may list; it must show nothing but those synthetic parents.
     if result["list_home"] == "allowed":
         home = Path.home()
-        mounts = [*sandbox._interpreter_roots(), str(sandbox.TOOLS)]
+        programs, files, dirs, links = sandbox._interpreter()
+        mounts = [*programs, *files, *dirs, *(link for link, _ in links), str(sandbox.TOOLS)]
         parents = {Path(m).relative_to(home).parts[0] for m in mounts if Path(m).is_relative_to(home)}
         assert set(result["home_listing"]) <= parents, result["home_listing"]
     else:
@@ -205,6 +216,118 @@ def test_every_tool_launch_is_sandboxed(tmp_path, monkeypatch):
     assert len(launches) >= 3  # the reader, the fixture service, and at least one worker call
     for argv in launches:
         assert Path(argv[0]).name == Path(prefix).name, argv[:3]
+
+
+# --- what each platform's rules expose (#64 review) -----------------------------------------------
+
+
+def _linux_mounts(argv):
+    """Each (kind, destination) a bwrap argv mounts or links inside the sandbox."""
+    mounts, i = [], 0
+    while i < len(argv) and argv[i] != "--":
+        if argv[i] in ("--ro-bind", "--ro-bind-try", "--bind", "--symlink"):
+            mounts.append((argv[i], argv[i + 2]))
+            i += 3
+        else:
+            i += 1
+    return mounts
+
+
+def _visible(path, mounts):
+    return any(path == dest or path.startswith(dest.rstrip("/") + "/") for kind, dest in mounts if kind != "--symlink")
+
+
+def _profile_paths(profile, rule):
+    """The (filter, path) pairs one allow rule of a macOS profile names."""
+    line = next(line for line in profile.splitlines() if line.startswith(f"(allow {rule} "))
+    return re.findall(r'\((subpath|literal) "([^"]*)"\)', line)
+
+
+def _allowed(path, filters):
+    return any(path == p or (kind == "subpath" and path.startswith(p.rstrip("/") + "/")) for kind, p in filters)
+
+
+@pytest.fixture
+def system_python(tmp_path, monkeypatch):
+    """A distro interpreter: ``usr/bin/pythonX.Y`` beside other programs, its stdlib in ``usr/lib``."""
+    usr = (tmp_path / "usr").resolve()
+    version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    (usr / "bin").mkdir(parents=True)
+    (usr / "lib" / version).mkdir(parents=True)
+    (usr / "lib" / version / "os.py").write_text("", encoding="utf-8")
+    for name in (version, "curl"):
+        (usr / "bin" / name).write_bytes(b"")
+        (usr / "bin" / name).chmod(0o755)
+    monkeypatch.setattr(sys, "executable", str(usr / "bin" / version))
+    for name in ("prefix", "base_prefix", "exec_prefix", "base_exec_prefix"):
+        monkeypatch.setattr(sys, name, str(usr))
+    return usr
+
+
+def test_a_system_python_exposes_only_the_interpreter_on_linux(system_python):
+    mounts = _linux_mounts(sandbox.linux_argv(read=[], write=[], cwd="/"))
+    version = Path(sys.executable).name
+    assert _visible(sys.executable, mounts)
+    assert _visible(str(system_python / "lib" / version / "os.py"), mounts)
+    for hidden in (system_python, system_python / "bin", system_python / "bin" / "curl"):
+        assert not _visible(str(hidden), mounts), hidden
+
+
+def test_a_system_python_runs_and_reads_only_the_interpreter_on_macos(system_python):
+    profile = sandbox.macos_profile(read=[], write=[], socket=None, bind_socket=False)
+    curl = str(system_python / "bin" / "curl")
+    assert _allowed(sys.executable, _profile_paths(profile, "process-exec"))
+    assert not _allowed(curl, _profile_paths(profile, "process-exec"))
+    assert not _allowed(curl, _profile_paths(profile, "file-read*"))
+
+
+@pytest.fixture
+def linux(monkeypatch):
+    """Generate the bwrap arguments on any platform."""
+    monkeypatch.setattr(sandbox, "mode", lambda: "linux-bwrap")
+
+
+def _plant(directory, monkeypatch, name="planted.sock"):
+    """A foreign listener in ``directory``, bound by a short relative name (macOS caps socket paths)."""
+    monkeypatch.chdir(directory)
+    listener = socket.socket(socket.AF_UNIX)
+    listener.bind(name)
+    listener.listen(1)
+    return listener
+
+
+def test_on_linux_the_worker_mounts_the_fixture_socket_alone(trial, linux):
+    sock = str(trial["sock"].resolve())
+    client = sandbox.wrap(["tool"], cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]],
+                          socket_dir=trial["sock"])
+    mounts = _linux_mounts(client)
+    assert ("--ro-bind", os.path.join(sock, sandbox.SOCKET_NAME)) in mounts
+    assert not _visible(os.path.join(sock, "sibling.sock"), mounts)
+
+
+@pytest.mark.parametrize("where", ["fixtures", "state"])
+def test_on_linux_a_foreign_socket_in_a_mounted_directory_refuses_the_worker(trial, linux, monkeypatch, where):
+    trial["listeners"].append(_plant(trial[where], monkeypatch))
+    with pytest.raises(sandbox.SandboxUnavailable, match="planted.sock"):
+        sandbox.wrap(["tool"], cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]],
+                     socket_dir=trial["sock"])
+
+
+def test_on_linux_a_foreign_socket_beside_the_fixture_socket_refuses_the_service(trial, linux):
+    # The service writes the socket directory, so the trial fixture's sibling.sock is mounted for it.
+    with pytest.raises(sandbox.SandboxUnavailable, match="sibling.sock"):
+        sandbox.wrap(["tool"], cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["sock"]],
+                     socket_dir=trial["sock"], bind_socket=True)
+
+
+def test_a_foreign_listener_inside_the_fixtures_is_never_reached(trial, monkeypatch):
+    trial["listeners"].append(_plant(trial["fixtures"], monkeypatch))
+    planted = os.path.relpath(trial["fixtures"] / "planted.sock", trial["sock"])
+    if sandbox.mode() == "linux-bwrap":
+        with pytest.raises(sandbox.SandboxUnavailable, match="planted.sock"):
+            _probe(trial, planted_socket=planted)
+    else:
+        assert _probe(trial, planted_socket=planted)["planted_socket"].startswith("denied")
 
 
 # --- the paid-run record --------------------------------------------------------------------------
@@ -340,3 +463,87 @@ def test_tools_launch_from_a_relative_run_directory(tmp_path, monkeypatch):
     ticket_events = [json.loads(line) for line in (Path("ticket") / "events.jsonl").read_text(encoding="utf-8").splitlines()]
     results = [e["payload"] for e in ticket_events if e["event_type"] == "tool_result"]
     assert results and all(r["observation"].get("ok") is True for r in results)
+
+
+# --- the mock preflight behind the record (#64 review) --------------------------------------------
+
+
+class Killed(BaseException):
+    """A forced stop; not an Exception, so the runner doesn't catch it."""
+
+
+@pytest.fixture
+def preflight(clean_environment, repo, tmp_path, monkeypatch):
+    """Mock grid cells run from a tiny checkout, so their code provenance is that checkout's."""
+    from runner import execute, grid_dev
+    from runner.mock_provider import MOCK_MODEL_ID
+
+    root, env = repo
+    shutil.copytree(ROOT / "corpus" / "development", root / "corpus" / "development")
+    subprocess.run(["git", "add", "."], cwd=root, check=True, env=env)
+    subprocess.run(["git", "commit", "-qm", "corpus"], cwd=root, check=True, env=env)
+    monkeypatch.setattr(paid_run, "REPO_ROOT", root)
+    monkeypatch.setattr(grid_dev, "verify_grid_run", lambda run, spec: {
+        "complete": True, "experiment_id": spec["experiment_id"], "trials_found": 90})
+    spec = json.loads((ROOT / "protocol" / "development_grid_spec.json").read_text(encoding="utf-8"))
+    spec["model_id"] = MOCK_MODEL_ID
+    trial = grid_dev.validate_grid_spec(spec)[0]
+
+    def run(out, corpus=root / "corpus" / "development", **kwargs):
+        execute.run_schedule(out, [trial], corpus_root=corpus, spec=spec, delivery=True, **kwargs)
+        return out
+
+    def record(out):
+        return paid_run.build_record(out, delivery="#61", sandbox_pr="#64", request_to_effect="#39", root=root)
+
+    return root, env, run, record
+
+
+def test_the_record_refuses_a_preflight_of_code_committed_since(preflight, tmp_path):
+    root, env, run, record = preflight
+    mock = run(tmp_path / "mock")
+    assert record(mock)["code_sha256"] == paid_run.code_hashes(root)
+    (root / "runner" / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
+    subprocess.run(["git", "commit", "-qam", "change"], cwd=root, check=True, env=env)
+    with pytest.raises(paid_run.PaidRunRefused, match="other code"):
+        record(mock)
+
+
+def test_the_record_refuses_a_preflight_run_with_uncommitted_code(preflight, tmp_path):
+    root, _, run, record = preflight
+    extra = root / "runner" / "extra.py"  # untracked, so the committed hashes alone can't see it
+    extra.write_text("VALUE = 3\n", encoding="utf-8")
+    mock = run(tmp_path / "mock")
+    extra.unlink()
+    with pytest.raises(paid_run.PaidRunRefused, match="uncommitted"):
+        record(mock)
+
+
+def test_the_record_refuses_a_preflight_on_another_corpus(preflight, tmp_path):
+    root, _, run, record = preflight
+    other = shutil.copytree(root / "corpus" / "development", tmp_path / "other-corpus")
+    with pytest.raises(paid_run.PaidRunRefused, match="corpus"):
+        record(run(tmp_path / "mock", other))
+
+
+def test_every_invocation_records_its_code_even_when_stopped(preflight, tmp_path):
+    root, _, run, record = preflight
+
+    def stopped(trial, canaries):
+        raise Killed()
+
+    with pytest.raises(Killed):
+        run(tmp_path / "mock", provider_factory=stopped)
+    lines = [json.loads(line) for line in (tmp_path / "mock" / paid_run.PROVENANCE_FILE).read_text().splitlines()]
+    assert [line["phase"] for line in lines] == ["start", "stop"]
+    assert {line["code_digest"] for line in lines} == {paid_run.code_digest(paid_run.code_hashes(root))}
+    assert all(line["dirty_paths"] == [] for line in lines)
+
+
+def test_the_record_refuses_a_preflight_that_stopped_unrecorded(preflight, tmp_path):
+    _, _, run, record = preflight
+    mock = run(tmp_path / "mock")
+    provenance = mock / paid_run.PROVENANCE_FILE
+    provenance.write_text(provenance.read_text().splitlines()[0] + "\n")  # killed before its stop line
+    with pytest.raises(paid_run.PaidRunRefused, match="without recording"):
+        record(mock)

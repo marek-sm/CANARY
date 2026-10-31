@@ -14,6 +14,12 @@ before its first call. It refuses unless all of these hold:
   file under the hashed directories has uncommitted changes, and every such
   file's SHA-256 equals the record's.
 
+The record itself is bound to its preflight: every run writes the code it ran
+to ``code_provenance.jsonl`` when each invocation starts and stops, and
+``build_record`` refuses unless every invocation of the mock grid ran this
+checkout's hashed code, clean, with tool-result delivery, on its committed
+corpus.
+
 The one exception is the project lead's live smoke (``make live-smoke``, TASKS.md
 paid-run condition), which still runs its read tool in the sandbox but needs no
 record. Run paid steps from a clean checkout of the recorded commit, so a later
@@ -48,6 +54,7 @@ HASHED_DIRS = (
     "corpus", "fixtures", "schemas", "protocol/development_grid_spec.json", "uv.lock",
 )
 RECORD_SCHEMA = "paid_run_record"
+PROVENANCE_FILE = "code_provenance.jsonl"
 
 
 class PaidRunRefused(ValueError):
@@ -77,6 +84,22 @@ def code_hashes(root: Path = REPO_ROOT) -> dict[str, str]:
 def dirty_paths(root: Path = REPO_ROOT) -> list[str]:
     status = _git("status", "--porcelain", "--untracked-files=all", "--", *HASHED_DIRS, root=root)
     return [line[3:] for line in status.splitlines() if line.strip()]
+
+
+def code_digest(hashes: dict[str, str]) -> str:
+    return hashlib.sha256(json.dumps(hashes, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def code_provenance(root: Optional[Path] = None) -> dict[str, Any]:
+    """The hashed code a run executes now: its commit, any uncommitted or untracked
+    hashed paths, and the digest of ``code_hashes``. Without git each is null,
+    which ``build_record`` refuses."""
+    root = root or REPO_ROOT
+    try:
+        return {"code_commit": _git("rev-parse", "HEAD", root=root).strip(), "dirty_paths": dirty_paths(root),
+                "code_digest": code_digest(code_hashes(root))}
+    except (OSError, subprocess.CalledProcessError):
+        return {"code_commit": None, "dirty_paths": None, "code_digest": None}
 
 
 def environment_refusal() -> Optional[str]:
@@ -146,6 +169,34 @@ def _mock_run_sandbox(run_dir: Path) -> str:
     return modes.pop()
 
 
+def _check_preflight(mock_run: Path, digest: str, corpus: Path) -> None:
+    """Every invocation of the mock grid ran ``digest``'s code, clean, with delivery, on ``corpus``."""
+    from runner import execute
+
+    try:
+        mode = json.loads((mock_run / execute.MODE_FILE).read_text(encoding="utf-8"))
+        text = (mock_run / PROVENANCE_FILE).read_text(encoding="utf-8")
+        lines = [json.loads(line) for line in text.splitlines() if line.strip()]
+    except (OSError, ValueError) as exc:
+        raise PaidRunRefused(f"the mock grid didn't record the code it ran ({exc}); rerun it with this runner") from exc
+    if mode != {"delivery": True}:
+        raise PaidRunRefused("the mock grid didn't run with tool-result delivery")
+    phases = [line.get("phase") for line in lines]
+    if not phases or phases != ["start", "stop"] * (len(phases) // 2):
+        raise PaidRunRefused("a mock grid invocation ended without recording its code; rerun the mock grid from the start")
+    for line in lines:
+        dirty = line.get("dirty_paths")
+        if dirty != []:
+            raise PaidRunRefused("the mock grid ran with uncommitted changes in recorded code: "
+                                 + (", ".join(dirty[:5]) if dirty else "unknown, without git"))
+        if line.get("code_digest") != digest:
+            raise PaidRunRefused(f"the mock grid ran other code (commit {line.get('code_commit')}) than this "
+                                 "checkout; rerun it here")
+        if line.get("corpus_root") != str(corpus):
+            raise PaidRunRefused(f"the mock grid ran on {line.get('corpus_root')}, not this checkout's "
+                                 "corpus/development")
+
+
 def build_record(mock_run: Path, *, delivery: str, sandbox_pr: str, request_to_effect: str,
                  recorded_by: str = "marek-sm", root: Path = REPO_ROOT) -> dict[str, Any]:
     from runner import grid_dev
@@ -166,6 +217,8 @@ def build_record(mock_run: Path, *, delivery: str, sandbox_pr: str, request_to_e
     dirty = dirty_paths(root)
     if dirty:
         raise PaidRunRefused("commit or discard these changes before recording: " + ", ".join(dirty[:5]))
+    hashes = code_hashes(root)
+    _check_preflight(mock_run, code_digest(hashes), (root / "corpus" / "development").resolve())
     return {
         "schema_version": "1.0.0",
         "recorded_on": date.today().isoformat(),
@@ -183,7 +236,7 @@ def build_record(mock_run: Path, *, delivery: str, sandbox_pr: str, request_to_e
             "request_to_effect": {"merged_in": request_to_effect},
             "tool_sandbox": {"merged_in": sandbox_pr},
         },
-        "code_sha256": code_hashes(root),
+        "code_sha256": hashes,
     }
 
 

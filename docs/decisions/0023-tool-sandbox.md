@@ -2,6 +2,7 @@
 
 - Status: Accepted. Approved by the project lead on 2026-10-28; drafted with AI assistance.
 - Date: 2026-10-28
+- Revised: 2026-10-30, before merge, for #64's review: items 1 and 6 now expose only the interpreter's own files, keep the Linux worker to `fixture.sock`, and bind the record to the mock grid's code.
 - Decision scope: Protocol
 - Secondary scopes: Release, Governance
 - Related specification sections: Sections 3, 9, 11, and 13
@@ -43,13 +44,13 @@ The project lead's Mac has no Docker.
 
 1. **One launcher, `tools/sandbox.py`, wraps every tool process.** That covers the three launch sites: `tasks/registry.py` `worker()` and `fixture_service()`, and `runner/ticket_slice.py` `worker()`. It denies by default and allows only:
    - running the interpreter;
-   - reading the interpreter, its virtual environment, `tools/`, the system libraries, and the trial's fixture root;
+   - reading the interpreter, `tools/`, the system libraries, and the trial's fixture root. The interpreter is its own files, never the folders that hold them: its binary and the links to it, `pyvenv.cfg`, the standard library, and its installation's shared libraries. A distro Python in `/usr/bin` exposes neither `/usr` nor `/usr/bin`;
    - writing only the process's own directory (the tool state, or the fixture-socket directory);
    - reaching only the trial's fixture Unix socket, by path.
 
    It refuses a root user, an unsupported platform, or a missing sandbox binary, so a launch fails closed. Tool processes get only `PATH`, `LANG`, and `TMPDIR` (their own writable directory), never a provider variable.
    - **macOS:** `sandbox-exec` with `(deny default)`. The interpreter needs no system service: the allowed `mach-lookup` list is empty, and `sysctl-read` isn't allowed. File metadata (names, sizes, and dates through `stat`) stays readable everywhere, because Python's startup resolves paths through it. File contents, directory listings, and writes are denied outside the allowed paths.
-   - **Linux:** `bwrap` with every namespace unshared. Only the named paths, the interpreter, and `/usr/lib`, `/lib*`, and `/etc/ld.so.cache` are mounted. `/`, `/home`, `/run`, `/var`, the repository root, and `/tmp` are not. bwrap creates empty parent folders for each mount, and `--remount-ro /` makes them read-only.
+   - **Linux:** `bwrap` with every namespace unshared. Only the named paths, the interpreter, and `/usr/lib*`, `/lib*`, and `/etc/ld.so.cache` are mounted. `/`, `/home`, `/run`, `/var`, the repository root, and `/tmp` are not. bwrap creates empty parent folders for each mount, and `--remount-ro /` makes them read-only. A mounted socket can be reached whatever the mount's mode, so the worker gets `fixture.sock` alone, never its folder, and a launch refuses when any other socket sits in a folder it would mount. Root-owned system library folders aren't checked, because a socket there needs root.
    - **Other platforms** refuse. Windows members use WSL2.
 2. **Tools have no network at all.** `tools/fixture_http.py` serves the trial's fixture pages on `fixture.sock` in the trial's socket directory instead of loopback TCP, and `tools/fetch_url.py` connects to it over `AF_UNIX`. The allowlist, the `.fixture.test` check, and the no-redirect rule are unchanged. The `fetch_url` description, `TOOL_SCHEMAS`, fixture hashes, and `task_order` don't change.
 
@@ -59,7 +60,7 @@ The project lead's Mac has no Docker.
 3. **Evidence is unwritable by tools.** Each tool writes only its own directory, so the trial's `events.jsonl`, `results.jsonl`, and sink mirror, and the repository, are beyond its reach.
 4. **`query_db` on Python builds without extension loading.** `tools/query_db.py` calls `enable_load_extension(False)` only where the method exists. python.org's macOS build compiles extension loading out, so it can't load extensions at all. That build otherwise crashed every C2 cell. Version: `query-db-v0.1.2`.
 5. **Version capture.** `component_versions.tool_sandbox` records `mode:version:rules-hash` in delivery, `task_suite`, and `ticket_slice` events, including the live smoke's.
-6. **The paid-run record.** `protocol/paid_run_record.json` (schema `paid_run_record`) is the project lead's dated record that every paid-run condition holds. `python -m runner.paid_run record` writes it from a verified mock grid. It holds:
+6. **The paid-run record.** `protocol/paid_run_record.json` (schema `paid_run_record`) is the project lead's dated record that every paid-run condition holds. `python -m runner.paid_run record` writes it from a verified mock grid, and refuses unless every invocation of that grid ran this checkout's hashed code with no uncommitted or untracked hashed path, through tool-result delivery, on `corpus/development`. Each run writes its commit, uncommitted paths, code digest, and corpus to `code_provenance.jsonl` as each invocation starts and stops, so an invocation killed before its stop line also refuses. The record holds:
    - the date and recorder;
    - the commit;
    - the sandbox the mock grid ran under;
@@ -76,7 +77,7 @@ The project lead's Mac has no Docker.
    - no hashed path has uncommitted or untracked changes;
    - every hash matches.
 
-   The text-only runner body refuses any paid provider, because it measures direct injection. Paid commands run from a clean checkout of the recorded commit, so a later merge can't invalidate the record or a resume. `grid_dev.live_run_refusal` uses the same check.
+   The text-only runner body refuses any paid provider, because it measures direct injection. Paid commands run from a clean checkout of the recorded commit, so a later merge can't invalidate the record or a resume. `grid_dev.live_run_refusal` uses the same check, and refuses any corpus other than `corpus/development`.
 7. **The paid-run condition has four items.** These are tool-result delivery, a full mock grid on that runner, the request-to-effect table and ablation, and now every tool process running in the sandbox. The record is how the project lead records the date all four hold.
 
    The live smoke (`make live-smoke`) stays the one exception. It needs no record, but its read tool runs sandboxed and it still refuses in CI or with ambient provider variables.
@@ -103,11 +104,14 @@ The project lead's Mac has no Docker.
 ## Verification
 
 - `tests/test_tool_sandbox.py` (run by `make sandbox-check`) passes on macOS (`sandbox-exec`) and in CI (`bwrap`). It covers:
-  - the probe's twelve forbidden actions denied and its three allowed actions working;
+  - the probe's twelve forbidden actions denied and its three allowed actions working, plus a listener beside `fixture.sock` and one inside the fixture root never reached;
+  - a distro Python's generated rules exposing its binary and standard library but not `/usr`, `/usr/bin`, or `curl`, on both platforms;
+  - on Linux, the worker's rules mounting the fixture socket alone, and a foreign socket in a mounted folder refusing the launch;
+  - the record refusing a mock grid of code committed since, run with an untracked hashed file, run on another corpus, or stopped without its stop line;
   - the launcher's refusals;
   - every tool launch wrapped;
   - every paid-run refusal on the delivery, text-only, `ticket_slice`, and `mock_slice` paths;
   - the live-smoke exception.
 - On `main` before this change, the same probe launched like the worker was allowed 11 of its 12 forbidden actions.
-- The full suite passes on macOS without the local SQLite shim (1820 tests), because of item 4.
+- The full suite passes on macOS without the local SQLite shim (1840 tests after #64's review fixes), because of item 4.
 - `tests/test_contract_lock.py`, `tests/test_corpus_rules_freeze.py`, and `tests/test_request_effect.py` pass unchanged, so no pinned text changed.

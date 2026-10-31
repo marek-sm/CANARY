@@ -7,29 +7,43 @@ credential. Every tool launch therefore goes through ``wrap``, which denies by
 default and allows only:
 
 * running the interpreter;
-* reading the interpreter, its virtual environment, ``tools/``, the system
-  libraries, and the directories the caller names (the trial's fixtures);
+* reading the interpreter, ``tools/``, the system libraries, and the
+  directories the caller names (the trial's fixtures);
 * writing only the directories the caller names (the trial's state);
 * reaching only the trial's fixture Unix socket, by path. There is no TCP or UDP
   at all, no other socket, no other program, and no system service.
 
-On macOS this is ``sandbox-exec`` with a deny-by-default profile. On Linux it is
-``bwrap`` with every namespace unshared and only the named paths mounted. Any
-other platform, a missing sandbox binary, or a root user refuses, so a tool
-launch fails closed rather than running unconfined. The mode, version, and the
-hash of the rendered rules are recorded with every trial's component versions.
+The interpreter is its own files, never the directories that hold them: the
+executable and the links that lead to it, ``pyvenv.cfg``, the standard library,
+and the installation's shared libraries. A distro interpreter in ``/usr/bin``
+exposes neither ``/usr`` nor ``/usr/bin``.
+
+On macOS this is ``sandbox-exec`` with a deny-by-default profile that runs only
+the interpreter and names the fixture socket's path. On Linux it is ``bwrap``
+with every namespace unshared and only the named paths mounted. A mounted path
+is all a Linux sandbox can run or connect to, whatever the mount's mode, so the
+worker gets the fixture socket alone, never its directory, and a launch refuses
+when any other socket sits in a directory it would mount. Root-owned system
+library directories aren't checked: a socket there needs root. Any other
+platform, a missing sandbox binary, or a root user refuses, so a tool launch
+fails closed rather than running unconfined. The mode, version, and the hash of
+the rendered rules are recorded with every trial's component versions.
 """
 
 from __future__ import annotations
 
+import functools
+import glob
 import hashlib
 import os
 import shutil
+import stat
 import sys
+import sysconfig
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
 
-VERSION = "tool-sandbox-v0.1.0"
+VERSION = "tool-sandbox-v0.2.0"
 SOCKET_NAME = "fixture.sock"
 TOOLS = Path(__file__).resolve().parent
 SANDBOX_EXEC = "/usr/bin/sandbox-exec"
@@ -47,36 +61,100 @@ def _real(path: os.PathLike | str) -> str:
     return os.path.realpath(os.fspath(path))
 
 
-def _venv_home() -> list[str]:
-    """``home`` from the virtual environment's ``pyvenv.cfg``, as written and resolved."""
-    cfg = Path(sys.prefix) / "pyvenv.cfg"
+def _forms(path: os.PathLike | str) -> list[str]:
+    """``path`` as written and resolved: uv, for one, points a venv at a
+    minor-version link whose target is the real install."""
+    return sorted({os.path.abspath(path), _real(path)})
+
+
+def _under(path: str, roots: Iterable[str]) -> bool:
+    return any(path == root or path.startswith(root.rstrip("/") + "/") for root in roots)
+
+
+def _executable_chain() -> tuple[list[tuple[str, str]], str]:
+    """The links from ``sys.executable`` to the interpreter binary, as (link,
+    target) pairs, and the binary as the last link names it."""
+    links: list[tuple[str, str]] = []
+    path = os.path.abspath(sys.executable)
+    while os.path.islink(path):
+        if len(links) == 40:
+            raise SandboxUnavailable(f"too many links from {sys.executable}")
+        target = os.readlink(path)
+        links.append((path, target))
+        path = os.path.normpath(os.path.join(os.path.dirname(path), target))
+    return links, path
+
+
+def _install_roots(binary: str) -> list[str]:
+    """The base installation, as the interpreter, its binary, and ``pyvenv.cfg`` name it."""
+    roots = {*_forms(sys.base_prefix), *_forms(sys.base_exec_prefix), *_forms(Path(binary).parent.parent)}
     try:
-        lines = cfg.read_text(encoding="utf-8").splitlines()
+        lines = (Path(sys.prefix) / "pyvenv.cfg").read_text(encoding="utf-8").splitlines()
     except OSError:
-        return []
+        lines = []
     for line in lines:
         key, _, value = line.partition("=")
         if key.strip() == "home" and value.strip():
-            install = Path(value.strip()).parent
-            # Only a real Python install, never a shared prefix like /usr or /opt/homebrew.
-            if (install / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "os.py").is_file() \
-                    and str(install) not in ("/usr", "/usr/local", "/opt/homebrew"):
-                return [str(install), _real(install)]
-            return []
-    return []
-
-
-def _interpreter_roots() -> list[str]:
-    """The interpreter's install tree and the virtual environment, both as the
-    interpreter names them and resolved: uv, for one, points a venv at a
-    minor-version link whose target is the real install."""
-    roots = {
-        os.path.abspath(sys.base_prefix), _real(sys.base_prefix),
-        os.path.abspath(sys.prefix), _real(sys.prefix),
-        str(Path(os.path.abspath(sys.executable)).parent), str(Path(_real(sys.executable)).parent),
-        *_venv_home(),
-    }
+            roots.update(_forms(Path(value.strip()).parent))
     return sorted(roots)
+
+
+def _interpreter() -> tuple[list[str], list[str], list[str], list[tuple[str, str]]]:
+    """What the interpreter needs and nothing beside it: the programs it runs,
+    the files and directories it reads, and the links that lead to it."""
+    version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    framework = sysconfig.get_config_var("PYTHONFRAMEWORK") or ""
+    links, binary = _executable_chain()
+    programs, files, dirs = set(_forms(binary)), set(), set()
+    for root in _install_roots(binary):
+        for lib in (os.path.join(root, "lib"), os.path.join(root, "lib64")):
+            if os.path.isdir(os.path.join(lib, version)):
+                dirs.add(os.path.join(lib, version))  # the standard library and its extension modules
+            for pattern in ("*.so", "*.so.*", "*.dylib"):  # libpython and what the extensions link
+                files.update(p for p in glob.glob(os.path.join(glob.escape(lib), pattern)) if os.path.isfile(p))
+        if framework:  # a macOS framework build: its library, and the Python.app its binary runs
+            app = os.path.join(root, "Resources", "Python.app", "Contents", "MacOS", framework)
+            if os.path.isfile(app):
+                programs.add(app)
+                dirs.add(os.path.join(root, "Resources"))
+            if os.path.isfile(os.path.join(root, framework)):
+                files.add(os.path.join(root, framework))
+    cfg = Path(sys.prefix) / "pyvenv.cfg"
+    if cfg.is_file():
+        files.update(_forms(cfg))
+    return sorted(programs), sorted(files), sorted(dirs), links
+
+
+def _sockets(path: str) -> list[str]:
+    """Every socket at or under ``path``. An unreadable directory refuses: a
+    socket in it could still be reached by name."""
+    def unreadable(exc: OSError) -> None:
+        raise SandboxUnavailable(f"can't check {exc.filename} for sockets: {exc.strerror}")
+
+    found = []
+    for directory, _, names in os.walk(path, onerror=unreadable) if os.path.isdir(path) else [("", [], [path])]:
+        for name in names:
+            candidate = os.path.join(directory, name)
+            try:
+                if stat.S_ISSOCK(os.lstat(candidate).st_mode):
+                    found.append(candidate)
+            except FileNotFoundError:
+                pass
+    return found
+
+
+@functools.lru_cache(maxsize=None)
+def _interpreter_sockets(dirs: tuple[str, ...]) -> tuple[str, ...]:
+    """The installed interpreter doesn't change during a run, so it's checked once per process."""
+    return tuple(found for path in dirs for found in _sockets(path))
+
+
+def _refuse_foreign_sockets(dirs: Iterable[str], socket: Optional[str]) -> None:
+    found = [*_interpreter_sockets(tuple(_interpreter()[2])), *(f for path in dirs for f in _sockets(path))]
+    foreign = sorted({path for path in found if path != socket})
+    if foreign:
+        raise SandboxUnavailable("a socket other than the fixture socket is in a directory the tool would mount: "
+                                 + ", ".join(foreign[:3]))
 
 
 def mode() -> str:
@@ -101,14 +179,16 @@ def _quote(path: str) -> str:
 
 
 def macos_profile(*, read: Sequence[str], write: Sequence[str], socket: Optional[str], bind_socket: bool) -> str:
-    reads = ["/", *_interpreter_roots(), str(TOOLS), *MACOS_SYSTEM_READS, *read, *write]
+    programs, files, dirs, _ = _interpreter()
+    subpaths = [*dirs, str(TOOLS), *MACOS_SYSTEM_READS, *read, *write]
     lines = [
         "(version 1)",
         "(deny default)",
-        "(allow process-exec " + " ".join(f"(subpath {_quote(p)})" for p in _interpreter_roots()) + ")",
+        "(allow process-exec " + " ".join(f"(literal {_quote(p)})" for p in programs) + ")",
         "(allow file-read-metadata)",
         "(allow file-read* (literal \"/\") "
-        + " ".join(f"(subpath {_quote(p)})" for p in reads[1:])
+        + " ".join(f"(literal {_quote(p)})" for p in [*programs, *files])
+        + " " + " ".join(f"(subpath {_quote(p)})" for p in subpaths)
         + ' (literal "/dev/null") (literal "/dev/urandom"))',
         "(allow file-write* " + " ".join(f"(subpath {_quote(p)})" for p in write) + ' (literal "/dev/null"))',
     ]
@@ -118,7 +198,9 @@ def macos_profile(*, read: Sequence[str], write: Sequence[str], socket: Optional
     return "\n".join(lines) + "\n"
 
 
-def linux_argv(*, read: Sequence[str], write: Sequence[str], cwd: str) -> list[str]:
+def linux_argv(*, read: Sequence[str], write: Sequence[str], cwd: str,
+               socket: Optional[str] = None, bind_socket: bool = False) -> list[str]:
+    programs, files, dirs, links = _interpreter()
     argv = [
         shutil.which("bwrap") or "bwrap",
         "--die-with-parent", "--new-session", "--unshare-all", "--cap-drop", "ALL",
@@ -127,8 +209,19 @@ def linux_argv(*, read: Sequence[str], write: Sequence[str], cwd: str) -> list[s
     ]
     for path in LINUX_SYSTEM_READS:
         argv += ["--ro-bind-try", path, path]
-    for path in [*_interpreter_roots(), str(TOOLS), *read]:
+    mounted = [*LINUX_SYSTEM_READS, *dirs, str(TOOLS), *read]
+    for path in mounted[len(LINUX_SYSTEM_READS):]:
         argv += ["--ro-bind", path, path]
+    for path in [*files, *programs]:
+        if not _under(path, mounted):
+            argv += ["--ro-bind", path, path]
+    for link, target in links:  # recreated, so the loader finds libraries beside the real binary
+        if not _under(link, mounted):
+            argv += ["--symlink", target, link]
+    if socket is not None and not bind_socket and not _under(socket, mounted):
+        # The worker connects to the fixture socket, mounted alone: any socket in a
+        # mounted directory would be reachable too.
+        argv += ["--ro-bind", socket, socket]
     for path in write:
         argv += ["--bind", path, path]
     if write:
@@ -157,13 +250,12 @@ def wrap(
     writes = [_real(p) for p in write]
     cwd_real = _real(cwd)
     socket = None if socket_dir is None else os.path.join(_real(socket_dir), SOCKET_NAME)
-    if socket_dir is not None and _real(socket_dir) not in reads + writes:
-        reads.append(_real(socket_dir))
     sandbox = mode()
     if sandbox == "macos-sandbox-exec":
         profile = macos_profile(read=reads, write=writes, socket=socket, bind_socket=bind_socket)
         return [SANDBOX_EXEC, "-p", profile, *argv]
-    return [*linux_argv(read=reads, write=writes, cwd=cwd_real), *argv]
+    _refuse_foreign_sockets([*reads, *writes, str(TOOLS)], socket)
+    return [*linux_argv(read=reads, write=writes, cwd=cwd_real, socket=socket, bind_socket=bind_socket), *argv]
 
 
 def environment(write: Iterable[os.PathLike | str] = ()) -> dict[str, str]:
@@ -179,7 +271,7 @@ def describe() -> str:
     """``mode:version:rules-hash`` for component versions (decision 0023).
 
     The hash covers the rules, not where this machine keeps them: the
-    interpreter, virtual environment, ``tools/``, and ``bwrap`` paths are
+    interpreter's files and links, ``tools/``, and ``bwrap`` paths are
     replaced by placeholders, so a mock grid in one checkout and the paid run
     from a clean checkout of the same commit on the same platform agree.
     """
@@ -187,9 +279,11 @@ def describe() -> str:
     template = (
         macos_profile(read=["<read>"], write=["<write>"], socket="<socket>", bind_socket=False)
         if sandbox == "macos-sandbox-exec"
-        else " ".join(linux_argv(read=["<read>"], write=["<write>"], cwd="<cwd>"))
+        else " ".join(linux_argv(read=["<read>"], write=["<write>"], cwd="<cwd>", socket="<socket>"))
     )
-    machine_paths = [*_interpreter_roots(), str(TOOLS), shutil.which("bwrap") or ""]
+    programs, files, dirs, links = _interpreter()
+    machine_paths = [*programs, *files, *dirs, *(p for link in links for p in link if os.path.isabs(p)),
+                     str(TOOLS), shutil.which("bwrap") or ""]
     for path in sorted((p for p in machine_paths if p), key=len, reverse=True):
         template = template.replace(path, "<installed>")
     digest = hashlib.sha256(template.encode("utf-8")).hexdigest()[:16]

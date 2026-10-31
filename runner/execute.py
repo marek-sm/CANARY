@@ -253,6 +253,16 @@ def _write_durably(path: Path, text: str) -> None:
     _fsync_dir(path.parent)
 
 
+def _record_provenance(run_dir: Path, phase: str, corpus_root: Path) -> None:
+    """Append the code this invocation runs as it starts or stops (decision 0023):
+    the paid-run record refuses a mock grid that didn't run the code it records."""
+    line = {"phase": phase, **paid_run.code_provenance(), "corpus_root": str(corpus_root.resolve())}
+    with (run_dir / paid_run.PROVENANCE_FILE).open("a", encoding="utf-8") as f:
+        f.write(json.dumps(line, sort_keys=True) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+
 def _inside(root: Path, path: Path) -> Path:
     """Return ``path`` if it resolves inside ``root``; refuse it otherwise."""
     if not path.resolve().is_relative_to(root.resolve()):
@@ -1301,7 +1311,8 @@ def run_schedule(
     With ``delivery`` every cell uses tool-result delivery; the provider defaults
     to the grid mock and the audit to ``delivery_audit``. ``decoding`` is both
     sent to the provider and recorded in each ``trial_started`` event, so the
-    record is the setting the cell ran under.
+    record is the setting the cell ran under. Each invocation appends the code
+    it runs to ``code_provenance.jsonl`` as it starts and again as it stops.
     """
     for trial in schedule:
         validate_trial(trial)
@@ -1338,34 +1349,38 @@ def run_schedule(
     canary_map = _load_canary_map(canaries_path) if canaries_path.exists() else {}
     base_cache: dict[str, tuple[Mapping[str, Any], str]] = {}
 
-    for superblock_id, trials in superblock_groups(schedule).items():
-        base, template = _load_base(base_cache, corpus_root, trials[0].base_case_id)
-        canaries = _resolve_superblock_canaries(
-            canaries_path, canary_map, superblock_id, trials[0], canary_factory
-        )
-        for trial in trials:
-            trial_dir = _inside(run_dir, run_dir / trial_slug(trial))
-            if _trial_complete(trial_dir, trial, canaries):
-                continue  # this trial's result is committed: no duplicate, no replay
-            if trial_dir.exists() and not resume:
-                # On a fresh run a leftover is an unexpected collision. On
-                # resume, execute_trial continues it from its durable events.
-                raise FileExistsError(trial_dir)
-            execute_trial(
-                trial_dir,
-                trial,
-                base,
-                template,
-                canaries,
-                clock,
-                provider_factory=provider_factory,
-                code_commit_value=commit,
-                audit=audit,
-                dispatch_factory=dispatch_factory,
-                tool_schemas=tool_schemas,
-                delivery=delivery,
-                decoding=decoding,
+    _record_provenance(run_dir, "start", corpus_root)
+    try:
+        for superblock_id, trials in superblock_groups(schedule).items():
+            base, template = _load_base(base_cache, corpus_root, trials[0].base_case_id)
+            canaries = _resolve_superblock_canaries(
+                canaries_path, canary_map, superblock_id, trials[0], canary_factory
             )
+            for trial in trials:
+                trial_dir = _inside(run_dir, run_dir / trial_slug(trial))
+                if _trial_complete(trial_dir, trial, canaries):
+                    continue  # this trial's result is committed: no duplicate, no replay
+                if trial_dir.exists() and not resume:
+                    # On a fresh run a leftover is an unexpected collision. On
+                    # resume, execute_trial continues it from its durable events.
+                    raise FileExistsError(trial_dir)
+                execute_trial(
+                    trial_dir,
+                    trial,
+                    base,
+                    template,
+                    canaries,
+                    clock,
+                    provider_factory=provider_factory,
+                    code_commit_value=commit,
+                    audit=audit,
+                    dispatch_factory=dispatch_factory,
+                    tool_schemas=tool_schemas,
+                    delivery=delivery,
+                    decoding=decoding,
+                )
+    finally:
+        _record_provenance(run_dir, "stop", corpus_root)
     return run_dir
 
 

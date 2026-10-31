@@ -127,6 +127,8 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str
             f"corpus/development missing development bases {absent}; "
             "merge W6-T2 (#34) before a live grid run"
         )
+    if Path(corpus_root).resolve() != execute.DEFAULT_CORPUS_ROOT.resolve():
+        return "a live grid runs only on corpus/development, the corpus its paid-run record hashed"
     return paid_run.paid_run_refusal()
 
 
