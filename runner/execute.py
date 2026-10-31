@@ -46,8 +46,9 @@ on, the cell body is ``runner.delivery``'s instead of the text-only one. The
 user turn carries only the trusted task prompt; each channel's untrusted content
 reaches the model only in the result of the tool call that retrieved it; every
 configuration in the grid runs, D1_POLICY_GATE deciding before dispatch and
-D2_DATAMARKING marking the delivered content; and only the mock provider is
-accepted until the paid-path tool sandbox exists.
+D2_DATAMARKING marking the delivered content; every tool process runs in the
+tool sandbox, and a non-mock provider runs only through delivery and only with
+a valid paid-run record (``runner.paid_run``, decision 0023).
 
 Usage: python -m runner.execute [--out DIR] [--resume] [--spec SPEC.json] [--delivery]
 """
@@ -72,6 +73,7 @@ from defenses.interfaces import (
 )
 from oracles.authorization.audit import AUDIT_EVALUATOR_VERSION, AuditAuthorizer
 from oracles.utility import task_suite as task_utility
+from runner import paid_run
 from runner import delivery as tool_delivery
 from tasks import registry
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
@@ -249,6 +251,16 @@ def _write_durably(path: Path, text: str) -> None:
         os.fsync(f.fileno())
     os.replace(tmp, path)
     _fsync_dir(path.parent)
+
+
+def _record_provenance(run_dir: Path, phase: str, corpus_root: Path) -> None:
+    """Append the code this invocation runs as it starts or stops (decision 0023):
+    the paid-run record refuses a mock grid that didn't run the code it records."""
+    line = {"phase": phase, **paid_run.code_provenance(), "corpus_root": str(corpus_root.resolve())}
+    with (run_dir / paid_run.PROVENANCE_FILE).open("a", encoding="utf-8") as f:
+        f.write(json.dumps(line, sort_keys=True) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
 
 
 def _inside(root: Path, path: Path) -> Path:
@@ -640,6 +652,7 @@ def _run_trial_body(
     tool_schemas: Sequence[Mapping[str, Any]],
     delivery: bool = False,
     canaries: Sequence[str] = (),
+    decoding: Mapping[str, Any] = DECODING,
 ) -> None:
     """Start or continue the trial's events up to and including ``trial_ended``."""
     started = _first(stored, "trial_started")
@@ -661,7 +674,7 @@ def _run_trial_body(
             "task_prompt": None if delivery else TASK_PROMPT,
             "prompt_sha256": sha256_json(messages) if messages is not None else None,
             "model_requested": trial.model_id,
-            "decoding": DECODING,
+            "decoding": dict(decoding),
             "max_steps": MAX_STEPS,
             "code_commit": code_commit_value,
             "tier": None,
@@ -697,6 +710,11 @@ def _run_trial_body(
                 "model_resolved": response["model_resolved"],
                 "provider_fingerprint": response["provider_fingerprint"],
                 "raw_response": raw,
+                # The adapter's measurements: results sum usage and latency, and
+                # the Gate 2 budget equation prices each trial from them.
+                "usage": response.get("usage"),
+                "latency_ms": response.get("latency_ms"),
+                "error": response.get("error"),
             },
             model_call_id=model_call_id,
             attempt_id=f"{model_call_id}:a{attempt_index}",
@@ -716,7 +734,7 @@ def _run_trial_body(
             if case is not None:
                 outcome = _run_delivery_loop(
                     log, replay, trial_dir, trial, case, provider, sink, fixture_root, log_attempt,
-                    fresh=started is None,
+                    fresh=started is None, decoding=decoding,
                 )
             else:
                 dispatch = replay.dispatch(dispatch_factory(trial, sink)) if dispatch_factory else None
@@ -724,7 +742,7 @@ def _run_trial_body(
                     replay.provider(provider),
                     messages,
                     tool_schemas=list(tool_schemas),
-                    decoding=DECODING,
+                    decoding=decoding,
                     model_request={"model": trial.model_id},
                     on_attempt=replay.on_attempt(log_attempt),
                     logical_trial_id=trial.logical_trial_id,
@@ -779,17 +797,19 @@ def _run_delivery_loop(
     log_attempt: Callable[[int, int, Mapping[str, Any]], None],
     *,
     fresh: bool,
+    decoding: Mapping[str, Any],
 ) -> Any:
     """One delivery cell: its tool state, the fixture service, gated dispatch."""
     state = tool_delivery.create_state(_inside(trial_dir, trial_dir / ENV_DIR / "state"), fresh=fresh)
-    with registry.fixture_service(fixture_root) as port:
+    socket_dir = _inside(trial_dir, trial_dir / ENV_DIR / "sock")
+    with registry.fixture_service(fixture_root, socket_dir) as endpoint:
         tools = tool_delivery.TrialTools(
             configuration=trial.configuration,
             policy=case.policy,
             grant_state=registry.grants(case.template, trial.channel),
             root=fixture_root,
             state=state,
-            port=port,
+            endpoint=endpoint,
             log=log.append,
             sync_sink=sink.sync,
             stored=replay.tool_events,
@@ -798,7 +818,7 @@ def _run_delivery_loop(
             replay.provider(provider),
             case.messages,
             tool_schemas=registry.TOOL_SCHEMAS,
-            decoding=DECODING,
+            decoding=decoding,
             model_request={"model": trial.model_id},
             on_attempt=replay.on_attempt(log_attempt),
             max_steps=case.template["max_steps"],
@@ -826,6 +846,7 @@ def execute_trial(
     ] = None,
     tool_schemas: Sequence[Mapping[str, Any]] = (),
     delivery: bool = False,
+    decoding: Mapping[str, Any] = DECODING,
 ) -> None:
     """Run one logical trial into ``trial_dir``, or resume it, and commit its result.
 
@@ -851,8 +872,10 @@ def execute_trial(
     different trial, stops the run before anything is written for this trial.
 
     With ``delivery`` the cell body is tool-result delivery (``runner.delivery``):
-    every grid configuration runs, and only the mock provider is accepted, because
-    tools still run as host subprocesses until the paid-path sandbox exists.
+    every grid configuration runs, and every tool process runs in the sandbox
+    (``tools.sandbox``). A non-mock provider is accepted only through delivery and
+    only when ``runner.paid_run`` finds the project lead's paid-run record valid
+    for this code and sandbox (decision 0023).
     """
     if trial.configuration not in supported_configurations(delivery):
         raise ValueError(f"{trial.configuration} is not wired into this runner")
@@ -862,8 +885,12 @@ def execute_trial(
     events_path = trial_dir / EVENTS_FILE
     _check_trace_identity(_durable_events(events_path, truncate=False), trial)
     provider = provider_factory(trial, canaries)
-    if delivery and not isinstance(provider, MockProvider):
-        raise ValueError("tool-result delivery runs only on the mock provider until the paid-path tool sandbox exists")
+    if paid_run.is_paid(provider):
+        if not delivery:
+            raise paid_run.PaidRunRefused(
+                "paid calls run only through tool-result delivery; the text-only body measures direct injection"
+            )
+        paid_run.require_paid_run(provider)
     versions = component_versions(provider)
     if delivery:
         versions.update(tool_delivery.component_versions(trial.configuration))
@@ -900,6 +927,7 @@ def execute_trial(
             tool_schemas=tool_schemas,
             delivery=delivery,
             canaries=canaries,
+            decoding=decoding,
         )
 
     events = read_jsonl(events_path, "event")
@@ -1264,6 +1292,7 @@ def run_schedule(
     ] = None,
     tool_schemas: Sequence[Mapping[str, Any]] = (),
     delivery: bool = False,
+    decoding: Mapping[str, Any] = DECODING,
 ) -> Path:
     """Execute ``schedule`` into ``run_dir``; return it.
 
@@ -1280,7 +1309,10 @@ def run_schedule(
     identical schedule.
 
     With ``delivery`` every cell uses tool-result delivery; the provider defaults
-    to the grid mock and the audit to ``delivery_audit``.
+    to the grid mock and the audit to ``delivery_audit``. ``decoding`` is both
+    sent to the provider and recorded in each ``trial_started`` event, so the
+    record is the setting the cell ran under. Each invocation appends the code
+    it runs to ``code_provenance.jsonl`` as it starts and again as it stops.
     """
     for trial in schedule:
         validate_trial(trial)
@@ -1317,33 +1349,38 @@ def run_schedule(
     canary_map = _load_canary_map(canaries_path) if canaries_path.exists() else {}
     base_cache: dict[str, tuple[Mapping[str, Any], str]] = {}
 
-    for superblock_id, trials in superblock_groups(schedule).items():
-        base, template = _load_base(base_cache, corpus_root, trials[0].base_case_id)
-        canaries = _resolve_superblock_canaries(
-            canaries_path, canary_map, superblock_id, trials[0], canary_factory
-        )
-        for trial in trials:
-            trial_dir = _inside(run_dir, run_dir / trial_slug(trial))
-            if _trial_complete(trial_dir, trial, canaries):
-                continue  # this trial's result is committed: no duplicate, no replay
-            if trial_dir.exists() and not resume:
-                # On a fresh run a leftover is an unexpected collision. On
-                # resume, execute_trial continues it from its durable events.
-                raise FileExistsError(trial_dir)
-            execute_trial(
-                trial_dir,
-                trial,
-                base,
-                template,
-                canaries,
-                clock,
-                provider_factory=provider_factory,
-                code_commit_value=commit,
-                audit=audit,
-                dispatch_factory=dispatch_factory,
-                tool_schemas=tool_schemas,
-                delivery=delivery,
+    _record_provenance(run_dir, "start", corpus_root)
+    try:
+        for superblock_id, trials in superblock_groups(schedule).items():
+            base, template = _load_base(base_cache, corpus_root, trials[0].base_case_id)
+            canaries = _resolve_superblock_canaries(
+                canaries_path, canary_map, superblock_id, trials[0], canary_factory
             )
+            for trial in trials:
+                trial_dir = _inside(run_dir, run_dir / trial_slug(trial))
+                if _trial_complete(trial_dir, trial, canaries):
+                    continue  # this trial's result is committed: no duplicate, no replay
+                if trial_dir.exists() and not resume:
+                    # On a fresh run a leftover is an unexpected collision. On
+                    # resume, execute_trial continues it from its durable events.
+                    raise FileExistsError(trial_dir)
+                execute_trial(
+                    trial_dir,
+                    trial,
+                    base,
+                    template,
+                    canaries,
+                    clock,
+                    provider_factory=provider_factory,
+                    code_commit_value=commit,
+                    audit=audit,
+                    dispatch_factory=dispatch_factory,
+                    tool_schemas=tool_schemas,
+                    delivery=delivery,
+                    decoding=decoding,
+                )
+    finally:
+        _record_provenance(run_dir, "stop", corpus_root)
     return run_dir
 
 

@@ -7,12 +7,14 @@ import json
 import os
 from pathlib import Path
 import select
+import shutil
 import sqlite3
 import subprocess
 import sys
 import tempfile
 
 from defenses.interfaces import Grant, GrantState, action_hash, canonical_json_bytes
+from tools import sandbox
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "task-registry-v0.1.0"
@@ -111,12 +113,25 @@ def plain(value):
     return value
 
 
-def worker(root, state, port, request):
+def worker(root, state, endpoint, request):
+    """Run one tool call in the sandbox (decision 0023).
+
+    ``endpoint`` is the trial's fixture-socket directory from ``fixture_service``.
+    The worker reads only the fixture root, writes only ``state``, and reaches the
+    fixture service only through ``fixture.sock`` in ``endpoint``.
+    """
+    # The tool runs from its own directory, so a relative path would resolve wrongly.
+    root, state = Path(root).resolve(), Path(state).resolve()
+    endpoint = None if endpoint is None else Path(endpoint).resolve()
+    cwd = endpoint if endpoint is not None else state
+    argv = [sys.executable, "-I", str(ROOT / "tools/worker.py"), str(root), str(state),
+            sandbox.SOCKET_NAME if endpoint is not None else ""]
     completed = subprocess.run(
-        [sys.executable, "-I", str(ROOT / "tools/worker.py"), str(root), str(state), str(port)],
+        sandbox.wrap(argv, cwd=cwd, read=[root], write=[state], socket_dir=endpoint),
+        cwd=cwd,
         input=json.dumps({"tool": request.tool, "args": plain(request.normalized_args)}),
         capture_output=True, text=True, timeout=5, check=True,
-        env={"PATH": os.defpath, "LANG": "C.UTF-8"},
+        env=sandbox.environment([state]),
     )
     return json.loads(completed.stdout)
 
@@ -136,18 +151,30 @@ TOOL_SCHEMAS = [
 
 
 @contextmanager
-def fixture_service(root):
+def fixture_service(root, socket_dir=None):
+    """Serve the trial's fixture pages on ``fixture.sock`` in ``socket_dir``, sandboxed.
+
+    Yields the socket directory, which ``worker`` takes as its ``endpoint``. A
+    temporary directory is used, and removed afterwards, when none is given.
+    """
+    temporary = socket_dir is None
+    socket_dir = Path(tempfile.mkdtemp(prefix="canary-fx-")) if temporary else Path(socket_dir)
+    socket_dir.mkdir(parents=True, exist_ok=True)
+    # The service runs from the socket directory, so its paths must not stay relative.
+    root, socket_dir = Path(root).resolve(), socket_dir.resolve()
+    argv = [sys.executable, "-I", str(ROOT / "tools/fixture_http.py"), str(root)]
     process = subprocess.Popen(
-        [sys.executable, "-I", str(ROOT / "tools/fixture_http.py"), str(root)],
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
-        env={"PATH": os.defpath, "LANG": "C.UTF-8"},
+        sandbox.wrap(argv, cwd=socket_dir, read=[root], write=[socket_dir], socket_dir=socket_dir, bind_socket=True),
+        cwd=socket_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        env=sandbox.environment([socket_dir]),
     )
     try:
         ready, _, _ = select.select([process.stdout], [], [], 5)
-        if not ready:
+        if not ready or process.stdout.readline().strip() != "ready":
             raise RuntimeError("fixture service did not start")
-        yield int(process.stdout.readline())
+        yield str(socket_dir)
     finally:
+        process.stdin.close()
         process.terminate()
         try:
             process.wait(timeout=5)
@@ -155,3 +182,9 @@ def fixture_service(root):
             process.kill()
             process.wait(timeout=5)
         process.stdout.close()
+        try:  # a socket file left in a trial directory would break copying its evidence
+            (socket_dir / sandbox.SOCKET_NAME).unlink()
+        except FileNotFoundError:
+            pass
+        if temporary:
+            shutil.rmtree(socket_dir, ignore_errors=True)

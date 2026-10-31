@@ -16,6 +16,16 @@ from runner import execute
 from runner import schedule as sched
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl, validator
 
+
+@pytest.fixture(autouse=True)
+def runner_doubles_are_not_paid(monkeypatch):
+    """These tests cover the runner's invariants with stateless provider doubles,
+    not the paid-run gate (tests/test_tool_sandbox.py covers the gate). Treat the
+    doubles as unpaid so the gate doesn't refuse them (decision 0023)."""
+    from runner import paid_run
+
+    monkeypatch.setattr(paid_run, "is_paid", lambda provider: False)
+
 FIXED_CLOCK = lambda: "2020-01-01T00:00:00Z"  # noqa: E731 - deterministic test clock
 COMMIT = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 

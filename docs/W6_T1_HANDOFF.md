@@ -35,6 +35,10 @@ The five templates absent from the development assignment declare their
 execute or count those paid smokes. All task data is fictional. C2 uses registered
 queries, C3 uses the committed resource paths, and C4 uses the exact logical
 fixture URLs routed to the private loopback service.
+**Changed October 28 by [decision 0023](decisions/0023-tool-sandbox.md):** that
+service now listens on the Unix socket `fixture.sock` in the trial's socket
+directory instead of loopback TCP. The logical URLs, routing table, and fixture
+hashes are unchanged.
 
 The five development C2 queries and SQLite seed rows use the assignment's exact
 resource IDs directly. `test_c2_queries_read_the_assigned_seed_resource` checks
@@ -57,6 +61,15 @@ They apply without a defense condition or task policy in the tool process.
 reject arbitrary SQL, routes, database paths, and sink paths independently of
 D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING. A valid but unauthorized fake
 email can still append locally under D0_BASELINE; the gate/audit owns its verdict.
+
+**Changed October 28 by [decision 0023](decisions/0023-tool-sandbox.md):** the
+loopback routing above is now socket routing: `fetch_url(url, routes, socket_path)`
+reaches the fixture service only through `fixture.sock`. Every worker and the
+fixture service run in the deny-by-default [tool sandbox](INTERFACES.md#tool-sandbox-lead-scaffold-decision-0023),
+so a tool has no network route, reads only its fixture root besides the
+interpreter, `tools/`, and system libraries, writes only its own state, and
+can't write the trial's evidence. `fetch_url` is now `fetch-url-v0.2.0` and the
+fixture service `fixture-http-v0.2.0`.
 
 [`runner/task_suite.py`](../runner/task_suite.py) drives real local tools through
 the mock agent loop, returning data as tool results. Its mock derives final
@@ -143,6 +156,14 @@ fresh temporary output root and checks all 20 declared task/channel variants.
 CI exercises the unit/integration suite, the mock command, and the non-root
 container with external networking disabled. No key, paid call, live model,
 evaluation candidate, or raw evidence bundle is required.
+
+**Changed October 28 by [decision 0023](decisions/0023-tool-sandbox.md):** the
+last command above is no longer an acceptance command. The task-suite acceptance
+runs on the host under the tool sandbox through `uv run make t1-suite`, which
+CI's host job runs alongside `make t1-smoke` and `make sandbox-check`. The CI
+container can't run the sandbox without loosening its own isolation, so it no
+longer runs tools and keeps only the tool-free mock trace; run inside it, the
+task-suite command now fails closed instead of running tools unconfined.
 
 ## Integration limits
 

@@ -33,9 +33,9 @@ What this module owns:
 * **The no-credit grid mock**, which makes the task's required calls and answers
   from what the tools returned, never from the expected output.
 
-Tools still run as host subprocesses through W6-T1's worker, as on ``main``.
-Until the paid-path tool sandbox exists (audit F-01), the runner refuses any
-provider other than the mock in delivery mode.
+Tools run through W6-T1's worker inside the tool sandbox (``tools.sandbox``,
+decision 0023), and a non-mock provider runs only when ``runner.paid_run`` finds
+the project lead's paid-run record valid for this code and sandbox.
 """
 
 from __future__ import annotations
@@ -64,6 +64,7 @@ from defenses.interfaces import (
 from defenses.datamarking import TRANSFORM_VERSION
 from defenses.policy_gate import EVALUATOR_VERSION, GATE_VERSION, PolicyGate, PolicyGateAuthorizer, gate_and_dispatch
 from runner.mock_provider import MOCK_MODEL_ID, MockProvider
+from tools import sandbox
 from tasks import registry
 
 DELIVERY_VERSION = "tool-result-delivery-v0.1.0"
@@ -203,7 +204,8 @@ def mark_resource(channel: str, rendered: str) -> str:
 
 def component_versions(configuration: str) -> dict[str, str]:
     """Versions a delivery cell adds to every event (A5 version capture)."""
-    versions = {"tool_result_delivery": DELIVERY_VERSION, "task_registry": registry.VERSION}
+    versions = {"tool_result_delivery": DELIVERY_VERSION, "task_registry": registry.VERSION,
+                "tool_sandbox": sandbox.describe()}
     if configuration == "D1_POLICY_GATE":
         versions.update(d1_policy_gate=GATE_VERSION, d1_policy_evaluator=EVALUATOR_VERSION)
     if configuration == "D2_DATAMARKING":
@@ -401,12 +403,12 @@ class TrialTools:
     grant_state: GrantState
     root: Path
     state: Path
-    port: int
+    endpoint: str  # the trial's fixture-socket directory (decision 0023)
     log: Callable[[str, Mapping[str, Any]], None]
     sync_sink: Callable[[list[Any]], None]
     stored: Mapping[tuple[str, Optional[str]], Mapping[str, Any]] = field(default_factory=dict)
     # W6-T1's worker subprocess unless a caller supplies another; looked up at call time.
-    run_tool: Optional[Callable[[Path, Path, int, CanonicalRequest], Mapping[str, Any]]] = None
+    run_tool: Optional[Callable[[Path, Path, str, CanonicalRequest], Mapping[str, Any]]] = None
     gate: PolicyGate = field(default_factory=PolicyGate)
     authorizer: PolicyGateAuthorizer = field(default_factory=PolicyGateAuthorizer)
     prior: list[PriorCall] = field(default_factory=list)
@@ -452,7 +454,7 @@ class TrialTools:
                 self._account_send(request)
             return dict(result["observation"])
 
-        run = lambda req: dict((self.run_tool or registry.worker)(self.root, self.state, self.port, req))  # noqa: E731
+        run = lambda req: dict((self.run_tool or registry.worker)(self.root, self.state, self.endpoint, req))  # noqa: E731
         if self.configuration == "D1_POLICY_GATE":
             def commit(outcome: Any, keep: GrantState) -> None:
                 # Runs before the tool does: the gate's decision and the disposition

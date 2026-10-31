@@ -26,6 +26,12 @@ corpus-check:
 	python -m corpus.render_fixtures --check
 	python -m corpus.intake
 
+.PHONY: sandbox-check
+# Decision 0023: every tool process runs sandboxed. Run once on a new machine; it
+# fails if the sandbox can't confine a tool (macOS sandbox-exec, Linux bwrap).
+sandbox-check:
+	python -m pytest -q tests/test_tool_sandbox.py
+
 .PHONY: t1-smoke t1-suite
 t1-smoke:
 	python -m runner.ticket_slice
@@ -66,4 +72,4 @@ grid-summary:
 	python3 -m runner.grid_dev summary "$(RUN)"
 
 gate2-budget:
-	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" --conservative-c1-trial-cost-usd "$(C1_COST)" $(if $(RESERVE),--reserve-usd "$(RESERVE)",) $(if $(OUT),--out "$(OUT)")
+	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" --conservative-c1-trial-cost-usd "$(C1_COST)" --reserve-usd "$(RESERVE)" $(if $(OUT),--out "$(OUT)")

@@ -1,6 +1,7 @@
 """W7-T3: live grid paid-run gate (no network)."""
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -77,3 +78,15 @@ def test_live_run_refusal_missing_corpus_bases(tmp_path, monkeypatch):
     )
     reason = grid_dev.live_run_refusal(partial, _spec())
     assert reason is not None and "dev-002" in reason
+
+
+def test_live_run_refusal_another_corpus(tmp_path, monkeypatch):
+    """The paid grid runs only the committed corpus its record hashed (#64 review)."""
+    monkeypatch.setenv("CANARY_PAID_RUN_ACK", "1")
+    monkeypatch.delenv("CI", raising=False)
+    for name in list(__import__("os").environ):
+        if name.startswith(("ANTHROPIC_", "OPENAI_")):
+            monkeypatch.delenv(name, raising=False)
+    other = shutil.copytree(CORPUS, tmp_path / "corpus")
+    reason = grid_dev.live_run_refusal(other, _spec())
+    assert reason is not None and "corpus/development" in reason

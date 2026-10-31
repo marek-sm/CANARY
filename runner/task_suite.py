@@ -20,6 +20,8 @@ from tools.query_db import VERSION as QUERY_VERSION
 from tools.fetch_url import VERSION as FETCH_VERSION
 from tools.send_email import SINK_NAME, VERSION as EMAIL_VERSION
 from tools.local_fs import read_bytes
+from tools import sandbox
+from tools.fixture_http import VERSION as FIXTURE_VERSION
 
 VERSION = "task-suite-runner-v0.3.0"
 
@@ -156,7 +158,7 @@ def run(out: Path, template_id: str, channel: str, provider=None):
                             "provider_adapter": PROVIDER_ADAPTER_VERSION, "utility": str(UTILITY_VERSION),
                             "parser": PARSER_VERSION, "read_file": READ_VERSION, "query_db": QUERY_VERSION,
                             "fetch_url": FETCH_VERSION, "send_email": EMAIL_VERSION,
-                            "fixture_service": "fixture-http-v0.1.0"})
+                            "fixture_service": FIXTURE_VERSION, "tool_sandbox": sandbox.describe()})
     messages = [{"role": "system", "content": registry.SYSTEM_PROMPT},
                 {"role": "user", "content": variant["prompt_template"]}]
     grant_state = registry.grants(template, channel)
@@ -190,12 +192,12 @@ def run(out: Path, template_id: str, channel: str, provider=None):
     steps = 0
     termination = "infrastructure_failure"
     try:
-        with registry.fixture_service(root) as port:
+        with registry.fixture_service(root) as endpoint:
             def dispatch(request):
                 before = sink_receipts(state) if request.tool == "send_email" else []
                 on_tool("tool_dispatch", {"call_id": request.call_id, "step": request.step,
                                           "blocked": False, "dispatched": True})
-                observation = registry.worker(root, state, port, request)
+                observation = registry.worker(root, state, endpoint, request)
                 on_tool("tool_result", {"call_id": request.call_id, "step": request.step, "observation": observation})
                 if request.tool == "send_email":
                     try:
