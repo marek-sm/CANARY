@@ -26,7 +26,7 @@ uv run make trace                    # no make: uv run python -m runner.mock_sli
 
 `make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
 
-Every tool process runs in a sandbox ([decision 0023](docs/decisions/0023-tool-sandbox.md)); run `uv run make sandbox-check` once on a new machine and report a failure the same day. macOS needs nothing extra. Linux needs `bubblewrap` and, on Ubuntu 23.10 and later, `kernel.apparmor_restrict_unprivileged_userns=0` in a file under `/etc/sysctl.d`; on Windows, use WSL2 Ubuntu.
+Every tool process runs in a sandbox ([decision 0023](docs/decisions/0023-tool-sandbox.md)); run `uv run make sandbox-check` once on a new machine and report a failure the same day. macOS needs nothing extra. Linux (x86_64 or aarch64) needs `bubblewrap` and, on Ubuntu 23.10 and later, `kernel.apparmor_restrict_unprivileged_userns=0` in a file under `/etc/sysctl.d`; on Windows, use WSL2 Ubuntu.
 
 `make demo-example` regenerates the accessible W6 development-output example
 from the real six-cell mock runner. `make demo-example-check` verifies that the

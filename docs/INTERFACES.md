@@ -152,7 +152,11 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
   unshared and only the named paths mounted. On Linux the worker gets
   `fixture.sock` alone, never its folder, and `wrap` raises `SandboxUnavailable`
   when any other socket sits in a folder it would mount, root-owned system
-  library folders aside.
+  library folders aside. On Linux, `wrap` launches only `sys.executable -I`, and
+  through `tools/no_exec.py`, whose seccomp filter fails every `execve`,
+  `execveat`, `ptrace`, and `process_vm_writev` before the tool's first line
+  runs, with the tool as the sandbox's only process (`--as-pid-1`), so the
+  programs in the mounted system-library folders can't run.
 - `environment(write=())` is the only environment a tool process gets: `PATH`,
   `LANG`, and `TMPDIR` set to its first writable directory. No provider variable
   ever enters it.
@@ -160,7 +164,8 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
   `component_versions.tool_sandbox` in delivery, `task_suite`, and
   `ticket_slice` events, the live smoke's included.
 - **Refusals.** `mode()` raises `SandboxUnavailable` for a root user, a platform
-  other than macOS or Linux, or a missing `sandbox-exec` or `bwrap`, and on
+  other than macOS or Linux, a Linux machine other than x86_64 or aarch64 or a
+  32-bit Python there, or a missing `sandbox-exec` or `bwrap`, and on
   macOS `wrap` refuses a profile path containing a quote, backslash, newline, or
   NUL, so a tool launch fails closed rather than running unconfined.
 

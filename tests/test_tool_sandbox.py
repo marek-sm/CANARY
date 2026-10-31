@@ -73,6 +73,8 @@ attempt("exec_shell", lambda: subprocess.run(["/bin/sh", "-c", "true"], timeout=
 # The exec probes never name a URL: even if a sandbox failed, they reach nothing.
 attempt("exec_curl", lambda: subprocess.run(["/usr/bin/curl", "--version"], timeout=3, capture_output=True))
 attempt("exec_open", lambda: subprocess.run(["/usr/bin/open", "-h"], timeout=3, capture_output=True))
+for program in targets.get("library_programs", []):  # programs inside the mounted system-library folders
+    attempt("exec_library:" + program[0], lambda program=program: subprocess.run(program, timeout=3, capture_output=True))
 out["provider_variables"] = sorted(k for k in os.environ if k.startswith(("ANTHROPIC_", "OPENAI_")))
 print(json.dumps(out))
 """
@@ -122,8 +124,8 @@ def trial(tmp_path, monkeypatch):
         listener.close()
 
 
-def _probe(trial, **extra):
-    targets = {
+def _targets(trial):
+    return {
         "fixture_file": str(trial["fixtures"] / "doc.txt"),
         "state_file": str(trial["state"] / "receipt.txt"),
         "key_file": str(trial["outside"] / ".env"),
@@ -135,9 +137,11 @@ def _probe(trial, **extra):
         # Relative to the probe's working directory: a Unix socket path must stay
         # under 104 bytes on macOS, or the connect fails for length, not the sandbox.
         "foreign_socket": os.path.relpath(trial["outside"] / "foreign.sock", trial["sock"]),
-        **extra,
     }
-    argv = [sys.executable, "-I", "-c", PROBE, json.dumps(targets)]
+
+
+def _probe(trial, **extra):
+    argv = [sys.executable, "-I", "-c", PROBE, json.dumps({**_targets(trial), **extra})]
     completed = subprocess.run(
         sandbox.wrap(argv, cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]], socket_dir=trial["sock"]),
         cwd=trial["sock"], capture_output=True, text=True, timeout=60, env=sandbox.environment([trial["state"]]),
@@ -221,6 +225,49 @@ def test_every_tool_launch_is_sandboxed(tmp_path, monkeypatch):
 # --- what each platform's rules expose (#64 review) -----------------------------------------------
 
 
+TOOL_ARGV = [sys.executable, "-I", "tool.py"]
+# Harmless programs that live inside a platform's mounted system-library folders: each only prints
+# its version or usage, so even a failed sandbox runs nothing that matters.
+LIBRARY_PROGRAMS = {
+    "linux-bwrap": [
+        ["/usr/lib/git-core/git", "--version"],
+        ["/lib64/ld-linux-x86-64.so.2", "--version"],
+        ["/lib/ld-linux-aarch64.so.1", "--version"],
+    ],
+    "macos-sandbox-exec": [
+        ["/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"],
+    ],
+}
+
+
+def test_a_program_inside_a_mounted_library_folder_never_runs(trial):
+    """Decision 0023 lets a tool read the system libraries, and run only the interpreter."""
+    running = sandbox.mode()
+    reads = sandbox.LINUX_SYSTEM_READS if running == "linux-bwrap" else sandbox.MACOS_SYSTEM_READS
+    programs = [p for p in LIBRARY_PROGRAMS[running]
+                if os.access(p[0], os.X_OK) and sandbox._under(p[0], reads) and sandbox._under(os.path.realpath(p[0]), reads)]
+    assert programs, "no library-folder program to probe on this machine"
+    if running == "linux-bwrap":
+        # The control: the probe's own launch with only the exec filter taken out. The mounts alone
+        # let every one of these programs run (#64 review).
+        argv = [sys.executable, "-I", "-c", PROBE, json.dumps({**_targets(trial), "library_programs": programs})]
+        launch = sandbox.wrap(argv, cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]],
+                              socket_dir=trial["sock"])
+        start = launch.index("--") + 1
+        assert launch[start:start + 3] == [sys.executable, "-I", str(sandbox.NO_EXEC)]
+        control = subprocess.run(
+            [*launch[:start], *launch[start:start + 2], *launch[start + 3:]],
+            cwd=trial["sock"], capture_output=True, text=True, timeout=60, env=sandbox.environment([trial["state"]]))
+        assert control.returncode == 0, control.stderr[-2000:]
+        ran = json.loads(control.stdout)
+        assert all(ran["exec_library:" + p[0]] == "allowed" for p in programs), ran
+    result = _probe(trial, library_programs=programs)
+    for program in programs:
+        outcome = result["exec_library:" + program[0]]
+        assert outcome == "denied:PermissionError" if running == "linux-bwrap" else outcome.startswith("denied"), \
+            (program, outcome)
+
+
 def _linux_mounts(argv):
     """Each (kind, destination) a bwrap argv mounts or links inside the sandbox."""
     mounts, i = [], 0
@@ -296,9 +343,76 @@ def _plant(directory, monkeypatch, name="planted.sock"):
     return listener
 
 
+def test_on_linux_every_tool_runs_behind_the_exec_filter(tmp_path, linux):
+    argv = sandbox.wrap([sys.executable, "-I", "tool.py", "arg"], cwd=tmp_path, write=[tmp_path])
+    assert argv[argv.index("--") + 1:] == [sys.executable, "-I", str(sandbox.NO_EXEC), "tool.py", "arg"]
+    assert _visible(str(sandbox.NO_EXEC), _linux_mounts(argv))
+    assert "--as-pid-1" in argv  # no unfiltered process shares the tool's sandbox
+
+
+@pytest.mark.parametrize("argv", [["/bin/sh", "-c", "true"], [sys.executable, "tool.py"],
+                                  [sys.executable, "-I", "-u", "tool.py"], [sys.executable, "-I"],
+                                  [sys.executable, "-I", "-c"]])
+def test_on_linux_only_the_isolated_interpreter_launches(tmp_path, linux, argv):
+    with pytest.raises(sandbox.SandboxUnavailable, match="-I"):
+        sandbox.wrap(argv, cwd=tmp_path, write=[tmp_path])
+
+
+def test_linux_refuses_a_machine_without_an_exec_filter(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(sandbox.shutil, "which", lambda name: "/usr/bin/bwrap")
+    monkeypatch.setattr(sandbox.os, "uname", lambda: os.uname_result(("Linux", "h", "6", "1", "riscv64")))
+    with pytest.raises(sandbox.SandboxUnavailable, match="riscv64"):
+        sandbox.mode()
+    monkeypatch.setattr(sandbox.os, "uname", lambda: os.uname_result(("Linux", "h", "6", "1", "x86_64")))
+    monkeypatch.setattr(sandbox.struct, "calcsize", lambda fmt: 4)
+    with pytest.raises(sandbox.SandboxUnavailable, match="32-bit"):
+        sandbox.mode()
+
+
+def _run_filter(program, nr, arch):
+    """Evaluate a seccomp cBPF program (the four opcodes it uses) on one syscall."""
+    data = {0: nr, 4: arch}
+    accumulator, pc = 0, 0
+    while True:
+        code, jt, jf, k = program[pc]
+        if code == 0x20:  # BPF_LD | BPF_W | BPF_ABS
+            accumulator, pc = data[k], pc + 1
+        elif code in (0x15, 0x35):  # BPF_JMP | BPF_JEQ / BPF_JGE, with a constant
+            taken = accumulator == k if code == 0x15 else accumulator >= k
+            pc += 1 + (jt if taken else jf)
+        elif code == 0x06:  # BPF_RET
+            return k
+        else:
+            raise AssertionError(f"unexpected opcode {code:#x}")
+
+
+# Written out from <linux/audit.h> and each architecture's unistd.h, not read from no_exec, so a wrong
+# number there fails here: audit arch, then execve, execveat, ptrace, and process_vm_writev.
+SYSCALLS = {"x86_64": (0xC000003E, (59, 322, 101, 311)), "aarch64": (0xC00000B7, (221, 281, 117, 271))}
+EPERM, ALLOW, KILL_PROCESS = 0x00050000 | 1, 0x7FFF0000, 0x80000000
+
+
+@pytest.mark.parametrize("machine", ["x86_64", "aarch64"])
+def test_the_exec_filter_fails_exactly_the_calls_that_start_a_program(machine):
+    from tools import no_exec
+
+    arch, denied = SYSCALLS[machine]
+    program = no_exec.program(machine)
+    for nr in denied:
+        assert _run_filter(program, nr, arch) == EPERM, nr
+    for nr in range(0, 460):
+        if nr not in denied:
+            assert _run_filter(program, nr, arch) == ALLOW, nr
+    if machine == "x86_64":
+        for nr in (0x40000000 | 520, 0x40000000 | 545):  # x32's execve and execveat
+            assert _run_filter(program, nr, arch) == EPERM
+    assert _run_filter(program, 11, 0x40000003) == KILL_PROCESS  # i386's execve, another ABI
+
+
 def test_on_linux_the_worker_mounts_the_fixture_socket_alone(trial, linux):
     sock = str(trial["sock"].resolve())
-    client = sandbox.wrap(["tool"], cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]],
+    client = sandbox.wrap(TOOL_ARGV, cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]],
                           socket_dir=trial["sock"])
     mounts = _linux_mounts(client)
     assert ("--ro-bind", os.path.join(sock, sandbox.SOCKET_NAME)) in mounts
@@ -309,14 +423,14 @@ def test_on_linux_the_worker_mounts_the_fixture_socket_alone(trial, linux):
 def test_on_linux_a_foreign_socket_in_a_mounted_directory_refuses_the_worker(trial, linux, monkeypatch, where):
     trial["listeners"].append(_plant(trial[where], monkeypatch))
     with pytest.raises(sandbox.SandboxUnavailable, match="planted.sock"):
-        sandbox.wrap(["tool"], cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]],
+        sandbox.wrap(TOOL_ARGV, cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["state"]],
                      socket_dir=trial["sock"])
 
 
 def test_on_linux_a_foreign_socket_beside_the_fixture_socket_refuses_the_service(trial, linux):
     # The service writes the socket directory, so the trial fixture's sibling.sock is mounted for it.
     with pytest.raises(sandbox.SandboxUnavailable, match="sibling.sock"):
-        sandbox.wrap(["tool"], cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["sock"]],
+        sandbox.wrap(TOOL_ARGV, cwd=trial["sock"], read=[trial["fixtures"]], write=[trial["sock"]],
                      socket_dir=trial["sock"], bind_socket=True)
 
 

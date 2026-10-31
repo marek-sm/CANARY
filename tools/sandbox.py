@@ -20,12 +20,14 @@ exposes neither ``/usr`` nor ``/usr/bin``.
 
 On macOS this is ``sandbox-exec`` with a deny-by-default profile that runs only
 the interpreter and names the fixture socket's path. On Linux it is ``bwrap``
-with every namespace unshared and only the named paths mounted. A mounted path
-is all a Linux sandbox can run or connect to, whatever the mount's mode, so the
+with every namespace unshared and only the named paths mounted. A Linux mount
+can't stop what it holds from running or being connected to, so every Linux
+tool starts through ``no_exec.py``, whose seccomp filter fails every attempt to
+run a program, including those in the mounted system-library folders; and the
 worker gets the fixture socket alone, never its directory, and a launch refuses
 when any other socket sits in a directory it would mount. Root-owned system
-library directories aren't checked: a socket there needs root. Any other
-platform, a missing sandbox binary, or a root user refuses, so a tool launch
+library directories aren't checked for sockets: a socket there needs root. Any other
+platform or Linux machine, a missing sandbox binary, or a root user refuses, so a tool launch
 fails closed rather than running unconfined. The mode, version, and the hash of
 the rendered rules are recorded with every trial's component versions.
 """
@@ -38,14 +40,18 @@ import hashlib
 import os
 import shutil
 import stat
+import struct
 import sys
 import sysconfig
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
 
-VERSION = "tool-sandbox-v0.2.0"
+from tools import no_exec
+
+VERSION = "tool-sandbox-v0.3.0"
 SOCKET_NAME = "fixture.sock"
 TOOLS = Path(__file__).resolve().parent
+NO_EXEC = TOOLS / "no_exec.py"
 SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 # Read-only system locations the interpreter needs to start. No /usr/bin, /etc,
 # /var, /home, /run, or user directory is ever readable.
@@ -168,6 +174,9 @@ def mode() -> str:
     if sys.platform.startswith("linux"):
         if shutil.which("bwrap") is None:
             raise SandboxUnavailable("bubblewrap (bwrap) is not installed; see README.md, tool sandbox")
+        if os.uname().machine not in no_exec.ARCHES or struct.calcsize("P") != 8:
+            raise SandboxUnavailable(f"no exec filter for {os.uname().machine} with a {struct.calcsize('P') * 8}-bit "
+                                     "Python; use 64-bit Python on x86_64 or aarch64 Linux")
         return "linux-bwrap"
     raise SandboxUnavailable(f"no supported tool sandbox on {sys.platform}; use macOS or Linux (WSL2 on Windows)")
 
@@ -203,7 +212,7 @@ def linux_argv(*, read: Sequence[str], write: Sequence[str], cwd: str,
     programs, files, dirs, links = _interpreter()
     argv = [
         shutil.which("bwrap") or "bwrap",
-        "--die-with-parent", "--new-session", "--unshare-all", "--cap-drop", "ALL",
+        "--die-with-parent", "--new-session", "--unshare-all", "--as-pid-1", "--cap-drop", "ALL",
         "--clearenv", "--setenv", "PATH", "/nonexistent", "--setenv", "LANG", "C.UTF-8",
         "--proc", "/proc", "--dev", "/dev",
     ]
@@ -254,8 +263,14 @@ def wrap(
     if sandbox == "macos-sandbox-exec":
         profile = macos_profile(read=reads, write=writes, socket=socket, bind_socket=bind_socket)
         return [SANDBOX_EXEC, "-p", profile, *argv]
+    if list(argv[:2]) != [sys.executable, "-I"] or len(argv) < 3 or len(argv) < 4 and argv[2] == "-c" \
+            or (argv[2].startswith("-") and argv[2] != "-c"):
+        raise SandboxUnavailable(f"a sandboxed tool runs as {sys.executable} -I SCRIPT or -I -c CODE, "
+                                 f"not {list(argv[:3])}")
     _refuse_foreign_sockets([*reads, *writes, str(TOOLS)], socket)
-    return [*linux_argv(read=reads, write=writes, cwd=cwd_real, socket=socket, bind_socket=bind_socket), *argv]
+    # The exec filter goes on before the tool's first line runs (no_exec.py).
+    return [*linux_argv(read=reads, write=writes, cwd=cwd_real, socket=socket, bind_socket=bind_socket),
+            sys.executable, "-I", str(NO_EXEC), *argv[2:]]
 
 
 def environment(write: Iterable[os.PathLike | str] = ()) -> dict[str, str]:
@@ -279,7 +294,8 @@ def describe() -> str:
     template = (
         macos_profile(read=["<read>"], write=["<write>"], socket="<socket>", bind_socket=False)
         if sandbox == "macos-sandbox-exec"
-        else " ".join(linux_argv(read=["<read>"], write=["<write>"], cwd="<cwd>", socket="<socket>"))
+        else " ".join([*linux_argv(read=["<read>"], write=["<write>"], cwd="<cwd>", socket="<socket>"),
+                       hashlib.sha256(NO_EXEC.read_bytes()).hexdigest()])
     )
     programs, files, dirs, links = _interpreter()
     machine_paths = [*programs, *files, *dirs, *(p for link in links for p in link if os.path.isabs(p)),

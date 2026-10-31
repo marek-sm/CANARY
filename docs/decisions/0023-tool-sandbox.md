@@ -2,7 +2,7 @@
 
 - Status: Accepted. Approved by the project lead on 2026-10-28; drafted with AI assistance.
 - Date: 2026-10-28
-- Revised: 2026-10-30, before merge, for #64's review: items 1 and 6 now expose only the interpreter's own files, keep the Linux worker to `fixture.sock`, and bind the record to the mock grid's code.
+- Revised: 2026-10-30, before merge, for #64's review: items 1 and 6 now expose only the interpreter's own files, keep the Linux worker to `fixture.sock`, and bind the record to the mock grid's code. Revised 2026-10-31, for the same review: on Linux, every tool runs behind a seccomp filter that fails any attempt to run a program.
 - Decision scope: Protocol
 - Secondary scopes: Release, Governance
 - Related specification sections: Sections 3, 9, 11, and 13
@@ -48,9 +48,9 @@ The project lead's Mac has no Docker.
    - writing only the process's own directory (the tool state, or the fixture-socket directory);
    - reaching only the trial's fixture Unix socket, by path.
 
-   It refuses a root user, an unsupported platform, or a missing sandbox binary, so a launch fails closed. Tool processes get only `PATH`, `LANG`, and `TMPDIR` (their own writable directory), never a provider variable.
+   It refuses a root user, an unsupported platform or Linux machine, or a missing sandbox binary, so a launch fails closed. Tool processes get only `PATH`, `LANG`, and `TMPDIR` (their own writable directory), never a provider variable.
    - **macOS:** `sandbox-exec` with `(deny default)`. The interpreter needs no system service: the allowed `mach-lookup` list is empty, and `sysctl-read` isn't allowed. File metadata (names, sizes, and dates through `stat`) stays readable everywhere, because Python's startup resolves paths through it. File contents, directory listings, and writes are denied outside the allowed paths.
-   - **Linux:** `bwrap` with every namespace unshared. Only the named paths, the interpreter, and `/usr/lib*`, `/lib*`, and `/etc/ld.so.cache` are mounted. `/`, `/home`, `/run`, `/var`, the repository root, and `/tmp` are not. bwrap creates empty parent folders for each mount, and `--remount-ro /` makes them read-only. A mounted socket can be reached whatever the mount's mode, so the worker gets `fixture.sock` alone, never its folder, and a launch refuses when any other socket sits in a folder it would mount. Root-owned system library folders aren't checked, because a socket there needs root.
+   - **Linux:** `bwrap` with every namespace unshared. Only the named paths, the interpreter, and `/usr/lib*`, `/lib*`, and `/etc/ld.so.cache` are mounted. `/`, `/home`, `/run`, `/var`, the repository root, and `/tmp` are not. bwrap creates empty parent folders for each mount, and `--remount-ro /` makes them read-only. A mounted socket can be reached whatever the mount's mode, so the worker gets `fixture.sock` alone, never its folder, and a launch refuses when any other socket sits in a folder it would mount. Root-owned system library folders aren't checked, because a socket there needs root. Those folders also hold programs, and a Linux mount can't stop them running, so every Linux tool starts through `tools/no_exec.py`: its seccomp filter fails every `execve` and `execveat` with `EPERM` before the tool's first line runs, and every thread and child inherits it. It also fails any x32 call and `ptrace` and `process_vm_writev`, kills the tool on any other ABI's call, and bwrap starts the tool as the sandbox's only process, so it can't steer another process into running a program either. A Linux machine other than x86_64 or aarch64, or a 32-bit Python, refuses; CI runs x86_64.
    - **Other platforms** refuse. Windows members use WSL2.
 2. **Tools have no network at all.** `tools/fixture_http.py` serves the trial's fixture pages on `fixture.sock` in the trial's socket directory instead of loopback TCP, and `tools/fetch_url.py` connects to it over `AF_UNIX`. The allowlist, the `.fixture.test` check, and the no-redirect rule are unchanged. The `fetch_url` description, `TOOL_SCHEMAS`, fixture hashes, and `task_order` don't change.
 
@@ -91,7 +91,7 @@ The project lead's Mac has no Docker.
    - The CI container digest stays Gate 3's container artifact.
 
    `compose.yaml` (audit F-07) stays a separate item.
-10. **Members.** `make sandbox-check` runs the sandbox tests. macOS needs nothing. Linux needs `bubblewrap` and, on Ubuntu 23.10 and later, `kernel.apparmor_restrict_unprivileged_userns=0` in `/etc/sysctl.d`. Windows needs WSL2 Ubuntu. Members run it once and report a failure the same day.
+10. **Members.** `make sandbox-check` runs the sandbox tests. macOS needs nothing. Linux (x86_64 or aarch64) needs `bubblewrap` and, on Ubuntu 23.10 and later, `kernel.apparmor_restrict_unprivileged_userns=0` in `/etc/sysctl.d`. Windows needs WSL2 Ubuntu. Members run it once and report a failure the same day.
 11. **Review.** Chace (T1, the tools' owner) reviews the launcher, its tests, and the tool changes.
 
 ## Consequences
@@ -104,7 +104,9 @@ The project lead's Mac has no Docker.
 ## Verification
 
 - `tests/test_tool_sandbox.py` (run by `make sandbox-check`) passes on macOS (`sandbox-exec`) and in CI (`bwrap`). It covers:
-  - the probe's twelve forbidden actions denied and its three allowed actions working, plus a listener beside `fixture.sock` and one inside the fixture root never reached;
+  - the probe's twelve forbidden actions denied and its three allowed actions working, plus a listener beside `fixture.sock` and one inside the fixture root never reached, and a program inside a mounted system-library folder never run;
+  - the Linux exec filter failing exactly `execve`, `execveat`, `ptrace`, and `process_vm_writev`, evaluated instruction by instruction against a written-out syscall table on every platform, and every Linux launch running the interpreter in isolated mode through it;
+  - in CI, a control run with the Linux mounts but no filter that does run a library-folder program, and the same probe through the filter failing it with `PermissionError`;
   - a distro Python's generated rules exposing its binary and standard library but not `/usr`, `/usr/bin`, or `curl`, on both platforms;
   - on Linux, the worker's rules mounting the fixture socket alone, and a foreign socket in a mounted folder refusing the launch;
   - the record refusing a mock grid of code committed since, run with an untracked hashed file, run on another corpus, or stopped without its stop line;
@@ -113,5 +115,5 @@ The project lead's Mac has no Docker.
   - every paid-run refusal on the delivery, text-only, `ticket_slice`, and `mock_slice` paths;
   - the live-smoke exception.
 - On `main` before this change, the same probe launched like the worker was allowed 11 of its 12 forbidden actions.
-- The full suite passes on macOS without the local SQLite shim (1840 tests after #64's review fixes), because of item 4.
+- The full suite passes on macOS without the local SQLite shim (1850 tests after #64's review fixes), because of item 4.
 - `tests/test_contract_lock.py`, `tests/test_corpus_rules_freeze.py`, and `tests/test_request_effect.py` pass unchanged, so no pinned text changed.
