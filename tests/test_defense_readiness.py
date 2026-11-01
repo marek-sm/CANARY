@@ -40,21 +40,32 @@ def tool_event(call_id="c1", *, authorized=True, dispatched=True, blocked=False,
     }
 
 
-def result(base, channel, condition, configuration, *, tool_events=None, input_tokens=1000, status="completed", run_index=1):
+REQUESTS: dict[str, list] = {}
+
+
+def result(base, channel, condition, configuration, *, tool_events=None, input_tokens=1000, requests=None, status="completed", run_index=1):
     record = copy.deepcopy(TEMPLATE)
     trial = f"grid-dev:unfrozen:{MODEL}:{base}:{channel}:{condition}:{configuration}:r{run_index}"
     record.update(split="development", experiment_id="grid-dev", logical_trial_id=trial, base_case_id=base,
                   case_id=f"{base}:{channel}:{condition}", channel=channel, condition=condition,
                   configuration=configuration, status=status, run_index=run_index)
     record["run_metadata"].update(model_requested=MODEL, model_resolved=MODEL)
-    record["usage"]["input_tokens"] = input_tokens
+    requests = list(requests) if requests is not None else [input_tokens]
+    REQUESTS[trial] = requests
+    record["usage"]["input_tokens"] = None if None in requests else sum(requests)
+    record["usage"]["provider_requests"] = len(requests)
+    record["attempts"] = [
+        {"attempt_id": f"{trial}:step{i}:a1", "model_call_id": f"{trial}:step{i}", "step": i, "attempt_index": 1,
+         "provider_request_id": None, "outcome": "model_response"}
+        for i in range(1, len(requests) + 1)
+    ]
     if configuration == D1:
         record["tool_events"] = tool_events if tool_events is not None else [tool_event()]
     RESULT_VALIDATOR.validate(record)
     return record
 
 
-def events(record, stop="end_turn"):
+def events(record, stop="end_turn", usage=True):
     trial = record["logical_trial_id"]
     common = {"schema_version": "1.0.0", "experiment_id": record["experiment_id"], "logical_trial_id": trial,
               "configuration": record["configuration"], "recorded_at": "2026-10-20T00:00:00Z",
@@ -63,13 +74,16 @@ def events(record, stop="end_turn"):
     log = [
         {**common, "event_id": f"{trial}:e1", "sequence": 1, "event_type": "trial_started", "model_call_id": None,
          "attempt_id": None, "payload": {"model_requested": MODEL, "max_steps": 6}},
-        {**common, "event_id": f"{trial}:e2", "sequence": 2, "event_type": "provider_attempt",
-         "model_call_id": f"{trial}:step1", "attempt_id": f"{trial}:step1:a1",
-         "raw_evidence": {"sha256": "0" * 64, "artifact_ref": None},
-         "payload": {"step": 1, "attempt_index": 1, "outcome": "model_response", "provider_request_id": None,
-                     "model_requested": MODEL, "model_resolved": MODEL, "provider_fingerprint": None,
-                     "raw_response": {"stop_reason": stop, "content": []}}},
     ]
+    for i, tokens in enumerate(REQUESTS[trial], start=1):
+        payload = {"step": i, "attempt_index": 1, "outcome": "model_response", "provider_request_id": None,
+                   "model_requested": MODEL, "model_resolved": MODEL, "provider_fingerprint": None,
+                   "raw_response": {"stop_reason": stop, "content": []}}
+        if usage:
+            payload["usage"] = {"input_tokens": tokens, "output_tokens": 10}
+        log.append({**common, "event_id": f"{trial}:e{i + 1}", "sequence": i + 1, "event_type": "provider_attempt",
+                    "model_call_id": f"{trial}:step{i}", "attempt_id": f"{trial}:step{i}:a1",
+                    "raw_evidence": {"sha256": "0" * 64, "artifact_ref": None}, "payload": payload})
     for event in log:
         EVENT_VALIDATOR.validate(event)
     return log
@@ -252,3 +266,102 @@ def test_code_checks_pass_on_a_clean_run(monkeypatch):
 def test_cli_refuses_an_empty_run(tmp_path, capsys):
     assert main([str(tmp_path)]) == 1
     assert "no results.jsonl" in capsys.readouterr().err
+
+
+# --- Review findings on PR #54 (P1 evidence, P2 per-request fit, P2 deselection, P2 budgets) ---
+
+
+def d2_with_events(mutate, **kwargs):
+    trials = grid(**kwargs)
+    i, record = find(trials, D2)
+    trials[i] = (record, mutate(events(record)))
+    return trials
+
+
+def test_d2_missing_provider_trace_is_not_ready():
+    report = run(d2_with_events(lambda log: [e for e in log if e["event_type"] != "provider_attempt"]))
+    assert report["defenses"][D2]["decision"] == "not_ready"
+    assert "D2-NO-TRUNCATION" in failed(report, D2)
+    check = next(c for c in report["defenses"][D2]["checks"] if c["check"] == "D2-NO-TRUNCATION")
+    assert any("no provider_attempt events" in line for line in check["evidence"])
+
+
+def test_d2_trace_missing_an_attempt_the_result_lists_is_not_ready():
+    trials = grid(**{D2: {"requests": [1000, 1000]}})
+    i, record = find(trials, D2)
+    log = events(record)
+    trials[i] = (record, log[:-1])  # drops the second attempt's event
+    assert "D2-NO-TRUNCATION" in failed(run(trials), D2)
+
+
+def test_d2_attempt_without_a_stop_reason_is_not_ready():
+    def drop(log):
+        for e in log:
+            if e["event_type"] == "provider_attempt":
+                e["payload"]["raw_response"] = {"content": []}
+        return log
+
+    assert "D2-NO-TRUNCATION" in failed(run(d2_with_events(drop)), D2)
+
+
+def test_d2_context_fit_is_per_request_not_the_trial_total():
+    two_fit = {D2: {"requests": [100_000, 100_000]}}
+    report = run(grid(**two_fit), context_window=150_000, output_reserve=20_000)
+    assert report["defenses"][D2]["decision"] == "ready"  # each request is 120,000 with its reserve; the sum would not fit
+    big = {D2: {"requests": [100_000, 140_000]}}
+    assert "D2-CONTEXT" in failed(run(grid(**big), context_window=150_000, output_reserve=20_000), D2)
+
+
+def test_d2_unknown_request_size_is_not_skipped():
+    def strip(log):
+        for e in log:
+            if e["event_type"] == "provider_attempt":
+                e["payload"].pop("usage", None)
+        return log
+
+    report = run(d2_with_events(strip))
+    assert {"D2-CONTEXT", "D2-USAGE"} <= failed(report, D2)
+
+
+@pytest.mark.parametrize("window,reserve", [(500, -1000), (0, 0), (-5, 10), (True, 0), (1000, True), (1000.5, 0)])
+def test_invalid_budgets_are_refused(window, reserve):
+    with pytest.raises(ValueError):
+        run(grid(), context_window=window, output_reserve=reserve)
+
+
+def test_cli_refuses_invalid_budgets_before_reading_the_run(tmp_path, capsys):
+    assert main([str(tmp_path), "--context-window", "500", "--output-reserve", "-1000"]) == 1
+    assert "output reserve must not be negative" in capsys.readouterr().err
+    assert main([str(tmp_path), "--context-window", "0", "--output-reserve", "0"]) == 1
+    assert "context window must be positive" in capsys.readouterr().err
+
+
+def test_code_checks_reject_a_deselected_partial_run(monkeypatch):
+    class Proc:
+        returncode = 0
+        stdout = "1 passed, 218 deselected in 0.02s\n"
+        stderr = ""
+
+    monkeypatch.setattr(dr.subprocess, "run", lambda *a, **k: Proc())
+    check = dr.run_tests("D1-TESTS", ("tests/test_policy_gate.py",))
+    assert not check["passed"] and "deselected" in check["detail"]
+
+
+@pytest.mark.parametrize("line", ["3 passed, 1 xfailed in 0.1s", "3 passed, 1 error in 0.1s", "3 passed, 1 xpassed in 0.1s"])
+def test_code_checks_reject_xfail_xpass_and_errors(monkeypatch, line):
+    class Proc:
+        returncode = 0
+        stdout = line + "\n"
+        stderr = ""
+
+    monkeypatch.setattr(dr.subprocess, "run", lambda *a, **k: Proc())
+    assert not dr.run_tests("D1-TESTS", ("tests/x.py",))["passed"]
+
+
+def test_code_checks_strip_inherited_pytest_options(monkeypatch, tmp_path):
+    """PYTEST_ADDOPTS=-k must not narrow the predeclared suite; run it for real."""
+    suite = tmp_path / "test_suite.py"
+    suite.write_text("def test_a():\n    pass\n\n\ndef test_b():\n    pass\n", encoding="utf-8")
+    monkeypatch.setenv("PYTEST_ADDOPTS", "-k test_a")
+    check = dr.run_tests("D1-TESTS", (str(suite),))
+    assert check["passed"] and "2 passed" in check["detail"] and "deselected" not in check["detail"]
