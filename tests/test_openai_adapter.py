@@ -317,6 +317,15 @@ def test_unlisted_400_is_still_an_infrastructure_failure(tmp_path, policy_code):
     assert result["status"] == "infrastructure_failure" and result["termination_reason"] == "infrastructure_failure"
 
 
+def test_a_listed_code_on_a_non_400_status_is_still_an_infrastructure_failure(tmp_path, policy_code):
+    # Audit A-11: decision 0008 lists content-policy codes for HTTP 400 only.
+    fake = Fake((429, POLICY_CODE), (429, POLICY_CODE), (429, POLICY_CODE))
+    events, result = run_ticket(tmp_path, fake)
+    assert len(fake.requests) == 3
+    assert {a["payload"]["outcome"] for a in of_type(events, "provider_attempt")} == {"no_model_content"}
+    assert result["status"] == "infrastructure_failure" and result["termination_reason"] == "infrastructure_failure"
+
+
 def test_content_filter_finish_is_a_refusal_that_keeps_its_text(tmp_path):
     events, result = run_ticket(tmp_path, Fake(text_body("partial answer", finish_reason="content_filter")))
     assert result["status"] == "completed" and result["termination_reason"] == "provider_content_filter"
@@ -454,6 +463,18 @@ def test_build_client_disables_retries_pins_the_url_and_ignores_proxy_env(monkey
     assert adapter_mod.build_client(SENTINEL) == "client"
     assert seen["max_retries"] == 0 and seen["base_url"] == "https://api.openai.com/v1"
     assert seen["http_client"]._trust_env is False
+    # Audit A-11: a bounded request, and no redirect that could carry the key elsewhere.
+    assert seen["timeout"] == 60.0
+    assert seen["http_client"].follow_redirects is False
+
+
+def test_build_client_refuses_an_empty_key(monkeypatch):
+    # Audit A-11.
+    for name in [n for n in __import__("os").environ if n.startswith("OPENAI_")]:
+        monkeypatch.delenv(name)
+    monkeypatch.setattr(adapter_mod.openai, "OpenAI", _no_client)
+    with pytest.raises(ValueError):
+        adapter_mod.build_client("")
 
 
 def test_build_client_refuses_ambient_openai_variables(monkeypatch):

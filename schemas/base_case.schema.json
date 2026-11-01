@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:base_case:1.0.0",
+  "title": "CANARY base-case record",
+  "description": "One accepted development, evaluation, C1-control, or demo case (SPEC.md Section 8, 'Base-case record'; first version under decision 0009 item 8). A development or evaluation base names its W6-T1 task: `task.user_prompt_template` is the task's one semantic prompt with `{source}` where each channel's source locator goes (SPEC.md Section 5), and `task.task_id`, `task.authorization_policy_ref`, and `task.utility_oracle_ref` name the registry template, its per-channel policies, and its utility oracle. C1-control and demo records start as source records; `W7-T1` and `W7-T5` add their case parts. A reviewer must be a different person from the opener and the adapter (SPEC.md Section 5); `corpus.intake` checks that across fields.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "base_case_id",
+    "split",
+    "candidate_id",
+    "source",
+    "attack",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "base_case_id": {
+      "type": "string",
+      "pattern": "^(dev|eval|c1|demo)-[0-9]{3}$"
+    },
+    "split": {
+      "enum": [
+        "development",
+        "evaluation",
+        "c1_control",
+        "demo"
+      ]
+    },
+    "candidate_id": {
+      "$ref": "#/$defs/candidate_id"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "citation_key",
+        "url",
+        "title",
+        "source_version",
+        "source_case_id",
+        "source_locator",
+        "license",
+        "opened_by",
+        "opened_at",
+        "reviewed_by"
+      ],
+      "properties": {
+        "citation_key": {
+          "$ref": "#/$defs/text"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "source_version": {
+          "$ref": "#/$defs/text"
+        },
+        "source_case_id": {
+          "$ref": "#/$defs/text"
+        },
+        "source_locator": {
+          "$ref": "#/$defs/text"
+        },
+        "license": {
+          "$ref": "#/$defs/text"
+        },
+        "opened_by": {
+          "$ref": "#/$defs/person"
+        },
+        "opened_at": {
+          "$ref": "#/$defs/date"
+        },
+        "reviewed_by": {
+          "$ref": "#/$defs/reviewer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attack": {
+      "type": "object",
+      "required": [
+        "attack_family_id",
+        "primary_goal",
+        "original_payload",
+        "original_payload_sha256",
+        "adapted_payload",
+        "canonical_payload",
+        "canonical_payload_sha256",
+        "adaptation_notes",
+        "adapted_by",
+        "reviewed_by"
+      ],
+      "properties": {
+        "attack_family_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "primary_goal": {
+          "enum": [
+            "secret_disclosure",
+            "unauthorized_action"
+          ]
+        },
+        "original_payload": {
+          "$ref": "#/$defs/text"
+        },
+        "original_payload_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "adapted_payload": {
+          "$ref": "#/$defs/text"
+        },
+        "canonical_payload": {
+          "$ref": "#/$defs/text"
+        },
+        "canonical_payload_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "adaptation_notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "adapted_by": {
+          "$ref": "#/$defs/person"
+        },
+        "reviewed_by": {
+          "$ref": "#/$defs/reviewer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "template_id",
+        "task_id",
+        "user_prompt_template",
+        "utility_oracle_ref",
+        "authorization_policy_ref"
+      ],
+      "properties": {
+        "template_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "task_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+-v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "user_prompt_template": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\{source\\}"
+        },
+        "utility_oracle_ref": {
+          "type": "string",
+          "pattern": "^oracles/utility/[a-z0-9_]+\\.py#[a-z0-9-]+@v[0-9]+$"
+        },
+        "authorization_policy_ref": {
+          "type": "string",
+          "pattern": "^tasks/templates/[a-z0-9-]+\\.json$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fixture": {
+      "type": "object",
+      "required": [
+        "template_path",
+        "insertion_marker",
+        "clean_replacement",
+        "clean_replacement_sha256",
+        "template_sha256",
+        "wrapper",
+        "rendered_hash_manifest"
+      ],
+      "properties": {
+        "template_path": {
+          "type": "string",
+          "pattern": "^fixtures/[a-z0-9-]+/content\\.template\\.txt$"
+        },
+        "insertion_marker": {
+          "const": "{{INJECTION_SLOT}}"
+        },
+        "clean_replacement": {
+          "$ref": "#/$defs/text"
+        },
+        "clean_replacement_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "template_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "wrapper": {
+          "type": "object",
+          "required": [
+            "title",
+            "facts",
+            "text_field"
+          ],
+          "properties": {
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "facts": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "integer",
+                  "boolean"
+                ]
+              }
+            },
+            "text_field": {
+              "type": "string",
+              "pattern": "^[a-z_]+$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "rendered_hash_manifest": {
+          "type": "string",
+          "pattern": "^fixtures/[a-z0-9-]+/rendered-hashes\\.json$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "channels": {
+      "type": "object",
+      "required": [
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "properties": {
+        "C2": {
+          "$ref": "#/$defs/channel",
+          "properties": {
+            "tool": {
+              "const": "query_db"
+            }
+          }
+        },
+        "C3": {
+          "$ref": "#/$defs/channel",
+          "properties": {
+            "tool": {
+              "const": "read_file"
+            }
+          }
+        },
+        "C4": {
+          "$ref": "#/$defs/channel",
+          "properties": {
+            "tool": {
+              "const": "fetch_url"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/text"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "split": {
+            "enum": [
+              "development",
+              "evaluation"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "task",
+          "fixture",
+          "channels"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "split": {
+            "const": "development"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "base_case_id": {
+            "pattern": "^dev-"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "split": {
+            "const": "evaluation"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "base_case_id": {
+            "pattern": "^eval-"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "split": {
+            "const": "c1_control"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "base_case_id": {
+            "pattern": "^c1-"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "split": {
+            "const": "demo"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "base_case_id": {
+            "pattern": "^demo-"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{20}$"
+    },
+    "person": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewer": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "^([Pp][Ee][Nn][Dd][Ii][Nn][Gg]|[Tt][Bb][Dd]|[Tt][Oo][Dd][Oo])|^([Nn][Oo][Nn][Ee]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn])$"
+      }
+    },
+    "channel": {
+      "type": "object",
+      "required": [
+        "tool",
+        "resource",
+        "payload_extractor_version"
+      ],
+      "properties": {
+        "tool": {
+          "enum": [
+            "query_db",
+            "read_file",
+            "fetch_url"
+          ]
+        },
+        "resource": {
+          "$ref": "#/$defs/text"
+        },
+        "payload_extractor_version": {
+          "type": "string",
+          "pattern": "^c[234]-extract-v([2-9]|[1-9][0-9]+)$",
+          "description": "v2 or later: the record renderers that read `fixture.wrapper`"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

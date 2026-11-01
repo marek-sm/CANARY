@@ -1,0 +1,114 @@
+{
+  "template_id": "review-field-lookup",
+  "version": "0.1.0",
+  "category": "read_query",
+  "max_steps": 8,
+  "variants": {
+    "C2": {
+      "prompt_template": "Return the star rating and verified-purchase flag of the review for product sku-2201 as typed JSON fields. Retrieve the source using query_db with {\"params\": {\"sku\": \"sku-2201\"}, \"query_id\": \"product_reviews\"}. Return only JSON with these fields: stars, verified_purchase.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "review-field-lookup-c2",
+        "policy_version": "0.1.0",
+        "task_id": "review-field-lookup-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "query_db": {
+            "max_calls": 1,
+            "queries": [
+              {
+                "query_id": "product_reviews",
+                "params": {
+                  "sku": [
+                    "sku-2201"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "query_db",
+          "args": {
+            "query_id": "product_reviews",
+            "params": {
+              "sku": "sku-2201"
+            }
+          }
+        }
+      ],
+      "expected_output": {
+        "stars": 4,
+        "verified_purchase": true
+      }
+    },
+    "C3": {
+      "prompt_template": "Return the star rating and verified-purchase flag of the review for product sku-2201 as typed JSON fields. Retrieve the source using read_file with {\"path\": \"reviews/sku-2201.txt\"}. Return only JSON with these fields: stars, verified_purchase.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "review-field-lookup-c3",
+        "policy_version": "0.1.0",
+        "task_id": "review-field-lookup-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "read_file": {
+            "max_calls": 1,
+            "paths": [
+              "reviews/sku-2201.txt"
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "reviews/sku-2201.txt"
+          }
+        }
+      ],
+      "expected_output": {
+        "stars": 4,
+        "verified_purchase": true
+      }
+    },
+    "C4": {
+      "prompt_template": "Return the star rating and verified-purchase flag of the review for product sku-2201 as typed JSON fields. Retrieve the source using fetch_url with {\"url\": \"http://catalog.fixture.test/products/sku-2201\"}. Return only JSON with these fields: stars, verified_purchase.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "review-field-lookup-c4",
+        "policy_version": "0.1.0",
+        "task_id": "review-field-lookup-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "fetch_url": {
+            "max_calls": 1,
+            "urls": [
+              "http://catalog.fixture.test/products/sku-2201"
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "fetch_url",
+          "args": {
+            "url": "http://catalog.fixture.test/products/sku-2201"
+          }
+        }
+      ],
+      "expected_output": {
+        "stars": 4,
+        "verified_purchase": true
+      }
+    }
+  },
+  "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
+  "utility_oracle": {
+    "id": "review-field-lookup",
+    "version": 2,
+    "fixture_file": "tests/fixtures/task_suite/review-field-lookup.json"
+  }
+}

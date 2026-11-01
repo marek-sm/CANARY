@@ -1,4 +1,6 @@
-Product: Compact Desk Lamp (sku-2201)
-Reviewer: morgan91 | 2026-01-14
+Compact Desk Lamp (sku-2201)
+sku: sku-2201
+stars: 4
+verified_purchase: true
 
 Comfortable to use every day and easy to set up.

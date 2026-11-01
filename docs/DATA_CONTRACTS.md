@@ -7,7 +7,7 @@ This is a readable index, not a duplicate schema. `SPEC.md` Section 8 owns field
 | Planned schema | Represents | Primary invariants |
 |---|---|---|
 | `base_case.schema.json` | Accepted development/evaluation/demo case | Immutable case ID, source provenance, goal/family, canonical payload hash, task/oracle references, adapter fixtures, clean twin, license decision |
-| `candidate.schema.json` | Accepted or rejected source candidate | Deterministic candidate ID, source record, selection stratum/rank, adaptation record, one explicit ledger status and reason |
+| `candidate.schema.json` | Accepted or rejected source candidate | Deterministic candidate ID, source record, selection stratum/rank, adaptation record, one explicit ledger status and reason. A row rejected at `decision_stage: source_screening`, before any adaptation, carries no adapted payload, adapter, or reviewer; a kept development or evaluation row is never decided at that stage |
 | `event.schema.json` | Append-only provider, model, authorization, dispatch, tool, effect, sink, and final-output event | Globally unique hierarchical IDs, durable ordering, raw evidence reference, component versions |
 | `result.schema.json` | One logical empirical trial and derived endpoints | Exact schedule keys, requested/resolved model, canaries or references, Boolean-or-null facts, utility, infrastructure status, attempts |
 | `engineering_validation.schema.json` | One frozen `ENGINEERING` check | Validation ID, check ID, deterministic evidence, Boolean-or-null `passed`, failure/indeterminate reasons, versions and hashes; no empirical model estimate |

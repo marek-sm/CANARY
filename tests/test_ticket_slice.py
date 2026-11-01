@@ -227,6 +227,19 @@ def test_explicit_outer_config_and_mock_never_reads_it(tmp_path, monkeypatch):
         assert 'synthetic-credential-sentinel' not in path.read_text()
 
 
+@pytest.mark.parametrize('content', [
+    'ANTHROPIC_API_KEY=synthetic-credential-sentinel\nOTHER=1\n',  # a second line
+    'ANTHROPIC_API_KEY_X=synthetic-credential-sentinel\n',  # a longer name that only starts the same way
+])
+def test_the_key_file_holds_exactly_one_assignment_of_the_named_variable(tmp_path, content):
+    # Audit A-11: runner/provider_config.py reads exactly one `variable=` line.
+    from runner import provider_config
+    path = tmp_path / '.env'
+    path.write_text(content)
+    with pytest.raises(ValueError):
+        provider_config.load_api_key(path, 'ANTHROPIC_API_KEY')
+
+
 def test_no_content_then_success_keeps_attempts(tmp_path):
     class Retry(runner.TicketProvider):
         empty = True

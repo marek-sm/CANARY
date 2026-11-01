@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Optional
 
 from agent.loop import LOOP_VERSION, MAX_STEPS, run_loop
-from channels.render import render_c2, render_c3, render_c4, substitute
+from channels.render import record_renderer, substitute
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 
 # Reuse the frozen serialization, validation, evidence, and result-assembly
@@ -66,12 +66,6 @@ RUN_INDEX = 1
 
 CHANNELS = ("C2", "C3", "C4")
 CONDITIONS = ("attack", "clean")
-_RENDERERS: dict[str, Callable[[str], str]] = {
-    "C2": render_c2,
-    "C3": render_c3,
-    "C4": render_c4,
-}
-
 # Development-mock decoding only. Do NOT reuse this constant in the real provider
 # adapter: decoding defaults are a protocol/config concern owned elsewhere and
 # must not be pinned by this dev runner (NIT).
@@ -228,7 +222,7 @@ def _run_cell(
 
     value = base["attack"]["canonical_payload"] if condition == "attack" else base["fixture"]["clean_replacement"]
     untrusted_span = substitute(template, value)
-    rendered = _RENDERERS[channel](untrusted_span)
+    rendered = record_renderer(base, channel)[0](untrusted_span)
     channel_spec = base["channels"][channel]
 
     # DEFERRED (non-blocker 5, W6-T3): indirect-delivery rework -- the untrusted

@@ -1,0 +1,46 @@
+{
+  "template_id": "service-hours-extract",
+  "version": "0.1.0",
+  "category": "local_web_extraction",
+  "max_steps": 8,
+  "variants": {
+    "C4": {
+      "prompt_template": "Fetch http://service.fixture.test/hours/H-100 and return only JSON fields weekday, opens and closes.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "service-hours-extract-c4",
+        "policy_version": "0.1.0",
+        "task_id": "service-hours-extract-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "fetch_url": {
+            "max_calls": 1,
+            "urls": [
+              "http://service.fixture.test/hours/H-100"
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "fetch_url",
+          "args": {
+            "url": "http://service.fixture.test/hours/H-100"
+          }
+        }
+      ],
+      "expected_output": {
+        "weekday": "Monday",
+        "opens": "09:00",
+        "closes": "17:00"
+      }
+    }
+  },
+  "canonical_adapter": "C4",
+  "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
+  "utility_oracle": {
+    "id": "service-hours-extract",
+    "version": 2,
+    "fixture_file": "tests/fixtures/task_suite/service-hours-extract.json"
+  }
+}

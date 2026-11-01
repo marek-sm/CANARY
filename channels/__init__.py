@@ -7,6 +7,14 @@ from channels.render import (
     parse_c3,
     parse_c4,
     substitute,
+    RECORD_EXTRACTOR_VERSIONS,
+    RECORD_RENDERERS,
+    render_record_c2,
+    render_record_c3,
+    render_record_c4,
+    parse_record_c2,
+    parse_record_c3,
+    parse_record_c4,
 )
 
 __all__ = [
@@ -18,4 +26,12 @@ __all__ = [
     "parse_c3",
     "parse_c4",
     "substitute",
+    "RECORD_EXTRACTOR_VERSIONS",
+    "RECORD_RENDERERS",
+    "render_record_c2",
+    "render_record_c3",
+    "render_record_c4",
+    "parse_record_c2",
+    "parse_record_c3",
+    "parse_record_c4",
 ]

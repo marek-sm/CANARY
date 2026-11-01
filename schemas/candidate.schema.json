@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:candidate:1.0.0",
+  "title": "CANARY candidate ledger row",
+  "description": "One considered candidate in corpus/candidates.jsonl, kept or rejected, with exactly one SPEC.md Section 5 status (SPEC.md Section 8, 'Candidate/rejection record'; first version under decision 0009 item 8). A kept candidate (development or evaluation) has no rejection reason; every other status needs one, so nothing is dropped silently. The adaptation fields may be null only when the decision came before adaptation, at the 'source_screening' stage. A `duplicate` row names its kept case in `duplicate_of`, and an `evaluation` row carries its `canonical_payload` for deduplication and a `selection_rank` (SPEC.md Section 5 steps 4-5; `corpus.intake`). `candidate_id` is recomputed from the four immutable source inputs by tests/test_corpus_records.py.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "source",
+    "attack_family_id",
+    "primary_goal",
+    "original_payload_sha256",
+    "adapted_payload_sha256",
+    "selection_stratum",
+    "selection_rank",
+    "status",
+    "rejection_reason",
+    "decision_stage",
+    "adapted_by",
+    "reviewed_by",
+    "decision_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{20}$"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "citation_key",
+        "url",
+        "title",
+        "source_version",
+        "source_case_id",
+        "license",
+        "opened_by",
+        "opened_at",
+        "reviewed_by"
+      ],
+      "properties": {
+        "citation_key": {
+          "$ref": "#/$defs/text"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "source_version": {
+          "$ref": "#/$defs/text"
+        },
+        "source_case_id": {
+          "$ref": "#/$defs/text"
+        },
+        "license": {
+          "$ref": "#/$defs/text"
+        },
+        "opened_by": {
+          "$ref": "#/$defs/text"
+        },
+        "opened_at": {
+          "$ref": "#/$defs/date"
+        },
+        "reviewed_by": {
+          "$ref": "#/$defs/reviewer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attack_family_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "primary_goal": {
+      "enum": [
+        "secret_disclosure",
+        "unauthorized_action"
+      ]
+    },
+    "original_payload_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "adapted_payload_sha256": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "selection_stratum": {
+      "type": "string",
+      "pattern": "^(secret_disclosure|unauthorized_action)/[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "selection_rank": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "status": {
+      "enum": [
+        "development",
+        "evaluation",
+        "duplicate",
+        "unsupported_capability",
+        "unsafe",
+        "license_unclear",
+        "not_deterministically_scorable",
+        "cannot_port_without_changing_goal",
+        "out_of_scope"
+      ]
+    },
+    "rejection_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "decision_stage": {
+      "$ref": "#/$defs/text"
+    },
+    "adapted_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "reviewed_by": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/reviewer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decision_at": {
+      "$ref": "#/$defs/date"
+    },
+    "duplicate_of": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{20}|(dev|eval|c1|demo)-[0-9]{3})$"
+    },
+    "canonical_payload": {
+      "$ref": "#/$defs/text"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "development",
+              "evaluation"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rejection_reason": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "rejection_reason": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "not": {
+          "properties": {
+            "decision_stage": {
+              "const": "source_screening"
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "adapted_payload_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "adapted_by": {
+            "type": "string"
+          },
+          "reviewed_by": {
+            "$ref": "#/$defs/reviewer"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "development",
+              "evaluation"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "decision_stage": {
+            "not": {
+              "const": "source_screening"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "duplicate"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "duplicate_of"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "duplicate_of"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "evaluation"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "canonical_payload"
+        ],
+        "properties": {
+          "selection_rank": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reviewer": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "^([Pp][Ee][Nn][Dd][Ii][Nn][Gg]|[Tt][Bb][Dd]|[Tt][Oo][Dd][Oo])|^([Nn][Oo][Nn][Ee]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn])$"
+      }
+    }
+  }
+}

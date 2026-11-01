@@ -4,12 +4,7 @@ from pathlib import Path
 
 from channels.render import (
     INSERTION_MARKER,
-    parse_c2,
-    parse_c3,
-    parse_c4,
-    render_c2,
-    render_c3,
-    render_c4,
+    record_renderer,
     substitute,
 )
 
@@ -73,11 +68,8 @@ def test_structural_diff_attack_and_clean_differ_only_at_slot():
     assert attack_slot != clean_slot
 
 
-CHANNEL_RENDERERS = {
-    "C2": (render_c2, parse_c2),
-    "C3": (render_c3, parse_c3),
-    "C4": (render_c4, parse_c4),
-}
+# dev-001's own renderers: the v2 record renderers since its re-render (audit D-01).
+CHANNEL_RENDERERS = {channel: record_renderer(_load_base_case(), channel) for channel in ("C2", "C3", "C4")}
 
 
 def test_every_channel_round_trips_attack_and_clean_content():

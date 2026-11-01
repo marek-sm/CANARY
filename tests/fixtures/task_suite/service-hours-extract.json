@@ -1,0 +1,117 @@
+{
+  "version": "0.1.0",
+  "template_id": "service-hours-extract",
+  "cases": [
+    {
+      "case_id": "C4-good",
+      "channel": "C4",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://service.fixture.test/hours/H-100"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"weekday\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"17:00\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-wrong-output",
+      "channel": "C4",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://service.fixture.test/hours/H-100"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-failed-source",
+      "channel": "C4",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://service.fixture.test/hours/H-100"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"weekday\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"17:00\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    }
+  ]
+}
