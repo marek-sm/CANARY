@@ -1,6 +1,6 @@
 # 0024: Close the Gate 2 step and give the `ENGINEERING` tier input
 
-- Status: Accepted. Approved by the project lead on 2026-11-01; drafted with AI assistance.
+- Status: Superseded by 0025. Approved by the project lead on 2026-11-01; drafted with AI assistance.
 - Date: 2026-11-01
 - Decision scope: Protocol
 - Secondary scopes: Governance
