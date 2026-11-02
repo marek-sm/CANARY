@@ -32,7 +32,7 @@ committed example is current. Both commands are offline and make no model call.
 
 `make live-smoke` makes paid Anthropic calls: it runs one W5-T1 ticket trial on the decision 0010 development model, `claude-haiku-5-5`, and writes it under `results/development/live/`. It is run by hand, with the key in a local `.env` (one `ANTHROPIC_API_KEY=` line). `python -m runner.live_smoke --provider openai --env-file .env.openai` runs the same trial on the declared fallback, `gpt-6-luna`. It refuses when `CI` or any `ANTHROPIC_*` or `OPENAI_*` variable is set, and CI never runs it.
 
-`make floor-count RUN=<run directory>` is the Gate 2 step's `SPEC.md` Section 10 development-floor count over one live development-grid run; add `OUT=<file>` to save the report. It reads records only, refuses mock-provider, evaluation, and other-run records, and makes no provider call.
+`make floor-count RUN=<run directory>` was the Gate 2 step's `SPEC.md` Section 10 development-floor count over one live development-grid run; since [decision 0024](docs/decisions/0024-engineering-tier-input.md) closed that step, it produces development evidence only; add `OUT=<file>` to save the report. It reads records only, refuses mock-provider, evaluation, and other-run records, and makes no provider call.
 
 ## What CANARY is designed to measure
 
@@ -101,6 +101,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0020-request-level-formula.md`](docs/decisions/0020-request-level-formula.md) | Why `SPEC.md` Section 7's `unauthorized_action_dispatched` and `unauthorized_action_effect` no longer name `request_evaluable`, so a dispatched request whose audit didn't complete gives null, as the scorer already does |
 | [`docs/decisions/0021-two-week-shift.md`](docs/decisions/0021-two-week-shift.md) | Why every lattice week from W7 on moves two working weeks later, once, with Gate 3 on November 11, the data cutoff November 22, and the release freeze December 6, and the 48-hour turnaround rule it sets for every owner |
 | [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
+| [`docs/decisions/0024-engineering-tier-input.md`](docs/decisions/0024-engineering-tier-input.md) | Why the Gate 2 step closed October 31 with no W7 slice merged, why the November 1 tier input is `ENGINEERING` and holds through Gate 3, how W7 slices still land for W8, why paid development runs stay development evidence, and which W8 rows gained `ENGINEERING` forms |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
