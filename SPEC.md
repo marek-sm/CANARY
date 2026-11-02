@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.16.0**  
+**Public project and experimental specification v1.17.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -301,7 +301,7 @@ The defense nodes show possible integration points, not a composed fall conditio
 - A hand-written model/tool loop; no LangChain, LlamaIndex, or general agent framework.
 - JSON Schema for corpus, schedule, event, and result contracts.
 - SQLite fixtures, a local HTTP fixture server, and JSONL fake-sink receipts.
-- Docker for a pinned execution environment.
+- Docker for a pinned CI environment. For the fall 2026 run, the official sweep runs on the project lead's machine, outside that container, and under the tool sandbox once decision 0023 has merged ([decision 0025](docs/decisions/0025-full-study.md)); its records carry a null `container_digest`, and the manifest and paper state that limit.
 - Mock provider in CI; CI never spends model credits.
 - One provider adapter interface so a fallback model can be selected **before** the full freeze, never mixed into official cells.
 
@@ -1352,7 +1352,7 @@ Never patch only a surprising result. Never overwrite a frozen run. Cosmetic pro
 
 ### Readiness gates and mandatory responses
 
-Gate status is evidence-based and recorded against a commit, manifest, and date. A missed gate reduces scope; it does not authorize weaker safety, provenance, controls, scoring, or reporting.
+Gate status is evidence-based and recorded against a commit, manifest, and date. A missed gate reduces scope, with the one recorded exception below; it does not authorize weaker safety, provenance, controls, scoring, or reporting.
 
 | Gate | Target | Pass evidence |
 |---|---|---|
@@ -1364,7 +1364,7 @@ Gate status is evidence-based and recorded against a commit, manifest, and date.
 
 Mandatory responses are outcome-blind:
 
-- **Gate 1 fails:** make the next work window integration recovery, cap the empirical ceiling at `R15` or smaller, and stop nonessential corpus and presentation growth.
+- **Gate 1 fails:** make the next work window integration recovery, cap the empirical ceiling at `R15` or smaller, and stop nonessential corpus and presentation growth. For the fall 2026 run only, decision 0025 lifts the `R15` cap and the corpus-growth stop, after the fact, and only if the record merges before the first paid grid call ([record](docs/decisions/0025-full-study.md)).
 - **Gate 2 fails:** do not freeze evaluation until idempotent resume and D0_BASELINE readiness pass. Choose only a tier supported by the binary defense checks, budget, and capacity; if no comparable D0_BASELINE baseline is ready by Gate 3, choose `ENGINEERING` or `STOP`.
 - **Gate 3 fails:** use only a smaller precomputed and independently verified prefix. Never fill N with unaudited cases. If no empirical prefix or viable funded model is complete, choose `ENGINEERING` or `STOP`.
 - **Gate 4 fails:** never publish an asymmetric, incomplete, or cross-version comparison. Permit only the Section 9 symmetric repair rule through November 22, or activate the unchanged `ENGINEERING` fallback plan frozen at Gate 3 under a new validation ID. Otherwise choose `STOP`.
@@ -1636,7 +1636,7 @@ No fabricated, inferred, or unopened citation enters the corpus or paper. Becaus
 | Invalid utility task | No exact validator or passing/failing fixtures | Make it demo-only; it contributes to no utility rate |
 | Trivial D1_POLICY_GATE | No legitimate risky action in clean tasks | Add the required authorized high-risk templates before freeze |
 | Model drift | No immutable snapshot or changed resolved ID | Interleave; stop and symmetrically restart on a single version if a change is detected |
-| Integration failure | Gate 1 or Gate 2 misses | Activate the gate cut immediately; stop corpus expansion |
+| Integration failure | Gate 1 or Gate 2 misses | Activate the gate cut immediately; stop corpus expansion, except decision 0025's evaluation-candidate target for the fall 2026 run only |
 | Partial/duplicated sweep | Resume test fails or cells are missing | Fix idempotency before official evaluation; never repair rows manually |
 | Corpus cherry-picking | A selected case disappears or changes after outcomes | Preserve ledger, increment protocol, and invalidate/rerun affected experiment |
 | Adaptation drift | Port changes the attack goal | Preserve the rejection and rerun the Section 5 step 8 search over the remaining eligible candidates, in the same goal order (Section 5 step 6) |
