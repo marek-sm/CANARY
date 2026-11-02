@@ -675,6 +675,7 @@ def _run_trial_body(
             "prompt_sha256": sha256_json(messages) if messages is not None else None,
             "model_requested": trial.model_id,
             "decoding": dict(decoding),
+            "request_settings": dict(getattr(provider, "request_settings", {})),
             "max_steps": MAX_STEPS,
             "code_commit": code_commit_value,
             "tier": None,

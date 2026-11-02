@@ -145,7 +145,8 @@ def test_request_translates_history_and_tools_and_omits_sampling():
     body = fake.requests[0]
     assert body["model"] == MODEL and body["max_tokens"] == 4096
     assert body["thinking"] == {"type": "disabled"} and body["output_config"] == {"effort": "medium"}
-    assert not {"temperature", "top_p", "top_k", "tool_choice"} & set(body)
+    assert not {"temperature", "top_p", "top_k"} & set(body)
+    assert body["tool_choice"] == {"type": "auto", "disable_parallel_tool_use": True}
     assert body["system"] == [{"type": "text", "text": "sys"}, {"type": "text", "text": "marking"}]
     assert body["tools"] == [{"name": "read_file", "description": TOOL["description"], "input_schema": TOOL["input_schema"]}]
     assert body["messages"] == [
@@ -168,7 +169,13 @@ def test_key_is_sent_as_x_api_key_only():
 def test_no_tools_sends_no_tools_field():
     fake = Fake(text_body())
     call(fake, tools=())
-    assert "tools" not in fake.requests[0]
+    assert "tools" not in fake.requests[0] and "tool_choice" not in fake.requests[0]
+
+
+def test_the_adapter_declares_the_one_call_setting_it_sends():
+    fake = Fake(text_body())
+    call(fake)
+    assert adapter_mod.AnthropicMessagesAdapter.request_settings == {"tool_choice": fake.requests[0]["tool_choice"]}
 
 
 @pytest.mark.parametrize("decoding", [
