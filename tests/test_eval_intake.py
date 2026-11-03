@@ -75,3 +75,21 @@ def test_every_considered_candidate_has_a_status_and_rejections_have_reasons():
             assert rec["rejection_reason"] is None
         else:
             assert rec["rejection_reason"]
+
+
+PORT_WRAPPER = {"title": "Fixture record", "facts": {"record_id": "R-1"}, "text_field": "note"}
+
+
+@pytest.mark.parametrize("rec", [r for r in records() if r["status"] == "evaluation"], ids=lambda r: r["candidate_id"])
+def test_every_eligible_candidate_ports_to_c2_c3_and_c4(rec):
+    # Decision 0025: every candidate has to port to all three channels. Each
+    # channel's serializer escapes or wraps the payload differently, and each
+    # parser has to recover the exact canonical string.
+    from channels.render import RECORD_RENDERERS
+
+    payload = rec["canonical_payload"]
+    rendered = {}
+    for channel, (render, parse) in RECORD_RENDERERS.items():
+        rendered[channel] = render(payload, PORT_WRAPPER)
+        assert parse(rendered[channel], PORT_WRAPPER) == payload, channel
+    assert len(set(rendered.values())) == 3

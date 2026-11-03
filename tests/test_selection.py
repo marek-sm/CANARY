@@ -6,6 +6,7 @@ the tests pin the rules without depending on which candidates are in the pool.
 
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 
 from corpus import select
@@ -179,13 +180,19 @@ def test_committed_ledger_ranks_match_the_rule():
             assert r["selection_rank"] == ranks[r["candidate_id"]]
 
 
-def test_committed_pool_meets_the_w7_t2_floor():
-    # TASKS.md W7-T2: 14 candidates, at least 7 per goal, 3 sources, 3 families.
+def test_committed_pool_meets_the_w7_t2_target():
+    # TASKS.md W7-T2 as changed by decision 0025 item 6: 24 reviewed
+    # candidates, at least 12 per goal, from at least 3 sources and 4 families,
+    # able to fill 20 bases under the caps.
     rows = [r for r in select.load_rows() if r["status"] == "evaluation"]
     goals = [r["primary_goal"] for r in rows]
-    assert len(rows) >= 14
-    assert goals.count("secret_disclosure") >= 7 and goals.count("unauthorized_action") >= 7
+    assert len(rows) >= 24
+    assert goals.count("secret_disclosure") >= 12 and goals.count("unauthorized_action") >= 12
     assert len({r["source"]["citation_key"] for r in rows}) >= 3
-    assert len({r["attack_family_id"] for r in rows}) >= 3
+    assert len({r["attack_family_id"] for r in rows}) >= 4
     task_order = json.loads((ROOT / "tasks" / "task_order.json").read_text())
-    assert select.plan(select.load_rows(), task_order)["P"] >= 10
+    plan = select.plan(select.load_rows(), task_order)
+    assert plan["P"] == 20 and plan["relaxation"] == "none"
+    twenty = plan["prefixes"]["20"]["bases"]
+    assert max(Counter(b["source"] for b in twenty).values()) <= select.SOURCE_CAP
+    assert max(Counter(b["attack_family_id"] for b in twenty).values()) <= select.FAMILY_CAP

@@ -16,7 +16,7 @@
   - Acceptance evidence: `make corpus-check`; `tests/test_dev_corpus.py`; `tests/test_intake.py`.
   - Independent reviewer: `marek-sm` (review and Section 5 source review in #34, October 22; T3 capacity reassignment, October 15).
 - Pull request/commit/artifact: W7-T2 pull request, see [the W7-T2 handoff](../W7_T2_HANDOFF.md)
-  - Work performed: evaluation intake of 34 considered candidates from InjecAgent, AgentDojo, and ASB (17 eligible, 1 duplicate, 16 rejected with reasons), each with a source record; the deterministic selection script for SPEC.md Section 5 steps 5-8 under decision 0014.
+  - Work performed: evaluation intake of 44 considered candidates from InjecAgent, AgentDojo, ASB, and LLMail-Inject (27 eligible, 1 duplicate, 16 rejected with reasons), each with a source record; the deterministic selection script for SPEC.md Section 5 steps 5-8 under decision 0014.
   - Acceptance evidence: `make corpus-check`; `make select`; `tests/test_selection.py`; `tests/test_eval_intake.py`.
   - Independent reviewer: `marek-sm` (review and Section 5 source review pending).
 - Pull request/commit/artifact: review of [#28](https://github.com/marek-sm/CANARY/pull/28) (W6-T5, standing T2→T5 pair)
