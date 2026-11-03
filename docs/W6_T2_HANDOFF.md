@@ -42,7 +42,7 @@ Every original payload was copied byte-for-byte from the pinned source file, and
 
 InjecAgent is pinned at `f19c9f2c` (MIT, `LICENCE` file). AgentDojo is pinned at tag `v0.1.35` / `a75aba76` (MIT). InjecAgent's attacker files have no per-case IDs, so those records use `NO_SOURCE_CASE_ID` and give the line number in `source_locator`.
 
-**Why the C1 controls reuse dev goals.** `unauthorized_action` payloads that port to our four tools are scarce. Basically it's AgentDojo's email goals, and under `M10-ALL` W7-T2 needs at least 7 per goal. Any evaluation candidate near-identical to a dev, C1, or demo base is lost to evaluation. So the two action C1 controls reuse the two goals the dev bases already took (tasks 0 and 3) under a different wrapper. That way they don't use up any more of the pool.
+**Why the C1 controls reuse dev goals.** `unauthorized_action` payloads that port to our four tools are scarce. Basically it's AgentDojo's email goals, and W7-T2 targets at least 12 per goal under decision 0025. Any evaluation candidate near-identical to a dev, C1, or demo base is lost to evaluation. So the two action C1 controls reuse the two goals the dev bases already took (tasks 0 and 3) under a different wrapper. That way they don't use up any more of the pool.
 
 ## For the source review
 
