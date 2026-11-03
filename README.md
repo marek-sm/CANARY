@@ -34,6 +34,8 @@ committed example is current. Both commands are offline and make no model call.
 
 `make floor-count RUN=<run directory>` is the Gate 2 step's `SPEC.md` Section 10 development-floor count over one live development-grid run; add `OUT=<file>` to save the report. It reads records only, refuses mock-provider, evaluation, and other-run records, and makes no provider call.
 
+`make grid-validate` checks that `protocol/development_grid_spec.json` expands to the Section 9 ninety-cell grid. `make grid-mock` runs that grid on the mock through tool-result delivery, so each configuration runs its real defense path, and `make grid-verify RUN=<run directory>` checks trial coverage, resume invariants, and that every D1_POLICY_GATE dispatch has a gate decision and only D2_DATAMARKING delivers marked content. `make grid-summary RUN=<run directory>` prints per-channel/configuration usage aggregates. `python -m runner.grid_dev live` always refuses for now: paid grid runs open only once the paid-path tool sandbox (audit F-01) exists and the project lead records the date the paid-run condition holds. `make gate2-budget RUN=<run directory> BALANCE=<usd> C1_COST=<usd>` evaluates the Section 9 budget inequality on a live grid run.
+
 ## What CANARY is designed to measure
 
 - Model-level unsafe proposals and exact-canary disclosure.
