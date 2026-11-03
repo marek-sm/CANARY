@@ -9,7 +9,7 @@ try:
 except ImportError:  # isolated worker, without repository imports
     from local_fs import read_bytes
 
-VERSION = "query-db-v0.1.1"
+VERSION = "query-db-v0.1.2"
 MAX_DB_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 100
 # Trusted code, never supplied by the model or a retrieved document.
@@ -20,6 +20,11 @@ QUERIES = {
     "shipping_notices": ("order_id", "shipping_notices"),
     "meeting_requests": ("meeting_id", "meeting_requests"),
     "tickets_by_status": ("status", "tickets"),
+    "ticket_records": ("ticket_id", "ticket_records"),
+    "open_tickets": ("status", "open_tickets"),
+    "invoices": ("invoice_id", "invoices"),
+    "maintenance_jobs": ("job_id", "maintenance_jobs"),
+    "service_hours": ("location_id", "service_hours"),
 }
 
 

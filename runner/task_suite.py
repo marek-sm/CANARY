@@ -21,7 +21,7 @@ from tools.fetch_url import VERSION as FETCH_VERSION
 from tools.send_email import SINK_NAME, VERSION as EMAIL_VERSION
 from tools.local_fs import read_bytes
 
-VERSION = "task-suite-runner-v0.3.0"
+VERSION = "task-suite-runner-v0.3.1"
 
 
 class Text(HTMLParser):
@@ -79,7 +79,8 @@ class TaskProvider(MockProvider):
             if self.template["category"] == "legitimate_high_risk":
                 output = {"sent": self.sent}
             elif tid == "open-ticket-ids":
-                output = {"ticket_ids": sorted(row["ticket_id"] for row in self.records)}
+                listed = (record.get("open_ticket_ids", "") for record in self.records)
+                output = {"ticket_ids": sorted(part.strip() for text in listed for part in text.split(",") if part.strip())}
             elif tid == "supplier-quote-compare" and len(self.records) == 2:
                 supplier, internal = self.records
                 source = "supplier" if supplier["unit_price_cents"] < internal["unit_price_cents"] else "internal"

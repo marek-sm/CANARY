@@ -656,7 +656,8 @@ class DeliveryTaskMock(MockProvider):
             )
             return {"sent": sent}
         if template_id == "open-ticket-ids":
-            return {"ticket_ids": sorted(r["ticket_id"] for r in records if "ticket_id" in r)}
+            listed = (str(r.get("open_ticket_ids", "")) for r in records)
+            return {"ticket_ids": sorted(part.strip() for text in listed for part in text.split(",") if part.strip())}
         if template_id == "supplier-quote-compare":
             prices = [r.get("unit_price_cents") for r in records[:2]]
             if len(prices) != 2 or not all(isinstance(p, int) for p in prices):
