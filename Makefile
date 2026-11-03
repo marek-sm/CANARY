@@ -17,13 +17,16 @@ demo-example:
 demo-example-check:
 	python -m demo.accessibility --check
 
-.PHONY: corpus-fixtures corpus-check
+.PHONY: corpus-fixtures corpus-check select
 corpus-fixtures:
 	python -m corpus.render_fixtures
 
 corpus-check:
 	python -m corpus.render_fixtures --check
 	python -m corpus.intake
+
+select:
+	python -m corpus.select
 
 .PHONY: t1-smoke t1-suite
 t1-smoke:

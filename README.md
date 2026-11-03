@@ -103,6 +103,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
 | [`docs/decisions/0024-engineering-tier-input.md`](docs/decisions/0024-engineering-tier-input.md) | Why the Gate 2 step closed October 31 with no W7 slice merged, why the November 1 tier input is `ENGINEERING` and holds through Gate 3, how W7 slices still land for W8, why paid development runs stay development evidence, and which W8 rows gained `ENGINEERING` forms |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
+| [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -142,3 +143,9 @@ tool boundaries, utility evidence, and independent-review requirements.
 `uv run make corpus-check` re-renders every development base and fails if a
 committed fixture or hash drifted, then checks the candidate ledger against the
 development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).
+
+### W7-T2 evaluation intake and selection
+
+`uv run make select` prints the largest prefix the reviewed pool supports, the
+nested smaller prefixes, each base's task, and the recheck samples. It reads only
+candidate metadata, never a result. See [the W7-T2 handoff](docs/W7_T2_HANDOFF.md).

@@ -15,6 +15,10 @@
   - Work performed: development bases `dev-002` to `dev-005` from InjecAgent and AgentDojo, rendered through C2/C3/C4; C1 control and demo source records; candidate ID derivation, exact-hash and near-duplicate detection, and ledger checks.
   - Acceptance evidence: `make corpus-check`; `tests/test_dev_corpus.py`; `tests/test_intake.py`.
   - Independent reviewer: `marek-sm` (review and Section 5 source review in #34, October 22; T3 capacity reassignment, October 15).
+- Pull request/commit/artifact: W7-T2 pull request, see [the W7-T2 handoff](../W7_T2_HANDOFF.md)
+  - Work performed: evaluation intake of 34 considered candidates from InjecAgent, AgentDojo, and ASB (17 eligible, 1 duplicate, 16 rejected with reasons), each with a source record; the deterministic selection script for SPEC.md Section 5 steps 5-8 under decision 0014.
+  - Acceptance evidence: `make corpus-check`; `make select`; `tests/test_selection.py`; `tests/test_eval_intake.py`.
+  - Independent reviewer: `marek-sm` (review and Section 5 source review pending).
 - Pull request/commit/artifact: review of [#28](https://github.com/marek-sm/CANARY/pull/28) (W6-T5, standing T2→T5 pair)
   - Work performed: ran the branch's tests and generated-example check; found and reproduced a display-label bug where an errored trial with unknown compromise got no `ERROR` label, and a stored `ERROR` label crashed replay; requested changes.
   - Acceptance evidence: GitHub review on #28.
