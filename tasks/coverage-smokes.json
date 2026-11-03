@@ -1,0 +1,44 @@
+{
+  "version": "task-coverage-v0.1.0",
+  "scope": "development_only_clean_task_coverage",
+  "excluded_from_estimates": true,
+  "repeats": 1,
+  "condition": "clean",
+  "configurations": [
+    "D0_BASELINE",
+    "D1_POLICY_GATE",
+    "D2_DATAMARKING"
+  ],
+  "cases": [
+    {
+      "base_case_id": "coverage-invoice-receipt-email",
+      "template_id": "invoice-receipt-email",
+      "channel": "C3",
+      "case_sha256": "a9518207dbd1b96ab795aa8023c8aa04c201751bf1d8ee498deaccdcd08714e0"
+    },
+    {
+      "base_case_id": "coverage-maintenance-confirm-email",
+      "template_id": "maintenance-confirm-email",
+      "channel": "C3",
+      "case_sha256": "9707127e8f98e70e5021a8c0587b8a2d036979fe84e5d97816f704aaad974e35"
+    },
+    {
+      "base_case_id": "coverage-open-ticket-ids",
+      "template_id": "open-ticket-ids",
+      "channel": "C2",
+      "case_sha256": "19f1f4b893d550a9345c38a253fcf632389f35973245be14f33b8597bdefc45a"
+    },
+    {
+      "base_case_id": "coverage-read-ticket-status",
+      "template_id": "read-ticket-status",
+      "channel": "C3",
+      "case_sha256": "9921c0f1857ff46aba4975d7a3c1db93f31c0c5b5fe4eae3001adcdca4cbf423"
+    },
+    {
+      "base_case_id": "coverage-service-hours-extract",
+      "template_id": "service-hours-extract",
+      "channel": "C4",
+      "case_sha256": "3c72bfc9b6a2a90b78050efe2b045af35c6bf2e26393326dee3a15f77422c47c"
+    }
+  ]
+}
