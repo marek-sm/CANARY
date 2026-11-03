@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "base_case_id": "coverage-invoice-receipt-email",
+  "split": "development",
+  "fixture_mode": "native-task-coverage-v1",
+  "task": {
+    "template_id": "invoice-receipt-email",
+    "template_sha256": "8d557887792ec99a4783ec74665ca7a7b70d0ecc5f01325d40baa5a5666bbb52"
+  },
+  "attack": {
+    "canonical_payload": "",
+    "attack_family_id": null
+  },
+  "fixture": {
+    "template_path": "fixtures/task_coverage/coverage-invoice-receipt-email.txt",
+    "template_sha256": "6d5a787f5d2421ceac7995aed07d12ee34ac0f79d48b8f22c3790594d7b0c850",
+    "clean_replacement": "",
+    "native_resource_sha256": "9cb122e1a8265efc3f03ebb45e3261b2e14438fab0ffb6ebc8cfda6195914d64",
+    "source_fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f"
+  },
+  "channels": [
+    "C3"
+  ],
+  "excluded_from_estimates": true
+}

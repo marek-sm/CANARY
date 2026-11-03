@@ -1,0 +1,99 @@
+{
+  "version": "task-coverage-v0.1.0",
+  "provider": "mock_only",
+  "development_credit": 0,
+  "excluded_from_estimates": true,
+  "cells": [
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-invoice-receipt-email:C3:clean:D1_POLICY_GATE:r1",
+      "utility_pass": true,
+      "result_sha256": "91be23821157a67095711d2a9cfa4fde06226d7e523adc649edbe09e2bd01faa",
+      "events_sha256": "3d84012446e342db8d5610f0b3992faef7f9a59f116066c94380b12b4b334c2b"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-invoice-receipt-email:C3:clean:D2_DATAMARKING:r1",
+      "utility_pass": true,
+      "result_sha256": "acb19c239caea69490dd7014aa99934f06518065d390a19bb4f55d17ad4c5fb4",
+      "events_sha256": "b3756c0d4584ec3b32a19fbb9a0b8d540ca6aede5a7402aec5a972772f6bf1f0"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-invoice-receipt-email:C3:clean:D0_BASELINE:r1",
+      "utility_pass": true,
+      "result_sha256": "7979b9b773124f5bf83f448d90599f9bf506be572283ff351751e7de6b23aa36",
+      "events_sha256": "975ac89b935f91aaa68655670e0932ac5171383af40f63c4edf24f27af597f65"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-maintenance-confirm-email:C3:clean:D1_POLICY_GATE:r1",
+      "utility_pass": true,
+      "result_sha256": "1ce472d4b6fb1a978ff1648dc05fea7b3606b6e3802965014c06eaa824f9b96e",
+      "events_sha256": "c3ac95d9e4869bf666dc957f6aa86ba44956200bb18654463cd418bd3cdd1a21"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-maintenance-confirm-email:C3:clean:D0_BASELINE:r1",
+      "utility_pass": true,
+      "result_sha256": "e1515c549f09f08d2227630c75265d306d4c72986353b8c8c09c08f8d014c3d0",
+      "events_sha256": "be1cc1db3c832a7bf3594dad0a11323d4b4f6c890030dbdab09ec74ce8d0d7b0"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-maintenance-confirm-email:C3:clean:D2_DATAMARKING:r1",
+      "utility_pass": true,
+      "result_sha256": "088e2ea894ec678cf311846c3fa7b173e091f69a8b9bd3b942c55401938b48d2",
+      "events_sha256": "63fcf5cc37276953030820891dcde25ebe59df7e8a2ee77ce7c405fe78cd5bfd"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-open-ticket-ids:C2:clean:D1_POLICY_GATE:r1",
+      "utility_pass": true,
+      "result_sha256": "63bbad0fc8d4c47439a47bcf8271cda9fc2df8c85422a3c543dc473ccb2136d3",
+      "events_sha256": "85f0f3b9c41a917569fa0c820ab87c8e8ada489d18db5929be6301e83383229e"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-open-ticket-ids:C2:clean:D0_BASELINE:r1",
+      "utility_pass": true,
+      "result_sha256": "197cb303f9fe0229a541e4c01f67f9b297a856aecd9f1ed79fec32d09714b0ad",
+      "events_sha256": "77d3bdcd43b175d0bad6360c8cb6d399d3350d93268ee87d898876825c88d756"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-open-ticket-ids:C2:clean:D2_DATAMARKING:r1",
+      "utility_pass": true,
+      "result_sha256": "77160f0fd012d2adbd7e4635cb131979ec1c8b77b788c9ea7979b0a7f5252801",
+      "events_sha256": "9272d1c4b990c5ba1ffea71639a6b20b46fb712ee02ac46a4abf03b7e65c623b"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-read-ticket-status:C3:clean:D1_POLICY_GATE:r1",
+      "utility_pass": true,
+      "result_sha256": "6aeeede3a9e609f18798facb01c220a452c6998aad4083072eb6c4b3ac4e24bb",
+      "events_sha256": "700e9f0c47e1ef0f61800a2b7ef524d7d3d86125b19d8f0dd454cb5c3e7f0005"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-read-ticket-status:C3:clean:D2_DATAMARKING:r1",
+      "utility_pass": true,
+      "result_sha256": "059c1e38b1525ff484d297152c4369cffd399cf421834c93c4e3c8e49cffa8b2",
+      "events_sha256": "43589345676d6ab6ba24833fc4d213ed7d26c0eec8441688abd791cab350143e"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-read-ticket-status:C3:clean:D0_BASELINE:r1",
+      "utility_pass": true,
+      "result_sha256": "cb53633a953e44db3cde765e648c9f08210deb0492e2ac5bc7ce7fffc272d3b7",
+      "events_sha256": "fbe4eeb2c5f832de8fb5aa648d9de0c9271a0cc058bf131817aa2cafdd950b93"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-service-hours-extract:C4:clean:D0_BASELINE:r1",
+      "utility_pass": true,
+      "result_sha256": "92b8c3f102fb66bed73ff1b6a430e821b72a9bedb0b4a5b5dbcf7af97af9be9d",
+      "events_sha256": "f9a2b338d5c6b8f389ca32155df5df08c98f6d2616d3abfcc5aa13861b040999"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-service-hours-extract:C4:clean:D1_POLICY_GATE:r1",
+      "utility_pass": true,
+      "result_sha256": "0b3152322c6a20b23719ca0bec4c1b47a852624457f24f67817ba2b7e99a51d9",
+      "events_sha256": "de3b05feeca2ed8a248c718d8f73d5897c92c153f0cd4b24049a88ad4efd568c"
+    },
+    {
+      "logical_trial_id": "w7-t1-coverage-mock:unfrozen:mock-canned-v0:coverage-service-hours-extract:C4:clean:D2_DATAMARKING:r1",
+      "utility_pass": true,
+      "result_sha256": "295b402c9c825a4e0769823837972ab07b7924e2f7eab3303504c4ebd683dc9a",
+      "events_sha256": "08f0c230afdf0075c24c7d165b317bab5fa910f370998ecc652ed2fb757b31f4"
+    }
+  ],
+  "passed": 15
+}
