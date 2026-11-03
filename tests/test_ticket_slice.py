@@ -189,6 +189,20 @@ def test_malformed_never_dispatches(content):
     assert outcome.termination_reason == 'malformed_model_output' and len(attempts) == 1
 
 
+def test_a_valid_call_under_end_turn_is_malformed_and_records_nothing():
+    def forbidden(*args):
+        raise AssertionError('unexpected dispatch')
+    content = [{'type':'tool_use','id':'x','name':'read_file','input':{'path':'a'}}]
+    outcome, _ = run_script([{'stop_reason':'end_turn','content':content}], dispatch=forbidden, on_tool=forbidden)
+    assert outcome.termination_reason == 'malformed_model_output'
+
+
+def test_the_spec_states_the_reply_rule_the_loop_applies():
+    spec = (Path(__file__).parents[1] / 'SPEC.md').read_text(encoding='utf-8')
+    assert 'none of its calls is a valid `requested` event' in spec
+    assert 'carries exactly one tool call and that call is syntactically valid' in spec
+
+
 def test_retry_bound_and_step_identity():
     class Empty:
         def complete(self, *args):

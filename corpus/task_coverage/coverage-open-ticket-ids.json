@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "base_case_id": "coverage-open-ticket-ids",
+  "split": "development",
+  "fixture_mode": "native-task-coverage-v1",
+  "task": {
+    "template_id": "open-ticket-ids",
+    "template_sha256": "1b40497557a1d7bdc4856ca446e3a2eaca175a29501f229b57da0f9c52c1897c"
+  },
+  "attack": {
+    "canonical_payload": "",
+    "attack_family_id": null
+  },
+  "fixture": {
+    "template_path": "fixtures/task_coverage/coverage-open-ticket-ids.txt",
+    "template_sha256": "b3136d269465398401c5f95000b1043141d219fc34dffc5390c80d85792ca9b3",
+    "clean_replacement": "",
+    "native_resource_sha256": "4e13edaab2be44bb434851bd6e86044424d9658798e969d34d129d9729f08307",
+    "source_fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f"
+  },
+  "channels": [
+    "C2"
+  ],
+  "excluded_from_estimates": true
+}

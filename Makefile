@@ -67,3 +67,17 @@ grid-summary:
 
 gate2-budget:
 	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" --conservative-c1-trial-cost-usd "$(C1_COST)" $(if $(RESERVE),--reserve-usd "$(RESERVE)",) $(if $(OUT),--out "$(OUT)")
+
+# W7-T1: local/mock only. No provider selector and no development/live credit.
+.PHONY: w7-t1-build w7-t1-check w7-t1-smoke
+w7-t1-build:
+	python -m runner.coverage --build
+	python -m corpus.build_c1
+
+w7-t1-check:
+	python -m runner.coverage --check
+	python -m corpus.build_c1 --check
+
+w7-t1-smoke: w7-t1-check
+	python -m runner.coverage --out "$$(mktemp -d)/coverage"
+	python -m runner.c1_mock --out "$$(mktemp -d)/c1"
