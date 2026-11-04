@@ -1,4 +1,4 @@
-"""Prototype (cloud/container-sweep): container_digest comes from the launcher's
+"""Prototype (decision 0028 item 9): container_digest comes from the launcher's
 daemon-reported file and refuses one that names another container."""
 
 import json

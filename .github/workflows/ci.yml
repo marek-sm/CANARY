@@ -37,6 +37,20 @@ jobs:
           python-version: "3.11"
       - run: uv sync --locked
       - run: uv run make sandbox-check
+  # Prototype for decision 0028 item 9, which the project lead hasn't taken. Not required:
+  # it proves the sweep image's sandbox on GitHub's arm64 Ubuntu runner, not on Docker
+  # Desktop on the lead's Mac (docs/SWEEP_CONTAINER.md). This runner's Docker applies
+  # AppArmor, so it needs --apparmor-unconfined and the userns sysctl, which a Mac doesn't.
+  sweep-container-arm64:
+    runs-on: ubuntu-24.04-arm
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: make sweep-image SWEEP_IMAGE=canary-sweep:ci
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      # The sandbox tests' controls write the checkout as the image's uid 10001.
+      - run: sudo chown -R 10001:10001 "$GITHUB_WORKSPACE"
+      - run: sh docker/sweep/launch.sh --image canary-sweep:ci --apparmor-unconfined --writable-checkout -- make sandbox-check
   docker:
     runs-on: ubuntu-latest
     steps:

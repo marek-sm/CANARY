@@ -1,12 +1,13 @@
 """The image a sweep container runs, as the Docker daemon reported it (prototype).
 
-PROTOTYPE on branch cloud/container-sweep, for a decision the project lead hasn't
-made (reports/cloud/container-sweep.md). Decision 0025 item 12 keeps the
-official sweep on the host, where this returns ``None`` and records keep a null
-``container_digest``.
+PROTOTYPE for decision 0028 item 9, which the project lead hasn't taken
+(docs/SWEEP_CONTAINER.md). Decision 0025 item 12 keeps the official sweep on the
+host, where this returns ``None`` and records keep a null ``container_digest``.
+The paid-run record states the value and ``runner.paid_run`` refuses a paid run
+in any other image, the host included.
 
 A container can't measure its own image digest, and a digest passed in by hand
-could name any image. So ``docker/sweep/launch.py`` creates the container, asks
+could name any image. So ``docker/sweep/launch.sh`` creates the container, asks
 the daemon which image that container ID runs (``docker container inspect``),
 and writes both into ``/run/canary/container.json`` before the container
 starts, on a read-only mount. Here the runner checks that the file names *this*

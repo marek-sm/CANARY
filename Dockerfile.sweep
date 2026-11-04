@@ -1,26 +1,25 @@
 # syntax=docker/dockerfile:1.7
 #
-# PROTOTYPE, not adopted. Branch cloud/container-sweep; report:
-# reports/cloud/container-sweep.md. Decision 0025 item 12 runs the official sweep
+# PROTOTYPE, not adopted. Steps: docs/SWEEP_CONTAINER.md; reports:
+# reports/cloud/container-ready.md (and container-sweep.md on its own branch).
+# Decision 0025 item 12 runs the official sweep
 # on the host with a null container_digest; this image tests whether the sweep
 # can instead run in a pinned image with tools/sandbox.py (bwrap) and
 # tools/no_exec.py still confining every tool. The project lead hasn't decided.
 #
 # The image is the environment only: the interpreter, the locked dependencies,
 # bwrap, and git. The checkout is bind-mounted read-only at /app by
-# docker/sweep/launch.py, so code_sha256 in the paid-run record keeps covering
+# docker/sweep/launch.sh, so code_sha256 in the paid-run record keeps covering
 # the code, and container_digest covers everything else.
 #
-# Build (linux/amd64, any network that reaches Docker Hub, ghcr.io, and Debian):
-#   SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) docker buildx build -f Dockerfile.sweep \
-#     --platform linux/amd64 --provenance=false --build-arg SOURCE_DATE_EPOCH \
-#     --output type=image,name=canary-sweep:proto,rewrite-timestamp=true .
+# Build for this machine's platform (linux/amd64 or linux/arm64) with `make sweep-image`,
+# on any network that reaches Docker Hub, ghcr.io, and snapshot.debian.org.
 # --provenance=false matters: with buildx's default attestation the image ID is a
 # manifest list that changes on every build of identical content, so the
 # container_digest it yields could never be reproduced.
-# The build in the report used TOOLS_SOURCE=ubuntu, UV_SOURCE=pypi, mirror.gcr.io
+# The cloud builds in the reports used TOOLS_SOURCE=ubuntu, UV_SOURCE=pypi, mirror.gcr.io
 # bases at the same digests, and a build_ca secret, because that VM's egress
-# blocked Debian mirrors and ghcr.io blobs. See the report for the exact command.
+# blocked Debian mirrors and ghcr.io blobs. See the reports for the exact command.
 
 ARG BASE=python:3.11-slim@sha256:da047cb8f9d1d98e5c070f5300ba9f7274e33b8fc0e5be5ed88740aed1b95ba9
 ARG UBUNTU=ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
@@ -97,9 +96,13 @@ COPY --from=venv /opt/venv /opt/venv
 # git refuses a checkout owned by another user ("dubious ownership"), and the
 # runner's git has no HOME, so the exception lives in the system config. Without
 # it code_commit and code_provenance are null and paid_run record refuses.
-RUN useradd --uid 10001 --user-group --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin canary \
+# The home holds only the spend ledger's mount point (runner/spend_ledger.py reads the
+# password database's home). Left unmounted it stays empty on a read-only root, so a
+# paid command finds no ledger and refuses; launch.sh --ledger mounts the host's.
+RUN useradd --uid 10001 --user-group --no-create-home --home-dir /home/canary --shell /usr/sbin/nologin canary \
  && printf '[safe]\n\tdirectory = /app\n' > /etc/gitconfig \
- && mkdir -p /app /results /run/canary
+ && mkdir -p /app /run/canary /home/canary/.canary \
+ && chown 10001:10001 /home/canary/.canary
 ENV PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

@@ -22,7 +22,7 @@
 # Usage:
 #   docker/sweep/launch.sh [--image REF] [--checkout DIR] [--results DIR]
 #       [--writable-protocol] [--key-file FILE] [--network none|egress]
-#       [--name NAME] [--apparmor-unconfined] [--writable-checkout] -- COMMAND...
+#       [--name NAME] [--apparmor-unconfined] [--writable-checkout] [--ledger DIR] -- COMMAND...
 #
 #   --results DIR   host directory mounted read-write at /app/results/development
 #                   (default: the checkout's own results/development)
@@ -34,6 +34,9 @@
 #                   their controls write the repository unsandboxed, so on a
 #                   read-only checkout a refusal would prove nothing. Never for a
 #                   grid, a record, or a paid run.
+#   --ledger DIR    the host's spend-ledger directory (~/.canary), mounted read-write
+#                   at /home/canary/.canary, so a paid command in the image debits the
+#                   same ledger as the host. Without it a paid command finds none and refuses.
 #   --key-file FILE mounted read-only at /run/secrets/provider.env for the outer
 #                   runner. Never pass a key with -e.
 set -eu
@@ -49,6 +52,7 @@ NETWORK="none"
 NAME=""
 APPARMOR=0
 CHECKOUT_MODE=",readonly"
+LEDGER=""
 
 die() { echo "launch.sh: $*" >&2; exit 2; }
 
@@ -63,6 +67,7 @@ while [ $# -gt 0 ]; do
     --name) NAME=$2; shift 2 ;;
     --apparmor-unconfined) APPARMOR=1; shift ;;
     --writable-checkout) CHECKOUT_MODE=""; shift ;;
+    --ledger) LEDGER=$(cd "$2" && pwd); shift 2 ;;
     --) shift; break ;;
     *) die "unknown option $1 (put the command after --)" ;;
   esac
@@ -141,6 +146,7 @@ set -- \
   "$@"
 [ "$APPARMOR" = 0 ] || set -- --security-opt apparmor=unconfined "$@"
 [ "$WRITABLE_PROTOCOL" = 0 ] || set -- --mount "type=bind,src=$CHECKOUT/protocol,dst=/app/protocol" "$@"
+[ -z "$LEDGER" ] || set -- --mount "type=bind,src=$LEDGER,dst=/home/canary/.canary" "$@"
 [ -z "$KEY_FILE" ] || set -- --mount "type=bind,src=$KEY_FILE,dst=/run/secrets/provider.env,readonly" "$@"
 [ -z "$NAME" ] || set -- --name "$NAME" "$@"
 # shellcheck disable=SC2086 # NETWORK_OPTS is a fixed, checked word list

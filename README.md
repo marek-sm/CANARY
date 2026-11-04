@@ -85,6 +85,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/DEFENSES_AND_POLICY.md`](docs/DEFENSES_AND_POLICY.md) | Frozen authorization, D1_POLICY_GATE, D2_DATAMARKING, and event-meaning contract |
 | [`docs/DEMO_DESIGN.md`](docs/DEMO_DESIGN.md) | Terminal, replay, video, and accessibility rules |
 | [`docs/DATA_RELEASE.md`](docs/DATA_RELEASE.md) | Public/private classification and release pipeline |
+| [`docs/SWEEP_CONTAINER.md`](docs/SWEEP_CONTAINER.md) | A prototype, not adopted: how to test the pinned-container sweep on an Apple Silicon Mac for decision 0028 item 9, and what to do if a step fails |
 | [`paper/venue-checklists.md`](paper/venue-checklists.md) | Where each NeurIPS checklist item and IEEE paper section is answered, and what is still open for the paper leads |
 | [`docs/decisions/README.md`](docs/decisions/README.md) | How to record durable decisions without rewriting history |
 | [`docs/decisions/0001-document-authority.md`](docs/decisions/0001-document-authority.md) | Why this bounded document set has one scientific authority and no catch-all context file |
