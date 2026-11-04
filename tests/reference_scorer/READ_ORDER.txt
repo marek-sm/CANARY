@@ -1,0 +1,8 @@
+1. AGENTS.md
+2. SPEC.md headings; 3. SPEC.md Sec 7 (lines 519-683)
+4. SPEC.md Sec 8 (684-937)
+5. SPEC.md Sec 9 (938-1042)
+6. schemas/*.json (sizes), then result.schema.json, event.schema.json
+7. schemas/policy, task, authorization_vectors
+8. SPEC.md Sec 6 (464-518) and Sec 3 safety invariants (214-281), Sec 4 tool surface (282-345)
+9. Makefile (targets only)
