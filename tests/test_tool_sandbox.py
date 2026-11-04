@@ -454,47 +454,6 @@ class RealProvider:
         raise AssertionError("a paid provider was called")
 
 
-@pytest.fixture
-def clean_environment(monkeypatch):
-    for name in list(os.environ):
-        if name == "CI" or name.startswith(("ANTHROPIC_", "OPENAI_")):
-            monkeypatch.delenv(name, raising=False)
-
-
-@pytest.fixture
-def repo(tmp_path):
-    """A tiny git repository with hashed code, standing in for the real one."""
-    root = tmp_path / "repo"
-    (root / "runner").mkdir(parents=True)
-    (root / "runner" / "code.py").write_text("VALUE = 1\n", encoding="utf-8")
-    env = {"PATH": os.defpath, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
-           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com", "HOME": str(tmp_path)}
-    for args in (["init", "-q"], ["add", "."], ["commit", "-q", "-m", "init"]):
-        subprocess.run(["git", *args], cwd=root, check=True, env=env)
-    return root, env
-
-
-def _record(root, record_path, **overrides):
-    record = {
-        "schema_version": "1.0.0",
-        "recorded_on": "2026-10-29",
-        "recorded_by": "marek-sm",
-        "recorded_commit": "0" * 40,
-        "sandbox": sandbox.describe(),
-        "conditions": {
-            "tool_result_delivery": {"merged_in": "#61"},
-            "mock_grid": {"experiment_id": "grid-dev", "trials": 90, "verify_complete": True,
-                          "tool_sandbox": sandbox.describe()},
-            "request_to_effect": {"merged_in": "#39"},
-            "tool_sandbox": {"merged_in": "#64"},
-        },
-        "code_sha256": paid_run.code_hashes(root),
-    }
-    record.update(overrides)
-    record_path.write_text(json.dumps(record), encoding="utf-8")
-    return record_path
-
-
 def test_a_mock_provider_never_needs_the_record():
     paid_run.require_paid_run(MockProvider(), record_path=Path("/nonexistent/record.json"))
 
@@ -514,29 +473,27 @@ def test_a_real_provider_is_refused_in_ci_or_with_ambient_keys(clean_environment
         paid_run.require_paid_run(RealProvider(), record_path=tmp_path / "missing.json")
 
 
-def test_a_valid_record_opens_paid_runs_for_exactly_that_code(clean_environment, repo, tmp_path):
-    root, env = repo
-    record = _record(root, tmp_path / "record.json")
-    assert paid_run.paid_run_refusal(record_path=record, root=root) is None
+def test_a_valid_record_opens_paid_runs_for_exactly_that_code(gate):
+    record = gate.open()
+    assert gate.refusal(record) is None
 
-    (root / "runner" / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
-    assert "uncommitted" in paid_run.paid_run_refusal(record_path=record, root=root)
-    subprocess.run(["git", "commit", "-qam", "change"], cwd=root, check=True, env=env)
-    assert "code differs" in paid_run.paid_run_refusal(record_path=record, root=root)
+    (gate.root / "runner" / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
+    assert "uncommitted" in gate.refusal(record)
+    gate.git("commit", "-qam", "change")
+    assert "code differs" in gate.refusal(record)
 
 
-def test_a_record_from_another_sandbox_or_malformed_is_refused(clean_environment, repo, tmp_path):
-    root, _ = repo
-    other = _record(root, tmp_path / "other.json", sandbox="linux-bwrap:tool-sandbox-v0.0.0:0000000000000000")
+def test_a_record_from_another_sandbox_or_malformed_is_refused(gate):
+    healthy = gate.record()
+    other = "linux-bwrap:tool-sandbox-v0.0.0:0000000000000000"
     if sandbox.describe().startswith("linux-bwrap"):
-        other = _record(root, tmp_path / "other.json", sandbox="macos-sandbox-exec:tool-sandbox-v0.0.0:0000000000000000")
-    assert "isn't the recorded mock grid's" in paid_run.paid_run_refusal(record_path=other, root=root)
-    broken = _record(root, tmp_path / "broken.json", recorded_by="")
-    assert "doesn't validate" in paid_run.paid_run_refusal(record_path=broken, root=root)
+        other = "macos-sandbox-exec:tool-sandbox-v0.0.0:0000000000000000"
+    assert "isn't the recorded mock grid's" in gate.refusal(gate.commit_record({**healthy, "sandbox": other}))
+    assert "doesn't validate" in gate.refusal(gate.commit_record({**healthy, "recorded_by": ""}))
 
 
-def test_the_live_smoke_is_the_one_exception(clean_environment, tmp_path):
-    assert paid_run.paid_run_refusal(live_smoke=True, record_path=tmp_path / "missing.json") is None
+def test_the_live_smoke_is_the_one_exception(gate, tmp_path):
+    assert gate.refusal(tmp_path / "missing.json", live_smoke=True) is None
 
 
 def test_every_runner_path_refuses_a_real_provider_without_the_record(clean_environment, tmp_path, monkeypatch):
@@ -586,78 +543,47 @@ class Killed(BaseException):
     """A forced stop; not an Exception, so the runner doesn't catch it."""
 
 
-@pytest.fixture
-def preflight(clean_environment, repo, tmp_path, monkeypatch):
-    """Mock grid cells run from a tiny checkout, so their code provenance is that checkout's."""
-    from runner import execute, grid_dev
-    from runner.mock_provider import MOCK_MODEL_ID
-
-    root, env = repo
-    shutil.copytree(ROOT / "corpus" / "development", root / "corpus" / "development")
-    subprocess.run(["git", "add", "."], cwd=root, check=True, env=env)
-    subprocess.run(["git", "commit", "-qm", "corpus"], cwd=root, check=True, env=env)
-    monkeypatch.setattr(paid_run, "REPO_ROOT", root)
-    monkeypatch.setattr(grid_dev, "verify_grid_run", lambda run, spec: {
-        "complete": True, "experiment_id": spec["experiment_id"], "trials_found": 90})
-    spec = json.loads((ROOT / "protocol" / "development_grid_spec.json").read_text(encoding="utf-8"))
-    spec["model_id"] = MOCK_MODEL_ID
-    trial = grid_dev.validate_grid_spec(spec)[0]
-
-    def run(out, corpus=root / "corpus" / "development", **kwargs):
-        execute.run_schedule(out, [trial], corpus_root=corpus, spec=spec, delivery=True, **kwargs)
-        return out
-
-    def record(out):
-        return paid_run.build_record(out, delivery="#61", sandbox_pr="#64", request_to_effect="#39", root=root)
-
-    return root, env, run, record
-
-
-def test_the_record_refuses_a_preflight_of_code_committed_since(preflight, tmp_path):
-    root, env, run, record = preflight
-    mock = run(tmp_path / "mock")
-    assert record(mock)["code_sha256"] == paid_run.code_hashes(root)
-    (root / "runner" / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
-    subprocess.run(["git", "commit", "-qam", "change"], cwd=root, check=True, env=env)
+def test_the_record_refuses_a_preflight_of_code_committed_since(gate):
+    assert gate.record()["code_sha256"] == paid_run.code_hashes(gate.root)
+    gate.commit_code("runner/code.py", "VALUE = 2\n")
     with pytest.raises(paid_run.PaidRunRefused, match="other code"):
-        record(mock)
+        gate.record()
 
 
-def test_the_record_refuses_a_preflight_run_with_uncommitted_code(preflight, tmp_path):
-    root, _, run, record = preflight
-    extra = root / "runner" / "extra.py"  # untracked, so the committed hashes alone can't see it
+def test_the_record_refuses_a_preflight_run_with_uncommitted_code(gate):
+    extra = gate.root / "runner" / "extra.py"  # untracked, so the committed hashes alone can't see it
     extra.write_text("VALUE = 3\n", encoding="utf-8")
-    mock = run(tmp_path / "mock")
+    gate.rerun()
     extra.unlink()
     with pytest.raises(paid_run.PaidRunRefused, match="uncommitted"):
-        record(mock)
+        gate.record()
 
 
-def test_the_record_refuses_a_preflight_on_another_corpus(preflight, tmp_path):
-    root, _, run, record = preflight
-    other = shutil.copytree(root / "corpus" / "development", tmp_path / "other-corpus")
+def test_the_record_refuses_a_preflight_on_another_corpus(gate, tmp_path):
+    gate.rerun(shutil.copytree(gate.root / "corpus" / "development", tmp_path / "other-corpus"))
     with pytest.raises(paid_run.PaidRunRefused, match="corpus"):
-        record(run(tmp_path / "mock", other))
+        gate.record()
 
 
-def test_every_invocation_records_its_code_even_when_stopped(preflight, tmp_path):
-    root, _, run, record = preflight
+def test_every_invocation_records_its_code_even_when_stopped(gate, tmp_path):
+    from runner import execute, grid_dev
+    from runner.mock_provider import MOCK_MODEL_ID
 
     def stopped(trial, canaries):
         raise Killed()
 
+    spec = {**gate.spec, "model_id": MOCK_MODEL_ID}
     with pytest.raises(Killed):
-        run(tmp_path / "mock", provider_factory=stopped)
+        execute.run_schedule(tmp_path / "mock", grid_dev.validate_grid_spec(spec)[:1], spec=spec, delivery=True,
+                             corpus_root=gate.root / "corpus" / "development", provider_factory=stopped)
     lines = [json.loads(line) for line in (tmp_path / "mock" / paid_run.PROVENANCE_FILE).read_text().splitlines()]
     assert [line["phase"] for line in lines] == ["start", "stop"]
-    assert {line["code_digest"] for line in lines} == {paid_run.code_digest(paid_run.code_hashes(root))}
+    assert {line["code_digest"] for line in lines} == {paid_run.code_digest(paid_run.code_hashes(gate.root))}
     assert all(line["dirty_paths"] == [] for line in lines)
 
 
-def test_the_record_refuses_a_preflight_that_stopped_unrecorded(preflight, tmp_path):
-    _, _, run, record = preflight
-    mock = run(tmp_path / "mock")
-    provenance = mock / paid_run.PROVENANCE_FILE
+def test_the_record_refuses_a_preflight_that_stopped_unrecorded(gate):
+    provenance = gate.mock / paid_run.PROVENANCE_FILE
     provenance.write_text(provenance.read_text().splitlines()[0] + "\n")  # killed before its stop line
     with pytest.raises(paid_run.PaidRunRefused, match="without recording"):
-        record(mock)
+        gate.record()

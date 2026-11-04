@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
 from analysis.floor_count import CONFIGURATIONS, load_run
+from runner import paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 
 # F20 primary indirect: 20 × 3 × 2 × 3 × 3 = 1080; 18 strata (channel × condition × configuration).
@@ -142,6 +143,18 @@ def evaluate_budget(
     }
 
 
+def _price_bound_used() -> dict[str, Any]:
+    """Which frozen bound this evaluation took. ``check_code_matches_run`` leaves the bound's
+    module out, so a raised bound can be re-evaluated, and two evaluations of one grid can
+    differ here."""
+    try:
+        from analysis.price_bound import PRICE_BOUND_USD
+    except ImportError:  # TODO(#70): lands with the module, which then sets the reserve and the C1 cost
+        return {"price_bound_usd": None,
+                "price_bound_source": "none: no analysis/price_bound.py here, so the reserve and C1 cost are as typed"}
+    return {"price_bound_usd": PRICE_BOUND_USD, "price_bound_source": "analysis/price_bound.py"}
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("run_dir", type=Path, help="development grid run directory")
@@ -152,13 +165,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--out", type=Path, help="write JSON report here")
     args = parser.parse_args(argv)
     try:
+        code_check = paid_run.check_code_matches_run(args.run_dir)
+        print(f"gate2-budget: {code_check}", file=sys.stderr)
         report = json.dumps(
-            evaluate_budget(
-                load_run(args.run_dir),
-                remaining_balance_usd=args.remaining_balance_usd,
-                reserve_usd=args.reserve_usd,
-                conservative_c1_trial_cost_usd=args.conservative_c1_trial_cost_usd,
-            ),
+            {
+                **evaluate_budget(
+                    load_run(args.run_dir),
+                    remaining_balance_usd=args.remaining_balance_usd,
+                    reserve_usd=args.reserve_usd,
+                    conservative_c1_trial_cost_usd=args.conservative_c1_trial_cost_usd,
+                ),
+                **_price_bound_used(),
+                "code_check": code_check,
+            },
             indent=2,
             sort_keys=True,
         ) + "\n"

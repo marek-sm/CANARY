@@ -107,11 +107,19 @@ def _provider_env_refusal() -> Optional[str]:
     return None
 
 
-def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
+def new_trials(out_dir: Optional[Path], spec: Mapping[str, Any]) -> int:
+    """How many of the grid's trials ``out_dir`` hasn't started, for Section 9's ceiling."""
+    schedule = validate_grid_spec(spec)
+    if out_dir is None:
+        return len(schedule)
+    return sum(not (Path(out_dir) / execute.trial_slug(trial) / EVENTS_FILE).exists() for trial in schedule)
+
+
+def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Optional[Path] = None) -> Optional[str]:
     """Fail closed before any paid call. The specific reasons come first so an
     operator sees what else is wrong; the path opens only when ``runner.paid_run``
     finds the project lead's record valid for this code and sandbox, and every
-    trial checks that again before its first call."""
+    trial checks that again before its first call, with the spend so far."""
     if os.environ.get("CANARY_PAID_RUN_ACK") != "1":
         return (
             "set CANARY_PAID_RUN_ACK=1 only after the project lead confirms "
@@ -129,7 +137,15 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str
         )
     if Path(corpus_root).resolve() != execute.DEFAULT_CORPUS_ROOT.resolve():
         return "a live grid runs only on corpus/development, the corpus its paid-run record hashed"
-    return paid_run.paid_run_refusal()
+    if dict(spec) != load_spec():
+        return "a live grid runs only protocol/development_grid_spec.json, the spec its paid-run record hashed"
+    return paid_run.paid_run_refusal(new_trials=new_trials(out_dir, spec))
+
+
+def _existing_run_refusal(out: Path, resume: bool) -> Optional[str]:
+    if resume or not out.exists():
+        return None
+    return f"{out} already holds a run: pass --out DIR for a new one, or --resume to continue this one"
 
 
 def build_live_provider_factory(adapter: Any) -> Callable[..., Any]:
@@ -150,14 +166,20 @@ def run_live_grid(
     corpus_root: Optional[Path] = None,
 ) -> Path:
     root = corpus_root or execute.DEFAULT_CORPUS_ROOT
-    reason = live_run_refusal(root, spec)
+    reason = live_run_refusal(root, spec, out_dir)
     if reason:
         raise ValueError(reason)
 
     from runner import live_smoke
 
     provider_cfg = live_smoke.PROVIDERS[provider_name]
-    resolved_model = model or spec.get("model_id") or provider_cfg["model"]
+    # Every trial sends the spec's model, so the provider, the spec, and --model must all name one.
+    # A fallback grid needs its own committed spec, record, and decision (decision 0010 item 3).
+    expected = provider_cfg["model"]
+    if spec.get("model_id") != expected or model not in (None, expected):
+        raise ValueError(
+            f"a {provider_name} grid runs only {expected}, but the spec names {spec.get('model_id')} and --model {model}"
+        )
     provider_cfg["check"](provider_cfg["decoding"])
 
     try:
@@ -307,6 +329,33 @@ def _check_defense_behavior(record: Mapping[str, Any], events: list[Mapping[str,
             raise ValueError(f"{trial_id}: {configuration} delivered datamarked content")
 
 
+def gate_conformance_refusal(record: Mapping[str, Any]) -> Optional[str]:
+    """Why a preflight record breaks SPEC.md Section 6, or ``None``. The paid-run record
+    refuses on this; ``verify`` doesn't, because in a paid grid the same facts are
+    evidence the conformance table counts and the repair rule acts on.
+
+    D1_POLICY_GATE "never dispatches a request the independent audit evaluator
+    rejects", and any gate/scorer disagreement invalidates the block. Under the
+    mock, every task makes a request and every request reaches both evaluators, so
+    a cell with no request, or an unknown match, shows the gate wasn't exercised.
+    """
+    if record.get("configuration") != "D1_POLICY_GATE":
+        return None
+    trial_id = record.get("logical_trial_id")
+    tool_events = record.get("tool_events") or []
+    if not tool_events:
+        return f"{trial_id}: D1_POLICY_GATE recorded no tool request, so it decided nothing"
+    for tool_event in tool_events:
+        call_id = tool_event.get("call_id")
+        if tool_event.get("authorized") is False and tool_event.get("dispatched") is True:
+            return f"{trial_id}: D1_POLICY_GATE dispatched {call_id}, a request the audit rejected"
+        if tool_event.get("gate_audit_match") is False:
+            return f"{trial_id}: the gate and the audit disagreed on {call_id}"
+        if tool_event.get("gate_audit_match") is not True:
+            return f"{trial_id}: whether the gate and the audit agreed on {call_id} is unknown"
+    return None
+
+
 def _check_no_repeated_dispatch(events: list[Mapping[str, Any]]) -> None:
     """Each tool call_id may dispatch at most once (resume must replay, not re-dispatch)."""
     _check_no_repeated_positive_tool_fact(
@@ -433,7 +482,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     live_parser.add_argument(
         "--model",
         default=None,
-        help="defaults to the committed spec model_id or the provider's decision 0010 model",
+        help="must be the committed spec's model_id and the provider's decision 0010 model",
     )
 
     args = parser.parse_args(argv)
@@ -441,7 +490,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     if args.command == "live":
         spec = load_spec(args.spec)
         out = args.out or DEFAULT_LIVE_OUT
-        reason = live_run_refusal(execute.DEFAULT_CORPUS_ROOT, spec)
+        reason = _existing_run_refusal(out, args.resume) or live_run_refusal(execute.DEFAULT_CORPUS_ROOT, spec, out)
         if reason:
             print(f"refusing: {reason}", file=sys.stderr)
             return 2
@@ -471,6 +520,10 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if args.command == "mock":
         out = args.out or DEFAULT_MOCK_OUT
+        reason = _existing_run_refusal(out, args.resume)
+        if reason:
+            print(f"refusing: {reason}", file=sys.stderr)
+            return 2
         run_mock_grid(
             out,
             spec=spec,

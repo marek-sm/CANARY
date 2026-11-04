@@ -73,11 +73,12 @@ from defenses.interfaces import (
 )
 from oracles.authorization.audit import AUDIT_EVALUATOR_VERSION, AuditAuthorizer
 from oracles.utility import task_suite as task_utility
-from runner import paid_run
+from runner import paid_run, spend_ledger
 from runner import delivery as tool_delivery
 from tasks import registry
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 from runner.schedule import (
+    PROTOCOL_SENTINEL,
     ScheduledTrial,
     generate_schedule,
     superblock_groups,
@@ -349,7 +350,7 @@ def trial_slug(trial: ScheduledTrial) -> str:
     return f"t{trial.schedule_index:04d}_{body}"
 
 
-def _trial_complete(trial_dir: Path, trial: ScheduledTrial, canaries: Sequence[str]) -> bool:
+def _trial_complete(trial_dir: Path, trial: ScheduledTrial, canaries: Sequence[str], split: str = "development") -> bool:
     """True iff a schema-valid single result is durably committed for this trial."""
     results = trial_dir / RESULTS_FILE
     if not results.exists():
@@ -360,12 +361,12 @@ def _trial_complete(trial_dir: Path, trial: ScheduledTrial, canaries: Sequence[s
         return False
     if len(records) != 1:
         return False
-    _check_result_identity(records[0], trial, canaries)
+    _check_result_identity(records[0], trial, canaries, split)
     return True
 
 
 def _check_result_identity(
-    result: Mapping[str, Any], trial: ScheduledTrial, canaries: Sequence[str]
+    result: Mapping[str, Any], trial: ScheduledTrial, canaries: Sequence[str], split: str = "development"
 ) -> None:
     """Refuse to skip a trial over a result committed for a different one.
 
@@ -387,6 +388,7 @@ def _check_result_identity(
         meta["schedule_index"],
         meta["schedule_seed"],
         result["canaries"],
+        result["split"],
     )
     expected = (
         trial.logical_trial_id,
@@ -401,6 +403,7 @@ def _check_result_identity(
         trial.schedule_index,
         trial.seed,
         list(canaries),
+        split,
     )
     if stored != expected:
         raise ValueError("the stored result belongs to a different trial")
@@ -847,6 +850,9 @@ def execute_trial(
     tool_schemas: Sequence[Mapping[str, Any]] = (),
     delivery: bool = False,
     decoding: Mapping[str, Any] = DECODING,
+    split: str = "development",
+    protocol_version: Optional[str] = None,
+    analysis_role: Optional[str] = None,
 ) -> None:
     """Run one logical trial into ``trial_dir``, or resume it, and commit its result.
 
@@ -883,14 +889,16 @@ def execute_trial(
     for name in (EVENTS_FILE, SINK_FILE, SINK_FILE + ".tmp", RESULTS_FILE, RESULTS_FILE + ".tmp", ENV_DIR):
         _inside(trial_dir, trial_dir / name)
     events_path = trial_dir / EVENTS_FILE
-    _check_trace_identity(_durable_events(events_path, truncate=False), trial)
+    existing = _durable_events(events_path, truncate=False)
+    _check_trace_identity(existing, trial)
     provider = provider_factory(trial, canaries)
     if paid_run.is_paid(provider):
         if not delivery:
             raise paid_run.PaidRunRefused(
                 "paid calls run only through tool-result delivery; the text-only body measures direct injection"
             )
-        paid_run.require_paid_run(provider)
+        counts = not existing and spend_ledger.counts_against_ceiling(split, analysis_role)
+        paid_run.require_paid_run(provider, new_trials=1 if counts else 0)
     versions = component_versions(provider)
     if delivery:
         versions.update(tool_delivery.component_versions(trial.configuration))
@@ -913,7 +921,11 @@ def execute_trial(
         events_path.unlink(missing_ok=True)  # an empty trace holds nothing durable
         log = EventLog(events_path, clock, component_versions=versions, **log_fields)
 
+    ledger_entry: Optional[str] = None
     if _first(stored, "trial_ended") is None:
+        if paid_run.is_paid(provider):
+            ledger_entry = spend_ledger.start(provider, trial.logical_trial_id, new_trial=not stored, split=split,
+                                              analysis_role=analysis_role)
         _run_trial_body(
             log,
             stored,
@@ -931,6 +943,8 @@ def execute_trial(
         )
 
     events = read_jsonl(events_path, "event")
+    if ledger_entry is not None:
+        spend_ledger.finish(ledger_entry, events[len(stored):])
     tool_events: Optional[list[dict[str, Any]]] = None
     if audit is not None:
         try:
@@ -941,7 +955,8 @@ def execute_trial(
         # No audit ran or it failed: keep every request, unevaluable, authorized null.
         tool_events = build_tool_events(events, task_policy=None)
     result = assemble_result(
-        trial, events, canaries, base["attack"]["attack_family_id"], tool_events=tool_events, base=base
+        trial, events, canaries, base["attack"]["attack_family_id"], tool_events=tool_events, base=base,
+        split=split, protocol_version=protocol_version, analysis_role=analysis_role,
     )
     _commit_result(trial_dir / RESULTS_FILE, result)
 
@@ -954,13 +969,17 @@ def assemble_result(
     *,
     tool_events: Optional[list[dict[str, Any]]] = None,
     base: Optional[Mapping[str, Any]] = None,
+    split: str = "development",
+    protocol_version: Optional[str] = None,
+    analysis_role: Optional[str] = None,
 ) -> dict[str, Any]:
     """Derive one result record from stored events only; scores are recomputed.
 
     Reuses ``runner.mock_slice.assemble_result`` for the shared attempt/model-call/
     usage/metadata derivation, then overrides the trial-specific identity,
     channel/condition/configuration, run index, canary set, schedule provenance,
-    and the observable security facts. ``split`` stays ``"development"``.
+    and the observable security facts, and writes the caller's ``split``, ``protocol_version``,
+    and ``analysis_role``, which stay ``"development"``, null, and null unless a run sets them.
 
     The only security surface in this slice is the final response, scored by the
     exact-canary oracle. Every action fact is null (no tool/audit surface) unless
@@ -995,6 +1014,9 @@ def assemble_result(
     )
 
     result.update(
+        split=split,
+        protocol_version=protocol_version,
+        analysis_role=analysis_role,
         experiment_id=trial.experiment_id,
         logical_trial_id=trial.logical_trial_id,
         comparison_superblock_id=trial.comparison_superblock_id,
@@ -1275,6 +1297,26 @@ def delivery_provider_factory(corpus_root: Path) -> Callable[[ScheduledTrial, li
 # --------------------------------------------------------------------------
 
 
+class ResolvedModelChanged(ValueError):
+    """SPEC.md Section 9's stop: the resolved version or provider fingerprint changed."""
+
+
+def _check_resolved_model(seen: dict[str, str], trial_dir: Path) -> None:
+    """Stop the run on a change in the resolved version or, when supplied, the
+    provider fingerprint (SPEC.md Section 9). The trial that showed it keeps its
+    evidence, and a resume stops on the same evidence before any further call."""
+    for event in _durable_events(trial_dir / EVENTS_FILE, truncate=False):
+        if event["event_type"] != "provider_attempt":
+            continue
+        for field in ("model_resolved", "provider_fingerprint"):
+            value = event["payload"].get(field)
+            if value is not None and seen.setdefault(field, value) != value:
+                raise ResolvedModelChanged(
+                    f"{field} changed from {seen[field]} to {value} at {event['logical_trial_id']}: SPEC.md Section 9 "
+                    "stops this experiment; preserve it, increment the experiment ID, and restart the schedule"
+                )
+
+
 def run_schedule(
     run_dir: Path,
     schedule: list[ScheduledTrial],
@@ -1293,6 +1335,9 @@ def run_schedule(
     tool_schemas: Sequence[Mapping[str, Any]] = (),
     delivery: bool = False,
     decoding: Mapping[str, Any] = DECODING,
+    split: str = "development",
+    protocol_version: Optional[str] = None,
+    analysis_role: Optional[str] = None,
 ) -> Path:
     """Execute ``schedule`` into ``run_dir``; return it.
 
@@ -1312,8 +1357,22 @@ def run_schedule(
     to the grid mock and the audit to ``delivery_audit``. ``decoding`` is both
     sent to the provider and recorded in each ``trial_started`` event, so the
     record is the setting the cell ran under. Each invocation appends the code
-    it runs to ``code_provenance.jsonl`` as it starts and again as it stops.
+    it runs to ``code_provenance.jsonl`` as it starts and again as it stops. A
+    change in the resolved model stops the run (``ResolvedModelChanged``).
+
+    ``split``, ``protocol_version``, and ``analysis_role`` go on every result and ledger line.
+    The sweep sets ``split="evaluation"``, whose locked schema branch needs a protocol version,
+    so it's refused here before anything is written, not after a paid call. Only development
+    trials count against SPEC.md Section 9's ceiling; every trial counts in dollars.
     """
+    if split not in ("development", "evaluation"):
+        raise ValueError(f"split {split!r} isn't one the result schema allows; rehearsal and stage trials stay "
+                         f"development and set analysis_role to one of {spend_ledger.DEMO_ROLES}")
+    if split == "evaluation":
+        if not protocol_version:
+            raise ValueError("an evaluation split needs its protocol_version")
+        if any(t.protocol_sentinel == PROTOCOL_SENTINEL for t in schedule):
+            raise ValueError(f"an evaluation split's trial ids can't say {PROTOCOL_SENTINEL!r}; set the spec's protocol_sentinel")
     for trial in schedule:
         validate_trial(trial)
     unsupported = sorted({t.configuration for t in schedule} - set(supported_configurations(delivery)))
@@ -1325,7 +1384,9 @@ def run_schedule(
     if resume and spec is not None and stored_spec.exists():
         if json.loads(stored_spec.read_text(encoding="utf-8")) != json.loads(json.dumps(spec)):
             raise ValueError("the resume spec differs from this run's schedule_spec.json")
-    mode = {"delivery": delivery}
+    mode: dict[str, Any] = {"delivery": delivery}
+    if split != "development":
+        mode["split"] = split
     if resume:
         run_dir.mkdir(parents=True, exist_ok=True)
         stored_mode = run_dir / MODE_FILE
@@ -1350,7 +1411,11 @@ def run_schedule(
     base_cache: dict[str, tuple[Mapping[str, Any], str]] = {}
 
     _record_provenance(run_dir, "start", corpus_root)
+    resolved: dict[str, str] = {}
     try:
+        if resume:
+            for trial in schedule:
+                _check_resolved_model(resolved, _inside(run_dir, run_dir / trial_slug(trial)))
         for superblock_id, trials in superblock_groups(schedule).items():
             base, template = _load_base(base_cache, corpus_root, trials[0].base_case_id)
             canaries = _resolve_superblock_canaries(
@@ -1358,7 +1423,7 @@ def run_schedule(
             )
             for trial in trials:
                 trial_dir = _inside(run_dir, run_dir / trial_slug(trial))
-                if _trial_complete(trial_dir, trial, canaries):
+                if _trial_complete(trial_dir, trial, canaries, split):
                     continue  # this trial's result is committed: no duplicate, no replay
                 if trial_dir.exists() and not resume:
                     # On a fresh run a leftover is an unexpected collision. On
@@ -1378,7 +1443,11 @@ def run_schedule(
                     tool_schemas=tool_schemas,
                     delivery=delivery,
                     decoding=decoding,
+                    split=split,
+                    protocol_version=protocol_version,
+                    analysis_role=analysis_role,
                 )
+                _check_resolved_model(resolved, trial_dir)
     finally:
         _record_provenance(run_dir, "stop", corpus_root)
     return run_dir

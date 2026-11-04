@@ -25,9 +25,10 @@ def stubbed_http_stands_in_for_the_paid_run_record(monkeypatch):
     call can happen. They stand in for the project lead's paid-run record, which
     every real provider otherwise needs (decision 0023; tests/test_tool_sandbox.py
     tests the gate itself)."""
-    from runner import paid_run
+    from runner import paid_run, spend_ledger
 
     monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **kwargs: None)
+    spend_ledger.init()  # a stand-in home, from tests/conftest.py
 
 SENTINEL = "sk-ant-test-sentinel-credential"
 MODEL = "claude-haiku-5-5"
@@ -679,6 +680,50 @@ def test_live_smoke_prints_unknown_tokens_when_an_attempt_timed_out(tmp_path, mo
     printed = capsys.readouterr().out
     assert "attempts:         3" in printed
     assert "input tokens:     unknown" in printed and "output tokens:    unknown" in printed
+
+
+def test_live_smoke_exits_nonzero_when_every_attempt_failed(tmp_path, monkeypatch, capsys):
+    # The audit's probe: three timeouts, no model response, and an exit of 0.
+    fake = Fake(httpx2.TimeoutException("slow"), httpx2.TimeoutException("slow"), httpx2.TimeoutException("slow"))
+    clear_provider_env(monkeypatch)
+    monkeypatch.setattr(adapter_mod, "build_client", lambda key: fake.adapter()._client)
+    assert live_smoke.main(["--env-file", str(env_file(tmp_path)), "--out", str(tmp_path / "o")]) == 1
+    assert "no model_response came back" in capsys.readouterr().err
+    assert len(fake.requests) == 3
+
+
+def test_live_smoke_exits_nonzero_when_the_request_is_rejected(tmp_path, monkeypatch):
+    fake = Fake((400, "invalid_request_error", None))
+    clear_provider_env(monkeypatch)
+    monkeypatch.setattr(adapter_mod, "build_client", lambda key: fake.adapter()._client)
+    assert live_smoke.main(["--env-file", str(env_file(tmp_path)), "--out", str(tmp_path / "o")]) == 1
+
+
+def test_live_smoke_appends_its_priced_usage_to_the_ledger(tmp_path, monkeypatch):
+    from runner import spend_ledger
+
+    fake = Fake(tool_body(), text_body('{"ticket_id":"T-100","status":"open"}'))
+    clear_provider_env(monkeypatch)
+    monkeypatch.setattr(adapter_mod, "build_client", lambda key: fake.adapter()._client)
+    assert live_smoke.main(["--env-file", str(env_file(tmp_path)), "--out", str(tmp_path / "o")]) == 0
+    lines = spend_ledger.read()
+    assert [line["phase"] for line in lines] == ["seed", "started", "finished"]
+    assert lines[1]["logical_trial_id"].startswith("live-dev-") and lines[1]["provider_adapter"] == fake.adapter().adapter_version
+    assert (lines[2]["input_tokens"], lines[2]["output_tokens"], lines[2]["attempts"]) == (22, 14, 2)
+    assert spend_ledger.totals(lines) == (pytest.approx(0.00014 + 22 * 0.10 / 1_000_000 + 14 * 0.50 / 1_000_000), 2)
+    assert SENTINEL not in spend_ledger.ledger_path().read_text(encoding="utf-8")
+
+
+def test_live_smoke_that_timed_out_is_charged_at_the_request_bound_not_zero(tmp_path, monkeypatch):
+    from runner import spend_ledger
+
+    fake = Fake(httpx2.TimeoutException("slow"), httpx2.TimeoutException("slow"), httpx2.TimeoutException("slow"))
+    clear_provider_env(monkeypatch)
+    monkeypatch.setattr(adapter_mod, "build_client", lambda key: fake.adapter()._client)
+    assert live_smoke.main(["--env-file", str(env_file(tmp_path)), "--out", str(tmp_path / "o")]) == 1
+    finished = spend_ledger.read()[-1]
+    assert finished["unknown_usage_attempts"] == 3
+    assert finished["cost_usd"] == pytest.approx(3 * spend_ledger.REQUEST_BOUND_USD)
 
 
 def test_live_smoke_never_reads_unknown_usage_as_below_the_price_step(tmp_path, monkeypatch, capsys):

@@ -40,7 +40,8 @@ t1-suite:
 	python -m runner.task_suite --out "$$(mktemp -d)/task-suite"
 
 # Paid: one real call sequence on the decision 0010 development candidate (Anthropic).
-# Run by hand only; refuses when CI or any ANTHROPIC_* or OPENAI_* variable is set.
+# Run by hand only; refuses when CI or any ANTHROPIC_* or OPENAI_* variable is set, and
+# without python -m runner.spend_ledger init and set-cap, which the project lead runs once.
 .PHONY: live-smoke
 live-smoke:
 	python -m runner.live_smoke
