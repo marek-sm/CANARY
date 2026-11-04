@@ -144,16 +144,19 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
                     on_tool("tool_requested", requested_payload(filtered, calls[0], step))
             return LoopOutcome("provider_content_filter", response_text(raw), step)
         if raw["stop_reason"] == "tool_use":
-            # Every call runs in reply order, one at a time: each is recorded, then
-            # gated or dispatched by the seam, then its effect recorded, before the
-            # next call is recorded. A later call sees the earlier ones as prior
-            # calls, with their dispositions and any grant they consumed. The reply
-            # takes one step however many calls it carries, and the next message
-            # returns every result, in the reply's order (both providers require one
-            # result per call ID).
-            results = []
+            # Every call in the reply is recorded first, in reply order, so the
+            # request log holds every call the stored reply shows even if a later
+            # dispatch fails or the process is killed. Then each runs in reply
+            # order, one at a time: gated or dispatched by the seam, then its
+            # effect recorded, before the next one starts. A later call sees the
+            # earlier ones as prior calls, with their dispositions and any grant
+            # they consumed. The reply takes one step however many calls it
+            # carries, and the next message returns every result, in the reply's
+            # order (both providers require one result per call ID).
             for block, request in parsed:
                 on_tool("tool_requested", requested_payload(request, block, step))
+            results = []
+            for block, request in parsed:
                 observation = dispatch(request)
                 effect = effect_observer(request, observation) if effect_observer is not None else {
                     "effect_observed": observation["ok"], "effect_oracle_id": "read-returned-v0.1.0"}

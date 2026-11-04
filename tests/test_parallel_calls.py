@@ -89,8 +89,9 @@ def test_every_call_runs_in_reply_order_and_the_reply_takes_one_step():
     assert (outcome.termination_reason, outcome.steps_used) == ("final_answer", 2)
     assert [a[0] for a in attempts] == [1, 2]  # two model calls, two steps
     ids = ["t:step1:call1", "t:step1:call2", "t:step1:call3"]
-    # Each call's lifecycle completes before the next call is recorded.
-    assert seam.events == [e for i in ids for e in (("tool_requested", i), ("dispatch", i), ("effect_observation", i))]
+    # Every call is recorded first; then each call's dispatch and effect complete before the next one's.
+    assert seam.events == [("tool_requested", i) for i in ids] + [
+        e for i in ids for e in (("dispatch", i), ("effect_observation", i))]
     assert [r.normalized_args["path"] for r in seam.dispatched] == ["x", "y", "z"]
     assert {r.step for r in seam.dispatched} == {1}
 
@@ -231,12 +232,12 @@ def test_a_gate_block_in_the_middle_of_a_reply_lets_the_next_call_through(tmp_pa
     _, result, events = run_cell(tmp_path / "run", "dev-004", "C3", "clean", "D1_POLICY_GATE", "block_mid_reply")
     check_integrity(result, events)
     assert lifecycle(events) == [
-        ("tool_requested", "call1"), ("authorization_decision", "call1"), ("tool_dispatch", "call1"),
-        ("tool_result", "call1"), ("effect_observation", "call1"),
-        ("tool_requested", "call2"), ("authorization_decision", "call2"), ("tool_dispatch", "call2"),
-        ("effect_observation", "call2"),
-        ("tool_requested", "call3"), ("authorization_decision", "call3"), ("tool_dispatch", "call3"),
-        ("tool_result", "call3"), ("sink_receipt", "call3"), ("effect_observation", "call3"),
+        ("tool_requested", "call1"), ("tool_requested", "call2"), ("tool_requested", "call3"),
+        ("authorization_decision", "call1"), ("tool_dispatch", "call1"), ("tool_result", "call1"),
+        ("effect_observation", "call1"),
+        ("authorization_decision", "call2"), ("tool_dispatch", "call2"), ("effect_observation", "call2"),
+        ("authorization_decision", "call3"), ("tool_dispatch", "call3"), ("tool_result", "call3"),
+        ("sink_receipt", "call3"), ("effect_observation", "call3"),
     ]
     first, secret, send = result["tool_events"]
     assert secret["blocked"] is True and secret["dispatched"] is False and secret["effect_observed"] is False
@@ -381,3 +382,51 @@ def test_a_kill_between_two_calls_of_one_reply_resumes_without_re_dispatch(tmp_p
     assert result["status"] == "completed" and result["utility"]["pass"] is True
     assert [t["dispatched"] for t in result["tool_events"]] == [True, True]
     assert sum(e["event_type"] == "provider_attempt" for e in events) == 2  # the stored reply was never re-requested
+
+
+# --- an infrastructure failure in the middle of a reply ---------------------
+
+
+@pytest.mark.parametrize("configuration", CONFIGURATIONS)
+def test_a_tool_failure_mid_reply_leaves_no_later_call_of_that_reply_unrecorded(tmp_path, monkeypatch, configuration):
+    """The stored reply shows every call the model made. If a later call went
+    unrecorded, the request log would be incomplete yet the action facts could
+    still read false; recording every call before the first dispatch prevents it."""
+    real_worker = registry.worker
+
+    def fails_on_the_first_read(root, state, endpoint, request):
+        if request.call_id.endswith(":step1:call1"):
+            raise RuntimeError("fixture worker failed")
+        return real_worker(root, state, endpoint, request)
+
+    monkeypatch.setattr(registry, "worker", fails_on_the_first_read)
+    _, result, events = run_cell(tmp_path / "run", "dev-004", "C3", "clean", configuration, "block_mid_reply")
+    assert result["status"] == "infrastructure_failure"
+    requested = [e["payload"]["call_id"].rsplit(":", 1)[1] for e in events if e["event_type"] == "tool_requested"]
+    assert requested == ["call1", "call2", "call3"]
+    secret = result["tool_events"][1]
+    assert secret["authorized"] is False and secret["dispatched"] is not True
+    assert result["security"]["unauthorized_action_requested"] is True
+    assert result["security"]["unauthorized_action_effect"] is not False
+
+
+@pytest.mark.parametrize("configuration", CONFIGURATIONS)
+def test_a_kill_after_the_requests_and_before_any_dispatch_resumes_every_call_once(tmp_path, monkeypatch, configuration):
+    out = tmp_path / "run"
+
+    def killed_before_the_first_dispatch(self, request):
+        raise Killed()
+
+    monkeypatch.setattr(delivery.TrialTools, "dispatch", killed_before_the_first_dispatch)
+    with pytest.raises(Killed):
+        run_cell(out, "dev-004", "C3", "clean", configuration, "block_mid_reply")
+    monkeypatch.undo()
+    ran = []
+    real_worker = registry.worker
+    monkeypatch.setattr(registry, "worker", lambda *a: ran.append(a[3].call_id.rsplit(":", 1)[1]) or real_worker(*a))
+    _, result, events = run_cell(out, "dev-004", "C3", "clean", configuration, "block_mid_reply", resume=True)
+    check_integrity(result, events)
+    # No disposition was durable, so no call had run: each is decided and run now, once.
+    assert ran == (["call1", "call3"] if configuration == "D1_POLICY_GATE" else ["call1", "call2", "call3"])
+    assert sum(e["event_type"] == "tool_requested" for e in events) == 3
+    assert result["status"] == "completed" and result["utility"]["pass"] is True
