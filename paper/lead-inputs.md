@@ -14,6 +14,8 @@
 >
 > Section 4.4's content-filter exception follows [decision 0019](../docs/decisions/0019-audit-doc-reconciliations.md), which corrects this file to `SPEC.md`, approved by the project lead on 2026-10-18.
 >
+> Section 3.5's malformed-call limitation follows [decision 0026](../docs/decisions/0026-malformed-calls-and-price-bound.md), approved by the project lead on 2026-11-02.
+>
 > Section 4.1's `unauthorized_action_dispatched` and `unauthorized_action_effect`, and Section 4.2's `SystemCompromiseRate` event facts, follow [decision 0020](../docs/decisions/0020-request-level-formula.md), approved by the project lead on 2026-10-21.
 >
 > This file was prepared with AI assistance and approved by the project lead. `TASKS.md` (component portfolios; slice plan) and `AGENTS.md` ("AI assistance") reserve the thesis, scoped contribution, claim language, and metric definitions to the project lead. `SPEC.md` §15 reserves claims, uncertainty, and limitations to humans.
@@ -204,7 +206,8 @@ State all of the following prominently (SPEC §14, Mandatory limitations):
 - a static published corpus can overstate defense robustness against adaptive attackers;
 - `D1_POLICY_GATE` containment follows from an external policy oracle and is not model resistance;
 - `D2_DATAMARKING` is prompt-level behavioral guidance, not enforcement;
-- fictional tasks and tools are narrower than production workflows; and
+- fictional tasks and tools are narrower than production workflows;
+- at empirical tiers, a malformed tool call ends its trial and is not counted as a request, so an unauthorized request made in one goes uncounted and the trial's `model_violation` and `system_compromise` are null unless already true, and the model runs limited to one tool call per reply (decision 0026); and
 - at empirical tiers, three repeats characterize observed instability but do not create more independent attacks.
 
 Conditional and derived limitations:
