@@ -102,7 +102,8 @@ def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING
     log = base.EventLog(out / base.EVENTS_FILE, base.utc_now, logical_trial_id=trial, experiment_id=experiment_id, component_versions={**base.COMPONENT_VERSIONS, "provider_adapter": getattr(provider, "adapter_version", PROVIDER_ADAPTER_VERSION), "runner": VERSION, "read_file": "read-file-v0.1.0", "utility": str(UTILITY_VERSION), "tool_sandbox": sandbox.describe()})
     messages = [{"role": "system", "content": ticket.SYSTEM_PROMPT}, {"role": "user", "content": ticket.TASK_PROMPT}]
     log.append("trial_started", {"task_prompt": ticket.TASK_PROMPT, "prompt_sha256": base.sha256_json(messages),
-               "model_requested": model, "decoding": dict(decoding), "max_steps": manifest["max_steps"],
+               "model_requested": model, "decoding": dict(decoding),
+               "request_settings": dict(getattr(provider, "request_settings", {})), "max_steps": manifest["max_steps"],
                "code_commit": base.code_commit(), "tier": None, "fixture_hash": ticket.verify(fixture),
                "policy_hash": base.sha256_json(manifest["policy"]),
                "utility_hash": base.sha256_text((ticket.ROOT / "oracles/utility/ticket.py").read_text()),

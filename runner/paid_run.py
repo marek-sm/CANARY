@@ -7,6 +7,7 @@ before its first call. It refuses unless all of these hold:
   (keys come only from the env file the runner reads itself, decision 0010);
 * every tool process runs in the sandbox (``tools.sandbox``), which refuses on
   an unsupported platform, a missing sandbox binary, or a root user;
+* the provider declares decision 0026 item 3's one-call setting;
 * ``protocol/paid_run_record.json`` exists and validates against its schema;
 * the running sandbox is the one the record's mock grid ran under, so the paid
   run uses the same platform and sandbox mode as its preflight;
@@ -55,6 +56,13 @@ HASHED_DIRS = (
 )
 RECORD_SCHEMA = "paid_run_record"
 PROVENANCE_FILE = "code_provenance.jsonl"
+
+
+# Decision 0026 item 3: a paid call asks the provider for one tool call per reply.
+ONE_CALL_SETTINGS = (
+    {"tool_choice": {"type": "auto", "disable_parallel_tool_use": True}},
+    {"parallel_tool_calls": False},
+)
 
 
 class PaidRunRefused(ValueError):
@@ -157,6 +165,9 @@ def require_paid_run(provider: Any, *, live_smoke: bool = False, record_path: Op
     reason = paid_run_refusal(live_smoke=live_smoke, record_path=record_path)
     if reason:
         raise PaidRunRefused(reason)
+    declared = json.dumps(getattr(provider, "request_settings", None), sort_keys=True)  # 0 isn't false
+    if declared not in {json.dumps(settings, sort_keys=True) for settings in ONE_CALL_SETTINGS}:
+        raise PaidRunRefused("the provider doesn't ask for one tool call per reply (decision 0026 item 3)")
 
 
 def _mock_run_sandbox(run_dir: Path) -> str:

@@ -29,6 +29,7 @@ def test_live_grid_records_the_decoding_it_sends(tmp_path, monkeypatch):
 
     class Adapter(delivery.DeliveryTaskMock):
         adapter_version = "test-delivery-mock"
+        request_settings = {"tool_choice": {"type": "auto", "disable_parallel_tool_use": True}}
 
         def __init__(self, client):
             super().__init__(template, trial.channel)
@@ -49,6 +50,8 @@ def test_live_grid_records_the_decoding_it_sends(tmp_path, monkeypatch):
     grid_dev.run_live_grid(out, spec=spec, env_file=tmp_path / "never-read.env", corpus_root=CORPUS)
 
     events = read_jsonl(out / execute.trial_slug(trial) / EVENTS_FILE, "event")
-    recorded = next(e for e in events if e["event_type"] == "trial_started")["payload"]["decoding"]
+    started = next(e for e in events if e["event_type"] == "trial_started")["payload"]
+    recorded = started["decoding"]
+    assert started["request_settings"] == Adapter.request_settings
     assert sent and all(decoding == provider["decoding"] for decoding in sent)
     assert recorded == provider["decoding"]

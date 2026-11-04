@@ -25,6 +25,7 @@ Unknown values are `null`. SDK retries are off. A timeout, connection error, HTT
 
 - **Request.** Leading system messages become top-level `system` blocks. Whitespace-only assistant text is dropped, because the API rejects it. A system message later in the conversation, a non-object tool input, or a history that ends with an assistant turn raises before any request.
 - **Decoding.** `decoding` must name `endpoint: "messages"`, `thinking: "disabled"`, an `effort` of `low`, `medium`, or `high`, and a positive `max_tokens`. Adaptive thinking and sampling parameters are rejected.
+- **One call per reply.** With tools present, the adapter sends `tool_choice: {"type": "auto", "disable_parallel_tool_use": true}` (the OpenAI adapter sends `parallel_tool_calls: false`), and `trial_started` records it as `request_settings` beside the decoding (decision 0026).
 - **Refusals.** A `stop_reason` of `"refusal"`, the provider's classifier decline, maps to `content_filter` under decision 0008. Its text is kept, and `stop_details` stays in `provider_response`.
 - **Malformed values.** A response that carries NaN or infinity outside a tool input is recorded as unparseable, so the loop records `malformed_model_output`. A non-string `model`, error type, or error code is recorded as `null`.
 - **HTTP errors.** `error.provider_code` is the response's `error.details.error_code`. The adapter's `CONTENT_POLICY_CODES` is empty, because Anthropic documents no content-policy code.
@@ -174,6 +175,7 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
 provider's first call, in `execute.execute_trial`, `ticket_slice.run`, and
 `mock_slice.run_mock_trial`, and raises `PaidRunRefused` unless `CI` and every
 `ANTHROPIC_*` and `OPENAI_*` variable are absent from the environment, the
+provider declares decision 0026 item 3's one-call setting, the
 sandbox is available, `protocol/paid_run_record.json` validates against the
 `paid_run_record` schema, the running sandbox equals the record's, no hashed file
 has uncommitted or untracked changes, and every hash matches. The hashed files are the
