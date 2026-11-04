@@ -482,7 +482,7 @@ def _image_refusal(recorded: Optional[str]) -> Optional[str]:
     except container.ContainerMismatch as exc:
         return f"this container's image can't be told: {exc}"
     if running != recorded:
-        return (f"this runs in image {running or 'none (the host)'}, not the record's "
+        return (f"this runs in image {running or 'none (the host, or a container without launch.sh)'}, not the record's "
                 f"{recorded or 'none (the host)'}; record again in the image the paid run uses")
     return None
 
