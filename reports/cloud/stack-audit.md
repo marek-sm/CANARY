@@ -25,7 +25,7 @@ No. Of 20 items, 8 are Adequate, 9 are Partly used, 1 is Nominal, and 2 are Unus
 | 7 | Docker, pinned execution environment | **Nominal** | CI runs only the tool-free mock trace in it, tool paths fail in it, and the sweep runs outside it |
 | 8 | Mock provider in CI | Adequate | CI runs only the mock provider. The paid paths refuse under `CI` |
 | 9 | One adapter interface + fallback | **Partly used** | Two adapters exist, but the fallback can't be pointed at its model on the grid path and has no live evidence |
-| 10 | D1_POLICY_GATE | Adequate | Wired into delivery dispatch, with golden vectors in tests. Its readiness check (#54) isn't merged |
+| 10 | D1_POLICY_GATE | Adequate | Wired into delivery dispatch, with golden vectors in tests. The mock never makes an unauthorized request, so blocks are tested only in unit tests. Its readiness check (#54) isn't merged |
 | 11 | D2_DATAMARKING | Adequate | Wired into delivery: it marks resources and observations and adds its system instruction |
 | 12 | Append-only JSONL evidence | Adequate | Records are fsynced and schema-validated on write and resume. `verify` refused tampered records |
 | 13 | Analysis (estimands, bootstrap, tables) | Partly used | Only budget, floor, price, and request-effect scripts exist. No estimand or interval code |
@@ -37,14 +37,14 @@ No. Of 20 items, 8 are Adequate, 9 are Partly used, 1 is Nominal, and 2 are Unus
 | 19 | Hash pins | **Partly used** | Fixture, corpus, prompt, policy, oracle, and code hashes are recorded. `defense_hash` and `container_digest` are null, and there's no `active.json` |
 | 20 | Sanitizer + release bundle + manifest | Unused (not built) | Planned in `docs/DATA_RELEASE.md`. No code. W9-T3 and W11-T3 |
 
-Added after the original plan: the tool sandbox (`tools/sandbox.py`, Linux `bwrap` plus the `no_exec.py` seccomp filter, macOS `sandbox-exec`; decision 0023), uv and `astral-sh/setup-uv`, the `anthropic` and `openai` SDKs, and the paid-run record (`protocol/paid_run_record.json`). On Linux the sandbox is Adequate: `make sandbox-check` passed 36 tests (**ran**). The macOS profile that the official sweep will use is never run in CI, which runs only `ubuntu-latest` (`.github/workflows/ci.yml:8,29`). It's verified only by the lead's report in decision 0023 (**read**).
+Added after the original plan: the tool sandbox (`tools/sandbox.py`, Linux `bwrap` plus the `no_exec.py` seccomp filter, macOS `sandbox-exec`; decision 0023), uv and `astral-sh/setup-uv`, the `anthropic` and `openai` SDKs, and the paid-run record (`protocol/paid_run_record.json`). On Linux the sandbox is Adequate: `make sandbox-check` passed 36 tests (**ran**). The macOS profile that the official sweep will use is never run in CI, which runs only `ubuntu-latest` (`.github/workflows/ci.yml:10,28`). It's verified only by the lead's report in decision 0023 (**read**).
 
 ## 3. Items that aren't Adequate, most serious first
 
 ### 3.1 Docker: Nominal
 - **Plan:** "Docker for a pinned execution environment." (`149a706:SPEC.md:272`). Gate 3 freezes the "code commit and container digest" (`SPEC.md:1305`).
-- **Today:** The image is digest-pinned and non-root (`Dockerfile:1,3,15-16`). CI builds it and runs only `runner.mock_slice`, which has no tools (`ci.yml:31-34`). Decisions 0023 and 0025 moved tool runs to the host and the sweep to the lead's Mac. `SPEC.md:304` now says "pinned CI environment", and the sweep "runs ... outside that container".
-- **Ran:** The committed Dockerfile can't build here, because `ghcr.io/astral-sh/uv` blobs get a 403 from this session's egress proxy. That's an environment limit, not a repository defect. I built a variant whose only change is uv 0.12.18 taken from PyPI. `uv sync --locked` installed 21 packages, the container runs as uid 10001 on Python 3.11.16, and `docker run --network none --read-only ...` passed `make trace`. Inside the image, `runner.ticket_slice`, `runner.task_suite`, and `grid_dev mock` all fail with `SandboxUnavailable: bubblewrap (bwrap) is not installed`, and the image has no `make`.
+- **Today:** The image is digest-pinned and non-root (`Dockerfile:1,3,15-16`). CI builds it and runs only its default `runner.mock_slice`, which has no tools (`ci.yml:31-32`). Decisions 0023 and 0025 moved tool runs to the host and the sweep to the lead's Mac. `SPEC.md:304` now says "pinned CI environment", and the sweep "runs ... outside that container".
+- **Ran:** The committed Dockerfile can't build here, because `ghcr.io/astral-sh/uv` blobs get a 403 from this session's egress proxy. That's an environment limit, not a repository defect. I built a variant whose only change is uv 0.12.18 taken from PyPI. `uv sync --locked` installed 21 packages, the container runs as uid 10001 on Python 3.11.16, and the CI job's `docker run --network none --read-only ...` ran the default `runner.mock_slice` trace with exit 0. Inside the image, `runner.ticket_slice`, `runner.task_suite`, and `grid_dev mock` all fail with `SandboxUnavailable: bubblewrap (bwrap) is not installed`, and the image has no `make`.
 - **Ran:** All 90 mock-grid records have `container_digest: null`. No code ever fills it: `runner/mock_slice.py:358` hard-codes `None`, and `runner/execute.py` doesn't set it.
 - **Paths:** Unit tests and CI exercise only the trace. The mock grid, paid grid, official sweep, and replay never run in it. The release names "Docker instructions" (`SPEC.md:1493`).
 - **Cost:** The environment the results come from isn't the pinned one. Anyone reproducing the sweep can't rebuild it from a digest. The Gate 3 container digest pins an image the sweep never ran in.
@@ -95,7 +95,7 @@ Added after the original plan: the tool sandbox (`tools/sandbox.py`, Linux `bwra
 ### 3.8 Local HTTP fixture server: Partly used
 - **Plan:** `fetch_url` "Exact local-origin allowlist; redirects off; request logged" (`149a706:SPEC.md:284`). The effect counts when "a local request completes and the fixture server logs it" (`:554`).
 - **Ran:** Through the sandboxed worker, an allowlisted URL returned exactly the page from `pages.json`. An off-list URL got `url_outside_fixture_allowlist`. With no endpoint, it got `fixture_service_unavailable`. With the server stopped, the worker launch failed (bwrap exit 1). The delivery path starts this server (`runner/execute.py:806`).
-- **Read:** `tools/fixture_http.py:113-114` makes `log_message` a no-op, and nothing else records requests. The effect oracle is `fetch_url-returned-v0.1.0`, which copies the tool's own `ok` (`runner/delivery.py:103,568-573`). `SPEC.md:316,590` still promise a server log.
+- **Read:** `tools/fixture_http.py:45-46` makes `log_message` a no-op, and nothing else records requests. The effect oracle is `fetch_url-returned-v0.1.0`, which copies the tool's own `ok` (`runner/delivery.py:103,568-573`). `SPEC.md:316,590` still promise a server log.
 - **Cost:** `effect_observed` for `fetch_url` isn't independent evidence. It repeats the tool's return value.
 - **Fix:** Have the server append each request to a per-trial JSONL log in its writable directory, and score from that. Before Gate 3, because the effect oracle freezes with W8-T1. The move from loopback TCP to a Unix socket is decision 0023 item 2. It doesn't weaken the plan, and §14 doesn't need it.
 
@@ -131,9 +131,9 @@ All of these ran as `auditor` in `~/work/CANARY` at `519e9af`, after `uv sync --
 | `uv run make test` | grid-validate 90 trials; grid tests 61 passed (185 s); `pytest -q` 1907 passed (263 s); 0 failed; total 7 m 55 s |
 | `uv run make trace` | exit 0, 51 lines, mock trace rendered |
 | `uv run make t1-smoke` / `t1-suite` | exit 0 (ticket replay rendered) / exit 0, 20 of 20 variants `utility=True` |
-| `uv run make grid-check` | PENDING. Inside `make test`: `grid_dev validate` printed "90 trials", and the mock verify printed `complete: true, 90/90` |
-| `uv run make w7-t1-smoke`, `corpus-check`, `paper-shells-check`, `demo-example-check` | PENDING |
-| `uv run make report` / `make replay` | PENDING (no such targets in `Makefile`) |
+| `uv run make grid-check` | exit 0. 61 passed (189 s), and the mock grid verified `complete: true`, 90 of 90 trials found. Total 3 m 33 s |
+| `uv run make w7-t1-smoke`, `corpus-check`, `paper-shells-check`, `demo-example-check` | exit 0 for all four (5.1 s, 0.14 s, 0.09 s, 0.27 s) |
+| `uv run make report` / `make replay` | Both exit 2: `No rule to make target` |
 | `python -m runner.grid_dev mock --out ~/gridrun` then `verify` | 90/90 complete, 22.8 s, verify exit 0 |
 | `python -m demo.trace` on each of the 90 traces | 36 ok, 54 `KeyError: 'text'` |
 | Tampered result and event, then `grid_dev verify` / `mock --resume` | exit 1, exit 1, exit 1 |
@@ -151,4 +151,4 @@ All of these ran as `auditor` in `~/work/CANARY` at `519e9af`, after `uv sync --
 - I didn't build the committed Dockerfile byte for byte. Its uv layer was unreachable from this VM.
 - I didn't read the unmerged PRs #54, #66, or #73, or any other branch, and I didn't read `corpus/evaluation/`. I did run one `ls corpus/evaluation` by mistake while setting up. It printed nothing, and I read no file there.
 - I didn't check the CI run history on GitHub.
-- For about 20 seconds I changed `jsonschema` in the shared `.venv` while `make test` was running, then restored it with `uv sync --locked`.
+- For about 20 seconds I changed `jsonschema` in the shared `.venv` while `make test` was running, then restored it with `uv sync --locked`. `make test` still passed 1907 with 0 failed.
