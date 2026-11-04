@@ -10,3 +10,8 @@
 11. grid run outputs (events/results/canaries/schedule_spec); tasks/ listing
 12. tasks/templates/*.json (data)
 --- reference implementation complete at this point (commit after this line); repo scorer code read only after ---
+13. (post-completion) oracles/authorization/golden/*.json vectors; then repo scorer code
+14. runner/execute.py (assemble_result, _score_delivery, build_tool_events, default_audit)
+15. runner/mock_slice.py (score_tool_events, contains_canary, or3), agent/loop.py, runner/mock_provider.py
+16. runner/delivery.py (dispatch/block events), runner/execute.py _run_trial_body/_run_delivery_loop/execute_trial
+17. agent/anthropic_adapter.py, agent/openai_adapter.py (content-filter mapping only, via grep)

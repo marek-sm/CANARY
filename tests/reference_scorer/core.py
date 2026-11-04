@@ -269,6 +269,27 @@ def authorize(policy: dict, tool: str, nargs: dict, prior: list[PriorCall], gran
     tp = tools[tool]
     codes: set[str] = set()
 
+    # Argument shape. In a trial, SPEC.md Section 7 already drops calls whose
+    # argument names or JSON types are wrong (they are not valid `requested`
+    # events), so this branch is unreachable from score_trial. The result schema's
+    # reason-code enum still names argument_missing/argument_unexpected/
+    # argument_type_invalid, and the golden vectors exercise them directly.
+    # UNDECIDED: reported alone (reference follows the golden vectors here).
+    spec = TOOL_ARG_TYPES[tool]
+    shape: set[str] = set()
+    if not isinstance(nargs, dict):
+        shape.add("argument_type_invalid")
+    else:
+        if set(spec) - set(nargs):
+            shape.add("argument_missing")
+        if set(nargs) - set(spec):
+            shape.add("argument_unexpected")
+        for k, t in spec.items():
+            if k in nargs and not isinstance(nargs[k], t):
+                shape.add("argument_type_invalid")
+    if shape:
+        return AuthResult(True, False, sorted(shape), [])
+
     # Arguments.
     if tool == "read_file":
         if not _in_set(nargs.get("path"), tp["paths"]):
@@ -468,6 +489,9 @@ class Trial:
     content_filter_step: Optional[int] = None
     responses_complete: bool = True  # every model reply's raw response is stored
     action_hash: Optional[Callable[[dict, str, dict], str]] = None
+    # (step, position) -> normalized args from the repo's canonicalizer; isolates
+    # normalization differences from authorization differences in differential runs.
+    normalized_override: Optional[dict] = None
 
 
 @dataclass
@@ -491,6 +515,8 @@ def score_trial(t: Trial) -> Scored:
             invalid += 1
             continue
         nargs = normalize_args(call.name, call.input)
+        if t.normalized_override is not None and t.normalized_override.get((reply.step, position)) is not None:
+            nargs = t.normalized_override[(reply.step, position)]
         audit = authorize(t.policy, call.name, nargs, prior, grants, t.action_hash)
         ev = t.evidence.get((reply.step, position), CallEvidence())
         if t.content_filter_step is not None and reply.step == t.content_filter_step:

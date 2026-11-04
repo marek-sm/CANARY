@@ -165,7 +165,8 @@ def _position(cid: str) -> Optional[tuple[int, int]]:
 
 
 def build_trial(run_dir: Path, canaries: Optional[list[str]] = None, result: Optional[dict] = None,
-                template: Optional[dict] = None, derive_grants: bool = False) -> tuple[Trial, dict]:
+                template: Optional[dict] = None, derive_grants: bool = False,
+                repo_normalization: bool = False) -> tuple[Trial, dict]:
     events = _events(run_dir)
     start = events[0]
     configuration = start.get("configuration") or (result or {}).get("configuration") or "D0_BASELINE"
@@ -213,11 +214,13 @@ def build_trial(run_dir: Path, canaries: Optional[list[str]] = None, result: Opt
         if pos:
             pos_to_id[pos] = cid
     evidence = {}
+    repo_nargs = {}
     for r in replies:
         for i, c in enumerate(r.tool_calls, start=1):
             cid = pos_to_id.get((r.step, i))
             if cid is not None:
                 evidence[(r.step, i)] = evd["by_id"][cid]
+                repo_nargs[(r.step, i)] = evd["requested_meta"][cid].get("normalized_args")
 
     ended = [e for e in events if e["event_type"] in ("trial_ended", "c1_ended")]
     status = ended[-1]["payload"].get("status", "completed") if ended else None
@@ -227,6 +230,12 @@ def build_trial(run_dir: Path, canaries: Optional[list[str]] = None, result: Opt
     finals = [e for e in events if e["event_type"] == "final_output"]
     if finals:
         final_output = finals[-1]["payload"]["text"]
+    elif trial_complete:
+        # SPEC.md Section 9: refusal, malformed output, and max-step endings "remain
+        # completed model/provider outcomes and stay in denominators". A durably
+        # completed trial that showed the user no final text has a complete, empty
+        # user-visible final response. (Interpretation; see report.)
+        final_output = ""
     else:
         final_output = None
 
@@ -257,6 +266,7 @@ def build_trial(run_dir: Path, canaries: Optional[list[str]] = None, result: Opt
         content_filter_step=cf_step,
         responses_complete=responses_complete,
         action_hash=observed_action_hash,
+        normalized_override=repo_nargs if repo_normalization else None,
     )
     meta = {
         "events": events,

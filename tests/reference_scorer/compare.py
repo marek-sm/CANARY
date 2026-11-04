@@ -57,7 +57,7 @@ def canaries_for(run_dir: Path, result: dict | None) -> list[str] | None:
     return None
 
 
-def compare_dir(run_dir: Path, derive_grants: bool = False) -> dict:
+def compare_dir(run_dir: Path, derive_grants: bool = False, repo_normalization: bool = False) -> dict:
     res_path = run_dir / "results.jsonl"
     result = None
     if res_path.exists():
@@ -66,7 +66,7 @@ def compare_dir(run_dir: Path, derive_grants: bool = False) -> dict:
     can = canaries_for(run_dir, result)
     stored_can = list((result or {}).get("canaries") or [])
     trial, meta = build_trial(run_dir, canaries=can if can is not None else stored_can, result=result,
-                              derive_grants=derive_grants)
+                              derive_grants=derive_grants, repo_normalization=repo_normalization)
     scored = score_trial(trial)
     out = {"dir": str(run_dir), "diffs": [], "notes": [], "config": trial.configuration,
            "grant_source": meta["grant_source"],
