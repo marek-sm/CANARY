@@ -140,7 +140,9 @@ def defense_hash(configuration: str) -> Optional[str]:
     sources = DEFENSE_SOURCES.get(configuration)
     if sources is None:
         return None
-    return registry.digest({path: hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest() for path in sources})
+    # The defense is code, so its source is read from the code's own root, never from the
+    # fixture root REPO_ROOT names (a render into another tree repoints that one).
+    return registry.digest({path: hashlib.sha256((registry.ROOT / path).read_bytes()).hexdigest() for path in sources})
 
 
 def _inside(root: Path, path: Path) -> Path:
