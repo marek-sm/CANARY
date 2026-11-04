@@ -1,0 +1,139 @@
+"""Tool-result delivery behaviour that mutation testing found unpinned
+(reports/cloud/mutation.md). Each test names the surviving mutants it kills.
+
+These drive ``TrialTools`` directly with a stand-in tool runner, so no tool
+process starts and no provider is involved.
+"""
+
+import json
+
+import pytest
+
+from defenses.canonicalizer import canonicalize_request
+from defenses.interfaces import DATAMARK_MARKER as M
+from defenses.interfaces import GrantState
+from runner import delivery
+from runner.delivery import SEND_EFFECT_ORACLE, SINK_NAME, TrialTools, create_state
+
+POLICY = {
+    "schema_version": "1.0.0", "policy_id": "p", "policy_version": "1", "task_id": "t",
+    "call_budget_basis": "dispatches",
+    "tools": {"read_file": {"max_calls": 5, "paths": ["docs/report.txt"]}},
+}
+
+
+def _send(n):
+    return canonicalize_request("send_email", {"to": "x@example.test", "subject": "s", "body": "b"}, "t", n,
+                                call_id=f"c{n}")
+
+
+def _tools(tmp_path, configuration="D0_BASELINE", stored=None, receipts=()):
+    state = create_state(tmp_path / "state", fresh=True)
+    (state / SINK_NAME).write_text("".join(json.dumps(r) + "\n" for r in receipts), encoding="utf-8")
+    logged, synced = [], []
+    tools = TrialTools(
+        configuration=configuration, policy=POLICY, grant_state=GrantState(), root=tmp_path, state=state,
+        endpoint=str(tmp_path), log=lambda kind, payload: logged.append((kind, dict(payload))),
+        sync_sink=lambda rs: synced.append(list(rs)), stored=stored or {},
+        run_tool=lambda root, st, endpoint, req: {"ok": True},
+    )
+    return tools, logged, synced
+
+
+def _stored_send(n, receipt=True):
+    stored = {
+        ("tool_dispatch", f"c{n}"): {"call_id": f"c{n}", "step": n, "blocked": False, "dispatched": True},
+        ("tool_result", f"c{n}"): {"call_id": f"c{n}", "step": n, "observation": {"ok": True}},
+    }
+    if receipt:
+        stored[("sink_receipt", f"c{n}")] = {"call_id": f"c{n}", "step": n, "receipt": {"n": n}, "sink_received": True}
+    return stored
+
+
+def test_a_blocked_send_records_no_sink_receipt_and_the_send_oracle(tmp_path):
+    # Kills xǁTrialToolsǁ_blocked_effect__mutmut_2..15: a D1_POLICY_GATE block's effect
+    # facts are known false, under the oracle of the tool that was asked for.
+    tools, logged, _ = _tools(tmp_path, "D1_POLICY_GATE")
+    request = _send(1)
+    observation = tools.dispatch(request)
+    assert observation["status"] == "POLICY_BLOCKED"
+    assert tools.effect(request, observation) == {
+        "effect_observed": False, "effect_oracle_id": SEND_EFFECT_ORACLE, "sink_received": False,
+    }
+    read = canonicalize_request("read_file", {"path": "secret.txt"}, "t", 2, call_id="c2")
+    observation = tools.dispatch(read)
+    assert tools.effect(read, observation) == {
+        "effect_observed": False, "effect_oracle_id": "read_file-returned-v0.1.0", "sink_received": False,
+    }
+
+
+def test_resumed_sends_keep_their_receipts_and_a_new_send_takes_the_next_one(tmp_path):
+    # Kills xǁTrialToolsǁ_account_send__mutmut_10..17 (the stored-receipt branch and its
+    # count) and _46..48 (the fresh branch's count): two resumed sends account for the
+    # first two receipts, so the third send's receipt is the third one, alone.
+    receipts = [{"n": 1}, {"n": 2}, {"n": 3}]
+    tools, logged, synced = _tools(tmp_path, stored={**_stored_send(1), **_stored_send(2)}, receipts=receipts)
+    for n in (1, 2):
+        request = _send(n)
+        observation = tools.dispatch(request)
+        assert tools.effect(request, observation) == {
+            "effect_observed": True, "effect_oracle_id": SEND_EFFECT_ORACLE, "sink_received": True,
+        }
+    assert tools.accounted == 2
+    request = _send(3)
+    observation = tools.dispatch(request)
+    assert tools.effect(request, observation) == {
+        "effect_observed": True, "effect_oracle_id": SEND_EFFECT_ORACLE, "sink_received": True,
+    }
+    assert ("sink_receipt", {"call_id": "c3", "step": 3, "receipt": {"n": 3}, "sink_received": True}) in logged
+    assert synced == [receipts]
+    assert tools.accounted == 3
+
+
+def test_a_send_with_no_new_receipt_is_known_not_received(tmp_path):
+    tools, logged, synced = _tools(tmp_path)
+    request = _send(1)
+    observation = tools.dispatch(request)
+    assert tools.effect(request, observation) == {
+        "effect_observed": False, "effect_oracle_id": SEND_EFFECT_ORACLE, "sink_received": False,
+    }
+    assert synced == [] and not any(kind == "sink_receipt" for kind, _ in logged)
+
+
+def test_one_send_with_two_new_receipts_leaves_the_effect_unknown(tmp_path):
+    # Kills xǁTrialToolsǁ_account_send__mutmut_27 (`> 1` -> `> 2`).
+    tools, logged, synced = _tools(tmp_path, receipts=[{"n": 1}, {"n": 2}])
+    request = _send(1)
+    observation = tools.dispatch(request)
+    assert tools.effect(request, observation) == {
+        "effect_observed": None, "effect_oracle_id": SEND_EFFECT_ORACLE, "sink_received": None,
+    }
+    assert synced == [] and not any(kind == "sink_receipt" for kind, _ in logged)
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("plain text", f"plain{M}text"),
+        ("42", "42"),
+        ('{"a": "x y", "b": "é z"}', f'{{"a": "x{M}y", "b": "é{M}z"}}'),
+        ('{\n  "a": "x y"\n}', f'{{\n  "a": "x{M}y"\n}}'),
+        ('["p q", 1]', f'["p{M}q", 1]'),
+        (7, 7),
+        (None, None),
+    ],
+)
+def test_a_database_value_is_marked_as_text_or_as_json_keeping_its_layout(value, expected):
+    # Kills x__mark_value__mutmut_2..22: a text value comes back as marked text, never
+    # as a marker count, and JSON keeps its one-line or indented layout and its
+    # non-ASCII characters.
+    assert delivery._mark_value(value) == expected
+
+
+def test_a_read_result_is_marked_as_text_and_a_fetch_result_as_html(tmp_path):
+    # Kills x_mark_observation__mutmut_12 (every text marked as HTML).
+    text = "a < b & c"
+    assert delivery.mark_observation("read_file", {"ok": True, "text": text})["text"] == f"a{M}<{M}b{M}&{M}c"
+    assert delivery.mark_observation("fetch_url", {"ok": True, "text": "<p>a b</p>"})["text"] == f"<p>a{M}b</p>"
+    failed = {"ok": False, "error": "not found here", "text": "x y"}
+    assert delivery.mark_observation("read_file", failed) == failed
