@@ -39,7 +39,7 @@ Ranked by what's left, most urgent first:
 - Tests: 2 in `tests/test_make_report.py`, both passed. No `W8-T3` code was built.
 
 **4. JSON Schemas.**
-- `runner/execute.py:348`: `_load_base` validates against `base_case.schema.json`. A base without `source` is refused before any trial directory is written.
+- `runner/execute.py:350`: `_load_base` validates against `base_case.schema.json`. A base without `source` is refused before any trial directory is written.
 - New unlocked schemas, all at `0.1.0` and not in `CONTRACT_SCHEMAS`:
   - `schemas/schedule_spec.schema.json`, enforced at `runner/grid_dev.py:70` and `runner/sweep.py:82`. `grid_dev validate` now prints a refusal instead of a traceback.
   - `schemas/active_protocol.schema.json`: one field per bullet of `SPEC.md`'s "Active-protocol manifest" list. Null official fields carry a reason. `ENGINEERING` forces empty lists and zero counts.
