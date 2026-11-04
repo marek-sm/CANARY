@@ -16,6 +16,7 @@ Usage:
   python -m runner.grid_dev verify RUN [--spec PATH] [--corpus-root PATH]
   python -m runner.grid_dev summary RUN [--spec PATH] [--corpus-root PATH]
   python -m runner.grid_dev live [--out DIR] [--env-file PATH] [--provider anthropic|openai]
+      (openai runs protocol/development_grid_spec_fallback.json unless --spec names another)
 """
 
 from __future__ import annotations
@@ -40,6 +41,10 @@ from runner.schedule import CONFIGURATIONS, ScheduledTrial, generate_schedule
 from tasks import registry
 
 DEFAULT_SPEC = REPO_ROOT / "protocol" / "development_grid_spec.json"
+# The declared fallback's grid (decision 0010 item 3): the same spec on gpt-6-luna, so
+# the one mock preflight the paid-run record checks covers both, and the record hashes both.
+FALLBACK_SPEC = REPO_ROOT / "protocol" / "development_grid_spec_fallback.json"
+PROVIDER_SPECS = {"anthropic": DEFAULT_SPEC, "openai": FALLBACK_SPEC}
 EXPECTED_TRIALS = 90
 DEFAULT_MOCK_OUT = REPO_ROOT / "results" / "development" / "grid-mock"
 DEFAULT_LIVE_OUT = REPO_ROOT / "results" / "development" / "grid-live"
@@ -54,6 +59,11 @@ def load_spec(path: Path | None = None) -> dict[str, Any]:
     if not isinstance(spec, dict):
         raise ValueError(f"{spec_path}: spec must be a JSON object")
     return spec
+
+
+def committed_spec(provider_name: str) -> dict[str, Any]:
+    """The committed grid spec a live grid on ``provider_name`` runs."""
+    return load_spec(PROVIDER_SPECS[provider_name])
 
 
 def validate_grid_spec(spec: Mapping[str, Any]) -> list[ScheduledTrial]:
@@ -122,7 +132,8 @@ def new_trials(out_dir: Optional[Path], spec: Mapping[str, Any]) -> int:
     return sum(not (Path(out_dir) / execute.trial_slug(trial) / EVENTS_FILE).exists() for trial in schedule)
 
 
-def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Optional[Path] = None) -> Optional[str]:
+def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Optional[Path] = None, *,
+                     provider_name: str = "anthropic") -> Optional[str]:
     """Fail closed before any paid call. The specific reasons come first so an
     operator sees what else is wrong; the path opens only when ``runner.paid_run``
     finds the project lead's record valid for this code and sandbox, and every
@@ -144,8 +155,10 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Option
         )
     if Path(corpus_root).resolve() != execute.DEFAULT_CORPUS_ROOT.resolve():
         return "a live grid runs only on corpus/development, the corpus its paid-run record hashed"
-    if dict(spec) != load_spec():
-        return "a live grid runs only protocol/development_grid_spec.json, the spec its paid-run record hashed"
+    committed = PROVIDER_SPECS[provider_name]
+    if dict(spec) != load_spec(committed):
+        return (f"a {provider_name} live grid runs only {committed.relative_to(REPO_ROOT)}, "
+                "the spec its paid-run record hashed")
     return paid_run.paid_run_refusal(new_trials=new_trials(out_dir, spec))
 
 
@@ -173,7 +186,7 @@ def run_live_grid(
     corpus_root: Optional[Path] = None,
 ) -> Path:
     root = corpus_root or execute.DEFAULT_CORPUS_ROOT
-    reason = live_run_refusal(root, spec, out_dir) or execute.raw_evidence_refusal(out_dir)
+    reason = live_run_refusal(root, spec, out_dir, provider_name=provider_name) or execute.raw_evidence_refusal(out_dir)
     if reason:
         raise ValueError(reason)
 
@@ -181,7 +194,7 @@ def run_live_grid(
 
     provider_cfg = live_smoke.PROVIDERS[provider_name]
     # Every trial sends the spec's model, so the provider, the spec, and --model must all name one.
-    # A fallback grid needs its own committed spec, record, and decision (decision 0010 item 3).
+    # The fallback runs its own committed spec (FALLBACK_SPEC); activating it is still a decision (decision 0010 item 3).
     expected = provider_cfg["model"]
     if spec.get("model_id") != expected or model not in (None, expected):
         raise ValueError(
@@ -579,9 +592,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "live":
-        spec = load_spec(args.spec)
+        spec = load_spec(args.spec or PROVIDER_SPECS[args.provider])
         out = args.out or DEFAULT_LIVE_OUT
-        reason = _existing_run_refusal(out, args.resume) or live_run_refusal(execute.DEFAULT_CORPUS_ROOT, spec, out)
+        reason = _existing_run_refusal(out, args.resume) or live_run_refusal(
+            execute.DEFAULT_CORPUS_ROOT, spec, out, provider_name=args.provider)
         if reason:
             print(f"refusing: {reason}", file=sys.stderr)
             return 2
