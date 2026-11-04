@@ -17,7 +17,7 @@ This is evidence for the project lead to decide on. An AI agent ran it and wrote
   - The tool sandbox silently skips unreadable directories when it checks for foreign sockets, or mounts all of the interpreter's `lib/`.
   - A Gate 2 budget equation in which every term can change unnoticed.
   - Both evaluators can count unknown prior calls twice, turning an evaluable request into a non-evaluable one.
-- **Tests added.** 10 new test files with 162 test cases. Each test names the mutants it kills. They pass on unmodified code, except the one deliberately failing file.
+- **Tests added.** 10 new test files with 165 test cases. Each test names the mutants it kills. They pass on unmodified code, except the one deliberately failing file.
 
 Sections: [What I ran](#what-i-ran) · [Raw counts](#raw-counts) · [Findings, ranked](#findings-ranked) · [Tests added](#tests-added) · [Other observations](#other-observations-not-from-surviving-mutants) · [What I didn't check](#what-i-didnt-check) · [Living documents](#living-documents)
 
@@ -188,6 +188,7 @@ This came from reading the audit while reviewing its survivors, not from a singl
 | A19 | `agent/loop.py:26` | `"XXXX".join` (`x_response_text__mutmut_2`) | The final output's text blocks get joined with junk, which changes `final_output` and the disclosure checks that read it | `test_text_blocks_join_with_nothing_between_them` |
 | A20 | `runner/mock_slice.py:353-354,394,436` | temperature and top_p read from a renamed key; `final_output_sha256` dropped; prompt hash over `None` (`assemble_result__mutmut_147..162,292`, `run_mock_trial__mutmut_42`) | Recorded run metadata and evidence hashes are wrong | `test_the_mock_result_records_its_decoding_prompt_and_output_hashes` |
 | A21 | `defenses/datamarking.py:110,172,188` | per-channel count `= 1`; attributes joined with `XXXX`; a comment appended as `None` (`mark__mutmut_33`, `_attrs__mutmut_18`, `handle_comment__mutmut_1`) | Wrong coverage counts; a changed tag or a crash on a C4 page with several attributes or a comment | `test_defense_mutants.py`, three tests |
+| A22 | `defenses/datamarking.py:49-54` | constant mutator: `ensure_ascii=False` and `quote=False` flipped in `_SERIALIZERS` | D2_DATAMARKING would also escape non-ASCII or quotes, changing what the model sees beyond the marker | `test_span_serializers_escape_only_what_their_format_needs` |
 
 ### B: could weaken a safety check
 
@@ -210,6 +211,7 @@ This came from reading the audit while reviewing its survivors, not from a singl
 | B15 | `oracles/authorization/conformance.py:129,136` | `or` changed to `and` (`_check_single_use__mutmut_19/32`) | The conformance harness would accept an evaluator that uses two grants in one replay, or denies an exhausted replay with the wrong code | `test_the_replay_catches_two_grants_consumed_at_once`, `..._requires_grant_already_consumed_...` |
 | B16 | `agent/loop.py:84` | `or` changed to `and` (`run_loop__mutmut_121`) | A tool call with a dispatcher but no event recorder proceeds and crashes on the recorder | `test_a_tool_call_needs_both_a_dispatcher_and_a_tool_recorder` |
 | B17 | `tools/sandbox.py:266` | `<= 4` and `< 5` (`wrap__mutmut_43/44`) | Refuses a valid `-I -c CODE` launch: stricter, not weaker | `test_a_one_line_program_with_no_arguments_is_a_valid_launch` |
+| B18 | `runner/paid_run.py:52-55` | constant mutator: any `HASHED_DIRS` entry except `runner` and `uv.lock` dropped or renamed (20 constant mutants) | The paid-run record would stop covering, for example, `defenses/` or `corpus/`, so a change there after the record wouldn't refuse a paid run | `test_the_record_binds_every_directory_a_paid_cell_executes_or_reads`, `test_a_change_in_any_hashed_directory_refuses_a_paid_run` |
 
 ### C: low impact or equivalent (not killed, and why)
 
@@ -235,15 +237,15 @@ All are under `tests/`, and none changes production code. Each passes on the bas
 | `test_gate2_budget_equation.py` | 21 | Gate 2 budget terms, prices, strata rule, boundary, CLI |
 | `test_floor_count_mutants.py` | 7 | `by_base` missing counts, mock detection, report keys |
 | `test_request_effect_mutants.py` | 5 | Block count, ablation indeterminacy, refusal messages |
-| `test_paid_run_mutants.py` | 22 | Ambient-variable refusals, record path, dirty and tracked scope, digest, record contents and refusals, `main` |
-| `test_defense_mutants.py` | 11 | Action hash over lists, datamarking coverage and HTML, conformance replay |
+| `test_paid_run_mutants.py` | 24 | Ambient-variable refusals, record path, `HASHED_DIRS`, dirty and tracked scope, digest, record contents and refusals, `main` |
+| `test_defense_mutants.py` | 12 | Action hash over lists, datamarking coverage, HTML, and serializers, conformance replay |
 | `test_gate_canonicalizer_mutants.py` | 26 | Gate fail-closed on a non-decision, URL, recipient, and `query_id` canonicalization, both evaluators' budget and shape rules |
 | `test_delivery_mutants.py` | 27 | `TrialTools` dispositions, grants, effects, receipts on resume, D2 marking |
 | `test_sandbox_mutants.py` | 24 | macOS profile and `wrap`/`mode` branches, `describe()`, interpreter exposure, socket checks |
 | `test_loop_mock_slice_mutants.py` | 13 | Loop text, validation, call IDs, default effect, mock-trial recorded hashes |
 | `test_gate_audit_typed_params.py` | 6 (4 fail) | R1, failing by design |
 
-FULL_SUITE_RESULT
+**Full suite with the new tests.** I ran it on a fresh `git archive` of branch commit `069a170`, as `canary`, with `uv run --offline pytest -q -p no:cacheprovider`: **2021 passed, 4 failed in 296.96s**. The 4 failures are the `tests/test_gate_audit_typed_params.py` cases, by design. 2025 = 1860 existing + 165 new. I didn't run `make test`, which adds `grid-check`, or the Docker job; the new tests don't touch either.
 
 ## Other observations (not from surviving mutants)
 
