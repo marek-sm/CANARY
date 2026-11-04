@@ -41,3 +41,5 @@ analysis.floor_count.x__is_mock__mutmut_16
 analysis.request_effect.x__blocked__mutmut_14
 analysis.request_effect.x__first_unauthorized__mutmut_4
 analysis.gate2_budget.x_evaluate_budget__mutmut_1
+runner.delivery.xǁTrialToolsǁdispatch__mutmut_159
+tools.sandbox.x_wrap__mutmut_17

@@ -7,7 +7,7 @@ This is evidence for the project lead to decide on. An AI agent ran it and wrote
 ## Summary
 
 - **One real bug, with a failing test.** The audit evaluator compares `query_db` parameter values with Python `in`, so `true` and `1.0` match an allowlisted `1`, and `0` and `0.0` match `false`. The D1_POLICY_GATE evaluator compares type-strictly, as `docs/DEFENSES_AND_POLICY.md` requires. It's latent: every allowlisted parameter value in today's task policies and golden vectors is a string. `tests/test_gate_audit_typed_params.py` fails 4 cases by design.
-- **mutmut** generated 5,949 mutants over the 14 target files. With the existing suite, minus seven slow 90-cell grid tests, 4,653 were killed and 1,296 were not (21.8%). I re-ran a random sample of 48 non-killed mutants against those seven slow tests, and none was killed. I also re-ran 25 of the reported findings against them, and none was killed. The slow tests don't change the picture.
+- **mutmut** generated 5,949 mutants over the 14 target files. With the existing suite, minus seven slow 90-cell grid tests, 4,653 were killed and 1,296 were not (21.8%). I re-ran a random sample of 48 non-killed mutants against those seven slow tests, and none was killed. I also re-ran 27 of the reported findings against them, and none was killed. The slow tests don't change the picture.
 - **Survival by module** ranged from 2.6% (`oracles/authorization/audit.py`) to 52.0% (`runner/paid_run.py`). Most survivors are error-message text, CLI help, JSON formatting, or equivalent mutants. The ones that matter are ranked below.
 - **Most serious surviving mutants**, each now killed by a new test:
   - The paid-run gate stops refusing an ambient `ANTHROPIC_*` variable.
@@ -81,7 +81,7 @@ tests/test_delivery.py::test_the_full_ninety_cell_mock_grid_runs_through_deliver
 A full tier 2 would take about 190 seconds per mutant for 707 mutants, over 9 hours on 4 cores, so I didn't run it. `reports/cloud/mutation_tools/tier2.py` ran the slow tests that cover each mutant's function (mapped from run 1's mutmut stats) with `MUTANT_UNDER_TEST` set, in a copy of mutmut's `mutants/` tree:
 
 - **A random sample of 48** of the 707 non-killed mutants whose functions a slow test covers. Eight came from the first draw; 40 came from `random.sample` with seed `20261104`. **48 survived, 0 were killed.** A sample of 48 with no kill puts a one-sided 95% upper bound of about 6% on the share of tier-1 survivors the slow tests would kill.
-- **Every reported finding that a slow test covers** (25 mutants). **25 survived, 0 were killed.** The other 18 reported findings had no slow test covering them, so tier 1 already ran every test that reaches them. Every finding below survived the whole existing suite.
+- **Every reported finding that a slow test covers** (27 mutants, one representative ID per row, listed in `mutation_data/reported_findings.txt`). **27 survived, 0 were killed.** The other 18 representatives have no slow test covering them, so tier 1 already ran every test that reaches them. Each finding's representative mutant survived the whole existing suite. Other IDs in the same row survived tier 1; I didn't run each of them against the slow tests. The B13 `main()` mutants are "no tests" in tier 1, and I didn't run them against the slow tests either.
 
 ### Verifying the new tests kill what they claim
 
