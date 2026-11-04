@@ -78,7 +78,7 @@ from defenses.interfaces import (
 )
 from oracles.authorization.audit import AUDIT_EVALUATOR_VERSION, AuditAuthorizer
 from oracles.utility import task_suite as task_utility
-from runner import paid_run, spend_ledger
+from runner import container, paid_run, spend_ledger
 from runner import delivery as tool_delivery
 from tasks import registry
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
@@ -707,6 +707,11 @@ def _run_trial_body(
             "untrusted_span": untrusted_span,
             "rendered_sha256": sha256_text(rendered) if rendered is not None else None,
         }
+        # The launcher's daemon-reported image (runner.container), so a result recomputed
+        # anywhere names the image its trial ran in. Absent on the host, where it reads null.
+        image = container.container_digest()
+        if image is not None:
+            payload["container_digest"] = image
         if delivery:
             payload["delivery_version"] = tool_delivery.DELIVERY_VERSION
             payload["fixture_hash"] = fixture_hash
@@ -1794,6 +1799,8 @@ def run_schedule(
     unsupported = sorted({t.configuration for t in schedule} - set(supported_configurations(delivery)))
     if unsupported:
         raise ValueError(f"configurations not wired into this runner: {unsupported}")
+    # A launcher file for another container refuses here, before the run directory exists.
+    container.container_digest()
 
     run_dir = Path(run_dir)
     stored_spec = run_dir / SPEC_FILE

@@ -1,0 +1,110 @@
+# syntax=docker/dockerfile:1.7
+#
+# PROTOTYPE, not adopted. Branch cloud/container-sweep; report:
+# reports/cloud/container-sweep.md. Decision 0025 item 12 runs the official sweep
+# on the host with a null container_digest; this image tests whether the sweep
+# can instead run in a pinned image with tools/sandbox.py (bwrap) and
+# tools/no_exec.py still confining every tool. The project lead hasn't decided.
+#
+# The image is the environment only: the interpreter, the locked dependencies,
+# bwrap, and git. The checkout is bind-mounted read-only at /app by
+# docker/sweep/launch.py, so code_sha256 in the paid-run record keeps covering
+# the code, and container_digest covers everything else.
+#
+# Build (linux/amd64, any network that reaches Docker Hub, ghcr.io, and Debian):
+#   SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) docker buildx build -f Dockerfile.sweep \
+#     --platform linux/amd64 --provenance=false --build-arg SOURCE_DATE_EPOCH \
+#     --output type=image,name=canary-sweep:proto,rewrite-timestamp=true .
+# --provenance=false matters: with buildx's default attestation the image ID is a
+# manifest list that changes on every build of identical content, so the
+# container_digest it yields could never be reproduced.
+# The build in the report used TOOLS_SOURCE=ubuntu, UV_SOURCE=pypi, mirror.gcr.io
+# bases at the same digests, and a build_ca secret, because that VM's egress
+# blocked Debian mirrors and ghcr.io blobs. See the report for the exact command.
+
+ARG BASE=python:3.11-slim@sha256:da047cb8f9d1d98e5c070f5300ba9f7274e33b8fc0e5be5ed88740aed1b95ba9
+ARG UBUNTU=ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
+ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.12.18@sha256:3adc3706091ce7c2fe595e669628caedd6d951551b92b258b7e7dbe06d9440bc
+# debian: bwrap, git, and make from the base's own Debian snapshot (the default).
+# ubuntu: the same three binaries from Ubuntu 24.04 (glibc 2.39), which run on the
+# base's glibc 2.41 with only libraries the base already has. Used where Debian
+# mirrors are unreachable.
+ARG TOOLS_SOURCE=debian
+# ghcr: the pinned uv image, as Dockerfile uses. pypi: the same uv release from a
+# hash-checked PyPI wheel (docker/sweep/uv-requirements.txt).
+ARG UV_SOURCE=ghcr
+
+# --- bwrap, git, make --------------------------------------------------------
+FROM ${BASE} AS tools-debian
+# The snapshot the base image names in its own sources comment, so the packages
+# are fixed by date as well as by the base's digest.
+RUN printf '%s\n' \
+      'Types: deb' \
+      'URIs: http://snapshot.debian.org/archive/debian/20260918T000000Z' \
+      'Suites: trixie trixie-updates' \
+      'Components: main' \
+      'Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp' \
+      '' \
+      'Types: deb' \
+      'URIs: http://snapshot.debian.org/archive/debian-security/20260918T000000Z' \
+      'Suites: trixie-security' \
+      'Components: main' \
+      'Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp' \
+      > /etc/apt/sources.list.d/debian.sources \
+ && apt-get -o Acquire::Check-Valid-Until=false update \
+ && apt-get install -y --no-install-recommends bubblewrap git make \
+ && mkdir /out && cp /usr/bin/bwrap /usr/bin/git /usr/bin/make /out/ \
+ && dpkg-query -W bubblewrap git make > /out/packages.txt
+
+FROM ${UBUNTU} AS tools-ubuntu
+# Exact versions, so a superseded package fails the build instead of changing it.
+# Signed by the Ubuntu archive key (InRelease), so plain HTTP is integrity-checked.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      bubblewrap=0.9.0-1ubuntu0.3 git=1:2.43.0-1ubuntu7.4 make=4.3-4.1build2 \
+ && mkdir /out && cp /usr/bin/bwrap /usr/bin/git /usr/bin/make /out/ \
+ && dpkg-query -W bubblewrap git make > /out/packages.txt
+
+FROM tools-${TOOLS_SOURCE} AS tools
+
+# --- uv, only to build the venv; the final image has no uv -------------------
+FROM ${UV_IMAGE} AS uv-ghcr-image
+FROM ${BASE} AS uv-ghcr
+COPY --from=uv-ghcr-image /uv /usr/local/bin/uv
+
+FROM ${BASE} AS uv-pypi
+COPY docker/sweep/uv-requirements.txt /tmp/uv-requirements.txt
+# build_ca is only for a TLS-intercepting egress proxy; secrets never enter a layer.
+RUN --mount=type=secret,id=build_ca,required=false \
+    if [ -s /run/secrets/build_ca ]; then export PIP_CERT=/run/secrets/build_ca; fi; \
+    pip install --no-cache-dir --no-deps --require-hashes -r /tmp/uv-requirements.txt \
+ && rm /tmp/uv-requirements.txt
+
+FROM uv-${UV_SOURCE} AS venv
+ENV UV_PYTHON_DOWNLOADS=never UV_PROJECT_ENVIRONMENT=/opt/venv UV_LINK_MODE=copy UV_COMPILE_BYTECODE=0
+WORKDIR /src
+COPY pyproject.toml uv.lock ./
+# The dev group is included so `make sandbox-check` (pytest) runs in the image.
+RUN --mount=type=secret,id=build_ca,required=false \
+    if [ -s /run/secrets/build_ca ]; then export SSL_CERT_FILE=/run/secrets/build_ca; fi; \
+    uv sync --locked --no-cache --no-install-project
+
+# --- the sweep image -----------------------------------------------------------
+FROM ${BASE} AS sweep
+COPY --from=tools /out/bwrap /out/git /out/make /usr/bin/
+COPY --from=tools /out/packages.txt /usr/share/canary-sweep/packages.txt
+COPY --from=venv /opt/venv /opt/venv
+# git refuses a checkout owned by another user ("dubious ownership"), and the
+# runner's git has no HOME, so the exception lives in the system config. Without
+# it code_commit and code_provenance are null and paid_run record refuses.
+RUN useradd --uid 10001 --user-group --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin canary \
+ && printf '[safe]\n\tdirectory = /app\n' > /etc/gitconfig \
+ && mkdir -p /app /results /run/canary
+ENV PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+LABEL org.opencontainers.image.title="canary-sweep (prototype)" \
+      org.opencontainers.image.description="Environment for a sandboxed CANARY sweep; code is bind-mounted at /app"
+WORKDIR /app
+USER 10001:10001
+CMD ["python", "-m", "runner.grid_dev", "--help"]

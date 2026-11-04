@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:paid_run_record:1.1.0",
+  "$id": "urn:CANARY:schema:paid_run_record:1.2.0",
   "title": "CANARY paid-run record",
-  "description": "The project lead's dated record that every paid-run condition holds (TASKS.md paid-run condition; decision 0023). runner.paid_run refuses any non-mock provider unless this record validates and is committed, its commit is on this history, the running tool sandbox equals the recorded mock grid's, the hashed code equals code_sha256, the installed environment equals environment, and the mock grid at run_path still matches its digests and passes every check.",
+  "description": "The project lead's dated record that every paid-run condition holds (TASKS.md paid-run condition; decision 0023). runner.paid_run refuses any non-mock provider unless this record validates and is committed, its commit is on this history, the running tool sandbox equals the recorded mock grid's, the hashed code equals code_sha256, the installed environment equals environment, the image this process runs in (runner.container; null on the host) equals container_digest, and the mock grid at run_path still matches its digests and passes every check.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -13,11 +13,12 @@
     "sandbox",
     "conditions",
     "code_sha256",
-    "environment"
+    "environment",
+    "container_digest"
   ],
   "properties": {
     "schema_version": {
-      "const": "1.1.0"
+      "const": "1.2.0"
     },
     "recorded_on": {
       "type": "string",
@@ -110,6 +111,11 @@
         "type": "string",
         "pattern": "^[0-9a-f]{64}$"
       }
+    },
+    "container_digest": {
+      "description": "The image the mock grid and every paid run must run in, as docker/sweep/launch.sh had the daemon report it, or null for the host path (decision 0025 item 12). Prototype for decision 0028 item 9, which the project lead hasn't taken.",
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
     },
     "environment": {
       "type": "object",

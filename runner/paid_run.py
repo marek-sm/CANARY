@@ -67,7 +67,7 @@ from importlib import metadata
 from pathlib import Path, PurePosixPath
 from typing import Any, Optional
 
-from runner import spend_ledger
+from runner import container, spend_ledger
 from runner.mock_provider import MOCK_MODEL_ID, MockProvider
 from runner.mock_slice import EVENTS_FILE, REPO_ROOT, RESULTS_FILE, read_jsonl, validator
 from tools import sandbox
@@ -243,7 +243,9 @@ def code_provenance(root: Optional[Path] = None) -> dict[str, Any]:
     the environment it runs under, the cap, and the machine facts no hash covers."""
     root = root or REPO_ROOT
     facts = {"scoring_digest": scoring_digest(root), "environment": code_digest(_pinned(python_environment())),
-             "spend_cap_usd": spend_ledger.cap_or_none(), **_machine_facts(root)}
+             "spend_cap_usd": spend_ledger.cap_or_none(), **_machine_facts(root),
+             # The launcher's daemon-reported image (runner.container), null on the host.
+             "container_digest": container.container_digest()}
     try:
         return {"code_commit": _git("rev-parse", "HEAD", root=root).strip(), "dirty_paths": dirty_paths(root),
                 "code_digest": code_digest(code_hashes(root)), **facts}
@@ -438,6 +440,9 @@ def _refusal(live_smoke: bool, record_path: Optional[Path], root: Path, new_tria
         return str(exc)
     if record["sandbox"] != running:
         return f"this machine's tool sandbox {running!r} isn't the recorded mock grid's {record['sandbox']!r}"
+    reason = _image_refusal(record["container_digest"])
+    if reason:
+        return reason
     reason = _record_file_refusal(record_path or RECORD, root) or _recorded_commit_refusal(record, root)
     if reason:
         return reason
@@ -468,6 +473,33 @@ def require_paid_run(provider: Any, *, live_smoke: bool = False, record_path: Op
     declared = json.dumps(getattr(provider, "request_settings", None), sort_keys=True)  # 0 isn't false
     if declared not in {json.dumps(settings, sort_keys=True) for settings in ONE_CALL_SETTINGS}:
         raise PaidRunRefused("the provider doesn't ask for one tool call per reply (decision 0026 item 3)")
+
+
+def _image_refusal(recorded: Optional[str]) -> Optional[str]:
+    """Why this process's image isn't ``recorded`` (null: the host), or ``None`` when it is."""
+    try:
+        running = container.container_digest()
+    except container.ContainerMismatch as exc:
+        return f"this container's image can't be told: {exc}"
+    if running != recorded:
+        return (f"this runs in image {running or 'none (the host)'}, not the record's "
+                f"{recorded or 'none (the host)'}; record again in the image the paid run uses")
+    return None
+
+
+def _check_image(mock_run: Path, lines: list[dict[str, Any]]) -> None:
+    """Every invocation and every trial of the mock grid ran in this process's image."""
+    try:
+        running = container.container_digest()
+    except container.ContainerMismatch as exc:
+        raise PaidRunRefused(f"this container's image can't be told: {exc}") from exc
+    seen = {line.get("container_digest") for line in lines}
+    for results_path in mock_run.glob(f"*/{RESULTS_FILE}"):
+        seen |= {record["run_metadata"].get("container_digest") for record in read_jsonl(results_path, "result")}
+    if seen != {running}:
+        names = ", ".join(sorted(str(value) for value in seen - {running}))
+        raise PaidRunRefused(f"the mock grid ran in image {names or 'unknown'}, not this one "
+                             f"({running or 'none (the host)'}); rerun it here")
 
 
 def _mock_run_sandbox(run_dir: Path) -> str:
@@ -510,6 +542,7 @@ def _check_preflight(mock_run: Path, digest: str, corpus: Path) -> None:
                                  "corpus/development")
         if line.get("environment") != environment:
             raise PaidRunRefused("the mock grid ran under other installed packages than this environment; rerun it here")
+    _check_image(mock_run, lines)
 
 
 def _check_spec(mock_run: Path, spec: dict[str, Any]) -> None:
@@ -564,8 +597,9 @@ def _check_mock_run(mock_run: Path, *, root: Path) -> dict[str, Any]:
 
     try:
         read_key = code_digest({"run": mock_run_digests(mock_run), "code": code_hashes(root), "root": str(root),
-                                "environment": _pinned(python_environment())})
-    except OSError:  # a file is missing: the checks below say which
+                                "environment": _pinned(python_environment()),
+                                "image": container.container_digest()})
+    except (OSError, container.ContainerMismatch):  # a file is missing: the checks below say which
         read_key = ""
     if read_key in _READ_MOCK_RUNS:
         return _READ_MOCK_RUNS[read_key]
@@ -610,7 +644,7 @@ def build_record(mock_run: Path, *, delivery: str, sandbox_pr: str, request_to_e
         raise PaidRunRefused("record the paid run on the machine and sandbox the mock grid ran under")
     hashes = code_hashes(root)
     return {
-        "schema_version": "1.1.0",
+        "schema_version": "1.2.0",
         "recorded_on": date.today().isoformat(),
         "recorded_by": recorded_by,
         "recorded_commit": _git("rev-parse", "HEAD", root=root).strip(),
@@ -623,6 +657,7 @@ def build_record(mock_run: Path, *, delivery: str, sandbox_pr: str, request_to_e
         },
         "code_sha256": hashes,
         "environment": environment,
+        "container_digest": container.container_digest(),
     }
 
 

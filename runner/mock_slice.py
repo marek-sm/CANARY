@@ -355,7 +355,8 @@ def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             "provider_seed": None,
             "max_steps": started["payload"]["max_steps"],
             "code_commit": started["payload"]["code_commit"],
-            "container_digest": None,
+            # What trial_started recorded (runner.container); null on the host.
+            "container_digest": started["payload"].get("container_digest"),
             "corpus_hash": None,
             "prompt_hash": started["payload"]["prompt_sha256"],
             "defense_hash": None,

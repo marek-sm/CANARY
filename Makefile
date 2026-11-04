@@ -108,3 +108,21 @@ coverage-live:
 # The SHA-256 manifest of raw results and events files (decision 0025 item 5): hashes only, safe to commit.
 raw-manifest:
 	python -m runner.raw_manifest $(RUNS) $(if $(OUT),--out "$(OUT)")
+
+# Prototype for decision 0028 item 9, which the project lead hasn't taken (decision 0025
+# item 12 keeps the host run). docs/SWEEP_CONTAINER.md has the steps. Neither target makes
+# a provider call; sweep-container-check makes one TLS handshake to api.anthropic.com
+# (no request, no key) unless SWEEP_CHECK_ARGS=--no-handshake.
+.PHONY: sweep-image sweep-container-check
+SWEEP_IMAGE ?= canary-sweep:local
+SWEEP_PLATFORM ?= linux/$(shell docker version --format '{{.Server.Arch}}' 2>/dev/null)
+SWEEP_BUILD_ARGS ?=
+SWEEP_CHECK_ARGS ?=
+sweep-image:
+	@epoch=$$(git log -1 --format=%ct -- Dockerfile.sweep docker/sweep/uv-requirements.txt pyproject.toml uv.lock); \
+	SOURCE_DATE_EPOCH=$${epoch:-0} docker buildx build -f Dockerfile.sweep --platform "$(SWEEP_PLATFORM)" \
+	  --provenance=false --build-arg SOURCE_DATE_EPOCH $(SWEEP_BUILD_ARGS) \
+	  --output "type=image,name=$(SWEEP_IMAGE),rewrite-timestamp=true" .
+
+sweep-container-check:
+	sh docker/sweep/check.sh --image "$(SWEEP_IMAGE)" $(SWEEP_CHECK_ARGS)
