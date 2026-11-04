@@ -212,8 +212,30 @@ def test_a_socket_named_directly_as_a_mount_refuses_the_launch(tmp_path, linux, 
     # Kills x__sockets__mutmut_4 (every path walked as a directory).
     listener = _plant(tmp_path, monkeypatch, "direct.sock")
     try:
-        with pytest.raises(sandbox.SandboxUnavailable, match="direct.sock"):
+        with pytest.raises(sandbox.SandboxUnavailable, match="^a socket other than the fixture socket .*direct.sock"):
             sandbox.wrap([sys.executable, "-I", "tool.py"], cwd=tmp_path, read=[tmp_path / "direct.sock"])
+    finally:
+        listener.close()
+
+
+def test_a_regular_file_named_as_a_mount_is_allowed(tmp_path, linux):
+    # Kills x__sockets__mutmut_4 (a file walked as a directory refuses every file mount).
+    document = tmp_path / "doc.txt"
+    document.write_text("x", encoding="utf-8")
+    argv = sandbox.wrap([sys.executable, "-I", "tool.py"], cwd=tmp_path, read=[document])
+    assert ("--ro-bind", str(document)) in _linux_mounts(argv)
+
+
+def test_the_fixture_socket_itself_is_never_foreign(tmp_path, linux, monkeypatch):
+    # Kills x_wrap__mutmut_61 (no fixture socket passed to the foreign-socket check): a
+    # restarted fixture service finds its own old socket in the directory it binds.
+    sock_dir = tmp_path / "sock"
+    sock_dir.mkdir()
+    listener = _plant(sock_dir, monkeypatch, "fixture.sock")
+    try:
+        argv = sandbox.wrap([sys.executable, "-I", "service.py"], cwd=sock_dir, write=[sock_dir],
+                            socket_dir=sock_dir, bind_socket=True)
+        assert ("--bind", str(sock_dir)) in _linux_mounts(argv)
     finally:
         listener.close()
 
