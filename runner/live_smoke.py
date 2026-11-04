@@ -5,8 +5,8 @@ default provider is the development candidate; ``--provider openai`` runs the
 declared fallback. It refuses when ``CI`` is set, and when any ambient
 ``ANTHROPIC_*`` or ``OPENAI_*`` variable could redirect or reconfigure a client.
 The key comes only from the explicit env file, stays in this outer process,
-and never reaches the tool worker, whose environment is PATH and LANG only
-(runner.ticket_slice.worker).
+and never reaches the sandboxed tool worker, whose whole environment comes from
+tools.sandbox.environment: PATH, LANG, and TMPDIR for a tool that writes.
 
 Usage: python -m runner.live_smoke [--provider anthropic|openai] [--env-file .env] [--model ID] [--out DIR]
 """
@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Optional
 
 from agent import anthropic_adapter, openai_adapter
+from runner import execute
 from runner import mock_slice as base
 from runner import ticket_slice
 from runner.provider_config import load_api_key
@@ -69,6 +70,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     reason = refusal()
     if reason:
         print(reason, file=sys.stderr)
+        return 2
+    raw = execute.raw_evidence_refusal(args.out or DEFAULT_OUT_ROOT)
+    if raw:
+        print(f"refusing: {raw}", file=sys.stderr)
         return 2
     try:
         key = load_api_key(args.env_file, provider["key"])

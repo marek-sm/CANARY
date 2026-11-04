@@ -23,6 +23,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
+from jsonschema import ValidationError
+
 from analysis.floor_count import CONFIGURATIONS, load_run
 from runner.mock_provider import MOCK_MODEL_ID
 
@@ -162,7 +164,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             indent=2,
             sort_keys=True,
         ) + "\n"
-    except (ValueError, OSError) as error:
+    except (ValueError, OSError, ValidationError) as error:
         print(f"gate2-budget: {error}", file=sys.stderr)
         return 1
     if args.out:
