@@ -6,3 +6,7 @@
 7. schemas/policy, task, authorization_vectors
 8. SPEC.md Sec 6 (464-518) and Sec 3 safety invariants (214-281), Sec 4 tool surface (282-345)
 9. Makefile (targets only)
+10. Output data of make trace (runs/trace/events.jsonl, results.jsonl) - data, not code
+11. grid run outputs (events/results/canaries/schedule_spec); tasks/ listing
+12. tasks/templates/*.json (data)
+--- reference implementation complete at this point (commit after this line); repo scorer code read only after ---
