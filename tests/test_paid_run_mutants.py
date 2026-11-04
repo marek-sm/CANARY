@@ -288,3 +288,34 @@ def test_the_record_refuses_a_preflight_whose_provenance_is_unknown(preflight, t
     provenance.write_text("".join(json.dumps(line) + "\n" for line in lines), encoding="utf-8")
     with pytest.raises(paid_run.PaidRunRefused, match="uncommitted changes in recorded code: runner/a.py, runner/b.py$"):
         record(mock)
+
+
+def test_the_record_binds_every_directory_a_paid_cell_executes_or_reads():
+    # Kills the constant mutants that drop or rename a HASHED_DIRS entry (found by the
+    # hand-written constant mutator; mutmut doesn't mutate module constants). Dropping
+    # one would let that directory change after the record without a refusal.
+    assert paid_run.HASHED_DIRS == (
+        "agent", "channels", "defenses", "oracles", "runner", "tasks", "tools",
+        "corpus", "fixtures", "schemas", "protocol/development_grid_spec.json", "uv.lock",
+    )
+    assert paid_run.RECORD == paid_run.REPO_ROOT / "protocol" / "paid_run_record.json"
+
+
+def test_a_change_in_any_hashed_directory_refuses_a_paid_run(clean_environment, repo, tmp_path):
+    root, env = repo
+    for name in paid_run.HASHED_DIRS:
+        target = root / name if "." in name.rsplit("/", 1)[-1] else root / name / "file.txt"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("v1\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=root, check=True, env=env)
+    subprocess.run(["git", "commit", "-qm", "all"], cwd=root, check=True, env=env)
+    record = _record(root, tmp_path / "record.json")
+    assert paid_run.paid_run_refusal(record_path=record, root=root) is None
+    for name in paid_run.HASHED_DIRS:
+        target = root / name if "." in name.rsplit("/", 1)[-1] else root / name / "file.txt"
+        target.write_text("v2\n", encoding="utf-8")
+        subprocess.run(["git", "commit", "-qam", f"change {name}"], cwd=root, check=True, env=env)
+        reason = paid_run.paid_run_refusal(record_path=record, root=root)
+        assert reason is not None and reason.startswith("code differs from the paid-run record: "), name
+        target.write_text("v1\n", encoding="utf-8")
+        subprocess.run(["git", "commit", "-qam", f"restore {name}"], cwd=root, check=True, env=env)

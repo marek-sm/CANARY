@@ -7,7 +7,7 @@ from dataclasses import replace
 import pytest
 
 from defenses import interfaces as di
-from defenses.datamarking import DatamarkingTransform, mark_html_document
+from defenses.datamarking import DatamarkingTransform, mark_html_document, serialize_span
 from defenses.interfaces import DATAMARK_MARKER as M
 from defenses.interfaces import UntrustedSpan
 from oracles.authorization.conformance import _check_single_use
@@ -137,3 +137,14 @@ def test_a_correct_replay_passes():
             return d
 
     assert _check_single_use(_Correct(), "v", {}, REQUEST, (), _grants(True, False, False)) == []
+
+
+def test_span_serializers_escape_only_what_their_format_needs():
+    # Kills the constant mutants on `_SERIALIZERS` (ensure_ascii and quote flipped):
+    # D2_DATAMARKING must not change characters beyond the marker and the format's escaping.
+    assert serialize_span("text", 'é "q" <a>') == 'é "q" <a>'
+    assert serialize_span("json_string", 'é "q"') == '"é \\"q\\""'
+    assert serialize_span("html_text", 'é "q" <a> & b') == 'é "q" &lt;a&gt; &amp; b'
+    assert serialize_span("html_attribute", 'é "q" <a>') == 'é &quot;q&quot; &lt;a&gt;'
+    with pytest.raises(ValueError, match="^unknown span_format: 'xml'$"):
+        serialize_span("xml", "x")
