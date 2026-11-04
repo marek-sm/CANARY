@@ -60,6 +60,7 @@ def main() -> int:
             return {"mutant": name, "status": "survived", "tests": [], "note": "no deselected test covers it"}
         env = dict(os.environ, MUTANT_UNDER_TEST=name)
         base = Path("/tmp/tier2") / name.replace("ǁ", "_")
+        base.parent.mkdir(parents=True, exist_ok=True)
         started = time.time()
         try:
             proc = subprocess.run(

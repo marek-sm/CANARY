@@ -214,3 +214,54 @@ def test_the_command_line_requires_the_reserve_and_reports_the_equation(tmp_path
     assert main([str(tmp_path / "empty"), "--remaining-balance-usd", "1", "--reserve-usd", "0",
                  "--conservative-c1-trial-cost-usd", "0"]) == 1
     assert "gate2-budget:" in capsys.readouterr().err
+
+
+def test_the_equation_prices_a_trial_with_unknown_usage_from_its_events():
+    # Kills x_evaluate_budget__mutmut_31/33, which dropped the trial's events so an
+    # unknown result total refused instead of being priced from its attempts.
+    trials = _uniform_grid(1000, 200)
+    record, ev = trials[0]
+    record = copy.deepcopy(record)
+    record["usage"] = {"provider_requests": 1, "input_tokens": None, "output_tokens": None, "latency_ms": None}
+    ev = copy.deepcopy(ev)
+    ev[1]["payload"]["usage"] = {"input_tokens": 9000, "output_tokens": 900}
+    report = evaluate_budget([(record, ev), *trials[1:]], remaining_balance_usd=0.0, reserve_usd=0.0,
+                             conservative_c1_trial_cost_usd=0.0)
+    assert report["global_max_observed_dev_trial_cost_usd"] == pytest.approx(9000 * IN_RATE + 900 * OUT_RATE)
+
+
+def test_a_stratum_with_no_records_falls_back_to_the_global_maximum():
+    # Kills x_evaluate_budget__mutmut_45/47 (a missing stratum's default became None).
+    trials = [(r, ev) for r, ev in _uniform_grid(1000, 200)
+              if (r["channel"], r["condition"], r["configuration"]) != ("C3", "clean", "D1_POLICY_GATE")]
+    report = evaluate_budget(trials, remaining_balance_usd=0.0, reserve_usd=0.0, conservative_c1_trial_cost_usd=0.0)
+    per_trial = 1000 * IN_RATE + 200 * OUT_RATE
+    assert report["max_observed_dev_trial_cost_by_stratum_usd"]["C3/clean/D1_POLICY_GATE"] == pytest.approx(per_trial)
+    assert report["required_balance_usd"] == pytest.approx(1.25 * 1080 * per_trial)
+
+
+@pytest.mark.parametrize("flag", ["--remaining-balance-usd", "--reserve-usd", "--conservative-c1-trial-cost-usd"])
+def test_every_number_in_the_equation_is_a_required_flag(tmp_path, flag, capsys):
+    # Kills the x_main mutants that made a flag optional: a missing input is a usage
+    # error, never a None that reaches the comparison.
+    argv = [str(tmp_path), "--remaining-balance-usd", "1", "--reserve-usd", "0", "--conservative-c1-trial-cost-usd", "0"]
+    i = argv.index(flag)
+    del argv[i:i + 2]
+    with pytest.raises(SystemExit) as exit_info:
+        main(argv)
+    assert exit_info.value.code == 2
+    assert flag in capsys.readouterr().err
+
+
+def test_without_out_the_report_is_printed_as_json(tmp_path, capsys):
+    run = tmp_path / "run"
+    for i, (record, ev) in enumerate(_uniform_grid()):
+        trial_dir = run / f"t{i:04d}"
+        trial_dir.mkdir(parents=True)
+        (trial_dir / "results.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
+        (trial_dir / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in ev), encoding="utf-8")
+    assert main([str(run), "--remaining-balance-usd", "0", "--reserve-usd", "0",
+                 "--conservative-c1-trial-cost-usd", "0"]) == 0
+    printed = capsys.readouterr().out
+    assert printed.endswith("}\n")
+    assert json.loads(printed)["passes"] is False
