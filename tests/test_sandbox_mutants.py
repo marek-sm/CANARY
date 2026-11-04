@@ -6,10 +6,14 @@ caller's arguments, so these run on Linux too, where CI never launches
 sandbox-exec and every macos_profile mutant survived.
 """
 
+import os
 import re
+import sys
+import sysconfig
 
 import pytest
 
+from tests.test_tool_sandbox import _linux_mounts, _plant, _visible, system_python  # noqa: F401
 from tools import sandbox
 
 
@@ -130,3 +134,152 @@ def test_describe_doesnt_depend_on_where_the_checkout_or_bwrap_live(linux, monke
     monkeypatch.setattr(sandbox.shutil, "which",
                         lambda name, *a, **k: str(tmp_path / "bin" / "bwrap") if name == "bwrap" else real_which(name))
     assert sandbox.describe() == before
+
+
+# --- what the interpreter exposes --------------------------------------------
+
+
+def test_a_system_python_exposes_its_stdlib_and_shared_libraries_but_not_their_neighbours(system_python, linux):
+    # Kills x__interpreter__mutmut_34 (the whole lib/ directory mounted instead of
+    # lib/pythonX.Y) and _21..24/_35..46 (lib64 and the shared-library patterns).
+    version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    lib, lib64 = system_python / "lib", system_python / "lib64"
+    (lib64 / version).mkdir(parents=True)
+    for name in ("libpython3.so", "libz.so.1", "libssl.so.3.0", "libpython.dylib"):
+        (lib / name).write_bytes(b"")
+    (lib64 / "libffi.so.8").write_bytes(b"")
+    (lib / "secrets.txt").write_text("not the interpreter", encoding="utf-8")
+    (lib / "other-tool").mkdir()
+    programs, files, dirs, _ = sandbox._interpreter()
+    assert str(lib / version) in dirs and str(lib64 / version) in dirs
+    assert {str(lib / n) for n in ("libpython3.so", "libz.so.1", "libssl.so.3.0", "libpython.dylib")} <= set(files)
+    assert str(lib64 / "libffi.so.8") in files
+    assert str(lib / "secrets.txt") not in files
+    mounts = _linux_mounts(sandbox.linux_argv(read=[], write=[], cwd="/"))
+    assert not _visible(str(lib / "secrets.txt"), mounts)
+    assert not _visible(str(lib / "other-tool"), mounts)
+
+
+def test_pyvenv_home_names_an_install_root(tmp_path, monkeypatch):
+    # Kills x__install_roots__mutmut_7..22: a venv's `home` line adds its parent as an
+    # install root, and only the `home` key does.
+    venv = tmp_path / "venv"
+    venv.mkdir()
+    (venv / "pyvenv.cfg").write_text(
+        "include-system-site-packages = false\nhome = /opt/py-a/bin\nversion = 3.11\nother=/opt/py-b/bin\n",
+        encoding="utf-8")
+    monkeypatch.setattr(sys, "prefix", str(venv))
+    roots = sandbox._install_roots(sys.executable)
+    assert "/opt/py-a" in roots
+    assert "/opt/py-b" not in roots and "/opt/py-a/bin" not in roots
+
+
+def test_a_macos_framework_build_exposes_its_app_and_library(system_python, monkeypatch):
+    # Kills x__interpreter__mutmut_2..7 and _49..93: a framework build's Python.app
+    # binary is a program it may run, its Resources a directory it reads, and its
+    # framework library a file it reads.
+    real = sysconfig.get_config_var
+    monkeypatch.setattr(sysconfig, "get_config_var", lambda name: "Python" if name == "PYTHONFRAMEWORK" else real(name))
+    app = system_python / "Resources" / "Python.app" / "Contents" / "MacOS" / "Python"
+    app.parent.mkdir(parents=True)
+    app.write_bytes(b"")
+    (system_python / "Python").write_bytes(b"")
+    programs, files, dirs, _ = sandbox._interpreter()
+    assert str(app) in programs
+    assert str(system_python / "Resources") in dirs
+    assert str(system_python / "Python") in files
+
+
+# --- sockets ------------------------------------------------------------------
+
+
+def test_an_unreadable_directory_under_a_mount_refuses_the_launch(tmp_path, linux):
+    # Kills x__sockets__mutmut_6/8 (onerror dropped): a socket in a directory the
+    # launcher can't list could still be reached by name.
+    if os.geteuid() == 0:
+        pytest.skip("root reads every directory")
+    hidden = tmp_path / "fixtures" / "hidden"
+    hidden.mkdir(parents=True)
+    hidden.chmod(0)
+    try:
+        with pytest.raises(sandbox.SandboxUnavailable, match="can't check .*hidden for sockets"):
+            sandbox.wrap([sys.executable, "-I", "tool.py"], cwd=tmp_path, read=[tmp_path / "fixtures"])
+    finally:
+        hidden.chmod(0o700)
+
+
+def test_a_socket_named_directly_as_a_mount_refuses_the_launch(tmp_path, linux, monkeypatch):
+    # Kills x__sockets__mutmut_4 (every path walked as a directory).
+    listener = _plant(tmp_path, monkeypatch, "direct.sock")
+    try:
+        with pytest.raises(sandbox.SandboxUnavailable, match="direct.sock"):
+            sandbox.wrap([sys.executable, "-I", "tool.py"], cwd=tmp_path, read=[tmp_path / "direct.sock"])
+    finally:
+        listener.close()
+
+
+def test_a_socket_in_the_tools_directory_refuses_the_launch(tmp_path, linux, monkeypatch):
+    # Kills x_wrap__mutmut_61 (tools/ left out of the socket check).
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    listener = _plant(tools, monkeypatch, "t.sock")
+    monkeypatch.setattr(sandbox, "TOOLS", tools)
+    try:
+        with pytest.raises(sandbox.SandboxUnavailable, match="t.sock"):
+            sandbox.wrap([sys.executable, "-I", "tool.py"], cwd=tmp_path)
+    finally:
+        listener.close()
+
+
+# --- wrap(), mode(), and environment() ------------------------------------------
+
+
+def test_a_one_line_program_with_no_arguments_is_a_valid_launch(tmp_path, linux):
+    # Kills x_wrap__mutmut_43/44: `-I -c CODE` is four items and allowed; `-I -c` alone is not.
+    argv = sandbox.wrap([sys.executable, "-I", "-c", "pass"], cwd=tmp_path)
+    assert argv[argv.index("--") + 1:] == [sys.executable, "-I", str(sandbox.NO_EXEC), "-c", "pass"]
+    with pytest.raises(sandbox.SandboxUnavailable, match="runs as"):
+        sandbox.wrap([sys.executable, "-I", "-c"], cwd=tmp_path)
+
+
+def test_on_macos_wrap_runs_sandbox_exec_with_the_tool_s_profile(tmp_path, monkeypatch):
+    # Kills x_wrap__mutmut_17..31: Linux CI never takes this branch.
+    monkeypatch.setattr(sandbox, "mode", lambda: "macos-sandbox-exec")
+    read, write, sock = tmp_path / "r", tmp_path / "w", tmp_path / "s"
+    for path in (read, write, sock):
+        path.mkdir()
+    for bind in (False, True):
+        argv = sandbox.wrap([sys.executable, "-I", "tool.py"], cwd=tmp_path, read=[read], write=[write],
+                            socket_dir=sock, bind_socket=bind)
+        expected = sandbox.macos_profile(read=[os.path.realpath(read)], write=[os.path.realpath(write)],
+                                         socket=os.path.join(os.path.realpath(sock), "fixture.sock"), bind_socket=bind)
+        assert argv == [sandbox.SANDBOX_EXEC, "-p", expected, sys.executable, "-I", "tool.py"]
+
+
+def test_on_macos_mode_needs_an_executable_sandbox_exec(tmp_path, monkeypatch):
+    # Kills x_mode__mutmut_8..17 with the platform stood in for.
+    if os.geteuid() == 0:
+        pytest.skip("mode() refuses root first")
+    monkeypatch.setattr(sys, "platform", "darwin")
+    tool = tmp_path / "sandbox-exec"
+    tool.write_bytes(b"#!/bin/sh\n")
+    tool.chmod(0o755)
+    monkeypatch.setattr(sandbox, "SANDBOX_EXEC", str(tool))
+    assert sandbox.mode() == "macos-sandbox-exec"
+    tool.chmod(0o644)
+    with pytest.raises(sandbox.SandboxUnavailable, match=f"^{tool} is missing$"):
+        sandbox.mode()
+
+
+def test_the_tool_environment_points_tmpdir_at_its_first_write_directory(tmp_path):
+    # Kills x_environment__mutmut_8.
+    first, second = tmp_path / "a", tmp_path / "b"
+    assert sandbox.environment([first, second]) == {
+        "PATH": os.defpath, "LANG": "C.UTF-8", "TMPDIR": os.path.realpath(first)}
+    assert sandbox.environment() == {"PATH": os.defpath, "LANG": "C.UTF-8"}
+
+
+def test_the_root_refusal_names_the_rule(monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: 0)
+    with pytest.raises(sandbox.SandboxUnavailable, match=r"^tool processes never run as root \(SPEC.md Section 3\)$"):
+        sandbox.mode()
