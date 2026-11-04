@@ -67,7 +67,7 @@ from runner.mock_provider import MOCK_MODEL_ID, MockProvider
 from tools import sandbox
 from tasks import registry
 
-DELIVERY_VERSION = "tool-result-delivery-v0.2.0"
+DELIVERY_VERSION = "tool-result-delivery-v0.4.0"
 GRID_TOOLS = ("read_file", "query_db", "fetch_url", "send_email")
 REPO_ROOT = registry.ROOT
 
