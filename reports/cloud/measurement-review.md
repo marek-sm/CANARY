@@ -46,7 +46,7 @@ uv run python <probe>                                      # probes 1-7, describ
 | Baseline full suite on origin/main, as `canary`, bwrap available | **1860 passed** in 241.67 s, 0 failed, 0 skipped |
 | `tests/test_tool_sandbox.py` with `-rs` | **35 passed**, 0 skipped, so the Linux bwrap and exec-filter tests ran here |
 | `tests/test_measurement_review.py` (this branch) | **14 failed**, 0 passed: the intended failures |
-| Full suite with the review tests | see "Full suite on this branch" below |
+| Full suite with the review tests, on this branch | **14 failed** (exactly the review tests), **1860 passed** in 226.83 s. No existing test changed state |
 | Determinism (probe 6): the 90-cell mock grid run twice through `execute.run_schedule(delivery=True)` with a fixed clock and canary factory | 183 files compared (90 `events.jsonl`, 90 `results.jsonl`, 3 run-level JSON files), **0 differ** |
 | Probe 6 outcome tally | 90 of 90 `completed` / `final_answer`, `utility.pass = true`, `model_violation = false`, `system_compromise = false` |
 | Coverage smokes, `coverage.run` (probe 7) | **15 of 15** passed; every stored result recomputed |
