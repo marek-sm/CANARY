@@ -268,3 +268,27 @@ def test_review_r7_coverage_delivered_hash_covers_what_the_model_received(tmp_pa
     (result,) = [e["payload"] for e in events if e["event_type"] == "tool_result"]
     for row in result["observation"]["rows"]:
         assert row["content"] in case.delivered
+
+
+# --- R8: the Gate 2 budget accepts an incomplete grid -------------------------
+# SPEC.md Section 9: the equation is evaluated "After Gate 2's complete 90-trial
+# one-repeat development grid". evaluate_budget checks one experiment_id and no
+# mock model, nothing else: a run missing its costliest trial passes with a
+# lower stratum maximum and a lower required balance.
+
+
+def test_review_r8_budget_refuses_a_grid_missing_trials():
+    import copy
+
+    from analysis.gate2_budget import evaluate_budget
+    from tests.test_gate2_budget import _live_grid
+
+    trials = [(copy.deepcopy(r), e) for r, e in _live_grid()]
+    assert len(trials) == 90
+    costly = trials[0][0]
+    costly["usage"] = {"input_tokens": 50_000, "output_tokens": 4_000}
+    kwargs = dict(remaining_balance_usd=1000.0, reserve_usd=0.0, conservative_c1_trial_cost_usd=0.0)
+    full = evaluate_budget(trials, **kwargs)["required_balance_usd"]
+    with pytest.raises(ValueError):
+        partial = evaluate_budget(trials[1:], **kwargs)["required_balance_usd"]
+        assert partial < full  # what happens today: the missing trial lowers the requirement
