@@ -345,7 +345,10 @@ def _load_base(
         return cache[base_case_id]
     path = _inside(corpus_root, corpus_root / f"{base_case_id}.json")
     base = json.loads(path.read_text(encoding="utf-8"))
-    validator("base_case").validate(base)  # a bad record is refused before any trial uses it
+    # A bad record is refused before any trial uses it. runner.coverage's generated
+    # coverage-* records aren't corpus base cases (no candidate or source), so only they skip.
+    if not (base.get("fixture_mode") == "native-task-coverage-v1" and base_case_id.startswith("coverage-")):
+        validator("base_case").validate(base)
     if "CANARY-" in base["attack"]["canonical_payload"]:
         raise ValueError("canonical payload must not contain a literal canary (SPEC.md Section 5)")
     template = load_template(

@@ -134,3 +134,20 @@ def test_the_sweep_refuses_a_spec_the_schema_refuses(monkeypatch):
     spec = {**grid_dev.load_spec(), "protocol_sentinel": "frozen-x", "repeats": 0}
     reason = sweep.live_refusal(spec, "v1", ROOT / "nowhere", ROOT / "nowhere-out")
     assert reason is not None and "schedule spec" in reason
+
+
+def test_a_generated_task_coverage_record_loads_and_nothing_else_skips_the_schema(tmp_path):
+    """runner.coverage's generated coverage-* records aren't corpus base cases (no candidate or
+    source); only they skip base_case.schema.json, and a marked dev base is still refused."""
+    from runner import coverage
+
+    record = coverage.expected_case(sorted(coverage.CANONICAL)[0])
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    (corpus / f"{record['base_case_id']}.json").write_text(json.dumps(record), encoding="utf-8")
+    execute._load_base({}, corpus, record["base_case_id"])
+    base = json.loads((CORPUS / "dev-001.json").read_text(encoding="utf-8"))
+    del base["source"]
+    (corpus / "dev-001.json").write_text(json.dumps({**base, "fixture_mode": "native-task-coverage-v1"}), encoding="utf-8")
+    with pytest.raises(ValidationError):
+        execute._load_base({}, corpus, "dev-001")
