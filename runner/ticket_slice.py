@@ -13,7 +13,7 @@ from oracles.utility.ticket import validate, VERSION as UTILITY_VERSION
 from tasks import ticket
 from runner import mock_slice as base
 from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
-from runner import paid_run
+from runner import paid_run, spend_ledger
 from tools import sandbox
 
 VERSION = "ticket-runner-v0.2.0"
@@ -128,6 +128,7 @@ def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING
         on_tool("tool_result", {"call_id": request.call_id, "step": request.step, "observation": observation})
         return observation
 
+    ledger_entry = spend_ledger.start(provider, trial, analysis_role=analysis_role) if paid_run.is_paid(provider) else None
     try:
         outcome = run_loop(provider, messages, tool_schemas=[ticket.TOOL_SCHEMA],
                            decoding=decoding, model_request={"model": model}, on_attempt=on_attempt,
@@ -140,6 +141,8 @@ def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING
         termination, steps = "infrastructure_failure", len({e["payload"]["step"] for e in base.read_jsonl(out / base.EVENTS_FILE, "event") if e["event_type"] == "provider_attempt"})
     log.append("trial_ended", {"status": "infrastructure_failure" if termination == "infrastructure_failure" else "completed", "termination_reason": termination, "steps_used": steps})
     events = base.read_jsonl(out / base.EVENTS_FILE, "event")
+    if ledger_entry is not None:
+        spend_ledger.finish(ledger_entry, events)
     (out / base.RESULTS_FILE).touch(exist_ok=False)
     base.append_jsonl(out / base.RESULTS_FILE, assemble(events, analysis_role), "result")
     return out
