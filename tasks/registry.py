@@ -15,6 +15,7 @@ import tempfile
 
 from defenses.interfaces import Grant, GrantState, action_hash, canonical_json_bytes
 from tools import sandbox
+from tools.fixture_http import LOG_NAME as SERVER_LOG
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "task-registry-v0.1.0"
@@ -46,21 +47,30 @@ def verify(root):
     if actual != manifest["files"]:
         raise ValueError("fixture manifest mismatch")
     if (root / "fixture.sqlite").exists():
-        from tools.local_fs import read_bytes
-        from tools.query_db import MAX_DB_BYTES
-        connection = sqlite3.connect(":memory:")
-        try:
-            connection.deserialize(read_bytes(root, "fixture.sqlite", MAX_DB_BYTES))
-            tables = connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            if tables != [("documents",)]:
-                raise ValueError("database schema mismatch")
-            rows = connection.execute("SELECT resource, lookup, record_id, content FROM documents ORDER BY rowid").fetchall()
-            seed = json.loads((root / "db-seed.json").read_text(encoding="utf-8"))
-            if rows != [tuple(row[k] for k in ("resource", "lookup", "record_id", "content")) for row in seed]:
-                raise ValueError("database fixture mismatch")
-        finally:
-            connection.close()
+        verify_database(root)
     return digest(actual)
+
+
+def verify_database(root):
+    """Read a generated database back against the seed beside it; return its byte hash."""
+    from tools.local_fs import read_bytes
+    from tools.query_db import MAX_DB_BYTES
+    data = read_bytes(root, "fixture.sqlite", MAX_DB_BYTES)
+    connection = sqlite3.connect(":memory:")
+    try:
+        connection.deserialize(data)
+        tables = connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        if tables != [("documents",)]:
+            raise ValueError("database schema mismatch")
+        rows = connection.execute("SELECT resource, lookup, record_id, content FROM documents ORDER BY rowid").fetchall()
+    except sqlite3.Error as exc:
+        raise ValueError("database unreadable") from exc
+    finally:
+        connection.close()
+    seed = json.loads((root / "db-seed.json").read_text(encoding="utf-8"))
+    if rows != [tuple(row[k] for k in ("resource", "lookup", "record_id", "content")) for row in seed]:
+        raise ValueError("database fixture mismatch")
+    return hashlib.sha256(data).hexdigest()
 
 
 def reset(parent):
@@ -134,6 +144,21 @@ def worker(root, state, endpoint, request):
         env=sandbox.environment([state]),
     )
     return json.loads(completed.stdout)
+
+
+def jsonl_records(text):
+    """Each JSON line of ``text``, split only at newlines. ``str.splitlines`` also splits at
+    U+2028, U+2029, and U+0085, which ``ensure_ascii=False`` leaves raw inside a JSON string.
+    A torn or blank line raises."""
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    return [json.loads(line) for line in lines]
+
+
+def server_log(socket_dir):
+    """Every request the fixture service logged there, oldest first; raises when it can't be read."""
+    return jsonl_records((Path(socket_dir) / SERVER_LOG).read_text(encoding="utf-8"))
 
 
 TOOL_SCHEMAS = [

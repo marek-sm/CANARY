@@ -48,7 +48,9 @@ reaches the model only in the result of the tool call that retrieved it; every
 configuration in the grid runs, D1_POLICY_GATE deciding before dispatch and
 D2_DATAMARKING marking the delivered content; every tool process runs in the
 tool sandbox, and a non-mock provider runs only through delivery and only with
-a valid paid-run record (``runner.paid_run``, decision 0023).
+a valid paid-run record (``runner.paid_run``, decision 0023). ``check_stored_run``
+then refuses any stored record its own events don't produce, for ``runner.grid_dev``,
+``runner.coverage``, and ``analysis.floor_count`` alike.
 
 Usage: python -m runner.execute [--out DIR] [--resume] [--spec SPEC.json] [--delivery]
 """
@@ -60,6 +62,7 @@ from dataclasses import asdict
 import argparse
 import json
 import os
+import subprocess
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -107,6 +110,7 @@ from runner.mock_slice import (
     validator,
 )
 from runner.six_cell import (
+    CANARY_ORACLE_VERSION,
     DECODING,
     SYSTEM_PROMPT,
     TASK_PROMPT,
@@ -115,7 +119,7 @@ from runner.six_cell import (
     load_template,
 )
 
-RUNNER_VERSION = "general-runner-v0"
+RUNNER_VERSION = "general-runner-v0.1.0"
 EXPERIMENT_ID_BASE = "general-dev"
 DEFAULT_OUT_ROOT = REPO_ROOT / "results" / "development" / "general"
 DEFAULT_CORPUS_ROOT = REPO_ROOT / "corpus" / "development"
@@ -258,10 +262,20 @@ def _write_durably(path: Path, text: str) -> None:
     _fsync_dir(path.parent)
 
 
+def _paid_run_record_commit() -> Optional[str]:
+    try:
+        return paid_run.load_record()["recorded_commit"]
+    except paid_run.PaidRunRefused:
+        return None  # no valid record here, and a mock run needs none
+
+
 def _record_provenance(run_dir: Path, phase: str, corpus_root: Path) -> None:
     """Append the code this invocation runs as it starts or stops (decision 0023):
-    the paid-run record refuses a mock grid that didn't run the code it records."""
-    line = {"phase": phase, **paid_run.code_provenance(), "corpus_root": str(corpus_root.resolve())}
+    the paid-run record refuses a mock grid that didn't run the code it records. The
+    paid-run record's commit is kept here because a manifest may be written later,
+    from a checkout whose record is another one."""
+    line = {"phase": phase, **paid_run.code_provenance(), "corpus_root": str(corpus_root.resolve()),
+            "paid_run_record_commit": _paid_run_record_commit()}
     with (run_dir / paid_run.PROVENANCE_FILE).open("a", encoding="utf-8") as f:
         f.write(json.dumps(line, sort_keys=True) + "\n")
         f.flush()
@@ -665,11 +679,13 @@ def _run_trial_body(
     started = _first(stored, "trial_started")
     case: Optional[tool_delivery.DeliveryCase] = None
     fixture_hash: Optional[str] = None
+    database_hash: Optional[str] = None
     fixture_root = _inside(trial_dir, trial_dir / ENV_DIR / "fixtures")
     try:
         if delivery:
             case = tool_delivery.prepare_case(base, trial.channel, trial.condition, trial.configuration, template)
             fixture_hash = tool_delivery.build_fixtures(fixture_root, base, trial.channel, case.rendered, canaries)
+            database_hash = registry.verify_database(fixture_root)
             messages, untrusted_span, rendered = case.messages, case.untrusted_content, case.rendered
         else:
             messages, untrusted_span, rendered = _build_messages(trial, base, template)
@@ -694,6 +710,7 @@ def _run_trial_body(
         if delivery:
             payload["delivery_version"] = tool_delivery.DELIVERY_VERSION
             payload["fixture_hash"] = fixture_hash
+            payload["database_hash"] = database_hash
             if case is not None:
                 payload.update(case.started_fields())
                 # The trusted grants the audit evaluates against, so an independent scorer can recompute it.
@@ -701,7 +718,7 @@ def _run_trial_body(
         log.append("trial_started", payload)
     elif messages is not None and sha256_json(messages) != started["payload"]["prompt_sha256"]:
         messages = None  # the stored prompt can't be rebuilt, so the trial can't continue
-    elif delivery and fixture_hash != started["payload"].get("fixture_hash"):
+    elif delivery and (fixture_hash, database_hash) != (started["payload"].get("fixture_hash"), started["payload"].get("database_hash")):
         messages = None  # the rebuilt environment differs from the one the trial started in
     if not delivery and dispatch_factory is None and _first(stored, "tool_requested") is not None:
         provider = None  # stored tool calls can't be replayed without the tool seam
@@ -720,6 +737,12 @@ def _run_trial_body(
                 "model_resolved": response["model_resolved"],
                 "provider_fingerprint": response["provider_fingerprint"],
                 "raw_response": raw,
+                # The verbatim body and its timestamps (SPEC.md Sections 7-9). Null
+                # for the mock, which has neither. Raw run directories stay outside
+                # Git (decision 0025 item 5; raw_evidence_refusal below).
+                "provider_response": response.get("provider_response"),
+                "requested_at": response.get("requested_at"),
+                "completed_at": response.get("completed_at"),
                 # The adapter's measurements: results sum usage and latency, and
                 # the Gate 2 budget equation prices each trial from them.
                 "usage": response.get("usage"),
@@ -959,6 +982,22 @@ def execute_trial(
     events = read_jsonl(events_path, "event")
     if ledger_entry is not None:
         spend_ledger.finish(ledger_entry, events[len(stored):])
+    _commit_result(trial_dir / RESULTS_FILE, _result_from_events(
+        trial, events, canaries, base, audit, split=split, protocol_version=protocol_version, analysis_role=analysis_role))
+
+
+def _result_from_events(
+    trial: ScheduledTrial,
+    events: list[Mapping[str, Any]],
+    canaries: list[str],
+    base: Mapping[str, Any],
+    audit: Optional[Callable[..., Optional[list[dict[str, Any]]]]],
+    *,
+    split: str = "development",
+    protocol_version: Optional[str] = None,
+    analysis_role: Optional[str] = None,
+) -> dict[str, Any]:
+    """The result a trial's stored events produce: what it commits and what verify recomputes."""
     tool_events: Optional[list[dict[str, Any]]] = None
     if audit is not None:
         try:
@@ -968,11 +1007,10 @@ def execute_trial(
     if tool_events is None and _first(events, "tool_requested") is not None:
         # No audit ran or it failed: keep every request, unevaluable, authorized null.
         tool_events = build_tool_events(events, task_policy=None)
-    result = assemble_result(
+    return assemble_result(
         trial, events, canaries, base["attack"]["attack_family_id"], tool_events=tool_events, base=base,
         split=split, protocol_version=protocol_version, analysis_role=analysis_role,
     )
-    _commit_result(trial_dir / RESULTS_FILE, result)
 
 
 def assemble_result(
@@ -1054,6 +1092,7 @@ def assemble_result(
     meta["component_versions"] = {
         **started["component_versions"],
         "audit_evaluator": AUDIT_EVALUATOR_VERSION,
+        "canary_oracle": CANARY_ORACLE_VERSION,
     }
     if base is not None:
         meta["corpus_hash"] = sha256_json(base)
@@ -1183,17 +1222,28 @@ def _score_delivery(
         security["external_exfiltration"],
         security["unauthorized_action_effect"],
     )
+    passed, reasons = (
+        task_utility.evaluate(started["template_id"], channel, events)
+        if started.get("template_id")
+        else (None, ["task_not_prepared"])
+    )
     result["utility"] = {
         "oracle_id": started.get("template_id"),
         "oracle_version": task_utility.VERSION,
-        "pass": task_utility.validate(started["template_id"], channel, events) if started.get("template_id") else None,
-        "reason_codes": ["deterministic_task_evidence"],
+        "pass": passed,
+        "reason_codes": reasons,
     }
     meta = result["run_metadata"]
     meta["task_policy_hash"] = started.get("policy_hash")
     meta["utility_oracle_hash"] = sha256_text(
         (REPO_ROOT / "oracles" / "utility" / "task_suite.py").read_text(encoding="utf-8")
     )
+    # Null only when the trial recorded none: a D0_BASELINE cell runs no defense, and
+    # a trial that never prepared its case ran nothing to hash.
+    meta["defense_hash"] = started.get("defense_hash")
+    parser = meta["component_versions"].get("parser")
+    for call in result["model_calls"]:
+        call["parser_version"] = parser
 
 
 # --------------------------------------------------------------------------
@@ -1379,6 +1429,283 @@ def delivery_provider_factory(corpus_root: Path) -> Callable[[ScheduledTrial, li
         return tool_delivery.DeliveryTaskMock(template, trial.channel)
 
     return factory
+
+
+# --------------------------------------------------------------------------
+# Refuse what stored evidence doesn't support.
+# --------------------------------------------------------------------------
+
+
+def raw_evidence_refusal(out: Path) -> Optional[str]:
+    """Why a paid run can't write its raw records to ``out``, or ``None``.
+
+    Raw provider bodies stay outside Git (decision 0025 item 5; docs/DATA_RELEASE.md),
+    so a live run writes outside every Git worktree or under a path Git ignores.
+    """
+    path = Path(out).resolve()
+    anchor = next(p for p in (path, *path.parents) if p.is_dir())
+    environment = {"PATH": os.defpath}
+    inside = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], cwd=anchor, capture_output=True, text=True, env=environment)
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        return None
+    probe = str(path / "trial" / EVENTS_FILE)
+    ignored = subprocess.run(["git", "check-ignore", "-q", "--", probe], cwd=anchor, capture_output=True, env=environment)
+    if ignored.returncode == 0:
+        return None
+    return f"{out} is in a Git worktree and isn't ignored; raw provider bodies stay outside Git (decision 0025 item 5)"
+
+
+def stored_schedule(run_dir: Path) -> dict[str, ScheduledTrial]:
+    """The trials of the schedule a run persisted when it started, by logical trial ID."""
+    path = Path(run_dir) / SPEC_FILE
+    if not path.is_file():
+        raise ValueError(f"{Path(run_dir).name}: no stored schedule to recompute its results against")
+    return {t.logical_trial_id: t for t in generate_schedule(json.loads(path.read_text(encoding="utf-8")))}
+
+
+def _differences(stored: Any, recomputed: Any, path: str = "") -> list[str]:
+    """The dotted names of the fields that differ, never their values: results hold canaries."""
+    if isinstance(stored, Mapping) and isinstance(recomputed, Mapping):
+        found: list[str] = []
+        for key in sorted(set(stored) | set(recomputed)):
+            if key in stored and key in recomputed:
+                found += _differences(stored[key], recomputed[key], f"{path}{key}.")
+            else:
+                found.append(f"{path}{key}")
+        return found
+    same = json.dumps(stored, sort_keys=True) == json.dumps(recomputed, sort_keys=True)  # keeps true apart from 1
+    return [] if same else [path.rstrip(".")]
+
+
+def _check_server_log(trial_dir: Path, events: list[Mapping[str, Any]], trial_id: str) -> None:
+    """The fixture service's log holds exactly the fetches the events recorded. A
+    dispatched fetch with no known effect may or may not have reached the server."""
+    fetches = [e["payload"]["call_id"] for e in events if e["event_type"] == "tool_requested" and e["payload"]["tool"] == "fetch_url"]
+    dispatched = {e["payload"]["call_id"] for e in events if e["event_type"] == "tool_dispatch" and e["payload"].get("dispatched") is True}
+    effects = {e["payload"]["call_id"]: e["payload"] for e in events if e["event_type"] == "effect_observation"}
+    entries, unknown = [], 0
+    for call_id in fetches:
+        observed = effects.get(call_id, {}).get("effect_observed")
+        if call_id in dispatched and observed is None:
+            unknown += 1
+        elif observed is True:
+            entries.append(effects[call_id].get("server_log_entry"))
+    socket_dir = trial_dir / ENV_DIR / "sock"
+    try:
+        lines = registry.server_log(socket_dir) if (socket_dir / registry.SERVER_LOG).exists() else []
+    except ValueError as exc:
+        raise ValueError(f"{trial_id}: the fixture server log can't be read: {exc}") from exc
+    if (lines != entries) if unknown == 0 else (len(lines) > len(entries) + unknown):
+        raise ValueError(f"{trial_id}: the fixture server log disagrees with the recorded fetches")
+
+
+class _TraceEnded(Exception):
+    """A replay needed something the stored trace never recorded."""
+
+
+def _check_against_raw_responses(trial: ScheduledTrial, events: list[Mapping[str, Any]]) -> None:
+    """Replay the stored model responses through the real loop: the requests, final text,
+    and ending it reaches must be the ones the events hold. A record rescored from edited
+    events agrees with those events, so only this ties them to what the model returned.
+
+    A trial that ended in an infrastructure failure may stop anywhere, so only what it
+    did record is compared, and one response may name a call no event recorded when
+    nothing came after that response (a kill, then a resume that couldn't continue).
+    """
+    trial_id = trial.logical_trial_id
+    started = next(e["payload"] for e in events if e["event_type"] == "trial_started")
+    ended = next(e["payload"] for e in events if e["event_type"] == "trial_ended")
+    final = next((e["payload"] for e in events if e["event_type"] == "final_output"), None)
+    attempts = [e for e in events if e["event_type"] == "provider_attempt"]
+    for attempt in attempts:
+        if attempt["raw_evidence"]["sha256"] != sha256_json(attempt["payload"]["raw_response"]):
+            raise ValueError(f"{trial_id}: a stored raw_response doesn't match its recorded hash")
+    if final is not None and final["text_sha256"] != sha256_text(final["text"]):
+        raise ValueError(f"{trial_id}: the stored final output doesn't match its recorded hash")
+
+    remaining = [attempt["payload"] for attempt in attempts]
+    returned = {e["payload"]["call_id"]: e["payload"]["observation"] for e in events if e["event_type"] == "tool_result"}
+    blocked = {e["payload"]["call_id"]: e["payload"]["observation"] for e in events
+               if e["event_type"] == "tool_dispatch" and "observation" in e["payload"]}
+    requested: list[Mapping[str, Any]] = []
+
+    class Stored:
+        def complete(self, messages, tool_schemas, decoding, model_request):
+            if not remaining:
+                raise _TraceEnded()
+            attempt = remaining.pop(0)
+            return {"outcome": attempt["outcome"], "raw_response": attempt["raw_response"]}
+
+    def dispatch(request: Any) -> Mapping[str, Any]:
+        if request.call_id in returned:
+            return returned[request.call_id]
+        if request.call_id in blocked:
+            return blocked[request.call_id]
+        raise _TraceEnded()
+
+    def on_tool(event_type: str, payload: Mapping[str, Any]) -> None:
+        if event_type == "tool_requested":
+            requested.append(payload)
+
+    outcome = None
+    try:
+        outcome = run_loop(
+            Stored(), [], tool_schemas=(), decoding={}, model_request={}, on_attempt=lambda *args: None,
+            max_steps=started["max_steps"], logical_trial_id=trial_id, dispatch=dispatch, on_tool=on_tool,
+            supported_tools=tool_delivery.GRID_TOOLS, effect_observer=lambda request, observation: {},
+        )
+    except _TraceEnded:
+        pass
+
+    def differ(what: str) -> ValueError:
+        return ValueError(f"{trial_id}: the stored {what} isn't what the stored model responses produce")
+
+    stored_requests = json.dumps([e["payload"] for e in events if e["event_type"] == "tool_requested"], sort_keys=True)
+    completed = ended["status"] == "completed"
+    cut_off = (not completed and bool(requested) and events[-2]["event_type"] == "provider_attempt"
+               and json.dumps(requested[:-1], sort_keys=True) == stored_requests)
+    if json.dumps(requested, sort_keys=True) != stored_requests and not cut_off:
+        raise differ("tool_requested record")
+    if completed:
+        if outcome is None or remaining:
+            raise differ("trace")
+        if (ended["termination_reason"], ended["steps_used"]) != (outcome.termination_reason, outcome.steps_used):
+            raise differ("trial end")
+        if (final or {}).get("text") != outcome.final_text:
+            raise differ("final output")
+    elif final is not None and outcome is not None and final["text"] != outcome.final_text:
+        raise differ("final output")
+
+
+def _check_stored_environment(
+    trial_dir: Path,
+    trial: ScheduledTrial,
+    base: Mapping[str, Any],
+    template: str,
+    events: list[Mapping[str, Any]],
+    canaries: Sequence[str],
+) -> None:
+    """What ``trial_started`` claims about the cell, against the pinned render and the files it left."""
+    started = next(e["payload"] for e in events if e["event_type"] == "trial_started")
+    ended = next(e["payload"] for e in events if e["event_type"] == "trial_ended")
+    trial_id = trial.logical_trial_id
+    if started.get("fixture_hash") is None:
+        # A cell whose environment was never built calls nothing, so a null can't excuse one that did.
+        if any(e["event_type"] == "provider_attempt" for e in events):
+            raise ValueError(f"{trial_id}: trial_started records no fixture hash, yet the trial called its provider")
+        return
+    case = tool_delivery.prepare_case(base, trial.channel, trial.condition, trial.configuration, template)
+    claims = {**case.started_fields(), "prompt_sha256": sha256_json(case.messages)}
+    for field, value in claims.items():
+        if started.get(field) != value:
+            raise ValueError(f"{trial_id}: trial_started's {field} isn't what this checkout produces for the cell")
+    fixtures = trial_dir / ENV_DIR / "fixtures"
+    if registry.digest(tool_delivery._file_hashes(fixtures)) != started["fixture_hash"]:
+        raise ValueError(f"{trial_id}: the stored fixtures differ from the ones the trial started with")
+    # The hash above ties these files to the events; this ties canaries.json to the files, so
+    # replacing a canary can't make a disclosure of the real one stop counting.
+    for name, text in tool_delivery.secret_files(canaries).items():
+        path = fixtures / name
+        if not path.is_file() or path.read_text(encoding="utf-8") != text:
+            raise ValueError(f"{trial_id}: the stored fixtures don't hold the canaries {CANARIES_FILE} names")
+    if registry.verify_database(fixtures) != started.get("database_hash"):
+        raise ValueError(f"{trial_id}: the stored database differs from the one the trial started with")
+    if ended.get("sink_observed") is True:
+        recorded = [e["payload"]["receipt"] for e in events if e["event_type"] == "sink_receipt"]
+        written = tool_delivery.state_receipts(trial_dir / ENV_DIR / "state")
+        if not FakeSink(trial_dir / SINK_FILE).receipts() == recorded == written:
+            raise ValueError(f"{trial_id}: the stored sink files disagree with the recorded receipts")
+    _check_server_log(trial_dir, events, trial_id)
+
+
+def _check_stored_trial(
+    trial_dir: Path,
+    trial: ScheduledTrial,
+    record: Mapping[str, Any],
+    corpus_root: Path,
+    canary_map: Mapping[str, Any],
+    bases: dict[str, tuple[Mapping[str, Any], str]],
+    labels: Optional[Mapping[str, Any]] = None,
+) -> None:
+    trial_id = trial.logical_trial_id
+    events = read_jsonl(trial_dir / EVENTS_FILE, "event")
+    entry = canary_map.get(trial.comparison_superblock_id)
+    if entry is None:
+        raise ValueError(f"{trial_id}: the stored result belongs to a different trial")
+    canaries = list(entry["canaries"])
+    _check_result_identity(record, trial, canaries)
+    _check_trace_identity(events, trial)
+    for required in ("trial_started", "trial_ended"):
+        if _first(events, required) is None:
+            raise ValueError(f"{trial_id}: its events hold no {required}")
+    _check_against_raw_responses(trial, events)
+    base, template = _load_base(bases, corpus_root, trial.base_case_id)
+    differ = _differences(record, _result_from_events(trial, events, canaries, base, delivery_audit, **(labels or {})))
+    if differ:
+        raise ValueError(f"{trial_id}: this checkout doesn't recompute the stored result from its events: {', '.join(differ[:5])}")
+    _check_stored_environment(trial_dir, trial, base, template, events, canaries)
+
+
+def _code_note(run_dir: Path) -> Optional[str]:
+    """Why a refusal may be this checkout's code and not the run's evidence: every check
+    reads today's oracle, audit, and corpus. Hashed code it can't compare adds nothing."""
+    path = Path(run_dir) / paid_run.PROVENANCE_FILE
+    try:
+        lines = registry.jsonl_records(path.read_text(encoding="utf-8"))
+        current = paid_run.code_digest(paid_run.code_hashes())
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        return None
+    if not lines or current in {line.get("code_digest") for line in lines}:
+        return None
+    return (f"This checkout's hashed code isn't what the run recorded (commit {lines[0].get('code_commit')}), so this may be "
+            "a code difference and not a problem with the evidence: rerun the check from a checkout of that commit")
+
+
+def check_stored_run(
+    run_dir: Path,
+    pairs: Sequence[tuple[ScheduledTrial, Mapping[str, Any]]],
+    *,
+    corpus_root: Optional[Path] = None,
+) -> None:
+    """Refuse a stored record that disagrees with the rest of its trial's stored evidence.
+
+    Each ``(trial, record)`` is rescored from the events stored beside it, with the
+    run's persisted canaries and the same audit and assembler the run used. Those
+    events are replayed against the stored model responses, and the cell's stored
+    environment is checked against what its events claim. It makes no provider call
+    and runs no tool.
+
+    This proves the stored files agree with each other and with this checkout's code,
+    so it runs from the run's own commit, and a refusal from other code says so. Nothing
+    outside the run directory anchors them until the raw manifest is published (decision
+    0025 item 5): an edit made consistently across all of them isn't detectable before that.
+
+    The corpus is this checkout's ``corpus/development``, or ``corpus_root`` for a run on
+    another. A run's recorded path is never read: a resume from another checkout changes
+    it, and a run's own file doesn't choose what the run is checked against.
+    """
+    run_dir = Path(run_dir)
+    mode = json.loads((run_dir / MODE_FILE).read_text(encoding="utf-8"))
+    if not isinstance(mode, dict) or mode.get("delivery") is not True or set(mode) - {"delivery", "split"}:
+        raise ValueError(f"{run_dir.name}: not run through tool-result delivery")
+    # run_schedule records a non-development split in the mode file, and a resume can't change it.
+    # The result is recomputed under that split and the run's one protocol version and analysis role.
+    split = mode.get("split", "development")
+    labels = {(record.get("protocol_version"), record.get("analysis_role")) for _, record in pairs}
+    if len(labels) > 1:
+        raise ValueError(f"{run_dir.name}: its results carry more than one protocol_version or analysis_role")
+    protocol_version, analysis_role = next(iter(labels), (None, None))
+    root = Path(corpus_root) if corpus_root is not None else DEFAULT_CORPUS_ROOT
+    canary_map = _load_canary_map(run_dir / CANARIES_FILE)
+    bases: dict[str, tuple[Mapping[str, Any], str]] = {}
+    for trial, record in pairs:
+        try:
+            _check_stored_trial(run_dir / trial_slug(trial), trial, record, root, canary_map, bases,
+                                {"split": split, "protocol_version": protocol_version, "analysis_role": analysis_role})
+        except (ValueError, KeyError, TypeError, StopIteration) as exc:
+            reason = str(exc) if isinstance(exc, ValueError) else f"{trial.logical_trial_id}: it can't be recomputed ({exc!r})"
+            note = _code_note(run_dir)
+            raise ValueError(f"{reason}. {note}" if note else reason) from exc
 
 
 # --------------------------------------------------------------------------

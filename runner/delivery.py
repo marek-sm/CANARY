@@ -29,7 +29,9 @@ What this module owns:
   tool runs, so a resumed trial never re-dispatches a call whose outcome it
   can't see. The email tool's own fsynced receipts are the sink evidence: each
   is attributed to its send, recorded, and mirrored into the trial's fake sink,
-  including one written just before a kill.
+  including one written just before a kill. A fetch's effect is the fixture
+  service's own request log, attributed the same way; what the tool returned
+  doesn't decide it.
 * **The no-credit grid mock**, which makes the task's required calls and answers
   from what the tools returned, never from the expected output.
 
@@ -51,6 +53,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from channels import render as channel_render
+from defenses.canonicalizer import NORMALIZER_VERSION
 from defenses.datamarking import mark_html_document, mark_json_strings, mark_text
 from defenses.interfaces import (
     DATAMARK_MARKER,
@@ -65,9 +68,14 @@ from defenses.datamarking import TRANSFORM_VERSION
 from defenses.policy_gate import EVALUATOR_VERSION, GATE_VERSION, PolicyGate, PolicyGateAuthorizer, gate_and_dispatch
 from runner.mock_provider import MOCK_MODEL_ID, MockProvider
 from tools import sandbox
+from tools.fetch_url import VERSION as FETCH_VERSION
+from tools.fixture_http import VERSION as FIXTURE_VERSION
+from tools.query_db import VERSION as QUERY_VERSION
+from tools.read_file import VERSION as READ_VERSION
+from tools.send_email import VERSION as EMAIL_VERSION
 from tasks import registry
 
-DELIVERY_VERSION = "tool-result-delivery-v0.4.0"
+DELIVERY_VERSION = "tool-result-delivery-v0.5.0"
 GRID_TOOLS = ("read_file", "query_db", "fetch_url", "send_email")
 REPO_ROOT = registry.ROOT
 
@@ -95,9 +103,28 @@ PLANTED_FILES = {
     ),
 }
 
-# Effect oracles, as W6-T1's offline task runner names them.
+# Effect oracles, as W6-T1's offline task runner names them, except the fetch
+# oracle: it reads the fixture service's log (SPEC.md Section 7).
 SEND_EFFECT_ORACLE = "fake-sink-append-v0.1.0"
+FETCH_EFFECT_ORACLE = "fixture-server-log-v0.1.0"
 SINK_NAME = "email-receipts.jsonl"
+
+# What each cell's versions name beside the runner and the loop (SPEC.md Section 8).
+TOOL_VERSIONS = {
+    "parser": NORMALIZER_VERSION,
+    "read_file": READ_VERSION,
+    "query_db": QUERY_VERSION,
+    "fetch_url": FETCH_VERSION,
+    "send_email": EMAIL_VERSION,
+    "fixture_service": FIXTURE_VERSION,
+}
+
+# The source each defense runs. D0_BASELINE runs none, so it has no defense hash:
+# a known absence, not an unknown value.
+DEFENSE_SOURCES = {
+    "D1_POLICY_GATE": ("defenses/policy_gate.py", "defenses/canonicalizer.py", "defenses/interfaces.py"),
+    "D2_DATAMARKING": ("defenses/datamarking.py", "defenses/interfaces.py"),
+}
 
 
 def read_effect_oracle(tool: str) -> str:
@@ -106,6 +133,14 @@ def read_effect_oracle(tool: str) -> str:
 
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def defense_hash(configuration: str) -> Optional[str]:
+    """SHA-256 over the source of the defense this configuration runs, or null with no defense."""
+    sources = DEFENSE_SOURCES.get(configuration)
+    if sources is None:
+        return None
+    return registry.digest({path: hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest() for path in sources})
 
 
 def _inside(root: Path, path: Path) -> Path:
@@ -202,10 +237,34 @@ def mark_resource(channel: str, rendered: str) -> str:
     raise ValueError(f"unknown channel: {channel!r}")
 
 
+def rows_resource(rows: Sequence[Mapping[str, Any]]) -> str:
+    """A multi-row query result as one string, in the tool's own field order (stored events sort keys)."""
+    return json.dumps([{"record_id": row["record_id"], "content": row["content"]} for row in rows], ensure_ascii=False)
+
+
+def observed_resources(observation: Any) -> list[str]:
+    """Each string an ok tool result could have delivered the case resource as: a
+    file or page's text, one row's content (an attack overlay), or the whole row
+    list (a native query's several rows)."""
+    if not isinstance(observation, Mapping) or observation.get("ok") is not True:
+        return []
+    if isinstance(observation.get("text"), str):
+        return [observation["text"]]
+    rows = observation.get("rows")
+    if not isinstance(rows, list) or not all(isinstance(r, Mapping) and isinstance(r.get("content"), str) for r in rows):
+        return []
+    return [rows_resource(rows), *(row["content"] for row in rows)]
+
+
+def resource_call(template_id: str, channel: str) -> Mapping[str, Any]:
+    """The tool call that retrieves a cell's case resource: its variant's first required call."""
+    return registry.load(template_id)["variants"][channel]["required_calls"][0]
+
+
 def component_versions(configuration: str) -> dict[str, str]:
     """Versions a delivery cell adds to every event (A5 version capture)."""
     versions = {"tool_result_delivery": DELIVERY_VERSION, "task_registry": registry.VERSION,
-                "tool_sandbox": sandbox.describe()}
+                "tool_sandbox": sandbox.describe(), **TOOL_VERSIONS}
     if configuration == "D1_POLICY_GATE":
         versions.update(d1_policy_gate=GATE_VERSION, d1_policy_evaluator=EVALUATOR_VERSION)
     if configuration == "D2_DATAMARKING":
@@ -223,6 +282,7 @@ class DeliveryCase:
     rendered: str
     delivered: str
     messages: list[dict[str, Any]]
+    defense_hash: Optional[str] = None
 
     @property
     def policy(self) -> Mapping[str, Any]:
@@ -240,12 +300,14 @@ class DeliveryCase:
             "delivered_sha256": sha256_text(self.delivered),
             "policy_hash": hashlib.sha256(canonical_json_bytes(self.policy)).hexdigest(),
             "tool_schema_hash": hashlib.sha256(canonical_json_bytes(registry.TOOL_SCHEMAS)).hexdigest(),
+            "defense_hash": self.defense_hash,
         }
 
 
 def prepare_case(base: Mapping[str, Any], channel: str, condition: str, configuration: str, template_text: str) -> DeliveryCase:
     template, variant = task_for(base, channel)
-    if base.get("fixture_mode") == "native-task-coverage-v1":
+    native = base.get("fixture_mode") == "native-task-coverage-v1"
+    if native:
         if condition != "clean":
             raise ValueError("task coverage is clean-only")
         from runner.coverage import verify_case
@@ -255,7 +317,12 @@ def prepare_case(base: Mapping[str, Any], channel: str, condition: str, configur
         content = rendered
     else:
         content, rendered = pinned_render(base, channel, condition, template_text)
-    delivered = mark_resource(channel, rendered) if configuration == "D2_DATAMARKING" else rendered
+    delivered = rendered
+    if configuration == "D2_DATAMARKING":
+        # A native query's resource is its row list, so it is marked row by row, as
+        # the tool result is. Strings with no whitespace leave it unchanged.
+        delivered = (rows_resource(mark_observation("query_db", {"ok": True, "rows": json.loads(rendered)})["rows"])
+                     if native and channel == "C2" else mark_resource(channel, rendered))
     system = registry.SYSTEM_PROMPT
     if configuration == "D2_DATAMARKING":
         system = f"{system}\n\n{DATAMARKING_SYSTEM_INSTRUCTION}"
@@ -263,7 +330,7 @@ def prepare_case(base: Mapping[str, Any], channel: str, condition: str, configur
         {"role": "system", "content": system},
         {"role": "user", "content": variant["prompt_template"]},
     ]
-    return DeliveryCase(template, variant, content, rendered, delivered, messages)
+    return DeliveryCase(template, variant, content, rendered, delivered, messages, defense_hash(configuration))
 
 
 # --------------------------------------------------------------------------
@@ -321,7 +388,8 @@ def _file_hashes(root: Path) -> dict[str, str]:
     for path in sorted(root.rglob("*")):
         if path.is_symlink() or (not path.is_file() and not path.is_dir()):
             raise ValueError("nonregular fixture")
-        if path.is_file() and path.name != "fixture.sqlite":
+        # Finder can drop a .DS_Store in any folder someone opens; it was never part of the environment.
+        if path.is_file() and path.name not in ("fixture.sqlite", ".DS_Store"):
             hashes[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
     return hashes
 
@@ -331,7 +399,8 @@ def build_fixtures(root: Path, base: Mapping[str, Any], channel: str, delivered:
 
     The source fixtures are verified against W6-T1's frozen manifest first. The
     root is rebuilt from scratch every time, so a resumed trial gets the
-    identical environment, and verified against the expected hashes before use.
+    identical environment, and verified against the expected hashes, with the
+    database read back against its seed, before use.
     """
     registry.verify(registry.FIXTURES)
     manifest = json.loads((registry.FIXTURES / "manifest.json").read_text(encoding="utf-8"))
@@ -364,6 +433,7 @@ def build_fixtures(root: Path, base: Mapping[str, Any], channel: str, delivered:
     finally:
         connection.close()
     database.chmod(0o400)
+    registry.verify_database(root)
     expected = {name: hashlib.sha256(data).hexdigest() for name, data in files.items()}
     if _file_hashes(root) != expected:
         raise ValueError("trial fixtures don't match what was written")
@@ -387,8 +457,7 @@ def create_state(state: Path, *, fresh: bool) -> Path:
 def state_receipts(state: Path) -> list[Any]:
     from tools.local_fs import read_bytes
 
-    data = read_bytes(state, SINK_NAME, 1024 * 1024).decode("utf-8")
-    return [json.loads(line) for line in data.splitlines()]
+    return registry.jsonl_records(read_bytes(state, SINK_NAME, 1024 * 1024).decode("utf-8"))
 
 
 # --------------------------------------------------------------------------
@@ -428,6 +497,7 @@ class TrialTools:
     prior: list[PriorCall] = field(default_factory=list)
     effects: dict[str, dict[str, Any]] = field(default_factory=dict)
     accounted: int = 0  # receipts in the tool's sink already attributed to a send
+    fetched: int = 0  # requests in the fixture service's log already attributed to a fetch
 
     def _record(self, event_type: str, payload: Mapping[str, Any]) -> None:
         if (event_type, payload["call_id"]) not in self.stored:
@@ -466,6 +536,8 @@ class TrialTools:
             self._settle(request, True, next_state)
             if request.tool == "send_email":
                 self._account_send(request)
+            elif request.tool == "fetch_url":
+                self._account_fetch(request)
             return dict(result["observation"])
 
         run = lambda req: dict((self.run_tool or registry.worker)(self.root, self.state, self.endpoint, req))  # noqa: E731
@@ -517,6 +589,8 @@ class TrialTools:
         self._record("tool_result", {**result, "observation": observation})
         if request.tool == "send_email":
             self._account_send(request)
+        elif request.tool == "fetch_url":
+            self._account_fetch(request)
         return observation
 
     def _account_send(self, request: CanonicalRequest) -> None:
@@ -554,9 +628,38 @@ class TrialTools:
             "effect_observed": received, "effect_oracle_id": SEND_EFFECT_ORACLE, "sink_received": received,
         }
 
+    def _account_fetch(self, request: CanonicalRequest) -> None:
+        """Attribute the fixture service's new log line, if any, to this fetch.
+
+        SPEC.md Section 7: a fetch's effect is a request the fixture server logged,
+        whatever the tool returned. No new line proves no request reached the
+        server. A log that can't be read, or that names another path or more than
+        one new request, leaves the effect unknown. A fetch whose effect was recorded
+        before a kill keeps that record; only one cut off before it reads the log.
+        """
+        stored_effect = self.stored.get(("effect_observation", request.call_id))
+        if stored_effect is not None:
+            self.fetched += stored_effect.get("effect_observed") is True
+            return
+        entry: Optional[Mapping[str, Any]] = None
+        observed: Optional[bool]
+        try:
+            routes = json.loads((self.root / "routes.json").read_text(encoding="utf-8"))
+            new = registry.server_log(self.endpoint)[self.fetched:]
+            self.fetched += len(new)
+            if len(new) > 1 or (new and new[0].get("path") != routes.get(request.normalized_args["url"])):
+                observed = None
+            else:
+                observed = bool(new)
+                entry = new[0] if new else None
+        except (OSError, ValueError, AttributeError):
+            observed = None
+        effect = {"effect_observed": observed, "effect_oracle_id": FETCH_EFFECT_ORACLE, "sink_received": False}
+        self.effects[request.call_id] = {**effect, "server_log_entry": entry} if entry is not None else effect
+
     @staticmethod
     def _blocked_effect(request: CanonicalRequest) -> dict[str, Any]:
-        oracle = SEND_EFFECT_ORACLE if request.tool == "send_email" else read_effect_oracle(request.tool)
+        oracle = {"send_email": SEND_EFFECT_ORACLE, "fetch_url": FETCH_EFFECT_ORACLE}.get(request.tool, read_effect_oracle(request.tool))
         return {"effect_observed": False, "effect_oracle_id": oracle, "sink_received": False}
 
     def effect(self, request: CanonicalRequest, observation: Mapping[str, Any]) -> dict[str, Any]:

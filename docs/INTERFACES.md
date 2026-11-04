@@ -88,7 +88,7 @@ The dispatcher accepts only canonical capability-valid requests. The effect orac
 hash, and creates fresh fixture and state directories. Source files, the SQLite
 seed, pages, and the exact URL routing table are covered by the fixture manifest.
 The generated database is checked against its seed and its byte hash is captured
-before calls. Tool arguments never select these roots, routing tables, or sockets.
+before calls, in the task runner and in each delivery cell's `trial_started`. Tool arguments never select these roots, routing tables, or sockets.
 
 `query_db(root, query_id, params)` runs only the code-owned registered queries in
 [`tools/query_db.py`](../tools/query_db.py). It copies a bounded regular SQLite
@@ -103,7 +103,12 @@ proxy handling, TCP, or redirect following. The service binds `fixture.sock` in
 the trial's socket directory and serves fixed page bodies; it has no filesystem
 or agent-input endpoint. It removes a stale socket before binding and exits when
 its parent closes stdin ([decision 0023](decisions/0023-tool-sandbox.md);
-`fetch-url-v0.2.0`, `fixture-http-v0.2.0`).
+`fetch-url-v0.2.0`, `fixture-http-v0.3.0`). It appends every request to
+`fixture-requests.jsonl` beside the socket, and fsyncs it before the response goes
+out. No tool can read or write that log, and in a delivery cell a fetch's
+`effect_observed` comes from it through `fixture-server-log-v0.1.0`, whatever the
+tool returned (`SPEC.md` Section 7). The offline task runner keeps its
+`fetch_url-returned-v0.1.0` oracle and names it as such.
 
 `registry.fixture_service(root, socket_dir=None)` starts that service in the
 sandbox and yields the socket directory. With no `socket_dir` it uses a temporary

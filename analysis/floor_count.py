@@ -14,10 +14,14 @@ It reads one live-model development-grid run, every record from a single
 - how often a trial in the run hit the output limit (decision 0010 item 7).
 
 It refuses evaluation records, mock-provider records, records from more than
-one run, duplicate logical trials, and a floor-cell record that isn't the
-cell's first run or can't be placed in exactly one cell, so no rerun or pilot
-replaces a grid cell. Unknown evidence stays null and is never counted as
-false. The report names the run and each cell's logical trial, so Gate 3 can
+one run, duplicate logical trials, and a floor-cell record that isn't the cell's
+first run or can't be placed in exactly one cell, so no rerun or pilot replaces a
+grid cell. It also refuses a record that disagrees with its trial's stored events,
+model responses, or cell files. That shows the stored files agree with each other;
+nothing outside the run directory anchors them until the raw manifest is published
+(decision 0025 item 5), so before then it can't detect an edit made consistently
+across all of them. Run it from the run's own commit. Unknown evidence stays null
+and is never counted as false. The report names the run and each cell's logical trial, so Gate 3 can
 copy the counts with their source.
 """
 
@@ -32,7 +36,7 @@ from typing import Any, Iterable, Mapping, Optional, Sequence
 
 from jsonschema import ValidationError
 
-from runner import paid_run
+from runner import execute, paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
 
@@ -194,9 +198,11 @@ def floor_count(trials: Iterable[Trial]) -> dict[str, Any]:
     }
 
 
-def load_run(run_dir: Path) -> list[Trial]:
+def load_run(run_dir: Path, corpus_root: Optional[Path] = None) -> list[Trial]:
     """Every result in `run_dir`'s trial directories (one level down), with the
-    events file beside it. A record or event that fails its schema raises."""
+    events file beside it. A record or event that fails its schema raises, and so
+    does a record that disagrees with its trial's other stored evidence
+    (`execute.check_stored_run` says what that proves and what it can't)."""
     trials: list[Trial] = []
     for results in sorted(Path(run_dir).glob(f"*/{RESULTS_FILE}")):
         events = read_jsonl(results.parent / EVENTS_FILE, "event")
@@ -204,6 +210,12 @@ def load_run(run_dir: Path) -> list[Trial]:
             trials.append((record, events))
     if not trials:
         raise ValueError(f"{run_dir}: no results.jsonl records found")
+    schedule = execute.stored_schedule(run_dir)
+    unscheduled = sorted(record["logical_trial_id"] for record, _ in trials if record["logical_trial_id"] not in schedule)
+    if unscheduled:
+        raise ValueError(f"{unscheduled[0]}: not in this run's stored schedule")
+    execute.check_stored_run(run_dir, [(schedule[record["logical_trial_id"]], record) for record, _ in trials],
+                             corpus_root=corpus_root)
     return trials
 
 
