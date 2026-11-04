@@ -2,11 +2,14 @@
 unpinned (reports/cloud/mutation.md). Each test names the surviving mutants
 it kills."""
 
+from types import MappingProxyType
+
 import pytest
 
 from defenses import interfaces as di
 from defenses.canonicalizer import CanonicalizationError, canonicalize_arguments
-from defenses.policy_gate import PolicyGate, gate_and_dispatch
+from defenses.policy_gate import PolicyGate, PolicyGateAuthorizer, gate_and_dispatch
+from oracles.authorization.audit import AuditAuthorizer
 from tests.test_policy_gate import _policy, _req
 
 
@@ -74,3 +77,32 @@ def test_fetch_url_keeps_host_port_and_userinfo_exactly(raw, expected):
 def test_a_password_in_a_url_never_canonicalizes_to_an_allowlisted_url_without_it():
     allowed = canonicalize_arguments("fetch_url", {"url": "http://user@example.test/a"})["url"]
     assert canonicalize_arguments("fetch_url", {"url": "http://user:secret@example.test/a"})["url"] != allowed
+
+
+EVALUATORS = [PolicyGateAuthorizer(), AuditAuthorizer()]
+
+
+@pytest.mark.parametrize("evaluator", EVALUATORS, ids=["gate", "audit"])
+def test_each_unknown_prior_call_counts_once_toward_the_budget(evaluator):
+    # Kills policy_gate.x__budget_exceeded__mutmut_17 and audit's _budget_exceeded__mutmut_19
+    # (each unknown counted twice): with max_calls 3, two unknown dispositions can't
+    # reach the budget, so the request is evaluable and within budget.
+    policy = _policy(max_calls=3)
+    prior = (di.PriorCall("read_file", MappingProxyType({"path": "docs/report.txt"}), None),) * 2
+    decision = evaluator.authorize(policy, _req("read_file", path="docs/report.txt"), prior, di.GrantState())
+    assert decision.authorized is True and decision.reason_codes == ()
+    # One known dispatch plus two unknown reaches 3 only if an unknown counts: not computable.
+    prior3 = prior + (di.PriorCall("read_file", MappingProxyType({"path": "docs/report.txt"}), True),)
+    with pytest.raises(di.AuthorizationNotComputable):
+        evaluator.authorize(policy, _req("read_file", path="docs/report.txt"), prior3, di.GrantState())
+
+
+@pytest.mark.parametrize("evaluator", EVALUATORS, ids=["gate", "audit"])
+def test_a_missing_argument_does_not_hide_a_later_wrong_type(evaluator):
+    # Kills policy_gate.x__shape_codes__mutmut_16 and audit's _shape_codes__mutmut_17
+    # (`continue` -> `break` after a missing name).
+    policy = _policy(tool="send_email", tool_rule={"max_calls": 1, "recipients": ["a@example.test"],
+                                                   "subjects": ["s"], "bodies": ["b"]})
+    request = di.CanonicalRequest("c", "trial", 1, "send_email", MappingProxyType({"subject": 5, "body": "b"}), "t")
+    decision = evaluator.authorize(policy, request, (), di.GrantState())
+    assert decision.reason_codes == ("argument_missing", "argument_type_invalid")
