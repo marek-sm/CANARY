@@ -8,6 +8,7 @@ This is evidence for the project lead to decide on. An AI agent ran it and wrote
 
 - **One real bug, with a failing test.** The audit evaluator compares `query_db` parameter values with Python `in`, so `true` and `1.0` match an allowlisted `1`, and `0` and `0.0` match `false`. The D1_POLICY_GATE evaluator compares type-strictly, as `docs/DEFENSES_AND_POLICY.md` requires. It's latent: every allowlisted parameter value in today's task policies and golden vectors is a string. `tests/test_gate_audit_typed_params.py` fails 4 cases by design.
 - **mutmut** generated 5,949 mutants over the 14 target files. With the existing suite, minus seven slow 90-cell grid tests, 4,653 were killed and 1,296 were not (21.8%). I re-ran a random sample of 48 non-killed mutants against those seven slow tests, and none was killed. I also re-ran 27 of the reported findings against them, and none was killed. The slow tests don't change the picture.
+- **Module constants**, which mutmut never mutates, were covered by a hand-written mutator: 435 constant mutants, 116 not killed by the existing suite and 54 still not killed after the new tests, all typing-only, equivalent, mock-only, or stricter.
 - **Survival by module** ranged from 2.6% (`oracles/authorization/audit.py`) to 52.0% (`runner/paid_run.py`). Most survivors are error-message text, CLI help, JSON formatting, or equivalent mutants. The ones that matter are ranked below.
 - **Most serious surviving mutants**, each now killed by a new test:
   - The paid-run gate stops refusing an ambient `ANTHROPIC_*` variable.
@@ -18,6 +19,7 @@ This is evidence for the project lead to decide on. An AI agent ran it and wrote
   - The tool sandbox silently skips unreadable directories when it checks for foreign sockets, or mounts all of the interpreter's `lib/`.
   - A Gate 2 budget equation in which every term can change unnoticed.
   - Both evaluators can count unknown prior calls twice, turning an evaluable request into a non-evaluable one.
+- **After the new tests**, 584 of the 5,949 mutmut mutants are still not killed (9.8%, down from 21.8%).
 - **Tests added.** 10 new test files with 165 test cases. Each test names the mutants it kills. They pass on unmodified code, except the one deliberately failing file.
 
 Sections: [What I ran](#what-i-ran) · [Raw counts](#raw-counts) · [Findings, ranked](#findings-ranked) · [Tests added](#tests-added) · [Other observations](#other-observations-not-from-surviving-mutants) · [What I didn't check](#what-i-didnt-check) · [Living documents](#living-documents)
