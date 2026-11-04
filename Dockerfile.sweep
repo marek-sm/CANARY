@@ -14,6 +14,9 @@
 #
 # Build for this machine's platform (linux/amd64 or linux/arm64) with `make sweep-image`,
 # on any network that reaches Docker Hub, ghcr.io, and snapshot.debian.org.
+# Every stage declares SOURCE_DATE_EPOCH so a cached layer is reused only under the same
+# epoch: rewrite-timestamp clamps only times newer than the epoch, so a layer cached
+# from a build before the epoch's commit would keep its own mtimes and change the ID.
 # --provenance=false matters: with buildx's default attestation the image ID is a
 # manifest list that changes on every build of identical content, so the
 # container_digest it yields could never be reproduced.
@@ -35,6 +38,7 @@ ARG UV_SOURCE=ghcr
 
 # --- bwrap, git, make --------------------------------------------------------
 FROM ${BASE} AS tools-debian
+ARG SOURCE_DATE_EPOCH
 # The snapshot the base image names in its own sources comment, so the packages
 # are fixed by date as well as by the base's digest.
 RUN printf '%s\n' \
@@ -56,6 +60,7 @@ RUN printf '%s\n' \
  && dpkg-query -W bubblewrap git make > /out/packages.txt
 
 FROM ${UBUNTU} AS tools-ubuntu
+ARG SOURCE_DATE_EPOCH
 # Exact versions, so a superseded package fails the build instead of changing it.
 # Signed by the Ubuntu archive key (InRelease), so plain HTTP is integrity-checked.
 RUN apt-get update \
@@ -65,13 +70,16 @@ RUN apt-get update \
  && dpkg-query -W bubblewrap git make > /out/packages.txt
 
 FROM tools-${TOOLS_SOURCE} AS tools
+ARG SOURCE_DATE_EPOCH
 
 # --- uv, only to build the venv; the final image has no uv -------------------
 FROM ${UV_IMAGE} AS uv-ghcr-image
 FROM ${BASE} AS uv-ghcr
+ARG SOURCE_DATE_EPOCH
 COPY --from=uv-ghcr-image /uv /usr/local/bin/uv
 
 FROM ${BASE} AS uv-pypi
+ARG SOURCE_DATE_EPOCH
 COPY docker/sweep/uv-requirements.txt /tmp/uv-requirements.txt
 # build_ca is only for a TLS-intercepting egress proxy; secrets never enter a layer.
 RUN --mount=type=secret,id=build_ca,required=false \
@@ -80,6 +88,7 @@ RUN --mount=type=secret,id=build_ca,required=false \
  && rm /tmp/uv-requirements.txt
 
 FROM uv-${UV_SOURCE} AS venv
+ARG SOURCE_DATE_EPOCH
 ENV UV_PYTHON_DOWNLOADS=never UV_PROJECT_ENVIRONMENT=/opt/venv UV_LINK_MODE=copy UV_COMPILE_BYTECODE=0
 WORKDIR /src
 COPY pyproject.toml uv.lock ./
@@ -90,6 +99,7 @@ RUN --mount=type=secret,id=build_ca,required=false \
 
 # --- the sweep image -----------------------------------------------------------
 FROM ${BASE} AS sweep
+ARG SOURCE_DATE_EPOCH
 COPY --from=tools /out/bwrap /out/git /out/make /usr/bin/
 COPY --from=tools /out/packages.txt /usr/share/canary-sweep/packages.txt
 COPY --from=venv /opt/venv /opt/venv
