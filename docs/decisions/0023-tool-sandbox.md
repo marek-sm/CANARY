@@ -83,9 +83,9 @@ The project lead's Mac has no Docker.
    The live smoke (`make live-smoke`) stays the one exception. It needs no record, but its read tool runs sandboxed and it still refuses in CI or with ambient provider variables.
 8. **Who runs the paid commands.** The paid grid (`W7-T3`) and the paid smokes (`W7-T1`) run on the project lead's Mac. That keeps one platform and sandbox for the record, keeps the self-funded key on its machine, and avoids member machine setup before Friday.
 
-   This is a visible reassignment of executing those commands only. Samson and Chace keep their slices, deliverables, and reviews, and re-accept it by replying to its start notice.
+   This is a visible reassignment of executing those commands only. Samson and Chace keep their slices, deliverables, and reviews, and accept it under [decision 0027](0027-acceptance-by-work.md), which replaced the reply this record first asked for.
 9. **Gate 3.**
-   - `W8-T1` keeps the sandbox's CI proof green, and its Committed row adds "the sandbox launcher and profile hashes frozen". Chace re-accepts that row on its start notice.
+   - `W8-T1` keeps the sandbox's CI proof green, and its Committed row adds "the sandbox launcher and profile hashes frozen". Chace accepts that row under [decision 0027](0027-acceptance-by-work.md).
    - The Gate 3 step's "Uses" cell adds this CI proof.
    - `W9-T4`'s sandbox-hash verification reads that freeze.
    - The CI container digest stays Gate 3's container artifact.

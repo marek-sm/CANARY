@@ -43,6 +43,7 @@ SPEC_HEADER = re.compile(r"^\*\*Public project and experimental specification v(
 # A version named within a short clause after `SPEC.md`, however it's worded.
 SPEC_CLAIM = re.compile(r"`SPEC\.md`[^.|\n]{0,40}?\bv(\d+\.\d+\.\d+)")
 GATE1_CAP = re.compile(r"\*\*Gate 1 fails:\*\*.*?`([A-Z0-9-]+)` or smaller")
+GATE1_LIFT = re.compile(r"\*\*Gate 1 fails:\*\*[^\n]*decision 0025 lifts the `[A-Z0-9-]+` cap")
 NOT_YET = re.compile(r"^[*_]*(?:not|none)\b", re.I)
 NOT_PASSED = re.compile(r"\bnot passed\b", re.I)
 PASS_OPENING = re.compile(r"^[*_]*(?:passed|met)\b", re.I)
@@ -174,7 +175,7 @@ def tier_conflicts(status, spec):
 
 def gate1_response_conflicts(status, spec):
     rows = table_rows(status)
-    if not NOT_PASSED.search(rows.get("Gate 1 result", "")):
+    if not NOT_PASSED.search(rows.get("Gate 1 result", "")) or GATE1_LIFT.search(spec):
         return []
     cap = GATE1_CAP.search(spec)
     if not cap:
@@ -431,9 +432,22 @@ def test_rejects_a_tier_above_the_headcount_ceiling():
     assert tier_conflicts(edited("`R15`", "`ENGINEERING`", edited("| 6 — five", "| 1 — no")), spec) == []
 
 
+def spec_without_gate1_lift():
+    return re.sub(r" For the fall 2026 run only, decision 0025 lifts[^\n]*", "", SPEC.read_text(encoding="utf-8"))
+
+
 def test_rejects_a_tier_above_the_gate_1_failure_cap():
     status = edited("`R15`", "`F20`")
-    assert gate1_response_conflicts(status, SPEC.read_text(encoding="utf-8")) == [
+    assert gate1_response_conflicts(status, spec_without_gate1_lift()) == [
+        "tier `F20` is above `R15`, the Gate 1 failure cap, while Gate 1 is not passed"
+    ]
+
+
+def test_decision_0025_lifts_the_gate_1_cap_only_from_the_gate_1_line():
+    status = edited("`R15`", "`F20`")
+    assert gate1_response_conflicts(status, SPEC.read_text(encoding="utf-8")) == []
+    elsewhere = spec_without_gate1_lift() + "\nFor the fall 2026 run only, decision 0025 lifts the `R15` cap.\n"
+    assert gate1_response_conflicts(status, elsewhere) == [
         "tier `F20` is above `R15`, the Gate 1 failure cap, while Gate 1 is not passed"
     ]
 
