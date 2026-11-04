@@ -407,6 +407,20 @@ def test_the_sweep_runs_past_the_development_ceiling(gate, tmp_path):
     assert len(started) == 6
 
 
+def test_a_sweep_s_stored_results_verify_under_their_split(gate, tmp_path):
+    """check_stored_run read a sweep's mode file, which records its split, as not delivery, and
+    compared each result's split with development; both refused every evaluation run."""
+    gate.open()
+    schedule, _, run = _other_split_grid(gate, tmp_path / "sweep", 3, **EVALUATION)
+    run()
+    pairs = [(trial, read_jsonl(tmp_path / "sweep" / execute.trial_slug(trial) / "results.jsonl", "result")[0])
+             for trial in schedule]
+    execute.check_stored_run(tmp_path / "sweep", pairs, corpus_root=gate.root / "corpus" / "development")
+    relabelled = [(trial, {**record, "split": "development"}) for trial, record in pairs]
+    with pytest.raises(ValueError, match="different trial"):
+        execute.check_stored_run(tmp_path / "sweep", relabelled, corpus_root=gate.root / "corpus" / "development")
+
+
 def test_the_sweep_runs_with_the_ceiling_already_full(gate, tmp_path):
     gate.open()
     _at_ceiling()

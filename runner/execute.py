@@ -1633,7 +1633,7 @@ def _check_stored_trial(
     if entry is None:
         raise ValueError(f"{trial_id}: the stored result belongs to a different trial")
     canaries = list(entry["canaries"])
-    _check_result_identity(record, trial, canaries)
+    _check_result_identity(record, trial, canaries, (labels or {}).get("split", "development"))
     _check_trace_identity(events, trial)
     for required in ("trial_started", "trial_ended"):
         if _first(events, required) is None:
