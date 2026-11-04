@@ -79,14 +79,14 @@ def main(argv: Optional[list[str]] = None) -> int:
     if args.model not in (None, model):
         print(f"refusing: a {args.provider} pilot runs only its decision 0010 model, {model}", file=sys.stderr)
         return 2
+    raw = execute.raw_evidence_refusal(args.out or DEFAULT_OUT_ROOT)
+    if raw:
+        print(f"refusing: {raw}", file=sys.stderr)
+        return 2
     # Before the key is read: the smoke needs no paid-run record, but the rest of the gate still applies.
     reason = paid_run.paid_run_refusal(live_smoke=True)
     if reason:
         print(f"refusing: {reason}", file=sys.stderr)
-        return 2
-    raw = execute.raw_evidence_refusal(args.out or DEFAULT_OUT_ROOT)
-    if raw:
-        print(f"refusing: {raw}", file=sys.stderr)
         return 2
     try:
         key = load_api_key(args.env_file, provider["key"])

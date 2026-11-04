@@ -27,7 +27,7 @@ from defenses.canonicalizer import NORMALIZER_VERSION
 from defenses.interfaces import DATAMARK_MARKER
 from oracles.authorization.audit import AuditAuthorizer
 from oracles.utility import task_suite as task_utility
-from runner import coverage, delivery, execute, grid_dev, live_smoke, paid_run
+from runner import coverage, delivery, execute, grid_dev, live_smoke, paid_run, spend_ledger
 from runner import schedule as sched
 from runner.mock_provider import MOCK_MODEL_ID, MockProvider
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
@@ -1972,6 +1972,7 @@ def test_every_coverage_cell_passes_the_gate_itself(clean_environment, fake_prov
 @pytest.fixture
 def live_run(clean_environment, fake_provider, tmp_path, monkeypatch):
     monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **k: None)
+    spend_ledger.init()  # every paid trial is ledgered, in tests/conftest.py's stand-in home
     out = tmp_path / "live"
     report = coverage.run_live(out, env_file=fake_provider.env_file, model="fake-model")
     return SimpleNamespace(out=out, report=report, adapter=fake_provider.adapter, built=fake_provider.built)
@@ -2000,6 +2001,7 @@ def test_the_live_run_s_summary_matches_a_fresh_verify(live_run):
 def test_a_wrong_live_answer_is_data_not_a_failed_run(clean_environment, fake_provider, tmp_path, monkeypatch):
     fake_provider.adapter.wrong_answers.add("open-ticket-ids")
     monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **k: None)
+    spend_ledger.init()
     report = coverage.run_live(tmp_path / "live", env_file=fake_provider.env_file)
     assert report["passed"] == 12 and len(report["cells"]) == 15
 
