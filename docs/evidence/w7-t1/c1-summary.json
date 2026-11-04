@@ -12,8 +12,8 @@
   "manifest_sha256": "988e4e6b5891661fd00c0d05b9d29b26b47276a1f7004020097eb0f8dae0d9a4",
   "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
   "code_provenance": {
-    "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
-    "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+    "code_commit": "61de086792bc5e39ed37e118da605525589e38d0",
+    "code_digest": "8ae591e061e61da22eed19b22a9f5b88ad02067e2b441301febc9d245b66af84",
     "dirty_paths": []
   },
   "controls": [
@@ -33,14 +33,14 @@
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
       "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
       "code_provenance": {
-        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
-        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "code_commit": "61de086792bc5e39ed37e118da605525589e38d0",
+        "code_digest": "8ae591e061e61da22eed19b22a9f5b88ad02067e2b441301febc9d245b66af84",
         "dirty_paths": []
       },
       "sink_receipt_count": 1,
-      "events_sha256": "ea05f35c6bca79d022b88b09f8e2ae405ede7643d21e51a33525a7e3c2c2bc17",
-      "receipts_sha256": "4c0dea0f2d53177a2b0dfeeee16562f250199712bd6a1ed1ef99408cfeb8f2db",
-      "canaries_sha256": "25e699cb80f83e19c02f6896ea0189b30095c9074f7d7ff0a5f9980d12e018af"
+      "events_sha256": "af38c98ea1fad10ed652a64084a47e2cae4e94055e22cc25982335a23e042a90",
+      "receipts_sha256": "b4f5c52883baf53b843129316eacd961ba1de0881135d4ffc1b24c5c8ce7b821",
+      "canaries_sha256": "2353171d95d06afef0439dc905dcbd3e753b7c77c287f0a217849bbd0d24aa16"
     },
     {
       "version": "c1-mock-check-v0.2.0",
@@ -58,14 +58,14 @@
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
       "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
       "code_provenance": {
-        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
-        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "code_commit": "61de086792bc5e39ed37e118da605525589e38d0",
+        "code_digest": "8ae591e061e61da22eed19b22a9f5b88ad02067e2b441301febc9d245b66af84",
         "dirty_paths": []
       },
       "sink_receipt_count": 1,
-      "events_sha256": "67b8d6b69862ecad78641f715942634940a3c66497576aaf408f5c67ddf48199",
+      "events_sha256": "67d264e9759d2cbd53e7f3301c81d0ad9128ca12941b5099aed4af9a9b5ab960",
       "receipts_sha256": "04d79cd5e2d8cb344b25f84e437e7232f4afedd2c7dfe1fcf7b8bce9cd1c5027",
-      "canaries_sha256": "edff9acfb85625a1fc91e5e88ff4e457d4c9263b217069683c69e1c642fd8d8d"
+      "canaries_sha256": "590fe1a552a5914680b314bebb108309e7666c5786d79f117bf26fe86f38fbdc"
     },
     {
       "version": "c1-mock-check-v0.2.0",
@@ -83,14 +83,14 @@
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
       "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
       "code_provenance": {
-        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
-        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "code_commit": "61de086792bc5e39ed37e118da605525589e38d0",
+        "code_digest": "8ae591e061e61da22eed19b22a9f5b88ad02067e2b441301febc9d245b66af84",
         "dirty_paths": []
       },
       "sink_receipt_count": 1,
-      "events_sha256": "16f90e1140b9ff0ef52279024227bd46ec506f57a3c49ede51760836597dcc4c",
-      "receipts_sha256": "7607f5895ea870ab36f30a8317566ea8e3d14a3a23d60c08a444ce6e3dc39108",
-      "canaries_sha256": "6e937e97456799dabdc46919475fb4842aedad8f2d7f01afab79880c1ab3aa10"
+      "events_sha256": "e878aca2da56bfd649bde7fcff979fd5376a705d13b9361b652ca2a428595510",
+      "receipts_sha256": "f626606c83216c07d65c2f0a9d640d355d639e149e55b144847044e7a3fbab6a",
+      "canaries_sha256": "0b0636a3086ea40e3c1497ed375ecc1c593f16c389e7ac68fc4e34f274726347"
     },
     {
       "version": "c1-mock-check-v0.2.0",
@@ -108,14 +108,14 @@
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
       "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
       "code_provenance": {
-        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
-        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "code_commit": "61de086792bc5e39ed37e118da605525589e38d0",
+        "code_digest": "8ae591e061e61da22eed19b22a9f5b88ad02067e2b441301febc9d245b66af84",
         "dirty_paths": []
       },
       "sink_receipt_count": 1,
-      "events_sha256": "fbe6dbd7609e6ac54af809815dcdc07e3538616fa208381ec1569298fed8bd1c",
+      "events_sha256": "a07add5415136e29c847712c7d4399ca691fa6e07c29402c249d4f901687e6d7",
       "receipts_sha256": "577fe00059431d9881756a9765f552732a5092f249204f15ec1cc6268b189163",
-      "canaries_sha256": "725160ecbafd7ad31cf10ccc898df716fd7d45b45c95993bd5718e4b0425f797"
+      "canaries_sha256": "9ec45b3ad09809b44c544855cd58a3c686b58a64b5ec5dcdebb9cdf35af90902"
     }
   ],
   "passed": 4,
