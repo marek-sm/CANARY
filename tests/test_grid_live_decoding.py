@@ -39,7 +39,7 @@ def test_live_grid_records_the_decoding_it_sends(tmp_path, monkeypatch):
             return super().complete(messages, tool_schemas, decoding, model_request)
 
     monkeypatch.setattr(grid_dev, "validate_grid_spec", lambda _spec: schedule)
-    monkeypatch.setattr(grid_dev, "live_run_refusal", lambda _root, _spec: None)
+    monkeypatch.setattr(grid_dev, "live_run_refusal", lambda _root, _spec, _out: None)
     monkeypatch.setattr(grid_dev, "load_api_key", lambda _path, _variable: "not-a-real-key")
     monkeypatch.setattr(paid_run, "require_paid_run", lambda *_args, **_kwargs: None)
     provider = live_smoke.PROVIDERS["anthropic"]

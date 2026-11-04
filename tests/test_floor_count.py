@@ -9,6 +9,7 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from analysis.floor_count import floor_count, load_run, main
+from runner import paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -277,6 +278,9 @@ def test_load_run_reads_each_trial_directory_and_main_writes_json(tmp_path, caps
     trials = load_run(tmp_path)
     assert len(trials) == 90
     assert all(len(log) == 2 for _, log in trials)
+    # A non-mock grid must say what code ran it (tests/test_paid_run_gate.py tests that check).
+    (tmp_path / paid_run.PROVENANCE_FILE).write_text(json.dumps({"phase": "start", **paid_run.code_provenance()}) + "\n",
+                                                     encoding="utf-8")
 
     out = tmp_path / "floor.json"
     assert main([str(tmp_path), "--out", str(out)]) == 0

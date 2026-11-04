@@ -13,12 +13,14 @@ Trial cost is taken from each result's summed ``usage``; when that total is
 unknown, from the trial's ``provider_attempt`` events. Costs use decision 0010
 Haiku list pricing, with a request over 100,000 input tokens at its higher rates.
 The reserve, the C1 cost, and thin strata come from the frozen price bound in
-``analysis/price_bound.py`` (decisions 0025 and 0026), never a typed number.
+``analysis/price_bound.py`` (decisions 0025 and 0026), and the development
+trials already used from ``runner.spend_ledger``'s ledger, never a typed number.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from collections import defaultdict
@@ -34,6 +36,7 @@ from analysis.price_bound import (
     OUTPUT_USD_PER_TOKEN,
     PRICE_BOUND_USD,
 )
+from runner import paid_run, spend_ledger
 from runner.mock_provider import MOCK_MODEL_ID
 
 # SPEC.md Section 12's rows. A trial's stratum is channel x condition x configuration.
@@ -241,29 +244,56 @@ def evaluate_budget(
     }
 
 
+def _price_bound_used() -> float:
+    """The frozen bound, read at call time so the report names the bound this evaluation took.
+    ``check_code_matches_run`` leaves the bound's module out, so a raised bound can be
+    re-evaluated, and two evaluations of one grid can differ here. There is no typed fallback."""
+    try:
+        module = importlib.import_module("analysis.price_bound")
+    except ImportError as exc:
+        raise ValueError("no analysis/price_bound.py here; the reserve and C1 cost come only from the frozen bound") from exc
+    return module.PRICE_BOUND_USD
+
+
+def development_trials_used() -> int:
+    """SPEC.md Section 9's development trials so far, the October 10 check's included, counted
+    from the spend ledger outside every checkout, so a typed number can't lower the reserve.
+    A missing or corrupt ledger refuses (``LedgerError`` is a ``ValueError``)."""
+    return spend_ledger.totals(spend_ledger.read())[1]
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("run_dir", type=Path, help="development grid run directory")
     parser.add_argument("--remaining-balance-usd", type=float, required=True)
-    # The reserve and C1 cost come from the frozen bound, never a typed number (decision 0026).
-    parser.add_argument("--development-trials-used", type=int, required=True)
+    # The reserve and C1 cost come from the frozen bound, and the development trials used from
+    # the spend ledger, never a typed number (decisions 0026 and 0028).
     parser.add_argument("--tier", choices=sorted(TIERS), default="F20")
     parser.add_argument("--defense", choices=("D1_POLICY_GATE", "D2_DATAMARKING"), default=None)
     parser.add_argument("--c1-pilot-cost-usd", type=float, default=None)
     parser.add_argument("--out", type=Path, help="write JSON report here")
     args = parser.parse_args(argv)
     try:
+        code_check = paid_run.check_code_matches_run(args.run_dir)
+        print(f"gate2-budget: {code_check}", file=sys.stderr)
         trials = load_run(args.run_dir)
         check_complete_grid(trials, _tier_configurations(args.tier, args.defense))
+        bound = _price_bound_used()
         report = json.dumps(
-            evaluate_budget(
-                trials,
-                remaining_balance_usd=args.remaining_balance_usd,
-                development_trials_used=args.development_trials_used,
-                tier=args.tier,
-                defense=args.defense,
-                c1_pilot_cost_usd=args.c1_pilot_cost_usd,
-            ),
+            {
+                **evaluate_budget(
+                    trials,
+                    remaining_balance_usd=args.remaining_balance_usd,
+                    development_trials_used=development_trials_used(),
+                    tier=args.tier,
+                    defense=args.defense,
+                    c1_pilot_cost_usd=args.c1_pilot_cost_usd,
+                    price_bound_usd=bound,
+                ),
+                "price_bound_source": "analysis/price_bound.py",
+                "development_trials_source": "runner.spend_ledger",
+                "code_check": code_check,
+            },
             indent=2,
             sort_keys=True,
         ) + "\n"

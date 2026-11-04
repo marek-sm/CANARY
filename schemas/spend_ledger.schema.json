@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:spend_ledger:1.0.0",
+  "title": "CANARY spend and pilot ledger line",
+  "description": "One line of the local ledger runner.paid_run reads before each paid trial's first call (runner/spend_ledger.py). Its usage comes from each trial's provider_attempt events, so it is a local count to reconcile with the provider's console, not evidence.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "phase", "recorded_at", "cost_usd", "development_trials"],
+      "properties": {
+        "schema_version": {"const": "1.0.0"},
+        "phase": {"const": "seed"},
+        "recorded_at": {"type": "string", "minLength": 1},
+        "cost_usd": {"type": "number", "minimum": 0},
+        "development_trials": {"type": "integer", "minimum": 0}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "phase", "recorded_at", "invocation_id", "logical_trial_id", "provider_adapter", "split", "analysis_role", "new_trial", "bound_usd", "cap_usd"],
+      "properties": {
+        "schema_version": {"const": "1.0.0"},
+        "phase": {"const": "started"},
+        "recorded_at": {"type": "string", "minLength": 1},
+        "invocation_id": {"type": "string", "minLength": 1},
+        "logical_trial_id": {"type": "string", "minLength": 1},
+        "provider_adapter": {"type": "string", "minLength": 1},
+        "split": {"enum": ["development", "evaluation"]},
+        "analysis_role": {"type": ["string", "null"]},
+        "new_trial": {"type": "boolean"},
+        "bound_usd": {"type": "number", "exclusiveMinimum": 0},
+        "cap_usd": {"type": ["number", "null"]}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "phase", "recorded_at", "invocation_id", "attempts", "input_tokens", "output_tokens", "unknown_usage_attempts", "cost_usd"],
+      "properties": {
+        "schema_version": {"const": "1.0.0"},
+        "phase": {"const": "finished"},
+        "recorded_at": {"type": "string", "minLength": 1},
+        "invocation_id": {"type": "string", "minLength": 1},
+        "attempts": {"type": "integer", "minimum": 0},
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "unknown_usage_attempts": {"type": "integer", "minimum": 0},
+        "cost_usd": {"type": "number", "minimum": 0}
+      }
+    }
+  ]
+}

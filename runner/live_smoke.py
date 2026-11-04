@@ -8,6 +8,11 @@ The key comes only from the explicit env file, stays in this outer process,
 and never reaches the tool worker, whose environment is PATH and LANG only
 (runner.ticket_slice.worker).
 
+It needs no paid-run record, but ``runner.paid_run`` still refuses changed hashed
+code, packages ``uv.lock`` doesn't pin, and anything past ``runner.spend_ledger``'s
+limits, and each smoke counts in that ledger. It exits nonzero unless a
+``model_response`` came back, because nothing less shows the provider accepts the request.
+
 Usage: python -m runner.live_smoke [--provider anthropic|openai] [--env-file .env] [--model ID] [--out DIR]
 """
 from __future__ import annotations
@@ -21,7 +26,7 @@ from typing import Optional
 
 from agent import anthropic_adapter, openai_adapter
 from runner import mock_slice as base
-from runner import ticket_slice
+from runner import paid_run, ticket_slice
 from runner.provider_config import load_api_key
 
 DEFAULT_PROVIDER = "anthropic"
@@ -60,15 +65,23 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--provider", choices=sorted(PROVIDERS), default=DEFAULT_PROVIDER)
     parser.add_argument("--env-file", type=Path, default=base.REPO_ROOT / ".env")
-    parser.add_argument("--model", default=None, help="defaults to the provider's decision 0010 model")
+    parser.add_argument("--model", default=None, help="must be the provider's decision 0010 model, the default")
     parser.add_argument("--out", type=Path, default=None, help="new output directory")
     args = parser.parse_args(argv)
     provider = PROVIDERS[args.provider]
-    model = args.model or provider["model"]
+    model = provider["model"]
 
     reason = refusal()
     if reason:
         print(reason, file=sys.stderr)
+        return 2
+    if args.model not in (None, model):
+        print(f"refusing: a {args.provider} pilot runs only its decision 0010 model, {model}", file=sys.stderr)
+        return 2
+    # Before the key is read: the smoke needs no paid-run record, but the rest of the gate still applies.
+    reason = paid_run.paid_run_refusal(live_smoke=True)
+    if reason:
+        print(f"refusing: {reason}", file=sys.stderr)
         return 2
     try:
         key = load_api_key(args.env_file, provider["key"])
@@ -115,6 +128,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         elif any(n is None for n in prompts):
             print(f"warning: a prompt's token count is unknown, so whether it crossed {step:,} tokens is unknown")
     print(f"Compare the token totals with {provider['usage_page']} (decision 0010, Verification).")
+    if not responses:
+        print("no model_response came back, so this smoke doesn't show the provider accepts the request", file=sys.stderr)
+        return 1
     return 0
 
 

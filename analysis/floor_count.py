@@ -32,6 +32,7 @@ from typing import Any, Iterable, Mapping, Optional, Sequence
 
 from jsonschema import ValidationError
 
+from runner import paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
 
@@ -212,7 +213,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--out", type=Path, help="write the report here instead of printing it")
     args = parser.parse_args(argv)
     try:
-        report = json.dumps(floor_count(load_run(args.run_dir)), indent=2, sort_keys=True) + "\n"
+        code_check = paid_run.check_code_matches_run(args.run_dir)
+        print(f"floor-count: {code_check}", file=sys.stderr)
+        report = json.dumps({**floor_count(load_run(args.run_dir)), "code_check": code_check}, indent=2, sort_keys=True) + "\n"
     except (ValueError, OSError, ValidationError) as error:
         print(f"floor-count: {error}", file=sys.stderr)
         return 1

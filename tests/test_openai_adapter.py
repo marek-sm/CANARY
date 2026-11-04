@@ -25,9 +25,10 @@ def stubbed_http_stands_in_for_the_paid_run_record(monkeypatch):
     call can happen. They stand in for the project lead's paid-run record, which
     every real provider otherwise needs (decision 0023; tests/test_tool_sandbox.py
     tests the gate itself)."""
-    from runner import paid_run
+    from runner import paid_run, spend_ledger
 
     monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **kwargs: None)
+    spend_ledger.init()  # a stand-in home, from tests/conftest.py
 
 SENTINEL = "sk-test-sentinel-credential"
 MODEL = "gpt-6-luna"
