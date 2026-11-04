@@ -5,6 +5,8 @@ import json
 
 import pytest
 
+from analysis.floor_count import CONFIGURATIONS
+
 from analysis import price_bound
 from analysis import gate2_budget
 from analysis.gate2_budget import TIERS, evaluate_budget, trial_cost_usd
@@ -187,3 +189,31 @@ def test_a_summed_trial_under_100000_per_attempt_stays_at_the_lower_rates():
     attempts = [{"event_type": "provider_attempt", "payload": {
         "outcome": "model_response", "usage": {"input_tokens": 75_000, "output_tokens": 100}}} for _ in range(2)]
     assert trial_cost_usd(record, attempts) == pytest.approx(150_000 * 0.10e-6 + 200 * 0.50e-6)
+
+
+def test_the_cli_refuses_a_grid_with_a_missing_or_repeated_cell(tmp_path, monkeypatch, capsys):
+    """SPEC.md Section 9 evaluates the equation after the complete 90-trial grid."""
+    grid = list(_live_grid())
+    assert len(grid) == 90
+    arguments = ["run", "--remaining-balance-usd", "100", "--development-trials-used", "90"]
+    for broken, reason in ((grid[:-1], "missing"), (grid + [grid[0]], "repeated")):
+        monkeypatch.setattr(gate2_budget, "load_run", lambda _path, broken=broken: list(broken))
+        assert gate2_budget.main(arguments) != 0
+        assert reason in capsys.readouterr().err
+    monkeypatch.setattr(gate2_budget, "load_run", lambda _path: list(grid))
+    assert gate2_budget.main(arguments) == 0
+
+
+def test_a_lower_tier_needs_only_its_own_configurations_cells():
+    grid = [t for t in _live_grid() if t[0]["configuration"] == "D0_BASELINE"]
+    gate2_budget.check_complete_grid(grid, ("D0_BASELINE",))
+    with pytest.raises(ValueError, match="missing"):
+        gate2_budget.check_complete_grid(grid, ("D0_BASELINE", "D1_POLICY_GATE"))
+
+
+def test_a_record_outside_the_grid_is_refused():
+    grid = list(_live_grid())
+    stray = copy.deepcopy(grid[0][0])
+    stray["base_case_id"] = "dev-999"
+    with pytest.raises(ValueError, match="outside the development grid"):
+        gate2_budget.check_complete_grid(grid + [(stray, grid[0][1])], CONFIGURATIONS)

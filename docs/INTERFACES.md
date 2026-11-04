@@ -175,6 +175,7 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
 provider's first call, in `execute.execute_trial`, `ticket_slice.run`, and
 `mock_slice.run_mock_trial`, and raises `PaidRunRefused` unless `CI` and every
 `ANTHROPIC_*` and `OPENAI_*` variable are absent from the environment, the
+provider declares decision 0026 item 3's one-call setting, the
 sandbox is available, `protocol/paid_run_record.json` validates against the
 `paid_run_record` schema, the running sandbox equals the record's, no hashed file
 has uncommitted or untracked changes, and every hash matches. The hashed files are the

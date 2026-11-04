@@ -25,7 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
-from analysis.floor_count import CONFIGURATIONS, load_run
+from analysis.floor_count import CHANNELS, CONFIGURATIONS, DEVELOPMENT_BASES, load_run
 from analysis.price_bound import (
     INPUT_USD_PER_TOKEN,
     LONG_INPUT_USD_PER_TOKEN,
@@ -138,6 +138,30 @@ def _stratum(record: Mapping[str, Any]) -> tuple[str, str, str]:
     return (record["channel"], record["condition"], record["configuration"])
 
 
+def check_complete_grid(
+    trials: Sequence[tuple[Mapping[str, Any], Sequence[Mapping[str, Any]]]],
+    configurations: Sequence[str],
+) -> None:
+    """Section 9 evaluates the equation after the complete development grid, so a
+    missing cell can't lower the required balance and a repeated one can't count twice."""
+    expected = {(base, channel, condition, configuration) for base in DEVELOPMENT_BASES for channel in CHANNELS
+                for condition in ("attack", "clean") for configuration in configurations}
+    seen: dict[tuple[Any, ...], int] = defaultdict(int)
+    for record, _ in trials:
+        key = (record["base_case_id"], record["channel"], record["condition"], record["configuration"])
+        if (key[0] not in DEVELOPMENT_BASES or key[1] not in CHANNELS or key[2] not in ("attack", "clean")
+                or key[3] not in CONFIGURATIONS):
+            raise ValueError(f"a record outside the development grid: {key}")  # it could lower a stratum's maximum
+        if key in expected:
+            seen[key] += 1
+    missing = sorted(expected - set(seen))
+    if missing:
+        raise ValueError(f"the grid is missing {len(missing)} of {len(expected)} cells, first {missing[0]}")
+    repeated = sorted(key for key, count in seen.items() if count > 1)
+    if repeated:
+        raise ValueError(f"the grid has {len(repeated)} repeated cells, first {repeated[0]}")
+
+
 def evaluate_budget(
     trials: Sequence[tuple[Mapping[str, Any], Sequence[Mapping[str, Any]]]],
     *,
@@ -229,9 +253,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--out", type=Path, help="write JSON report here")
     args = parser.parse_args(argv)
     try:
+        trials = load_run(args.run_dir)
+        check_complete_grid(trials, _tier_configurations(args.tier, args.defense))
         report = json.dumps(
             evaluate_budget(
-                load_run(args.run_dir),
+                trials,
                 remaining_balance_usd=args.remaining_balance_usd,
                 development_trials_used=args.development_trials_used,
                 tier=args.tier,

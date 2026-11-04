@@ -661,3 +661,23 @@ def test_the_record_refuses_a_preflight_that_stopped_unrecorded(preflight, tmp_p
     provenance.write_text(provenance.read_text().splitlines()[0] + "\n")  # killed before its stop line
     with pytest.raises(paid_run.PaidRunRefused, match="without recording"):
         record(mock)
+
+
+def test_a_paid_provider_must_ask_for_one_tool_call_per_reply(monkeypatch):
+    """Decision 0026 item 3 is enforced where paid runs open, not only recorded."""
+    monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **kwargs: None)
+    class Undeclared:
+        pass
+    class Parallel:
+        request_settings = {"tool_choice": {"type": "auto", "disable_parallel_tool_use": False}}
+    class Falsy:
+        request_settings = {"parallel_tool_calls": 0}
+    for provider in (Undeclared(), Parallel(), Falsy()):
+        for live_smoke in (False, True):
+            with pytest.raises(paid_run.PaidRunRefused, match="one tool call"):
+                paid_run.require_paid_run(provider, live_smoke=live_smoke)
+    from agent.anthropic_adapter import AnthropicMessagesAdapter
+    from agent.openai_adapter import OpenAIChatAdapter
+    for adapter in (AnthropicMessagesAdapter, OpenAIChatAdapter):
+        assert adapter.request_settings in paid_run.ONE_CALL_SETTINGS
+        paid_run.require_paid_run(adapter.__new__(adapter), live_smoke=True)

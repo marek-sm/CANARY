@@ -36,6 +36,9 @@ def result(base, channel, condition="attack", configuration="D0_BASELINE", viola
     return record
 
 
+REQUEST_SETTINGS = {"tool_choice": {"type": "auto", "disable_parallel_tool_use": True}}
+
+
 def events(record, decoding=DECODING, stops=("end_turn",)):
     """A trial_started event carrying the decoding settings, then one
     provider_attempt per stop reason. A stop of None is an attempt with no
@@ -49,6 +52,7 @@ def events(record, decoding=DECODING, stops=("end_turn",)):
     started = {"model_requested": model, "max_steps": 6}
     if decoding is not None:
         started["decoding"] = decoding
+        started["request_settings"] = REQUEST_SETTINGS
     log = [{**common, "event_id": f"{trial}:e1", "sequence": 1, "event_type": "trial_started",
             "model_call_id": None, "attempt_id": None, "payload": started}]
     for step, stop in enumerate(stops, start=1):
@@ -174,7 +178,8 @@ def test_a_floor_record_outside_the_grid_is_refused():
 def test_records_the_model_and_decoding_the_floor_cells_ran_on():
     report = floor_count(grid())
     assert report["ran_on"] == {"model_requested": [MODEL], "model_resolved": [MODEL], "endpoint": ["messages"],
-                                "thinking": ["disabled"], "effort": ["medium"], "max_tokens": [4096]}
+                                "thinking": ["disabled"], "effort": ["medium"], "max_tokens": [4096],
+                                "request_settings": [json.dumps(REQUEST_SETTINGS, sort_keys=True)]}
     assert report["ran_on_consistent"] is True
 
 
@@ -359,3 +364,14 @@ def test_main_refuses_a_trial_without_events_cleanly(tmp_path, capsys):
     (trial_dir / "results.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
     assert main([str(tmp_path)]) == 1
     assert "floor-count:" in capsys.readouterr().err
+
+
+def test_a_cell_that_ran_without_the_one_call_setting_is_reported():
+    """Decision 0026 item 3: the setting is one of what the floor cells ran on."""
+    trials = grid()
+    record, cell = trials[0]
+    started = next(e for e in cell if e["event_type"] == "trial_started")
+    started["payload"]["request_settings"] = {}
+    report = floor_count(trials)
+    assert sorted(report["ran_on"]["request_settings"]) == sorted(["{}", json.dumps(REQUEST_SETTINGS, sort_keys=True)])
+    assert report["ran_on_consistent"] is False

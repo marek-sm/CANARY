@@ -1,6 +1,6 @@
 # Protocol Deviations
 
-Two protocol deviations are recorded, DEV-0001 and DEV-0002, below the entry template.
+Three protocol deviations are recorded, DEV-0001, DEV-0002, and DEV-0003, below the entry template.
 
 This append-only log is used only after a scientific or claim-bearing artifact has frozen. Open each entry in a pull request before any fix merges or any rerun starts, and merge it complete with the repair (`SPEC.md` Section 11). Pre-freeze design decisions belong in `docs/decisions/`; current slice state belongs in `TASKS.md`, and the dated weekly rollup belongs in `STATUS.md`.
 
@@ -120,3 +120,38 @@ The superseded text is `SPEC.md` v1.13.0 Section 7 in Git history, pinned at SHA
 ### Claim impact
 
 None. No table, figure, README value, demo aggregate, or report sentence exists that depends on these formulas.
+
+## DEV-0003 — Sections 7 and 9 left "syntactically valid" undefined for one call and for a reply
+
+- Date detected: 2026-10-17
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.17.0 (Sections 7 and 9 frozen at the measurement-contract lock under decision 0009)
+- New protocol version: `SPEC.md` v1.18.0
+- Prior experiment/validation ID: None. No experiment or validation ID exists before Gate 3.
+- Replacement experiment/validation ID: Not applicable (Section 11 step 3): no experiment or validation ID exists to replace.
+- Affected cells/checks/artifacts: the malformed-call paragraph in `SPEC.md` Section 7, the content-filter sentence in Section 9, the Section 14 limitation, the version header, the Section 7 and Failure and retry policy pins in `tests/test_contract_lock.py`, and the reply-rule tests in `tests/test_ticket_slice.py`
+- Outcome visibility at decision time: None. No evaluation candidate is on `main`, no paid grid call has run, and no development or evaluation outcome exists.
+
+### Defect
+
+Section 7 records "every syntactically valid structured request" and never defines the term. Section 9 records a content-filter response's call when the reply "carries exactly one syntactically valid tool call". Read literally, a filtered reply with one valid and one invalid call carries exactly one valid call, yet the loop records none, and two valid calls in one reply are each valid, yet the loop records neither. Found by the October 17 read-only audit of `main` at `31b9399` (findings A-01 and B-03), and left open by decision 0020.
+
+### Scope determination
+
+The change is confined to the text. It states the reading the loop, the scorer, `docs/DEFENSES_AND_POLICY.md`, and decision 0008 already apply. The loop's behavior, the scorer, the gate, the audit, and the locked schemas don't change, and no stored value changes.
+
+### Required response
+
+Decision 0026 defines the term and the reply rule in Section 7, conforms the Section 9 sentence, and re-pins both, and `SPEC.md` moves to v1.18.0. No symmetric rerun or validation rerun is required (Section 11 step 5), because no evaluation or validation run exists. This entry merges before the first paid grid call, so the change stays outcome-blind.
+
+### Preserved evidence
+
+The superseded text is `SPEC.md` v1.17.0 in Git history, with Section 7 pinned at SHA-256 `fd48f5ffb24bf9a860721939e086d3950b0a02f3f44fb322b4fa19fa1fd3d795` and the Failure and retry policy at `1bdd4e5896589586edab78f1d3dd539d0ea8161600dc54a13a9bc84de3aa680b`.
+
+### Verification
+
+`tests/test_ticket_slice.py` checks that a multi-call reply and a valid call under `end_turn` end as malformed and record nothing, and that `SPEC.md` states the rule; the `SPEC.md` check failed before the edit. `tests/test_task_suite.py` already covers a filtered reply with several calls. `tests/test_contract_lock.py` pins the new text. CI runs the full no-credit suite on the pull request.
+
+### Claim impact
+
+None. No table, figure, README value, demo aggregate, or report sentence exists that depends on this text. Section 14 gains the limitation that decision 0026 states.

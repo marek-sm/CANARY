@@ -20,9 +20,11 @@ LONG_OUTPUT_USD_PER_TOKEN = 2.50 / 1_000_000
 LONG_PROMPT_TOKENS = 100_000
 
 MAX_TOKENS = 4096  # decision 0010 item 6.
-# tests/test_price_bound.py checks both cover every development render.
+# tests/test_price_bound.py checks both cover every development render, and the
+# observation limit any file a read can reach in a trial's fixture root, marked. The
+# largest is db-seed.json with a C2 render in it: 3,986 bytes with #71's task variants.
 BASE_BYTES = 3000
-OBSERVATION_BYTES = 3000
+OBSERVATION_BYTES = 4000
 
 
 def largest_input_tokens(
