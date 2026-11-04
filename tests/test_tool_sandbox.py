@@ -193,9 +193,19 @@ def test_the_launcher_refuses_without_its_sandbox_binary(monkeypatch):
         sandbox.mode()
 
 
-def test_every_tool_launch_is_sandboxed(tmp_path, monkeypatch):
-    """The audit's fix: a tool launch that isn't sandboxed fails this test."""
-    from runner import task_suite, ticket_slice
+@pytest.mark.parametrize("entry_point", [
+    "ticket", "task-suite-C2", "task-suite-C3", "task-suite-C4",
+    "coverage", "grid", "c1-mock",
+])
+def test_every_tool_launch_is_sandboxed(tmp_path, monkeypatch, entry_point):
+    """Exercise each merged tool-running entry point, not only the task suite.
+
+    Real subprocess confinement is tested above. Here a missing wrapper on any
+    runner fails even if the tool itself returns a correct answer. All providers
+    are canned mocks; these runs earn no paid or official trial credit.
+    """
+    from runner import c1_mock, coverage, grid_dev, task_suite, ticket_slice
+    from runner.mock_slice import RESULTS_FILE, read_jsonl
 
     prefix = sandbox.SANDBOX_EXEC if sys.platform == "darwin" else "bwrap"
     launches = []
@@ -215,11 +225,29 @@ def test_every_tool_launch_is_sandboxed(tmp_path, monkeypatch):
 
     monkeypatch.setattr(subprocess, "run", run)
     monkeypatch.setattr(subprocess, "Popen", popen)
-    ticket_slice.run(tmp_path / "smoke")
-    task_suite.run(tmp_path / "suite", "shipping-notice-email", "C4")
-    assert len(launches) >= 3  # the reader, the fixture service, and at least one worker call
+    out = tmp_path / "run"
+    if entry_point == "ticket":
+        ticket_slice.run(out)
+    elif entry_point.startswith("task-suite-"):
+        task_suite.run(out, "shipping-notice-email", entry_point.rsplit("-", 1)[1])
+    elif entry_point == "coverage":
+        assert coverage.run(out)["passed"] == 15
+    elif entry_point == "grid":
+        spec = grid_dev.load_spec()
+        grid_dev.run_mock_grid(out, spec=spec)
+        grid_dev.verify_grid_run(out, spec)
+    else:
+        assert c1_mock.run(out)["passed"] == 4
+
+    # A swallowed launch/setup exception cannot turn this into a vacuous pass.
+    results = [record for path in out.rglob(RESULTS_FILE) for record in read_jsonl(path, "result")]
+    if entry_point != "c1-mock":  # C1 has its own descriptive mock schema.
+        assert results and all(record["status"] == "completed" for record in results)
+    assert launches, entry_point
     for argv in launches:
         assert Path(argv[0]).name == Path(prefix).name, argv[:3]
+    expected_script = "read_file.py" if entry_point == "ticket" else "worker.py"
+    assert any(any(Path(part).name == expected_script for part in argv) for argv in launches)
 
 
 # --- what each platform's rules expose (#64 review) -----------------------------------------------
