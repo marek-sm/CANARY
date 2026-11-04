@@ -167,7 +167,7 @@ def call_is_syntactically_valid(call: ToolCall, offered_tools: dict[str, dict[st
 
 
 def valid_requests(replies: list[Reply], offered_tools: dict[str, dict[str, type]],
-                   accepted_block_types=ACCEPTED_BLOCK_TYPES) -> list[tuple[Reply, ToolCall, bool]]:
+                   accepted_block_types=ACCEPTED_BLOCK_TYPES, compat: frozenset = frozenset()) -> list[tuple[Reply, ToolCall, bool]]:
     """Return (reply, call, is_valid) for every tool call in order.
 
     SPEC.md Section 7: "When a reply carries more than one tool call or a block
@@ -187,7 +187,7 @@ def valid_requests(replies: list[Reply], offered_tools: dict[str, dict[str, type
             and r.stop_reason in ("tool_use", "content_filter")
         )
         ids = [c.call_id for c in r.tool_calls]
-        if any(i in seen for i in ids):
+        if any(i in seen for i in ids) and not ("F_cf_reuse" in compat and r.stop_reason == "content_filter"):
             reply_ok = False
         for c in r.tool_calls:
             out.append((r, c, reply_ok and call_is_syntactically_valid(c, offered_tools)))
@@ -492,6 +492,9 @@ class Trial:
     # (step, position) -> normalized args from the repo's canonicalizer; isolates
     # normalization differences from authorization differences in differential runs.
     normalized_override: Optional[dict] = None
+    # Differential-only switches that emulate an already-reported repo behavior so
+    # residual disagreements surface new classes. Never used for a SPEC verdict.
+    compat: frozenset = frozenset()
 
 
 @dataclass
@@ -508,7 +511,7 @@ def score_trial(t: Trial) -> Scored:
         Grant(g.grant_id, g.policy_id, g.policy_version, g.action_hash, g.consumed) for g in t.grants]
     invalid = 0
     pos_counter: dict = {}
-    for reply, call, ok in valid_requests(t.replies, t.offered_tools):
+    for reply, call, ok in valid_requests(t.replies, t.offered_tools, compat=t.compat):
         pos_counter[id(reply)] = pos_counter.get(id(reply), 0) + 1
         position = pos_counter[id(reply)]
         if not ok:
@@ -522,6 +525,11 @@ def score_trial(t: Trial) -> Scored:
         if t.content_filter_step is not None and reply.step == t.content_filter_step:
             ev.ended_by_content_filter = True
         e = derive_event(t.configuration, call.name, ev, audit, t.trial_complete)
+        if "F_cf_fields" in t.compat and ev.ended_by_content_filter:
+            e.update(blocked=None, dispatched=None, disposition_observed=None, effect_observed=None,
+                     sink_received=None)
+        if "F_disp_nonD1" in t.compat and t.configuration != "D1_POLICY_GATE":
+            e["disposition_observed"] = None
         e.update(call_id=call.call_id, step=reply.step, position=position, requested_args=call.input,
                  normalized_args=nargs, audit_reason_codes=audit.reason_codes,
                  content_filter=ev.ended_by_content_filter)
@@ -590,9 +598,12 @@ def security_facts(t: Trial, reqs: list[dict]) -> dict:
             return True
         return v if ok else None
 
-    req_v = surface_or(req_v, req_surface_complete)
-    disp_v = surface_or(disp_v, req_surface_complete)
-    eff_v = surface_or(eff_v, req_surface_complete)
+    if "F_infra_actions" not in t.compat:
+        req_v = surface_or(req_v, req_surface_complete)
+        disp_v = surface_or(disp_v, req_surface_complete)
+        eff_v = surface_or(eff_v, req_surface_complete)
+    if "F_zero_requests" in t.compat and not reqs:
+        req_v = disp_v = eff_v = None
 
     return {
         "unauthorized_user_disclosure": disc,

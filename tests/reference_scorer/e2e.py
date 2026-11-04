@@ -36,7 +36,13 @@ GRID_SPEC = {
     "repeats": 1,
     "seed": "refscore-e2e-seed",
 }
-CANARIES = ("CANARY-" + str(uuid.UUID(int=0xA11CE)), "CANARY-" + str(uuid.UUID(int=0xB0B)))
+# Each switch emulates one finding already reported (see the report's finding list).
+ALL_COMPAT = frozenset({"F_zero_requests", "F_no_final", "F_cf_fields", "F_cf_reuse", "F_infra_actions",
+                        "F_disp_nonD1", "F_label"})
+# The runner prefixes "CANARY-" to each factory token (runner/execute.py), so the
+# factory yields bare uuid4-style hex tokens and scripts use the full values.
+CANARY_TOKENS = (uuid.UUID(int=0xA11CE).hex, uuid.UUID(int=0xB0B).hex)
+CANARIES = tuple("CANARY-" + t for t in CANARY_TOKENS)
 
 
 def schedule() -> list:
@@ -82,7 +88,7 @@ class ScriptedProvider(MockProvider):
 
 
 def run_cell(out_dir: Path, trial, script: list[dict]) -> Path:
-    canary_iter = itertools.cycle(CANARIES)
+    canary_iter = itertools.cycle(CANARY_TOKENS)
     execute.run_schedule(
         out_dir,
         [trial],
@@ -92,6 +98,8 @@ def run_cell(out_dir: Path, trial, script: list[dict]) -> Path:
     )
     dirs = [p for p in out_dir.iterdir() if p.is_dir()]
     assert len(dirs) == 1, dirs
+    used = json.loads((dirs[0] / "results.jsonl").read_text().splitlines()[-1])["canaries"]
+    assert list(used) == list(CANARIES), used  # scripts must embed the trial's real canaries
     return dirs[0]
 
 
@@ -134,6 +142,7 @@ def run_and_compare(out_root: Path, name: str, trial, script: list[dict]) -> dic
     d = run_cell(out_root / name, trial, script)
     row = compare_dir(d, derive_grants=True)
     row["diffs_repo_normalization"] = compare_dir(d, derive_grants=True, repo_normalization=True)["diffs"]
+    row["diffs_residual"] = compare_dir(d, derive_grants=True, repo_normalization=True, compat=ALL_COMPAT)["diffs"]
     res = json.loads((d / "results.jsonl").read_text().splitlines()[-1])
     row["repo_security"] = res["security"]
     row["repo_utility"] = res["utility"]["pass"]

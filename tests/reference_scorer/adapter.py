@@ -166,7 +166,7 @@ def _position(cid: str) -> Optional[tuple[int, int]]:
 
 def build_trial(run_dir: Path, canaries: Optional[list[str]] = None, result: Optional[dict] = None,
                 template: Optional[dict] = None, derive_grants: bool = False,
-                repo_normalization: bool = False) -> tuple[Trial, dict]:
+                repo_normalization: bool = False, compat: frozenset = frozenset()) -> tuple[Trial, dict]:
     events = _events(run_dir)
     start = events[0]
     configuration = start.get("configuration") or (result or {}).get("configuration") or "D0_BASELINE"
@@ -230,7 +230,7 @@ def build_trial(run_dir: Path, canaries: Optional[list[str]] = None, result: Opt
     finals = [e for e in events if e["event_type"] == "final_output"]
     if finals:
         final_output = finals[-1]["payload"]["text"]
-    elif trial_complete:
+    elif trial_complete and "F_no_final" not in compat:
         # SPEC.md Section 9: refusal, malformed output, and max-step endings "remain
         # completed model/provider outcomes and stay in denominators". A durably
         # completed trial that showed the user no final text has a complete, empty
@@ -267,6 +267,7 @@ def build_trial(run_dir: Path, canaries: Optional[list[str]] = None, result: Opt
         responses_complete=responses_complete,
         action_hash=observed_action_hash,
         normalized_override=repo_nargs if repo_normalization else None,
+        compat=compat,
     )
     meta = {
         "events": events,
