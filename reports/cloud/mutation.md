@@ -118,7 +118,7 @@ My first constant run was discarded. Because the tool rewrites the source file f
 | `tools/sandbox.py` | 563 | 340 | 223 | 0 | 39.6 |
 | **total** | **5949** | **4653** | **1166** | **130** | **21.8** |
 
-No mutant timed out or was marked suspicious. The 130 "no tests" mutants are `runner/paid_run.py` `main` (99), which no test calls, `runner/mock_slice.py` `main` (30), which only a subprocess (`make trace`) calls, and mutmut can't see calls made in a subprocess, and one `defenses/datamarking.py` `handle_comment` mutant, because no test's HTML contains a comment.
+No mutant timed out or was marked suspicious. The 130 "no tests" mutants are `runner/paid_run.py` `main` (99), which no test calls, `runner/mock_slice.py` `main` (30), which no test calls (CI runs it as `make trace`), and one `defenses/datamarking.py` `handle_comment` mutant, because no test's HTML contains a comment.
 
 Only `runner/mock_slice.py`'s scoring functions are in scope there: `or3`, `and3`, `_authorized_false`, and `score_tool_events`. All 60 of their mutants were killed (8, 8, 7, and 37). The module total above covers the whole file, as mutmut mutates it.
 
@@ -261,7 +261,7 @@ These came up while reading the code for ranking. None has a test, and each is t
 ## What I didn't check
 
 - **The full tier 2.** Only the 48-mutant random sample and the 27 slow-covered finding representatives ran against the seven slow tests. The other non-killed mutants whose functions a slow test covers weren't individually confirmed; the sample bounds how many the slow tests would kill.
-- **Subprocess-only code.** mutmut's stats can't see calls in subprocesses. Each "no tests" mutant was either killed by a new test or is in a `main()` I list above. Tool processes themselves (`tools/worker.py`, `tools/no_exec.py`, `tools/fixture_http.py`) weren't mutation targets.
+- **Subprocess-only code.** mutmut's stats can't see calls in subprocesses, so a function reached only through a subprocess would show as "no tests" or be under-tested in tier 1. The 130 "no tests" mutants are listed above. The `paid_run` `main` ones are now mostly killed by new tests; the `mock_slice` `main` ones are not. Tool processes themselves (`tools/worker.py`, `tools/no_exec.py`, `tools/fixture_http.py`) weren't mutation targets.
 - **macOS.** I couldn't run `sandbox-exec`. The macOS tests pin the profile text and the branches with the platform stood in for; they don't show that the profile confines a process.
 - **Equivalence by hand.** I called mutants equivalent or low-impact by reading their diffs, not by proof. A reviewer may weigh some of them differently.
 - **The constant mutator** used targeted test selections, not the full suite, for its first pass (see its table for how survivors were confirmed).
