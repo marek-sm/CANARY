@@ -22,7 +22,8 @@ def test_the_macos_profile_denies_by_default_and_allows_only_its_named_rules(tmp
     # Kills x_macos_profile__mutmut_3..56: version and default-deny lines, the exec,
     # read, write, and socket rules, their separators, and the trailing newline.
     read, write, sock = str(tmp_path / "fixtures"), str(tmp_path / "state"), str(tmp_path / "sock" / "fixture.sock")
-    profile = sandbox.macos_profile(read=[read], write=[write], socket=sock, bind_socket=bind)
+    write2 = str(tmp_path / "state2")
+    profile = sandbox.macos_profile(read=[read], write=[write, write2], socket=sock, bind_socket=bind)
     programs, files, dirs, _ = sandbox._interpreter()
     lines = profile.split("\n")
     assert lines[:2] == ["(version 1)", "(deny default)"]
@@ -39,8 +40,15 @@ def test_the_macos_profile_denies_by_default_and_allows_only_its_named_rules(tmp
     assert ("literal", "/") in reads and ("literal", "/dev/null") in reads and ("literal", "/dev/urandom") in reads
     assert {p for kind, p in reads if kind == "literal"} == {"/", *programs, *files, "/dev/null", "/dev/urandom"}
     assert {p for kind, p in reads if kind == "subpath"} == {*dirs, str(sandbox.TOOLS), *sandbox.MACOS_SYSTEM_READS,
-                                                            read, write}
-    assert rules[3] == f'(allow file-write* (subpath "{write}") (literal "/dev/null"))'
+                                                            read, write, write2}
+    subpaths = [*dirs, str(sandbox.TOOLS), *sandbox.MACOS_SYSTEM_READS, read, write, write2]
+    assert rules[2] == (
+        '(allow file-read* (literal "/") '
+        + " ".join(f'(literal "{p}")' for p in [*programs, *files])
+        + " " + " ".join(f'(subpath "{p}")' for p in subpaths)
+        + ' (literal "/dev/null") (literal "/dev/urandom"))'
+    )
+    assert rules[3] == f'(allow file-write* (subpath "{write}") (subpath "{write2}") (literal "/dev/null"))'
     if bind:
         assert rules[4] == f'(allow network-bind (local unix-socket (path-literal "{sock}")))'
     else:
