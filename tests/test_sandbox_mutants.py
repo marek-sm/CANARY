@@ -71,3 +71,62 @@ def test_a_profile_path_with_a_quote_or_control_character_is_refused(bad):
     assert sandbox._quote("/tmp/plain path") == '"/tmp/plain path"'
     assert sandbox._quote("/tmp/XX") == '"/tmp/XX"'
 
+
+
+# --- describe(): what the paid-run record binds to ----------------------------
+
+
+@pytest.fixture
+def linux(monkeypatch):
+    monkeypatch.setattr(sandbox, "mode", lambda: "linux-bwrap")
+
+
+def test_describe_hashes_the_linux_rules_it_would_launch_with(linux, monkeypatch):
+    # Kills x_describe__mutmut_3/4/20..22 (the macOS profile hashed on Linux) and _24..40
+    # (other placeholder arguments): the record's sandbox string must change whenever
+    # the bwrap rules do, and must cover the socket mount.
+    calls = []
+    real = sandbox.linux_argv
+
+    def recording(**kwargs):
+        calls.append(kwargs)
+        return real(**kwargs)
+
+    monkeypatch.setattr(sandbox, "linux_argv", recording)
+    before = sandbox.describe()
+    assert calls == [{"read": ["<read>"], "write": ["<write>"], "cwd": "<cwd>", "socket": "<socket>"}]
+    assert before.startswith(f"linux-bwrap:{sandbox.VERSION}:") and len(before.split(":")[-1]) == 16
+    monkeypatch.setattr(sandbox, "linux_argv", lambda **kwargs: [*real(**kwargs), "--share-net"])
+    assert sandbox.describe() != before
+    monkeypatch.setattr(sandbox, "linux_argv", real)
+    monkeypatch.setattr(sandbox, "macos_profile", lambda **kwargs: "(allow default)\n")
+    assert sandbox.describe() == before
+
+
+def test_describe_hashes_the_exec_filter(linux, monkeypatch, tmp_path):
+    before = sandbox.describe()
+    changed = tmp_path / "no_exec.py"
+    changed.write_bytes(sandbox.NO_EXEC.read_bytes() + b"\n# changed\n")
+    monkeypatch.setattr(sandbox, "NO_EXEC", changed)
+    assert sandbox.describe() != before
+
+
+def test_describe_on_macos_hashes_the_worker_profile(monkeypatch):
+    # Kills x_describe__mutmut_5..19 (the macOS branch's placeholder arguments).
+    calls = []
+    monkeypatch.setattr(sandbox, "mode", lambda: "macos-sandbox-exec")
+    monkeypatch.setattr(sandbox, "macos_profile", lambda **kwargs: calls.append(kwargs) or "(version 1)\n")
+    assert sandbox.describe().startswith(f"macos-sandbox-exec:{sandbox.VERSION}:")
+    assert calls == [{"read": ["<read>"], "write": ["<write>"], "socket": "<socket>", "bind_socket": False}]
+
+
+def test_describe_doesnt_depend_on_where_the_checkout_or_bwrap_live(linux, monkeypatch, tmp_path):
+    # Kills x_describe__mutmut_45..50/63/64: tools/ and bwrap's own paths are replaced by a
+    # placeholder, so a mock grid in one checkout and the paid run from a clean checkout
+    # of the same commit agree.
+    before = sandbox.describe()
+    monkeypatch.setattr(sandbox, "TOOLS", tmp_path / "elsewhere" / "tools")
+    real_which = sandbox.shutil.which
+    monkeypatch.setattr(sandbox.shutil, "which",
+                        lambda name, *a, **k: str(tmp_path / "bin" / "bwrap") if name == "bwrap" else real_which(name))
+    assert sandbox.describe() == before
