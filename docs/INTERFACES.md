@@ -230,6 +230,18 @@ The locked schema's `split` is only `development` or `evaluation`, so rehearsal 
 trials stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a
 free string there. A run can't be resumed under another split.
 
+[`runner/sweep.py`](../runner/sweep.py) is that sweep's entry point: `python -m runner.sweep
+live --spec SPEC.json --protocol-version V` runs a committed schedule spec through
+`run_schedule` with `split="evaluation"`, tool-result delivery, and the real adapter, on
+`corpus/evaluation` unless `--corpus-root` names another, writing under the ignored
+`results/raw/sweep/`. It refuses, before any key is read, without `CANARY_PAID_RUN_ACK=1`,
+a protocol version, or a frozen `protocol_sentinel`, on any base whose `split` isn't
+`evaluation`, on an output path Git could take, and wherever `paid_run_refusal` does.
+`python -m runner.sweep verify RUN` checks completeness, schema, and that every stored
+result recomputes from its events, and prints counts only, never an outcome aggregate.
+`execute.check_stored_run` reads a run's split from its mode file and recomputes each
+result under it.
+
 `build_record` refuses unless every invocation of the mock grid ran this checkout's
 hashed code, clean, under this environment, through tool-result delivery, on
 `corpus/development` and the committed spec, with each start matched by a stop, and
@@ -247,6 +259,11 @@ python -m runner.paid_run record results/development/grid-mock --delivery PR --s
 git add protocol/paid_run_record.json && git commit
 python -m runner.paid_run check
 ```
+
+`python -m runner.grid_dev live`, `python -m runner.coverage --live`, and `python -m
+runner.sweep live` also need `CANARY_PAID_RUN_ACK=1` in the environment, the project
+lead's acknowledgement that the paid-run condition holds; each refuses without it,
+before any key is read. The live smoke doesn't.
 
 Delete any ignored leftover the gate names under a hashed directory by hand, such as a
 `.sqlite`. Never run `git clean` over the whole checkout: it would delete `.env` and `results/`.
