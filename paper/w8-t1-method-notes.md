@@ -1,7 +1,8 @@
 # W8-T1 draft agent, tool, task, and utility notes
 
 Draft input for paper Sections 6, 9, and 10, based on the merged W7-T1 and
-W7-T3 implementations and decision 0023's sandbox. These are implementation
+W7-T3 implementations, decision 0023's sandbox, and decision 0028 on main
+`103e173` (including #76). These are implementation
 notes for the designated paper leads, supplied through this pull request.
 They are not frozen methods or empirical results. The project lead and paper
 leads retain scientific wording and manuscript ownership.
@@ -25,6 +26,15 @@ have separate meanings under [SPEC.md Section 7](../SPEC.md#7-deterministic-orac
 An unknown observation stays null. Correct task completion does not erase an
 unrelated security violation.
 
+[Decision 0028](../docs/decisions/0028-restore-strength.md) distinguishes the
+security disclosure surface from the utility answer: disclosure scans the last
+reply together with consecutive cut-off text-only replies immediately before
+it, while utility and `final_output` still use the last reply alone. The scan
+identity and whether it extends beyond `final_output` are stored. Complete
+request logs, infrastructure failures, filtered tool blocks, and malformed
+endings retain their separately defined Boolean-or-null rules; the
+[scoring-surface regressions](../tests/test_scoring_surfaces.py) exercise them.
+
 ## Tools and intrinsic confinement
 
 | Tool | Intrinsic capability boundary | Implementation and negative evidence |
@@ -44,7 +54,9 @@ it does not depend on a defense authorizing a request.
 
 [Decision 0023](../docs/decisions/0023-tool-sandbox.md) supplies the sandbox and
 the required CI proof. W8-T1 keeps that proof green and extends its launch
-coverage. See the [proof and reproduction map](../docs/W8_T1_CI_PROOF.md).
+coverage. Decision 0028 requires T1's recheck of the last sandbox fix; the
+[proof and reproduction map](../docs/W8_T1_CI_PROOF.md) separates the engineering
+recheck, Linux/macOS runtime evidence, and pending human review.
 
 ## Tasks, fixtures, and deterministic utility
 
@@ -72,12 +84,40 @@ through the durable executor and native tools. The
 The [development grid](../runner/grid_dev.py) crosses the five development
 bases, three indirect channels, attack/clean, and all three configurations.
 Its mock provider validates plumbing and evidence, not model behavior.
+The merged coverage executor also has a gated live path and a read-only
+`--verify` path. No live path was exercised for these notes. W7-T1 and W7-T3
+remain incomplete until their paid evidence merges, even though their code
+unlocked this tier-independent W8 work.
 
 The four [C1 control definitions](../corpus/c1_controls) place source-faithful
 hostile text in a trusted user prompt, in decision 0018 order. Their
 [mock executor](../runner/c1_mock.py) uses a separate descriptive format,
 retains null authorization, and excludes them from indirect estimates.
 It is not an official C1 executor or a live positive-control result.
+
+## Provenance, spend, and raw evidence
+
+The [paid-run gate](../runner/paid_run.py) binds the clean checkout, mock-grid
+preflight, locked packages, scoring code, and reviewed record. The grid,
+record creation, its commit, and paid execution share one checkout; live
+adapter checks keep their record exception but still need clean hashed paths,
+locked packages, and the external [spend ledger and cap](../runner/spend_ledger.py).
+These are execution gates, not empirical evidence.
+
+Each invocation's `code_provenance.jsonl` records code/scoring identities and
+OS build, Python build, SQLite version, lock identity, and sandbox fingerprint.
+The [grid verifier](../runner/grid_dev.py) and
+[coverage verifier](../runner/coverage.py) recompute stored results from durable
+events and check supporting execution evidence. The
+[raw manifest](../runner/raw_manifest.py) anchors relative raw-file paths and
+hashes without publishing provider bodies, canaries, or host paths. Its
+published identity is necessary: internally consistent edits made before that
+anchor cannot be ruled out by a later digest alone.
+
+Raw records stay outside Git with controlled access. The lead owns paid calls,
+Console reconciliation, and the November 8 environment tripwire. The host
+sweep remains the default until the lead's required pinned-container checks
+and superseding record exist. Advisory macOS CI proves GitHub's image only.
 
 ## Evidence and remaining acceptance work
 
@@ -93,12 +133,20 @@ checks that paper leads can inspect are:
 - [Delivery tests](../tests/test_delivery.py) and
   [grid defense tests](../tests/test_grid_dev_defenses.py), keeping delivery,
   enforcement, marking, and recorded audit evidence distinct.
+- [Paid-run gate tests](../tests/test_paid_run_gate.py),
+  [stored-evidence verification](../tests/test_verify_evidence.py), and
+  [spend-ledger tests](../tests/test_spend_ledger.py), using synthetic accounts,
+  records, and providers. They do not initialize or spend against the lead's ledger.
 
 **Limitation for the paper:** canned mock outputs establish local wiring and
 deterministic scoring only. They cannot establish model resistance, defense
 efficacy, the adequacy of the task/corpus sample, or live-model readiness.
 The sandbox proof concerns the supported host configurations under decision
 0023; it is not a proof about arbitrary operating systems or a public service.
+Decision 0028 also preserves a measurement limit: malformed endings can leave
+security endpoints unknown, and the one-tool-call-per-reply restriction
+remains. The lead's forthcoming count-only diagnostics quantify those gaps;
+these notes neither supply them nor change endpoint definitions.
 
 Before the whole W8-T1 slice is complete: inspect the merged paid grid/smoke
 summary and authorized raw evidence, resolve any task/oracle defects, incorporate

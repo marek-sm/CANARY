@@ -344,7 +344,9 @@ Dates from [decision 0021](docs/decisions/0021-two-week-shift.md), which shifts 
 **W8-T1 progress, November 4:** #63 and #62 are merged. The tier-independent
 [CI-proof maintenance](docs/W8_T1_CI_PROOF.md) and
 [draft agent/tool/task/utility notes](paper/w8-t1-method-notes.md) are in progress;
-the expanded sandbox suite passes locally on macOS. The paid grid/smoke summary
+the proof and notes are reconciled with decision 0028 and current main. Fresh
+local validation and platform-specific CI evidence are recorded in the draft PR;
+the sandbox engineering recheck and human-attestation boundary are explicit. The paid grid/smoke summary
 has not merged, so its 24-hour PR trigger has not started. Paid-evidence defect
 review, the reviewed task variants, lead readiness/tier inputs, and the component
 freeze remain pending. This does not mark the whole slice complete or frozen.
