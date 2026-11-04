@@ -1,0 +1,435 @@
+{"file": "runner/mock_slice.py", "line": 34, "mutant": "SCHEMA_DIR line 34: 'schemas' -> 'XX'+...", "status": "killed", "seconds": 1.1}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: drop element 0 ('dev-001')", "status": "killed", "seconds": 3.2}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: drop element 0 ('read_file')", "status": "killed", "seconds": 4.2}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: drop element 0 ('read_file')", "status": "killed", "seconds": 5.9}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: drop element 1 ('dev-002')", "status": "killed", "seconds": 2.7}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: drop element 1 ('query_db')", "status": "killed", "seconds": 3.3}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: drop element 2 ('dev-003')", "status": "killed", "seconds": 2.7}
+{"file": "runner/mock_slice.py", "line": 35, "mutant": "DEFAULT_OUT_ROOT line 35: 'mock' -> 'XX'+...", "status": "survived", "seconds": 7.9}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: drop element 2 ('fetch_url')", "status": "killed", "seconds": 3.4}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: drop element 3 ('dev-004')", "status": "killed", "seconds": 2.8}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: drop element 1 ('query_db')", "status": "killed", "seconds": 5.7}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: drop element 4 ('dev-005')", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: drop element 3 ('send_email')", "status": "killed", "seconds": 3.5}
+{"file": "runner/mock_slice.py", "line": 35, "mutant": "DEFAULT_OUT_ROOT line 35: 'development' -> 'XX'+...", "status": "survived", "seconds": 7.4}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: 'dev-001' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: drop element 2 ('fetch_url')", "status": "killed", "seconds": 5.9}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: 'read_file' -> 'XX'+...", "status": "killed", "seconds": 3.6}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: 'dev-002' -> 'XX'+...", "status": "killed", "seconds": 2.6}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: 'query_db' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: 'dev-003' -> 'XX'+...", "status": "killed", "seconds": 2.6}
+{"file": "runner/mock_slice.py", "line": 35, "mutant": "DEFAULT_OUT_ROOT line 35: 'results' -> 'XX'+...", "status": "survived", "seconds": 7.3}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: 'fetch_url' -> 'XX'+...", "status": "killed", "seconds": 3.5}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: 'dev-004' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: drop element 3 ('send_email')", "status": "killed", "seconds": 9.7}
+{"file": "runner/mock_slice.py", "line": 37, "mutant": "EVENTS_FILE line 37: 'events.jsonl' -> 'XX'+...", "status": "killed", "seconds": 3.9}
+{"file": "analysis/floor_count.py", "line": 37, "mutant": "DEVELOPMENT_BASES line 37: 'dev-005' -> 'XX'+...", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 31, "mutant": "TOOLS line 31: 'send_email' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "analysis/floor_count.py", "line": 38, "mutant": "CHANNELS line 38: drop element 0 ('C2')", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop key 'read_file'", "status": "killed", "seconds": 3.1}
+{"file": "runner/mock_slice.py", "line": 38, "mutant": "RESULTS_FILE line 38: 'results.jsonl' -> 'XX'+...", "status": "killed", "seconds": 4.0}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: 'read_file' -> 'XX'+...", "status": "killed", "seconds": 5.7}
+{"file": "analysis/floor_count.py", "line": 38, "mutant": "CHANNELS line 38: drop element 1 ('C3')", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop key 'query_db'", "status": "killed", "seconds": 3.4}
+{"file": "analysis/floor_count.py", "line": 38, "mutant": "CHANNELS line 38: drop element 2 ('C4')", "status": "killed", "seconds": 2.6}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop key 'fetch_url'", "status": "killed", "seconds": 3.4}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: 'query_db' -> 'XX'+...", "status": "killed", "seconds": 5.8}
+{"file": "analysis/floor_count.py", "line": 38, "mutant": "CHANNELS line 38: 'C2' -> 'XX'+...", "status": "killed", "seconds": 2.8}
+{"file": "runner/mock_slice.py", "line": 40, "mutant": "EXPERIMENT_ID line 40: 'mock-dev' -> 'XX'+...", "status": "survived", "seconds": 7.6}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop key 'send_email'", "status": "killed", "seconds": 3.0}
+{"file": "analysis/floor_count.py", "line": 38, "mutant": "CHANNELS line 38: 'C3' -> 'XX'+...", "status": "killed", "seconds": 2.6}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'read_file' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: 'fetch_url' -> 'XX'+...", "status": "killed", "seconds": 5.5}
+{"file": "analysis/floor_count.py", "line": 38, "mutant": "CHANNELS line 38: 'C4' -> 'XX'+...", "status": "killed", "seconds": 2.6}
+{"file": "runner/mock_slice.py", "line": 41, "mutant": "BASE_CASE_ID line 41: 'mock-000' -> 'XX'+...", "status": "survived", "seconds": 7.5}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'query_db' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "runner/mock_slice.py", "line": 42, "mutant": "CONFIGURATION line 42: 'D0_BASELINE' -> 'XX'+...", "status": "killed", "seconds": 1.0}
+{"file": "runner/mock_slice.py", "line": 43, "mutant": "RUN_INDEX line 43: 1 -> 0", "status": "killed", "seconds": 0.9}
+{"file": "analysis/floor_count.py", "line": 39, "mutant": "CONFIGURATIONS line 39: drop element 0 ('D0_BASELINE')", "status": "killed", "seconds": 4.6}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'fetch_url' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'send_email' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "analysis/floor_count.py", "line": 39, "mutant": "CONFIGURATIONS line 39: drop element 1 ('D1_POLICY_GATE')", "status": "killed", "seconds": 4.5}
+{"file": "runner/delivery.py", "line": 71, "mutant": "GRID_TOOLS line 71: 'send_email' -> 'XX'+...", "status": "killed", "seconds": 10.0}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop element 0 ('query_id')", "status": "killed", "seconds": 3.1}
+{"file": "runner/mock_slice.py", "line": 43, "mutant": "RUN_INDEX line 43: 1 -> 2", "status": "survived", "seconds": 7.8}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: drop key 'fixture_api_key'", "status": "killed", "seconds": 2.8}
+{"file": "analysis/floor_count.py", "line": 39, "mutant": "CONFIGURATIONS line 39: drop element 2 ('D2_DATAMARKING')", "status": "killed", "seconds": 4.4}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop element 1 ('params')", "status": "killed", "seconds": 3.2}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: drop key 'customer_record'", "status": "killed", "seconds": 3.2}
+{"file": "analysis/floor_count.py", "line": 39, "mutant": "CONFIGURATIONS line 39: 'D0_BASELINE' -> 'XX'+...", "status": "killed", "seconds": 4.5}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop element 0 ('to')", "status": "killed", "seconds": 3.1}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: 'fixture_api_key' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "runner/mock_slice.py", "line": 50, "mutant": "SYSTEM_PROMPT line 50: 'You are a local test assistant. Answer t' -> 'XX'+...", "status": "survived", "seconds": 7.8}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop element 1 ('subject')", "status": "killed", "seconds": 3.1}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: 'customer_record' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "analysis/floor_count.py", "line": 39, "mutant": "CONFIGURATIONS line 39: 'D1_POLICY_GATE' -> 'XX'+...", "status": "killed", "seconds": 4.3}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: drop element 2 ('body')", "status": "killed", "seconds": 3.0}
+{"file": "analysis/floor_count.py", "line": 39, "mutant": "CONFIGURATIONS line 39: 'D2_DATAMARKING' -> 'XX'+...", "status": "killed", "seconds": 4.6}
+{"file": "runner/mock_slice.py", "line": 51, "mutant": "TASK_PROMPT line 51: 'Summarize the follow-ups in the fictiona' -> 'XX'+...", "status": "survived", "seconds": 7.2}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'path' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "analysis/floor_count.py", "line": 40, "mutant": "FLOOR_THRESHOLD line 40: 3 -> 0", "status": "killed", "seconds": 2.6}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'query_id' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "analysis/floor_count.py", "line": 40, "mutant": "FLOOR_THRESHOLD line 40: 3 -> 2", "status": "killed", "seconds": 2.5}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'params' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: drop key 'temperature'", "status": "survived", "seconds": 7.6}
+{"file": "analysis/floor_count.py", "line": 40, "mutant": "FLOOR_THRESHOLD line 40: 3 -> 4", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'url' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: drop element 0 ('model_requested')", "status": "killed", "seconds": 3.9}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'to' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: drop key 'top_p'", "status": "survived", "seconds": 7.4}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'subject' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: drop element 1 ('model_resolved')", "status": "killed", "seconds": 3.9}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: drop element 2 ('endpoint')", "status": "killed", "seconds": 2.5}
+{"file": "defenses/interfaces.py", "line": 34, "mutant": "TOOL_ARGUMENTS line 34: 'body' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 0 ('argument_missing')", "status": "killed", "seconds": 2.9}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 'temperature' -> 'XX'+...", "status": "survived", "seconds": 7.1}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: drop element 3 ('thinking')", "status": "killed", "seconds": 4.1}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 1 ('argument_unexpected')", "status": "killed", "seconds": 3.0}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: drop element 4 ('effort')", "status": "killed", "seconds": 4.2}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 2 ('argument_type_invalid')", "status": "killed", "seconds": 3.2}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 'top_p' -> 'XX'+...", "status": "survived", "seconds": 7.6}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: drop element 5 ('max_tokens')", "status": "killed", "seconds": 4.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 3 ('tool_not_permitted')", "status": "killed", "seconds": 3.1}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: 'model_requested' -> 'XX'+...", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 4 ('call_budget_exceeded')", "status": "killed", "seconds": 3.2}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: 'model_resolved' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 5 ('path_not_authorized')", "status": "killed", "seconds": 3.2}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 0 -> 1", "status": "survived", "seconds": 7.8}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: 'endpoint' -> 'XX'+...", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 6 ('query_not_authorized')", "status": "killed", "seconds": 3.4}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: 'thinking' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 7 ('query_param_not_authorized')", "status": "killed", "seconds": 3.1}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: 'effort' -> 'XX'+...", "status": "killed", "seconds": 2.8}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 0 -> -1", "status": "survived", "seconds": 8.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 8 ('url_not_authorized')", "status": "killed", "seconds": 3.3}
+{"file": "analysis/floor_count.py", "line": 41, "mutant": "SETTINGS line 41: 'max_tokens' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 9 ('recipient_not_authorized')", "status": "killed", "seconds": 3.0}
+{"file": "analysis/floor_count.py", "line": 44, "mutant": "OUTPUT_LIMIT_STOP line 44: 'max_tokens' -> 'XX'+...", "status": "killed", "seconds": 4.5}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 10 ('subject_field_not_authorized')", "status": "killed", "seconds": 3.2}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 1 -> 0", "status": "survived", "seconds": 7.4}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 11 ('body_field_not_authorized')", "status": "killed", "seconds": 3.0}
+{"file": "analysis/floor_count.py", "line": 48, "mutant": "NOT_APPLICABLE line 48: 'chat_completions' -> 'XX'+...", "status": "killed", "seconds": 6.7}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 12 ('grant_missing')", "status": "killed", "seconds": 3.2}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 1 -> 2", "status": "survived", "seconds": 7.0}
+{"file": "runner/mock_slice.py", "line": 54, "mutant": "COMPONENT_VERSIONS line 54: drop key 'runner'", "status": "killed", "seconds": 0.8}
+{"file": "runner/mock_slice.py", "line": 54, "mutant": "COMPONENT_VERSIONS line 54: drop key 'agent_loop'", "status": "killed", "seconds": 0.9}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: drop element 13 ('grant_already_consumed')", "status": "killed", "seconds": 2.8}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: 'config/app.env' -> 'XX'+...", "status": "survived", "seconds": 67.3}
+{"file": "runner/mock_slice.py", "line": 54, "mutant": "COMPONENT_VERSIONS line 54: drop key 'provider_adapter'", "status": "killed", "seconds": 2.6}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'argument_missing' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "runner/mock_slice.py", "line": 54, "mutant": "COMPONENT_VERSIONS line 54: 'runner' -> 'XX'+...", "status": "killed", "seconds": 0.8}
+{"file": "analysis/floor_count.py", "line": 48, "mutant": "NOT_APPLICABLE line 48: 'thinking' -> 'XX'+...", "status": "killed", "seconds": 6.9}
+{"file": "runner/mock_slice.py", "line": 54, "mutant": "COMPONENT_VERSIONS line 54: 'agent_loop' -> 'XX'+...", "status": "killed", "seconds": 0.8}
+{"file": "runner/mock_slice.py", "line": 54, "mutant": "COMPONENT_VERSIONS line 54: 'provider_adapter' -> 'XX'+...", "status": "killed", "seconds": 0.8}
+{"file": "tools/sandbox.py", "line": 52, "mutant": "SOCKET_NAME line 52: 'fixture.sock' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "tools/sandbox.py", "line": 54, "mutant": "NO_EXEC line 54: 'no_exec.py' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'argument_unexpected' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'argument_type_invalid' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "tools/sandbox.py", "line": 55, "mutant": "SANDBOX_EXEC line 55: '/usr/bin/sandbox-exec' -> 'XX'+...", "status": "survived", "seconds": 4.8}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 0 (Mapping[str, Any])", "status": "survived", "seconds": 7.2}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'tool_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'call_budget_exceeded' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: drop element 0 ('/System')", "status": "survived", "seconds": 5.4}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'path_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 1 (Sequence[Mapping[str, Any]])", "status": "survived", "seconds": 7.3}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 0 (str)", "status": "killed", "seconds": 0.6}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 1 (Any)", "status": "killed", "seconds": 0.6}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 0 (str)", "status": "killed", "seconds": 0.7}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 1 (Any)", "status": "killed", "seconds": 0.6}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: drop element 1 ('/usr/lib')", "status": "survived", "seconds": 5.0}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 0 (c)", "status": "killed", "seconds": 0.7}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'query_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.5}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 1 (k)", "status": "killed", "seconds": 0.7}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 2 (cfg)", "status": "killed", "seconds": 0.7}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 0 ('C2')", "status": "survived", "seconds": 1.4}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'query_param_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.4}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 1 ('C3')", "status": "survived", "seconds": 1.2}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 2 ('C4')", "status": "survived", "seconds": 1.1}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 0 ('attack')", "status": "survived", "seconds": 1.1}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: drop element 2 ('/private/var/db/dyld')", "status": "survived", "seconds": 7.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'url_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.4}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 1 ('clean')", "status": "survived", "seconds": 1.3}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'C2' -> 'XX'+...", "status": "survived", "seconds": 1.2}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'C3' -> 'XX'+...", "status": "survived", "seconds": 1.1}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'recipient_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.4}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: '/System' -> 'XX'+...", "status": "survived", "seconds": 4.7}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'C4' -> 'XX'+...", "status": "survived", "seconds": 1.7}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'attack' -> 'XX'+...", "status": "survived", "seconds": 1.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'subject_field_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'clean' -> 'XX'+...", "status": "survived", "seconds": 1.2}
+{"file": "analysis/gate2_budget.py", "line": 31, "mutant": "PLANNED_PRIMARY_PER_STRATUM_F20 line 31: 60 -> 0", "status": "survived", "seconds": 1.2}
+{"file": "analysis/gate2_budget.py", "line": 31, "mutant": "PLANNED_PRIMARY_PER_STRATUM_F20 line 31: 60 -> 59", "status": "survived", "seconds": 1.0}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: '/usr/lib' -> 'XX'+...", "status": "survived", "seconds": 4.7}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'body_field_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "analysis/gate2_budget.py", "line": 31, "mutant": "PLANNED_PRIMARY_PER_STRATUM_F20 line 31: 60 -> 61", "status": "survived", "seconds": 1.3}
+{"file": "analysis/gate2_budget.py", "line": 32, "mutant": "PLANNED_C1_TRIALS_F20 line 32: 12 -> 0", "status": "survived", "seconds": 1.0}
+{"file": "analysis/gate2_budget.py", "line": 32, "mutant": "PLANNED_C1_TRIALS_F20 line 32: 12 -> 11", "status": "survived", "seconds": 1.0}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'grant_missing' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "analysis/gate2_budget.py", "line": 32, "mutant": "PLANNED_C1_TRIALS_F20 line 32: 12 -> 13", "status": "survived", "seconds": 1.0}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: '/private/var/db/dyld' -> 'XX'+...", "status": "survived", "seconds": 4.5}
+{"file": "analysis/gate2_budget.py", "line": 33, "mutant": "MIN_STRATUM_OBSERVATIONS line 33: 3 -> 0", "status": "survived", "seconds": 1.4}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: drop element 0 ('/usr/lib')", "status": "killed", "seconds": 1.2}
+{"file": "analysis/gate2_budget.py", "line": 33, "mutant": "MIN_STRATUM_OBSERVATIONS line 33: 3 -> 2", "status": "survived", "seconds": 1.1}
+{"file": "defenses/interfaces.py", "line": 49, "mutant": "REASON_CODES line 49: 'grant_already_consumed' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "analysis/gate2_budget.py", "line": 33, "mutant": "MIN_STRATUM_OBSERVATIONS line 33: 3 -> 4", "status": "survived", "seconds": 1.1}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 0.1 -> 0.2", "status": "survived", "seconds": 1.3}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 0.1 -> 0.0", "status": "survived", "seconds": 1.2}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: drop element 0 ('tool_not_permitted')", "status": "killed", "seconds": 3.6}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 0.1 -> 0.05", "status": "survived", "seconds": 1.0}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 1000000 -> 0", "status": "killed", "seconds": 0.5}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: drop element 1 ('/usr/lib64')", "status": "survived", "seconds": 6.2}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: drop element 2 ('/lib')", "status": "killed", "seconds": 0.9}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 1000000 -> 1000001", "status": "survived", "seconds": 1.1}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: drop element 3 ('/lib64')", "status": "killed", "seconds": 0.7}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 1000000 -> 999999", "status": "survived", "seconds": 1.3}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: drop element 1 ('confirmation_required')", "status": "killed", "seconds": 3.6}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 0.5 -> 0.25", "status": "survived", "seconds": 1.1}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 0.5 -> 1.0", "status": "survived", "seconds": 1.1}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 0.5 -> 0.0", "status": "survived", "seconds": 1.0}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: drop element 2 ('call_budget_exceeded')", "status": "killed", "seconds": 3.2}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 1000000 -> 0", "status": "killed", "seconds": 0.4}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 1000000 -> 1000001", "status": "survived", "seconds": 1.0}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: drop element 4 ('/etc/ld.so.cache')", "status": "survived", "seconds": 5.5}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 1000000 -> 999999", "status": "survived", "seconds": 1.3}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: '/usr/lib' -> 'XX'+...", "status": "killed", "seconds": 1.1}
+{"file": "analysis/request_effect.py", "line": 19, "mutant": "CONFIGURATIONS line 19: drop element 0 ('D0_BASELINE')", "status": "killed", "seconds": 0.5}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: drop element 3 ('argument_not_permitted')", "status": "killed", "seconds": 3.5}
+{"file": "analysis/request_effect.py", "line": 19, "mutant": "CONFIGURATIONS line 19: drop element 1 ('D1_POLICY_GATE')", "status": "killed", "seconds": 0.4}
+{"file": "analysis/request_effect.py", "line": 19, "mutant": "CONFIGURATIONS line 19: drop element 2 ('D2_DATAMARKING')", "status": "killed", "seconds": 0.4}
+{"file": "analysis/request_effect.py", "line": 19, "mutant": "CONFIGURATIONS line 19: 'D0_BASELINE' -> 'XX'+...", "status": "killed", "seconds": 0.4}
+{"file": "analysis/request_effect.py", "line": 19, "mutant": "CONFIGURATIONS line 19: 'D1_POLICY_GATE' -> 'XX'+...", "status": "killed", "seconds": 0.4}
+{"file": "analysis/request_effect.py", "line": 19, "mutant": "CONFIGURATIONS line 19: 'D2_DATAMARKING' -> 'XX'+...", "status": "killed", "seconds": 0.5}
+{"file": "analysis/request_effect.py", "line": 20, "mutant": "CONDITIONS line 20: drop element 0 ('attack')", "status": "killed", "seconds": 0.5}
+{"file": "analysis/request_effect.py", "line": 20, "mutant": "CONDITIONS line 20: drop element 1 ('clean')", "status": "killed", "seconds": 0.6}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: 'tool_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "analysis/request_effect.py", "line": 20, "mutant": "CONDITIONS line 20: 'attack' -> 'XX'+...", "status": "killed", "seconds": 0.5}
+{"file": "analysis/request_effect.py", "line": 20, "mutant": "CONDITIONS line 20: 'clean' -> 'XX'+...", "status": "killed", "seconds": 0.5}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: '/usr/lib64' -> 'XX'+...", "status": "survived", "seconds": 4.8}
+{"file": "analysis/request_effect.py", "line": 21, "mutant": "CHANNELS line 21: drop element 0 ('C2')", "status": "killed", "seconds": 0.5}
+{"file": "analysis/request_effect.py", "line": 21, "mutant": "CHANNELS line 21: drop element 1 ('C3')", "status": "killed", "seconds": 0.5}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: '/lib' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "analysis/request_effect.py", "line": 21, "mutant": "CHANNELS line 21: drop element 2 ('C4')", "status": "killed", "seconds": 0.4}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: '/lib64' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "analysis/request_effect.py", "line": 21, "mutant": "CHANNELS line 21: 'C2' -> 'XX'+...", "status": "killed", "seconds": 0.4}
+{"file": "analysis/request_effect.py", "line": 21, "mutant": "CHANNELS line 21: 'C3' -> 'XX'+...", "status": "killed", "seconds": 0.4}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: 'confirmation_required' -> 'XX'+...", "status": "killed", "seconds": 3.4}
+{"file": "analysis/request_effect.py", "line": 21, "mutant": "CHANNELS line 21: 'C4' -> 'XX'+...", "status": "killed", "seconds": 0.5}
+{"file": "analysis/request_effect.py", "line": 22, "mutant": "NO_GATE line 22: 'not applicable (no gate)' -> 'XX'+...", "status": "killed", "seconds": 0.4}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: 'call_budget_exceeded' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: '/etc/ld.so.cache' -> 'XX'+...", "status": "survived", "seconds": 5.4}
+{"file": "defenses/interfaces.py", "line": 72, "mutant": "BLOCK_CATEGORIES line 72: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: 'customers/customer-record.txt' -> 'XX'+...", "status": "survived", "seconds": 72.1}
+{"file": "defenses/datamarking.py", "line": 47, "mutant": "_CHANNELS line 47: drop element 0 ('C2')", "status": "killed", "seconds": 3.1}
+{"file": "defenses/datamarking.py", "line": 47, "mutant": "_CHANNELS line 47: drop element 1 ('C3')", "status": "killed", "seconds": 2.9}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'tool_not_permitted'", "status": "killed", "seconds": 5.2}
+{"file": "defenses/datamarking.py", "line": 47, "mutant": "_CHANNELS line 47: drop element 2 ('C4')", "status": "killed", "seconds": 3.0}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'grant_missing'", "status": "killed", "seconds": 3.0}
+{"file": "defenses/datamarking.py", "line": 47, "mutant": "_CHANNELS line 47: 'C2' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "runner/delivery.py", "line": 87, "mutant": "PLANTED_FILES line 87: 'inbox/lily-white.txt' -> 'XX'+...", "status": "killed", "seconds": 9.8}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'grant_already_consumed'", "status": "killed", "seconds": 3.2}
+{"file": "defenses/datamarking.py", "line": 47, "mutant": "_CHANNELS line 47: 'C3' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'call_budget_exceeded'", "status": "killed", "seconds": 3.4}
+{"file": "defenses/datamarking.py", "line": 47, "mutant": "_CHANNELS line 47: 'C4' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'argument_missing'", "status": "killed", "seconds": 3.1}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: drop key 'text'", "status": "killed", "seconds": 2.8}
+{"file": "runner/delivery.py", "line": 87, "mutant": "PLANTED_FILES line 87: 'From: lily.white@fixture.test\\nTo: alex.e' -> 'XX'+...", "status": "killed", "seconds": 10.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'argument_unexpected'", "status": "killed", "seconds": 3.3}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: drop key 'json_string'", "status": "killed", "seconds": 2.8}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: drop key 'html_text'", "status": "killed", "seconds": 2.7}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'argument_type_invalid'", "status": "killed", "seconds": 3.3}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: drop key 'html_attribute'", "status": "killed", "seconds": 2.6}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'path_not_authorized'", "status": "killed", "seconds": 3.0}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: 'text' -> 'XX'+...", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'query_not_authorized'", "status": "killed", "seconds": 3.0}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: 'json_string' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'query_param_not_authorized'", "status": "killed", "seconds": 3.1}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: 'html_text' -> 'XX'+...", "status": "killed", "seconds": 2.7}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'url_not_authorized'", "status": "killed", "seconds": 3.1}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: 'html_attribute' -> 'XX'+...", "status": "killed", "seconds": 2.8}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'recipient_not_authorized'", "status": "killed", "seconds": 3.2}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: False -> True", "status": "killed", "seconds": 2.6}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'subject_field_not_authorized'", "status": "killed", "seconds": 3.0}
+{"file": "runner/paid_run.py", "line": 49, "mutant": "RECORD line 49: 'paid_run_record.json' -> 'XX'+...", "status": "survived", "seconds": 49.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: drop key 'body_field_not_authorized'", "status": "killed", "seconds": 4.2}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'tool_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'grant_missing' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'grant_already_consumed' -> 'XX'+...", "status": "killed", "seconds": 3.4}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'call_budget_exceeded' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_missing' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_unexpected' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_type_invalid' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'path_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'query_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.4}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: False -> True", "status": "survived", "seconds": 38.1}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'query_param_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.5}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: True -> False", "status": "killed", "seconds": 2.9}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: drop key 'http'", "status": "killed", "seconds": 0.7}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: drop key 'https'", "status": "killed", "seconds": 0.7}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'url_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 'http' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 'https' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 80 -> 0", "status": "killed", "seconds": 0.7}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 80 -> 81", "status": "killed", "seconds": 0.7}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'recipient_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 80 -> 79", "status": "killed", "seconds": 0.7}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 443 -> 0", "status": "killed", "seconds": 0.8}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 443 -> 442", "status": "killed", "seconds": 0.7}
+{"file": "defenses/canonicalizer.py", "line": 32, "mutant": "_DEFAULT_PORTS line 32: 443 -> 444", "status": "killed", "seconds": 0.8}
+{"file": "runner/delivery.py", "line": 99, "mutant": "SEND_EFFECT_ORACLE line 99: 'fake-sink-append-v0.1.0' -> 'XX'+...", "status": "survived", "seconds": 68.4}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'subject_field_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 5.6}
+{"file": "runner/paid_run.py", "line": 49, "mutant": "RECORD line 49: 'protocol' -> 'XX'+...", "status": "survived", "seconds": 48.8}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'body_field_not_authorized' -> 'XX'+...", "status": "killed", "seconds": 4.6}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'tool_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "runner/delivery.py", "line": 100, "mutant": "SINK_NAME line 100: 'email-receipts.jsonl' -> 'XX'+...", "status": "killed", "seconds": 11.0}
+{"file": "defenses/canonicalizer.py", "line": 33, "mutant": "_UNRESERVED line 33: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn' -> 'XX'+...", "status": "survived", "seconds": 14.2}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'confirmation_required' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/canonicalizer.py", "line": 34, "mutant": "_PERCENT line 34: '%([0-9A-Fa-f]{2})' -> 'XX'+...", "status": "killed", "seconds": 0.8}
+{"file": "oracles/authorization/conformance.py", "line": 35, "mutant": "REPO_ROOT line 35: 2 -> 0", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/conformance.py", "line": 35, "mutant": "REPO_ROOT line 35: 2 -> 1", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/conformance.py", "line": 35, "mutant": "REPO_ROOT line 35: 2 -> 3", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/conformance.py", "line": 36, "mutant": "DEFAULT_VECTORS line 36: 'w5-t4-initial.json' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'confirmation_required' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "oracles/authorization/conformance.py", "line": 36, "mutant": "DEFAULT_VECTORS line 36: 'golden' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/conformance.py", "line": 36, "mutant": "DEFAULT_VECTORS line 36: 'authorization' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/conformance.py", "line": 36, "mutant": "DEFAULT_VECTORS line 36: 'oracles' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'call_budget_exceeded' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'w6-t1-task-suite.json' -> 'XX'+...", "status": "survived", "seconds": 1.3}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'golden' -> 'XX'+...", "status": "survived", "seconds": 1.0}
+{"file": "runner/delivery.py", "line": 430, "mutant": "accounted line 430: 0 -> 1", "status": "killed", "seconds": 10.7}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'authorization' -> 'XX'+...", "status": "survived", "seconds": 0.9}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'oracles' -> 'XX'+...", "status": "survived", "seconds": 1.0}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "oracles/authorization/conformance.py", "line": 38, "mutant": "SCHEMA_DIR line 38: 'schemas' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/conformance.py", "line": 42, "mutant": "REQUIRED_REVIEWERS line 42: 1 -> 0", "status": "killed", "seconds": 0.9}
+{"file": "oracles/authorization/conformance.py", "line": 42, "mutant": "REQUIRED_REVIEWERS line 42: 1 -> 2", "status": "killed", "seconds": 1.0}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.6}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.6}
+{"file": "runner/delivery.py", "line": 430, "mutant": "accounted line 430: 0 -> -1", "status": "killed", "seconds": 11.0}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.6}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.5}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 0 ('agent')", "status": "survived", "seconds": 49.4}
+{"file": "defenses/interfaces.py", "line": 79, "mutant": "_REASON_TO_CATEGORY line 79: 'argument_not_permitted' -> 'XX'+...", "status": "killed", "seconds": 3.7}
+{"file": "defenses/interfaces.py", "line": 118, "mutant": "POLICY_BLOCKED_MESSAGE line 118: 'This tool call was blocked by the task a' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 121, "mutant": "POLICY_UNAVAILABLE_MESSAGE line 121: 'This tool call was not executed because ' -> 'XX'+...", "status": "killed", "seconds": 3.3}
+{"file": "defenses/interfaces.py", "line": 218, "mutant": "consumed line 218: False -> True", "status": "killed", "seconds": 11.2}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 1 ('channels')", "status": "survived", "seconds": 48.8}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'shipping-notice-email'", "status": "survived", "seconds": 69.7}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 2 ('defenses')", "status": "survived", "seconds": 48.4}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: drop element 0 ('dispatch')", "status": "survived", "seconds": 79.7}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'meeting-confirm-email'", "status": "survived", "seconds": 73.5}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 3 ('oracles')", "status": "survived", "seconds": 49.4}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 4 ('runner')", "status": "killed", "seconds": 4.7}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: drop element 1 ('block')", "status": "survived", "seconds": 75.5}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'invoice-receipt-email'", "status": "survived", "seconds": 68.5}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 5 ('tasks')", "status": "survived", "seconds": 49.4}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 6 ('tools')", "status": "survived", "seconds": 47.0}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: drop element 2 ('unavailable')", "status": "survived", "seconds": 74.8}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'maintenance-confirm-email'", "status": "survived", "seconds": 69.1}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 7 ('corpus')", "status": "survived", "seconds": 50.5}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: 'dispatch' -> 'XX'+...", "status": "survived", "seconds": 75.5}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'shipping-notice-email' -> 'XX'+...", "status": "survived", "seconds": 65.5}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 8 ('fixtures')", "status": "survived", "seconds": 50.1}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'meeting-confirm-email' -> 'XX'+...", "status": "survived", "seconds": 66.9}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 9 ('schemas')", "status": "survived", "seconds": 46.1}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: 'block' -> 'XX'+...", "status": "survived", "seconds": 75.9}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 10 ('protocol/development_grid_spec.json')", "status": "survived", "seconds": 51.6}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'invoice-receipt-email' -> 'XX'+...", "status": "survived", "seconds": 68.9}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: 'unavailable' -> 'XX'+...", "status": "survived", "seconds": 78.7}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: drop key 'blocked'", "status": "killed", "seconds": 5.8}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: drop key 'dispatched'", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: drop key 'disposition_observed'", "status": "killed", "seconds": 3.1}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 11 ('uv.lock')", "status": "survived", "seconds": 47.3}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: drop key 'execution_succeeded'", "status": "killed", "seconds": 3.8}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: drop key 'effect_observed'", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: drop key 'sink_received'", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: 'blocked' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: 'dispatched' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: 'disposition_observed' -> 'XX'+...", "status": "killed", "seconds": 3.0}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: 'execution_succeeded' -> 'XX'+...", "status": "killed", "seconds": 3.2}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: 'effect_observed' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: 'sink_received' -> 'XX'+...", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: True -> False", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: False -> True", "status": "killed", "seconds": 3.1}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: True -> False", "status": "killed", "seconds": 3.1}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'maintenance-confirm-email' -> 'XX'+...", "status": "survived", "seconds": 68.7}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: False -> True", "status": "killed", "seconds": 4.8}
+{"file": "defenses/interfaces.py", "line": 316, "mutant": "BLOCKED_REQUEST_EVENT_FACTS line 316: False -> True", "status": "killed", "seconds": 3.0}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'agent' -> 'XX'+...", "status": "survived", "seconds": 46.4}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 0 ('tracking_id')", "status": "killed", "seconds": 11.3}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 1 ('Tracking ID')", "status": "killed", "seconds": 10.0}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 0 ('date')", "status": "killed", "seconds": 29.8}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'channels' -> 'XX'+...", "status": "survived", "seconds": 46.5}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 1 ('Meeting date')", "status": "killed", "seconds": 30.8}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 0 ('text')", "status": "survived", "seconds": 75.5}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'defenses' -> 'XX'+...", "status": "survived", "seconds": 52.8}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 0 ('amount_cents')", "status": "killed", "seconds": 69.2}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'oracles' -> 'XX'+...", "status": "survived", "seconds": 50.5}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 1 ('json_string')", "status": "survived", "seconds": 77.8}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'runner' -> 'XX'+...", "status": "killed", "seconds": 5.6}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'tasks' -> 'XX'+...", "status": "survived", "seconds": 48.0}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 1 ('Amount cents')", "status": "killed", "seconds": 66.3}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 2 ('html_text')", "status": "survived", "seconds": 78.1}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'tools' -> 'XX'+...", "status": "survived", "seconds": 54.2}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 0 ('date')", "status": "killed", "seconds": 70.0}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'corpus' -> 'XX'+...", "status": "survived", "seconds": 50.7}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 3 ('html_attribute')", "status": "survived", "seconds": 79.1}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop element 1 ('Maintenance date')", "status": "killed", "seconds": 70.5}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'fixtures' -> 'XX'+...", "status": "survived", "seconds": 50.4}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'tracking_id' -> 'XX'+...", "status": "killed", "seconds": 11.1}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'Tracking ID' -> 'XX'+...", "status": "killed", "seconds": 11.9}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'text' -> 'XX'+...", "status": "survived", "seconds": 78.5}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'date' -> 'XX'+...", "status": "killed", "seconds": 35.8}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'schemas' -> 'XX'+...", "status": "survived", "seconds": 49.9}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'Meeting date' -> 'XX'+...", "status": "killed", "seconds": 35.1}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'protocol/development_grid_spec.json' -> 'XX'+...", "status": "survived", "seconds": 48.9}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'json_string' -> 'XX'+...", "status": "survived", "seconds": 79.5}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'uv.lock' -> 'XX'+...", "status": "survived", "seconds": 50.6}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'amount_cents' -> 'XX'+...", "status": "killed", "seconds": 66.3}
+{"file": "runner/paid_run.py", "line": 56, "mutant": "RECORD_SCHEMA line 56: 'paid_run_record' -> 'XX'+...", "status": "killed", "seconds": 5.5}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'html_text' -> 'XX'+...", "status": "survived", "seconds": 78.0}
+{"file": "runner/paid_run.py", "line": 57, "mutant": "PROVENANCE_FILE line 57: 'code_provenance.jsonl' -> 'XX'+...", "status": "killed", "seconds": 49.6}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'Amount cents' -> 'XX'+...", "status": "killed", "seconds": 68.5}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'html_attribute' -> 'XX'+...", "status": "survived", "seconds": 77.5}
+{"file": "defenses/interfaces.py", "line": 407, "mutant": "DATAMARKING_SOURCE line 407: 'arXiv:2403.14720v1 Sections 3.3 and 5.4' -> 'XX'+...", "status": "killed", "seconds": 4.3}
+{"file": "defenses/interfaces.py", "line": 408, "mutant": "DATAMARK_MARKER line 408: '\\ue000' -> 'XX'+...", "status": "killed", "seconds": 5.2}
+{"file": "defenses/interfaces.py", "line": 409, "mutant": "DATAMARKING_NORMALIZATION line 409: 'NFC' -> 'XX'+...", "status": "killed", "seconds": 2.9}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'read_file'", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'query_db'", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'fetch_url'", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'send_email'", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'read_file' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'query_db' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'fetch_url' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'send_email' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'query_id'", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'params'", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'to'", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'subject'", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: drop key 'body'", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'path' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'date' -> 'XX'+...", "status": "killed", "seconds": 67.0}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived", "seconds": 15.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'query_id' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'params' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived", "seconds": 12.3}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'object' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'url' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived", "seconds": 12.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'to' -> 'XX'+...", "status": "killed", "seconds": 0.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'subject' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'body' -> 'XX'+...", "status": "killed", "seconds": 0.6}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived", "seconds": 12.0}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'Maintenance date' -> 'XX'+...", "status": "killed", "seconds": 67.7}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived", "seconds": 13.9}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived", "seconds": 12.3}
+{"file": "runner/delivery.py", "line": 588, "mutant": "_FACT line 588: '([A-Za-z_][A-Za-z0-9_]*): (\\\\S+)' -> 'XX'+...", "status": "killed", "seconds": 32.0}
+{"file": "runner/delivery.py", "line": 589, "mutant": "_DEFINITION line 589: '<dt>(.*?)</dt><dd>(.*?)</dd>' -> 'XX'+...", "status": "killed", "seconds": 33.1}
+{"file": "agent/loop.py", "line": 11, "mutant": "SUPPORTED_TOOLS line 11: 'read_file' -> 'XX'+...", "status": "killed", "seconds": 3.7}
+{"file": "agent/loop.py", "line": 12, "mutant": "MAX_STEPS line 12: 8 -> 0", "status": "killed", "seconds": 2.9}
+{"file": "agent/loop.py", "line": 12, "mutant": "MAX_STEPS line 12: 8 -> 9", "status": "killed", "seconds": 2.6}
+{"file": "agent/loop.py", "line": 12, "mutant": "MAX_STEPS line 12: 8 -> 7", "status": "killed", "seconds": 2.8}
+{"file": "agent/loop.py", "line": 15, "mutant": "CONTINUATION_PROMPT line 15: 'Your previous reply was cut off at the o' -> 'XX'+...", "status": "survived", "seconds": 6.3}

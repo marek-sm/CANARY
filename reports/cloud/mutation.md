@@ -148,7 +148,34 @@ Every one of the 65 mutant IDs named in the findings below is in the killed set 
 
 ### Constant mutation
 
-CONST_TABLE
+From `const_mutator.py` (rerun) and `const_recheck.py`. Survivors of the targeted run were re-run against the full existing suite minus the seven slow tests (\*), and then against the new test files. Identical mutant descriptions in one file (for example six `'str' -> 'XX'` in `audit.py`) are reconciled by count.
+
+| file | constant mutants | not killed by targeted existing tests | of those, also not killed by the full existing suite* | still not killed after the new tests |
+|---|---|---|---|---|
+| `agent/loop.py` | 5 | 1 | 1 | 1 |
+| `analysis/floor_count.py` | 46 | 2 | 2 | 2 |
+| `analysis/gate2_budget.py` | 34 | 29 | 29 | 0 |
+| `analysis/request_effect.py` | 17 | 0 | 0 | 0 |
+| `defenses/canonicalizer.py` | 12 | 1 | 1 | 1 |
+| `defenses/datamarking.py` | 17 | 1 | 1 | 0 |
+| `defenses/interfaces.py` | 143 | 14 | 14 | 14 |
+| `oracles/authorization/audit.py` | 27 | 6 | 6 | 6 |
+| `oracles/authorization/conformance.py` | 14 | 4 | 0 | 0 |
+| `runner/delivery.py` | 46 | 11 | 11 | 11 |
+| `runner/mock_slice.py` | 27 | 16 | 16 | 8 |
+| `runner/paid_run.py` | 28 | 24 | 24 | 0 |
+| `tools/sandbox.py` | 19 | 11 | 11 | 11 |
+| **total** | **435** | **120** | **116** | **54** |
+
+The full existing suite killed 4 more than the targeted run: `conformance.TASK_VECTORS` path parts, which only `tests/test_task_suite.py` loads. Every remaining constant survivor after the new tests is one of these:
+
+- a typing-only `Literal` or alias (`GateAction`, `SpanFormat`, `floor_count.Trial`), so equivalent;
+- equivalent by construction (`audit._TOOL_ARG_TYPES` `'str'`, where only `'object'` is compared; `canonicalizer._UNRESERVED` gaining only an `X` it already has);
+- mock-only identifiers and prompts in `runner/mock_slice.py` and `delivery._EMAIL_BODY`;
+- stricter or fail-closed sandbox paths (`LINUX_SYSTEM_READS`, `MACOS_SYSTEM_READS`, `SANDBOX_EXEC`);
+- recorded identifiers (`delivery.SECRET_FILES` paths, `SEND_EFFECT_ORACLE`) and `agent/loop.py`'s model-visible `CONTINUATION_PROMPT` text, none of which any test pins.
+
+All 29 Gate 2 budget constants and all 24 `paid_run` constants are killed by the new tests. Those include the prices, the planned counts, the three-observation rule, the strata, `HASHED_DIRS`, and the record path.
 
 ## Findings, ranked
 
@@ -264,7 +291,7 @@ These came up while reading the code for ranking. None has a test, and each is t
 - **Subprocess-only code.** mutmut's stats can't see calls in subprocesses, so a function reached only through a subprocess would show as "no tests" or be under-tested in tier 1. The 130 "no tests" mutants are listed above. The `paid_run` `main` ones are now mostly killed by new tests; the `mock_slice` `main` ones are not. Tool processes themselves (`tools/worker.py`, `tools/no_exec.py`, `tools/fixture_http.py`) weren't mutation targets.
 - **macOS.** I couldn't run `sandbox-exec`. The macOS tests pin the profile text and the branches with the platform stood in for; they don't show that the profile confines a process.
 - **Equivalence by hand.** I called mutants equivalent or low-impact by reading their diffs, not by proof. A reviewer may weigh some of them differently.
-- **The constant mutator** used targeted test selections, not the full suite, for its first pass (see its table for how survivors were confirmed).
+- **The constant mutator's kills** come from targeted test selections. Only its survivors were re-run against the full existing suite (minus the seven slow tests), so a constant mutant reported killed was killed by the targeted selection.
 - **Mutation operators mutmut doesn't apply.** Deleted statements, removed function calls, and swapped arguments are mostly not generated. Mutation score is a lower bound on what tests miss.
 - **Files outside the brief**, for example `runner/execute.py`, `runner/grid_dev.py`, `channels/`, `tasks/`, and `tools/*` other than `sandbox.py`. `runner/execute.py` holds the audit callback that writes `authorized`, and it wasn't mutated.
 - **No real provider, no evaluation candidate, no live model.**

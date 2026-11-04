@@ -1,0 +1,121 @@
+{"file": "runner/mock_slice.py", "line": 35, "mutant": "DEFAULT_OUT_ROOT line 35: 'mock' -> 'XX'+...", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 35, "mutant": "DEFAULT_OUT_ROOT line 35: 'development' -> 'XX'+...", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 35, "mutant": "DEFAULT_OUT_ROOT line 35: 'results' -> 'XX'+...", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 40, "mutant": "EXPERIMENT_ID line 40: 'mock-dev' -> 'XX'+...", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 41, "mutant": "BASE_CASE_ID line 41: 'mock-000' -> 'XX'+...", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 43, "mutant": "RUN_INDEX line 43: 1 -> 2", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 50, "mutant": "SYSTEM_PROMPT line 50: 'You are a local test assistant. Answer t' -> 'XX'+...", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 51, "mutant": "TASK_PROMPT line 51: 'Summarize the follow-ups in the fictiona' -> 'XX'+...", "status": "survived"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: drop key 'temperature'", "status": "killed"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: drop key 'top_p'", "status": "killed"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 'temperature' -> 'XX'+...", "status": "killed"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 'top_p' -> 'XX'+...", "status": "killed"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 0 -> 1", "status": "killed"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 0 -> -1", "status": "killed"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 1 -> 0", "status": "killed"}
+{"file": "runner/mock_slice.py", "line": 52, "mutant": "DECODING line 52: 1 -> 2", "status": "killed"}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: 'config/app.env' -> 'XX'+...", "status": "survived"}
+{"file": "runner/delivery.py", "line": 77, "mutant": "SECRET_FILES line 77: 'customers/customer-record.txt' -> 'XX'+...", "status": "survived"}
+{"file": "runner/delivery.py", "line": 99, "mutant": "SEND_EFFECT_ORACLE line 99: 'fake-sink-append-v0.1.0' -> 'XX'+...", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'shipping-notice-email'", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'meeting-confirm-email'", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'invoice-receipt-email'", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: drop key 'maintenance-confirm-email'", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'shipping-notice-email' -> 'XX'+...", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'meeting-confirm-email' -> 'XX'+...", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'invoice-receipt-email' -> 'XX'+...", "status": "survived"}
+{"file": "runner/delivery.py", "line": 582, "mutant": "_EMAIL_BODY line 582: 'maintenance-confirm-email' -> 'XX'+...", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 55, "mutant": "SANDBOX_EXEC line 55: '/usr/bin/sandbox-exec' -> 'XX'+...", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: drop element 0 ('/System')", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: drop element 1 ('/usr/lib')", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: drop element 2 ('/private/var/db/dyld')", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: '/System' -> 'XX'+...", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: '/usr/lib' -> 'XX'+...", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 58, "mutant": "MACOS_SYSTEM_READS line 58: '/private/var/db/dyld' -> 'XX'+...", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: drop element 1 ('/usr/lib64')", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: drop element 4 ('/etc/ld.so.cache')", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: '/usr/lib64' -> 'XX'+...", "status": "survived"}
+{"file": "tools/sandbox.py", "line": 59, "mutant": "LINUX_SYSTEM_READS line 59: '/etc/ld.so.cache' -> 'XX'+...", "status": "survived"}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 0 (Mapping[str, Any])", "status": "survived"}
+{"file": "analysis/floor_count.py", "line": 50, "mutant": "Trial line 50: drop element 1 (Sequence[Mapping[str, Any]])", "status": "survived"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 0 ('C2')", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 1 ('C3')", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 2 ('C4')", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 0 ('attack')", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: drop element 1 ('clean')", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'C2' -> 'XX'+...", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'C3' -> 'XX'+...", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'C4' -> 'XX'+...", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'attack' -> 'XX'+...", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 30, "mutant": "STRATA line 30: 'clean' -> 'XX'+...", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 31, "mutant": "PLANNED_PRIMARY_PER_STRATUM_F20 line 31: 60 -> 0", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 31, "mutant": "PLANNED_PRIMARY_PER_STRATUM_F20 line 31: 60 -> 59", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 31, "mutant": "PLANNED_PRIMARY_PER_STRATUM_F20 line 31: 60 -> 61", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 32, "mutant": "PLANNED_C1_TRIALS_F20 line 32: 12 -> 0", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 32, "mutant": "PLANNED_C1_TRIALS_F20 line 32: 12 -> 11", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 32, "mutant": "PLANNED_C1_TRIALS_F20 line 32: 12 -> 13", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 33, "mutant": "MIN_STRATUM_OBSERVATIONS line 33: 3 -> 0", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 33, "mutant": "MIN_STRATUM_OBSERVATIONS line 33: 3 -> 2", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 33, "mutant": "MIN_STRATUM_OBSERVATIONS line 33: 3 -> 4", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 0.1 -> 0.2", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 0.1 -> 0.0", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 0.1 -> 0.05", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 1000000 -> 1000001", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 36, "mutant": "DEFAULT_INPUT_USD_PER_TOKEN line 36: 1000000 -> 999999", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 0.5 -> 0.25", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 0.5 -> 1.0", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 0.5 -> 0.0", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 1000000 -> 1000001", "status": "killed"}
+{"file": "analysis/gate2_budget.py", "line": 37, "mutant": "DEFAULT_OUTPUT_USD_PER_TOKEN line 37: 1000000 -> 999999", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 49, "mutant": "RECORD line 49: 'paid_run_record.json' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 49, "mutant": "RECORD line 49: 'protocol' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 0 ('agent')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 1 ('channels')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 2 ('defenses')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 3 ('oracles')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 5 ('tasks')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 6 ('tools')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 7 ('corpus')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 8 ('fixtures')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 9 ('schemas')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 10 ('protocol/development_grid_spec.json')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: drop element 11 ('uv.lock')", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'agent' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'channels' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'defenses' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'oracles' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'tasks' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'tools' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'corpus' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'fixtures' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'schemas' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'protocol/development_grid_spec.json' -> 'XX'+...", "status": "killed"}
+{"file": "runner/paid_run.py", "line": 52, "mutant": "HASHED_DIRS line 52: 'uv.lock' -> 'XX'+...", "status": "killed"}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: False -> True", "status": "killed"}
+{"file": "defenses/datamarking.py", "line": 49, "mutant": "_SERIALIZERS line 49: False -> True", "status": "killed"}
+{"file": "defenses/canonicalizer.py", "line": 33, "mutant": "_UNRESERVED line 33: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'w6-t1-task-suite.json' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'golden' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'authorization' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/conformance.py", "line": 37, "mutant": "TASK_VECTORS line 37: 'oracles' -> 'XX'+...", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: drop element 0 ('dispatch')", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: drop element 1 ('block')", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: drop element 2 ('unavailable')", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: 'dispatch' -> 'XX'+...", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: 'block' -> 'XX'+...", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 310, "mutant": "GateAction line 310: 'unavailable' -> 'XX'+...", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 0 ('text')", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 1 ('json_string')", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 2 ('html_text')", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: drop element 3 ('html_attribute')", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'text' -> 'XX'+...", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'json_string' -> 'XX'+...", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'html_text' -> 'XX'+...", "status": "survived"}
+{"file": "defenses/interfaces.py", "line": 358, "mutant": "SpanFormat line 358: 'html_attribute' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived"}
+{"file": "oracles/authorization/audit.py", "line": 60, "mutant": "_TOOL_ARG_TYPES line 60: 'str' -> 'XX'+...", "status": "survived"}
+{"file": "agent/loop.py", "line": 15, "mutant": "CONTINUATION_PROMPT line 15: 'Your previous reply was cut off at the o' -> 'XX'+...", "status": "survived"}
