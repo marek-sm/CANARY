@@ -5,15 +5,16 @@ These drive ``TrialTools`` directly with a stand-in tool runner, so no tool
 process starts and no provider is involved.
 """
 
+import hashlib
 import json
 
 import pytest
 
 from defenses.canonicalizer import canonicalize_request
 from defenses.interfaces import DATAMARK_MARKER as M
-from defenses.interfaces import GrantState
+from defenses.interfaces import GrantState, canonical_json_bytes
 from runner import delivery
-from runner.delivery import SEND_EFFECT_ORACLE, SINK_NAME, TrialTools, create_state
+from runner.delivery import SEND_EFFECT_ORACLE, SINK_NAME, DispatchOutcomeUnknown, TrialTools, create_state
 
 POLICY = {
     "schema_version": "1.0.0", "policy_id": "p", "policy_version": "1", "task_id": "t",
@@ -137,3 +138,105 @@ def test_a_read_result_is_marked_as_text_and_a_fetch_result_as_html(tmp_path):
     assert delivery.mark_observation("fetch_url", {"ok": True, "text": "<p>a b</p>"})["text"] == f"<p>a{M}b</p>"
     failed = {"ok": False, "error": "not found here", "text": "x y"}
     assert delivery.mark_observation("read_file", failed) == failed
+
+
+def _read(n, path="docs/report.txt"):
+    return canonicalize_request("read_file", {"path": path}, "t", n, call_id=f"c{n}")
+
+
+@pytest.mark.parametrize("configuration", ["D0_BASELINE", "D2_DATAMARKING"])
+def test_an_ungated_dispatch_records_what_happened_and_settles_as_dispatched(tmp_path, configuration):
+    # Kills xǁTrialToolsǁdispatch__mutmut_159..181 and _settle__mutmut_2..9: under
+    # D0_BASELINE and D2_DATAMARKING a request is dispatched, never blocked, its
+    # disposition_observed is null, and it counts as a dispatched prior call.
+    tools, logged, _ = _tools(tmp_path, configuration)
+    tools.run_tool = lambda root, st, endpoint, req: {"ok": True, "text": "a b"}
+    request = _read(1)
+    observation = tools.dispatch(request)
+    assert logged[0] == ("tool_dispatch", {"call_id": "c1", "step": 1, "blocked": False, "dispatched": True,
+                                           "disposition_observed": None})
+    kind, result = logged[1]
+    assert kind == "tool_result" and result["execution_succeeded"] is True
+    if configuration == "D2_DATAMARKING":
+        # Kills dispatch__mutmut_199/203: the hash of what the tool returned before marking.
+        assert result["unmarked_observation_sha256"] == hashlib.sha256(
+            canonical_json_bytes({"ok": True, "text": "a b"})).hexdigest()
+        assert observation == {"ok": True, "text": f"a{M}b"}
+    else:
+        assert "unmarked_observation_sha256" not in result
+        assert observation == {"ok": True, "text": "a b"}
+    assert [(p.tool, dict(p.normalized_args), p.dispatched) for p in tools.prior] == [
+        ("read_file", {"path": "docs/report.txt"}, True)]
+    assert tools.effect(request, observation) == {
+        "effect_observed": True, "effect_oracle_id": "read_file-returned-v0.1.0", "sink_received": False}
+
+
+@pytest.mark.parametrize("ok, expected", [(False, False), (None, None), ("yes", None), (1, None)])
+def test_a_read_effect_is_the_tool_s_own_boolean_or_unknown(tmp_path, ok, expected):
+    # Kills xǁTrialToolsǁeffect__mutmut_22..28: a non-boolean `ok` is unknown, and a read
+    # never reaches the sink.
+    tools, _, _ = _tools(tmp_path)
+    tools.run_tool = lambda root, st, endpoint, req: {"ok": ok}
+    request = _read(1)
+    observation = tools.dispatch(request)
+    assert tools.effect(request, observation) == {
+        "effect_observed": expected, "effect_oracle_id": "read_file-returned-v0.1.0", "sink_received": False}
+
+
+def test_a_stored_effect_is_replayed_exactly(tmp_path):
+    # Kills xǁTrialToolsǁeffect__mutmut_1..12.
+    stored = {("effect_observation", "c1"): {"call_id": "c1", "step": 1, "effect_observed": None,
+                                             "effect_oracle_id": "read_file-returned-v0.1.0", "sink_received": False}}
+    tools, _, _ = _tools(tmp_path, stored=stored)
+    assert tools.effect(_read(1), {"ok": True}) == {
+        "effect_observed": None, "effect_oracle_id": "read_file-returned-v0.1.0", "sink_received": False}
+
+
+def test_a_d1_block_settles_as_not_dispatched_and_keeps_the_grant_state(tmp_path):
+    # Kills dispatch__mutmut_119..136: the blocked disposition, its observation, and the
+    # prior call it leaves behind.
+    tools, logged, _ = _tools(tmp_path, "D1_POLICY_GATE")
+    request = _read(1, "secret.txt")
+    observation = tools.dispatch(request)
+    kinds = [k for k, _ in logged]
+    assert kinds == ["authorization_decision", "tool_dispatch"]
+    decision = logged[0][1]
+    assert decision["gate_action"] == "block"
+    assert decision["gate_decision"]["reason_codes"] == ["path_not_authorized"]
+    disposition = logged[1][1]
+    assert disposition == {"call_id": "c1", "step": 1, "blocked": True, "dispatched": False,
+                           "disposition_observed": True, "observation": observation}
+    assert observation["status"] == "POLICY_BLOCKED"
+    assert [(p.tool, p.dispatched) for p in tools.prior] == [("read_file", False)]
+    assert tools.grant_state == GrantState()
+
+
+def test_a_resumed_block_is_replayed_without_running_the_tool(tmp_path):
+    # Kills dispatch__mutmut_14..24: a stored block returns its stored observation and
+    # settles as not dispatched.
+    stored_observation = {"status": "POLICY_BLOCKED", "reason_category": "argument_not_permitted", "message": "m"}
+    stored = {("tool_dispatch", "c1"): {"call_id": "c1", "step": 1, "blocked": True, "dispatched": False,
+                                        "observation": stored_observation}}
+    tools, logged, _ = _tools(tmp_path, "D1_POLICY_GATE", stored=stored)
+    tools.run_tool = lambda *args: pytest.fail("a stored block must not run the tool")
+    request = _read(1, "secret.txt")
+    assert tools.dispatch(request) == stored_observation
+    assert logged == []
+    assert [(p.tool, p.dispatched) for p in tools.prior] == [("read_file", False)]
+    assert tools.effect(request, stored_observation) == {
+        "effect_observed": False, "effect_oracle_id": "read_file-returned-v0.1.0", "sink_received": False}
+
+
+def test_a_resumed_gate_decision_must_match_the_one_the_gate_makes_now(tmp_path):
+    # Kills dispatch__mutmut_91..99: a stored decision that differs refuses; an equal one
+    # is not logged twice.
+    same = {"call_id": "c1", "step": 1, "gate_action": "block",
+            "gate_decision": {"authorized": False, "reason_codes": ["path_not_authorized"],
+                              "evaluator_version": "d1-policy-gate-evaluator-v0.1.0"}}
+    tools, logged, _ = _tools(tmp_path, "D1_POLICY_GATE", stored={("authorization_decision", "c1"): same})
+    tools.dispatch(_read(1, "secret.txt"))
+    assert [k for k, _ in logged] == ["tool_dispatch"]
+    differs = {**same, "gate_action": "dispatch"}
+    tools, logged, _ = _tools(tmp_path / "again", "D1_POLICY_GATE", stored={("authorization_decision", "c1"): differs})
+    with pytest.raises(DispatchOutcomeUnknown):
+        tools.dispatch(_read(1, "secret.txt"))
