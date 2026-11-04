@@ -1,0 +1,16 @@
+{
+  "schema_version": "0.1.0",
+  "manifest_id": "example-manifest",
+  "bundle_type": "raw",
+  "producing_commit": "0000000000000000000000000000000000000000",
+  "producing_configuration": "example-configuration",
+  "sanitizer_version": null,
+  "files": [
+    {
+      "path": "example/results.jsonl",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "bundle_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+}

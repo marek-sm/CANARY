@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:active_protocol:0.1.0",
+  "title": "CANARY active protocol (protocol/active.json)",
+  "description": "One field per item of SPEC.md Section 10's Active-protocol manifest list. Unlocked (0.x): W8-T3's generator writes protocol/active.json and may revise names here before the Gate 3 freeze. A null official field carries its reason (null_with_reason).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "protocol_id", "experiment_id", "validation_id",
+    "active_contributor_count", "tier", "tier_components", "tier_arithmetic", "selection_reason_category", "accountable_roles",
+    "base_case_ids", "base_case_count", "channels", "c1_controls", "conditions", "configurations", "run_indices",
+    "stage_configurations", "stage_configuration_count",
+    "hashes", "engineering_fallback_hashes",
+    "official_trial_count", "schedule_seed", "schedule_concurrency", "budget_cap_usd", "data_cutoff",
+    "development_floor"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "protocol_id": {"$ref": "#/$defs/text"},
+    "experiment_id": {"$ref": "#/$defs/text_or_null_with_reason"},
+    "validation_id": {"$ref": "#/$defs/text_or_null_with_reason"},
+    "active_contributor_count": {"type": "integer", "minimum": 0},
+    "tier": {"enum": ["F20", "R15", "M10-ALL", "M10-ONE", "M10-BASE", "L8-ONE", "L8-BASE", "R6-ONE", "R6-BASE", "ENGINEERING", "STOP"]},
+    "tier_components": {"type": "object"},
+    "tier_arithmetic": {"$ref": "#/$defs/text"},
+    "selection_reason_category": {"$ref": "#/$defs/text"},
+    "accountable_roles": {"type": "object", "minProperties": 1, "additionalProperties": {"$ref": "#/$defs/text"}},
+    "base_case_ids": {"$ref": "#/$defs/id_list"},
+    "base_case_count": {"type": "integer", "minimum": 0},
+    "channels": {"type": "array", "uniqueItems": true, "items": {"enum": ["C2", "C3", "C4"]}},
+    "c1_controls": {"$ref": "#/$defs/id_list"},
+    "conditions": {"type": "array", "uniqueItems": true, "items": {"enum": ["attack", "clean"]}},
+    "configurations": {"$ref": "#/$defs/configurations"},
+    "run_indices": {"type": "array", "uniqueItems": true, "items": {"type": "integer", "minimum": 1}},
+    "stage_configurations": {"$ref": "#/$defs/configurations"},
+    "stage_configuration_count": {"type": "integer", "minimum": 0},
+    "hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_registry", "prompt_tool", "code", "container", "schema", "oracle_scorer", "model", "defense", "corpus", "analysis", "source_ledger"],
+      "properties": {
+        "task_registry": {"$ref": "#/$defs/sha256"},
+        "prompt_tool": {"$ref": "#/$defs/sha256"},
+        "code": {"$ref": "#/$defs/sha256"},
+        "container": {"$ref": "#/$defs/hash_or_null_with_reason"},
+        "schema": {"$ref": "#/$defs/sha256"},
+        "oracle_scorer": {"$ref": "#/$defs/sha256"},
+        "model": {"$ref": "#/$defs/text_or_null_with_reason"},
+        "defense": {"$ref": "#/$defs/hash_or_null_with_reason"},
+        "corpus": {"$ref": "#/$defs/hash_or_null_with_reason"},
+        "analysis": {"$ref": "#/$defs/hash_or_null_with_reason"},
+        "source_ledger": {"$ref": "#/$defs/hash_or_null_with_reason"}
+      }
+    },
+    "engineering_fallback_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["validation_plan", "validation_schema", "report_generator"],
+      "properties": {
+        "validation_plan": {"$ref": "#/$defs/sha256"},
+        "validation_schema": {"$ref": "#/$defs/sha256"},
+        "report_generator": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "official_trial_count": {"type": "integer", "minimum": 0},
+    "schedule_seed": {"$ref": "#/$defs/text_or_null_with_reason"},
+    "schedule_concurrency": {"oneOf": [{"type": "integer", "minimum": 1}, {"$ref": "#/$defs/null_with_reason"}]},
+    "budget_cap_usd": {"type": "number", "minimum": 0},
+    "data_cutoff": {"$ref": "#/$defs/text"},
+    "development_floor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["counts", "outcome", "model", "endpoint", "reasoning_effort"],
+          "properties": {
+            "counts": {"type": "object"},
+            "outcome": {"$ref": "#/$defs/text"},
+            "model": {"$ref": "#/$defs/text"},
+            "endpoint": {"$ref": "#/$defs/text"},
+            "reasoning_effort": {"type": ["string", "null"]}
+          }
+        },
+        {"$ref": "#/$defs/null_with_reason"}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"tier": {"const": "ENGINEERING"}}},
+      "then": {
+        "properties": {
+          "base_case_ids": {"maxItems": 0}, "channels": {"maxItems": 0}, "c1_controls": {"maxItems": 0},
+          "conditions": {"maxItems": 0}, "configurations": {"maxItems": 0}, "run_indices": {"maxItems": 0},
+          "stage_configurations": {"maxItems": 0}, "base_case_count": {"const": 0},
+          "stage_configuration_count": {"const": 0}, "official_trial_count": {"const": 0},
+          "experiment_id": {"$ref": "#/$defs/null_with_reason"},
+          "schedule_seed": {"$ref": "#/$defs/null_with_reason"},
+          "validation_id": {"$ref": "#/$defs/text"},
+          "hashes": {"properties": {"source_ledger": {"$ref": "#/$defs/sha256"}}}
+        }
+      },
+      "else": {
+        "properties": {
+          "experiment_id": {"$ref": "#/$defs/text"},
+          "schedule_seed": {"$ref": "#/$defs/text"},
+          "base_case_ids": {"minItems": 1},
+          "configurations": {"minItems": 1}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "id_list": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "configurations": {"type": "array", "uniqueItems": true, "items": {"enum": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"]}},
+    "null_with_reason": {
+      "type": "object", "additionalProperties": false, "required": ["value", "null_reason"],
+      "properties": {"value": {"type": "null"}, "null_reason": {"type": "string", "minLength": 1}}
+    },
+    "text_or_null_with_reason": {"oneOf": [{"$ref": "#/$defs/text"}, {"$ref": "#/$defs/null_with_reason"}]},
+    "hash_or_null_with_reason": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"$ref": "#/$defs/null_with_reason"}]}
+  }
+}

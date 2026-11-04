@@ -345,6 +345,7 @@ def _load_base(
         return cache[base_case_id]
     path = _inside(corpus_root, corpus_root / f"{base_case_id}.json")
     base = json.loads(path.read_text(encoding="utf-8"))
+    validator("base_case").validate(base)  # a bad record is refused before any trial uses it
     if "CANARY-" in base["attack"]["canonical_payload"]:
         raise ValueError("canonical payload must not contain a literal canary (SPEC.md Section 5)")
     template = load_template(

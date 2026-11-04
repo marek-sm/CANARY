@@ -67,6 +67,7 @@ def committed_spec(provider_name: str) -> dict[str, Any]:
 
 
 def validate_grid_spec(spec: Mapping[str, Any]) -> list[ScheduledTrial]:
+    validator("schedule_spec").validate(dict(spec))
     schedule = generate_schedule(spec)
     if len(schedule) != EXPECTED_TRIALS:
         raise ValueError(
@@ -618,7 +619,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     spec = load_spec(getattr(args, "spec", None))
 
     if args.command == "validate":
-        validate_grid_spec(spec)
+        try:
+            validate_grid_spec(spec)
+        except REFUSALS as exc:
+            print(f"refusing: {exc}", file=sys.stderr)
+            return 1
         print(f"ok: {EXPECTED_TRIALS} trials for experiment_id={spec['experiment_id']!r}")
         return 0
 

@@ -2,19 +2,22 @@
 
 Every provider here is a fake that reaches no network, behind the real paid-run gate,
 ledger, and cap (tests/conftest.py's stand-in home). The corpus is a temporary copy of
-a development base relabelled as evaluation; corpus/evaluation is never read.
+a development base relabelled as evaluation, under an ``eval-`` ID so its record
+validates against base_case.schema.json; corpus/evaluation is never read.
 """
 
 import json
+import shutil
 from types import SimpleNamespace
 
 import pytest
 
-from runner import execute, live_smoke, paid_run, spend_ledger, sweep
+from runner import delivery, execute, live_smoke, paid_run, spend_ledger, sweep
 from tests.test_verify_evidence import FakeAdapter
 
+EVAL_ID = "eval-901"  # dev-001 relabelled; not a real evaluation candidate
 SPEC = {"experiment_id": "sweep-test", "model_id": "fake-model", "seed": "sweep-seed", "protocol_sentinel": "v1-19-0",
-        "base_case_ids": ["dev-001"], "channels": ["C2", "C3", "C4"], "conditions": ["attack", "clean"],
+        "base_case_ids": [EVAL_ID], "channels": ["C2", "C3", "C4"], "conditions": ["attack", "clean"],
         "configurations": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"], "repeats": 1}
 
 
@@ -38,11 +41,22 @@ def provider(monkeypatch, tmp_path):
 
 
 @pytest.fixture
-def corpus(tmp_path):
+def corpus(tmp_path, monkeypatch):
+    """dev-001 as a schema-valid evaluation base: its renders copied under fixtures/EVAL_ID
+    in a fixture root that delivery reads (as tests/test_delivery.py repoints it)."""
     root = tmp_path / "evaluation"
     root.mkdir()
     base = json.loads((execute.DEFAULT_CORPUS_ROOT / "dev-001.json").read_text(encoding="utf-8"))
-    (root / "dev-001.json").write_text(json.dumps({**base, "split": "evaluation"}), encoding="utf-8")
+    fixture_root = tmp_path / "fixture-root"
+    shutil.copytree(delivery.REPO_ROOT / "fixtures" / "dev-001", fixture_root / "fixtures" / EVAL_ID)
+    pins = fixture_root / "fixtures" / EVAL_ID / "rendered-hashes.json"
+    pins.write_text(pins.read_text(encoding="utf-8").replace("fixtures/dev-001/", f"fixtures/{EVAL_ID}/"), encoding="utf-8")
+    for real in (delivery.REPO_ROOT / "fixtures").iterdir():  # every other base's renders, unchanged
+        (fixture_root / "fixtures" / real.name).symlink_to(real)
+    monkeypatch.setattr(delivery, "REPO_ROOT", fixture_root)
+    fixture = {**base["fixture"], "rendered_hash_manifest": f"fixtures/{EVAL_ID}/rendered-hashes.json"}
+    (root / f"{EVAL_ID}.json").write_text(
+        json.dumps({**base, "split": "evaluation", "base_case_id": EVAL_ID, "fixture": fixture}), encoding="utf-8")
     return root
 
 
@@ -90,11 +104,11 @@ def test_the_sweep_refuses_before_any_key_is_read(gate, provider, corpus, tmp_pa
 
 def test_the_sweep_refuses_a_development_base_without_the_ack_or_inside_git(gate, provider, corpus, tmp_path, monkeypatch):
     gate.open()
-    base = json.loads((corpus / "dev-001.json").read_text(encoding="utf-8"))
-    (corpus / "dev-001.json").write_text(json.dumps({**base, "split": "development"}), encoding="utf-8")
+    base = json.loads((corpus / f"{EVAL_ID}.json").read_text(encoding="utf-8"))
+    (corpus / f"{EVAL_ID}.json").write_text(json.dumps({**base, "split": "development"}), encoding="utf-8")
     with pytest.raises(paid_run.PaidRunRefused, match="evaluation base"):
         _run(provider, corpus, tmp_path / "sweep")
-    (corpus / "dev-001.json").write_text(json.dumps(base), encoding="utf-8")
+    (corpus / f"{EVAL_ID}.json").write_text(json.dumps(base), encoding="utf-8")
     with pytest.raises(paid_run.PaidRunRefused, match="Git"):
         _run(provider, corpus, gate.root / "sweep-out")
     monkeypatch.delenv("CANARY_PAID_RUN_ACK")
@@ -107,3 +121,30 @@ def test_the_sweep_refuses_without_a_paid_run_record(gate, provider, corpus, tmp
     with pytest.raises(paid_run.PaidRunRefused, match="record"):
         _run(provider, corpus, tmp_path / "sweep")
     assert provider.built == []
+
+
+# Stack-gaps item 6: a missing or drifted render refuses the sweep before any trial,
+# instead of becoming one silent infrastructure_failure per cell.
+@pytest.mark.parametrize("damage", ["missing_file", "changed_file", "missing_pin", "missing_manifest"])
+def test_the_sweep_refuses_before_any_trial_when_a_render_is_missing(gate, provider, corpus, tmp_path, damage):
+    gate.open()
+    renders = delivery.REPO_ROOT / "fixtures" / EVAL_ID
+    pins = renders / "rendered-hashes.json"
+    if damage == "missing_file":
+        (renders / "rendered" / "c3_attack.txt").unlink()
+    elif damage == "changed_file":
+        (renders / "rendered" / "c4_clean.html").write_text("<p>drift</p>", encoding="utf-8")
+    elif damage == "missing_pin":
+        table = json.loads(pins.read_text(encoding="utf-8"))
+        del table["c2_clean"]
+        pins.write_text(json.dumps(table), encoding="utf-8")
+    else:
+        pins.unlink()
+    with pytest.raises(paid_run.PaidRunRefused, match=f"{EVAL_ID}.*render"):
+        _run(provider, corpus, tmp_path / "sweep")
+    assert provider.built == [] and provider.adapter.calls == 0
+    assert not (tmp_path / "sweep").exists()
+
+
+def test_the_render_preflight_passes_a_complete_corpus(corpus):
+    assert sweep._renders_refusal(corpus, SPEC) is None

@@ -1,0 +1,82 @@
+{
+  "schema_version": "0.1.0",
+  "protocol_id": "canary-example-protocol",
+  "experiment_id": "example-experiment",
+  "validation_id": {
+    "value": null,
+    "null_reason": "an empirical tier has no active validation"
+  },
+  "active_contributor_count": 6,
+  "tier": "F20",
+  "tier_components": {
+    "bases": 20,
+    "channels": 3,
+    "configurations": 3,
+    "repeats": 3
+  },
+  "tier_arithmetic": "ILLUSTRATIVE ONLY: not a selected tier or count",
+  "selection_reason_category": "example",
+  "accountable_roles": {
+    "project_lead": "contributor-0"
+  },
+  "base_case_ids": [
+    "example-001"
+  ],
+  "base_case_count": 1,
+  "channels": [
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "c1_controls": [
+    "example-c1"
+  ],
+  "conditions": [
+    "attack",
+    "clean"
+  ],
+  "configurations": [
+    "D0_BASELINE",
+    "D1_POLICY_GATE",
+    "D2_DATAMARKING"
+  ],
+  "run_indices": [
+    1,
+    2,
+    3
+  ],
+  "stage_configurations": [
+    "D0_BASELINE"
+  ],
+  "stage_configuration_count": 1,
+  "hashes": {
+    "task_registry": "0000000000000000000000000000000000000000000000000000000000000000",
+    "prompt_tool": "0000000000000000000000000000000000000000000000000000000000000000",
+    "code": "0000000000000000000000000000000000000000000000000000000000000000",
+    "container": {
+      "value": null,
+      "null_reason": "example"
+    },
+    "schema": "0000000000000000000000000000000000000000000000000000000000000000",
+    "oracle_scorer": "0000000000000000000000000000000000000000000000000000000000000000",
+    "model": "example-model",
+    "defense": "0000000000000000000000000000000000000000000000000000000000000000",
+    "corpus": "0000000000000000000000000000000000000000000000000000000000000000",
+    "analysis": "0000000000000000000000000000000000000000000000000000000000000000",
+    "source_ledger": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "engineering_fallback_hashes": {
+    "validation_plan": "0000000000000000000000000000000000000000000000000000000000000000",
+    "validation_schema": "0000000000000000000000000000000000000000000000000000000000000000",
+    "report_generator": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "official_trial_count": 0,
+  "schedule_seed": "example-seed",
+  "schedule_concurrency": 1,
+  "budget_cap_usd": 0,
+  "data_cutoff": "example-cutoff",
+  "development_floor": {
+    "value": null,
+    "null_reason": "example: no Gate 2 step copied"
+  }
+}
