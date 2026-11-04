@@ -16,3 +16,5 @@
 16. runner/delivery.py (dispatch/block events), runner/execute.py _run_trial_body/_run_delivery_loop/execute_trial
 17. agent/anthropic_adapter.py, agent/openai_adapter.py (content-filter mapping only, via grep)
 18. oracles/utility/task_suite.py (after residual utility diffs)
+19. docs/decisions (grep only, for decisions cited in repo docstrings)
+20. docs/protocol_deviations.md (DEV-0003 only); SPEC.md version line
