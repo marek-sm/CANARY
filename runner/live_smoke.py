@@ -84,7 +84,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     del key
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     out = ticket_slice.run(args.out or DEFAULT_OUT_ROOT / stamp, adapter, model=model, decoding=provider["decoding"],
-                           experiment_id=f"live-dev-{stamp}", analysis_role="excluded_development")
+                           experiment_id=f"live-dev-{stamp}", analysis_role="excluded_development", live_smoke=True)
 
     events = base.read_jsonl(out / base.EVENTS_FILE, "event")
     [result] = base.read_jsonl(out / base.RESULTS_FILE, "result")

@@ -26,15 +26,17 @@ uv run make trace                    # no make: uv run python -m runner.mock_sli
 
 `make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
 
+Every tool process runs in a sandbox ([decision 0023](docs/decisions/0023-tool-sandbox.md)); run `uv run make sandbox-check` once on a new machine and report a failure the same day. macOS needs nothing extra. Linux (x86_64 or aarch64) needs `bubblewrap` and, on Ubuntu 23.10 and later, `kernel.apparmor_restrict_unprivileged_userns=0` in a file under `/etc/sysctl.d`; on Windows, use WSL2 Ubuntu.
+
 `make demo-example` regenerates the accessible W6 development-output example
 from the real six-cell mock runner. `make demo-example-check` verifies that the
 committed example is current. Both commands are offline and make no model call.
 
-`make live-smoke` makes paid Anthropic calls: it runs one W5-T1 ticket trial on the decision 0010 development model, `claude-haiku-5-5`, and writes it under `results/development/live/`. It is run by hand, with the key in a local `.env` (one `ANTHROPIC_API_KEY=` line). `python -m runner.live_smoke --provider openai --env-file .env.openai` runs the same trial on the declared fallback, `gpt-6-luna`. It refuses when `CI` or any `ANTHROPIC_*` or `OPENAI_*` variable is set, and CI never runs it.
+`make live-smoke` makes paid Anthropic calls: it runs one W5-T1 ticket trial on the decision 0010 development model, `claude-haiku-5-5`, and writes it under `results/development/live/`. It is run by hand, with the key in a local `.env` (one `ANTHROPIC_API_KEY=` line). `python -m runner.live_smoke --provider openai --env-file .env.openai` runs the same trial on the declared fallback, `gpt-6-luna`. It refuses when `CI` or any `ANTHROPIC_*` or `OPENAI_*` variable is set, and CI never runs it. Its read tool runs in the tool sandbox, and it is the one paid command that needs no paid-run record.
 
 `make floor-count RUN=<run directory>` is the Gate 2 step's `SPEC.md` Section 10 development-floor count over one live development-grid run; add `OUT=<file>` to save the report. It reads records only, refuses mock-provider, evaluation, and other-run records, and makes no provider call.
 
-`make grid-validate` checks that `protocol/development_grid_spec.json` expands to the Section 9 ninety-cell grid. `make grid-mock` runs that grid on the mock through tool-result delivery, so each configuration runs its real defense path, and `make grid-verify RUN=<run directory>` checks trial coverage, resume invariants, and that every D1_POLICY_GATE dispatch has a gate decision and only D2_DATAMARKING delivers marked content. `make grid-summary RUN=<run directory>` prints per-channel/configuration usage aggregates. `python -m runner.grid_dev live` always refuses for now: paid grid runs open only once the paid-path tool sandbox (audit F-01) exists and the project lead records the date the paid-run condition holds. `make gate2-budget RUN=<run directory> BALANCE=<usd> C1_COST=<usd>` evaluates the Section 9 budget inequality on a live grid run.
+`make grid-validate` checks that `protocol/development_grid_spec.json` expands to the Section 9 ninety-cell grid. `make grid-mock` runs that grid on the mock through tool-result delivery, so each configuration runs its real defense path, and `make grid-verify RUN=<run directory>` checks trial coverage, resume invariants, and that every D1_POLICY_GATE dispatch has a gate decision and only D2_DATAMARKING delivers marked content. `make grid-summary RUN=<run directory>` prints per-channel/configuration usage aggregates, counting trials whose usage is unknown apart rather than as zero. `python -m runner.grid_dev live` opens only when `runner.paid_run` finds the project lead's paid-run record, `protocol/paid_run_record.json`, valid for this checkout's code and sandbox; `python -m runner.paid_run check` says whether a paid run may start here. `make gate2-budget RUN=<run directory> BALANCE=<usd> C1_COST=<usd> RESERVE=<usd>` evaluates the Section 9 budget inequality on a live grid run; the reserve term is required, and a trial whose model response lacks recorded usage stops the evaluation rather than counting as free.
 
 ## What CANARY is designed to measure
 
@@ -103,6 +105,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0020-request-level-formula.md`](docs/decisions/0020-request-level-formula.md) | Why `SPEC.md` Section 7's `unauthorized_action_dispatched` and `unauthorized_action_effect` no longer name `request_evaluable`, so a dispatched request whose audit didn't complete gives null, as the scorer already does |
 | [`docs/decisions/0021-two-week-shift.md`](docs/decisions/0021-two-week-shift.md) | Why every lattice week from W7 on moves two working weeks later, once, with Gate 3 on November 11, the data cutoff November 22, and the release freeze December 6, and the 48-hour turnaround rule it sets for every owner |
 | [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
+| [`docs/decisions/0023-tool-sandbox.md`](docs/decisions/0023-tool-sandbox.md) | Why every tool process, mock runs and CI included, runs in a deny-by-default OS sandbox that reaches only its trial's fixture socket and can't write evidence, why no paid call runs without the project lead's paid-run record, and why the paid commands run on the project lead's Mac |
 | [`docs/decisions/0024-engineering-tier-input.md`](docs/decisions/0024-engineering-tier-input.md) | Superseded by decision 0025. Why the Gate 2 step was closed on October 31 and the November 1 tier input was `ENGINEERING` |
 | [`docs/decisions/0025-full-study.md`](docs/decisions/0025-full-study.md) | Why decision 0024 was replaced a day later and the study targets `F20`, why that is a third move with no new evidence, why the Gate 1 cap is lifted after the fact, and the dated tripwires, new work, budget rule, and sweep conditions that follow |
 | [`docs/decisions/0026-malformed-calls-and-price-bound.md`](docs/decisions/0026-malformed-calls-and-price-bound.md) | Why a malformed tool call stays a malformed outcome and an unauthorized request made in one goes uncounted, why replies are limited to one tool call, how the limit is reported, why the Section 7 and Section 9 wording change is protocol deviation DEV-0003, and how the maximum-token price bound is set |
@@ -136,10 +139,10 @@ outstanding.
 
 `uv run make t1-suite` runs all ten deterministic templates through their 20
 declared task/channel variants using only the mock provider. Each trial gets
-verified fictional fixtures, a private loopback page service, and an empty local
-email sink. Outputs go to a fresh temporary directory. These are excluded
-engineering checks; they do not count as the Week 7 paid development grid or
-coverage smokes. See the [W6-T1 handoff](docs/W6_T1_HANDOFF.md) for the registry,
+verified fictional fixtures, a private page service on a per-trial Unix socket,
+and an empty local email sink, with every tool process in the tool sandbox.
+Outputs go to a fresh temporary directory. These are excluded engineering
+checks; they do not count as the Week 7 paid development grid or coverage smokes. See the [W6-T1 handoff](docs/W6_T1_HANDOFF.md) for the registry,
 tool boundaries, utility evidence, and independent-review requirements.
 
 ### W6-T2 development corpus check

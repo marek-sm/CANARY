@@ -9,9 +9,9 @@ at the provisional F20 geometry:
                + planned_C1_trials × conservative_C1_trial_cost]
        + unspent_development_rehearsal_and_stage_reserve
 
-Trial cost is taken from each result's ``usage`` block when present; otherwise
-from summing ``attempts[].usage``. Costs use decision 0010 Haiku list pricing
-unless ``--price-table`` overrides them.
+Trial cost is taken from each result's summed ``usage``; when that total is
+unknown, from the trial's ``provider_attempt`` events. Costs use decision 0010
+Haiku list pricing for prompts up to 100,000 tokens.
 """
 
 from __future__ import annotations
@@ -37,25 +37,48 @@ DEFAULT_INPUT_USD_PER_TOKEN = 0.10 / 1_000_000
 DEFAULT_OUTPUT_USD_PER_TOKEN = 0.50 / 1_000_000
 
 
-def _usage_from_record(record: Mapping[str, Any]) -> tuple[int, int]:
-    usage = record.get("usage")
-    if isinstance(usage, Mapping):
-        return int(usage.get("input_tokens") or 0), int(usage.get("output_tokens") or 0)
+def _count(value: Any) -> Optional[int]:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _usage_from_record(
+    record: Mapping[str, Any], events: Optional[Sequence[Mapping[str, Any]]] = None
+) -> tuple[int, int]:
+    """The trial's billed tokens. A model response's usage is never priced at zero.
+
+    The result's summed ``usage`` is null when any attempt's count is unknown.
+    The trial's events then decide: an attempt that returned model content must
+    carry its usage, and one that failed without content counts nothing (the 25%
+    contingency covers bounded retries, SPEC.md Section 9).
+    """
+    usage = record.get("usage") or {}
+    inp, out = _count(usage.get("input_tokens")), _count(usage.get("output_tokens"))
+    if inp is not None and out is not None:
+        return inp, out
+    if events is None:
+        raise ValueError(f"{record.get('logical_trial_id')}: usage unknown; pass the trial's events")
     inp = out = 0
-    for attempt in record.get("attempts") or []:
-        attempt_usage = attempt.get("usage") or {}
-        inp += int(attempt_usage.get("input_tokens") or 0)
-        out += int(attempt_usage.get("output_tokens") or 0)
+    for event in events:
+        if event.get("event_type") != "provider_attempt":
+            continue
+        payload = event["payload"]
+        attempt = payload.get("usage") or {}
+        attempt_in, attempt_out = _count(attempt.get("input_tokens")), _count(attempt.get("output_tokens"))
+        if attempt_in is not None and attempt_out is not None:
+            inp, out = inp + attempt_in, out + attempt_out
+        elif payload.get("outcome") == "model_response":
+            raise ValueError(f"{event.get('attempt_id')}: model response without recorded usage")
     return inp, out
 
 
 def trial_cost_usd(
     record: Mapping[str, Any],
+    events: Optional[Sequence[Mapping[str, Any]]] = None,
     *,
     input_rate: float = DEFAULT_INPUT_USD_PER_TOKEN,
     output_rate: float = DEFAULT_OUTPUT_USD_PER_TOKEN,
 ) -> float:
-    inp, out = _usage_from_record(record)
+    inp, out = _usage_from_record(record, events)
     return inp * input_rate + out * output_rate
 
 
@@ -85,8 +108,8 @@ def evaluate_budget(
 
     costs_by_stratum: dict[tuple[str, str, str], list[float]] = defaultdict(list)
     all_costs: list[float] = []
-    for record, _events in trials:
-        cost = trial_cost_usd(record)
+    for record, events in trials:
+        cost = trial_cost_usd(record, events)
         all_costs.append(cost)
         costs_by_stratum[_stratum(record)].append(cost)
 
@@ -123,7 +146,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("run_dir", type=Path, help="development grid run directory")
     parser.add_argument("--remaining-balance-usd", type=float, required=True)
-    parser.add_argument("--reserve-usd", type=float, default=0.0)
+    # SPEC.md Section 9 requires the reserve term; there is no default of zero.
+    parser.add_argument("--reserve-usd", type=float, required=True)
     parser.add_argument("--conservative-c1-trial-cost-usd", type=float, required=True)
     parser.add_argument("--out", type=Path, help="write JSON report here")
     args = parser.parse_args(argv)

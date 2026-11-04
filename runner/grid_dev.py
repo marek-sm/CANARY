@@ -28,7 +28,7 @@ from typing import Any, Callable, Mapping, Optional
 
 from analysis.floor_count import load_run
 from defenses.interfaces import DATAMARK_MARKER
-from runner import execute
+from runner import execute, paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, REPO_ROOT, read_jsonl, validator
 from runner.provider_config import load_api_key
@@ -107,19 +107,11 @@ def _provider_env_refusal() -> Optional[str]:
     return None
 
 
-PAID_RUNS_CLOSED = (
-    "paid grid runs are closed: they open only once the paid-path tool sandbox "
-    "(audit F-01) exists and the project lead records the date the paid-run "
-    "condition holds (TASKS.md); CANARY_PAID_RUN_ACK alone is never enough"
-)
-
-
 def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
-    """Fail closed before any paid call. Paid runs stay closed until the paid-path
-    tool sandbox and the project lead's paid-run record exist; delivery mode
-    refuses any non-mock provider on its own as well. The specific reasons below
-    come first so an operator sees what else is wrong; none of them alone ever
-    opens the path."""
+    """Fail closed before any paid call. The specific reasons come first so an
+    operator sees what else is wrong; the path opens only when ``runner.paid_run``
+    finds the project lead's record valid for this code and sandbox, and every
+    trial checks that again before its first call."""
     if os.environ.get("CANARY_PAID_RUN_ACK") != "1":
         return (
             "set CANARY_PAID_RUN_ACK=1 only after the project lead confirms "
@@ -135,32 +127,14 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str
             f"corpus/development missing development bases {absent}; "
             "merge W6-T2 (#34) before a live grid run"
         )
-    return PAID_RUNS_CLOSED
+    if Path(corpus_root).resolve() != execute.DEFAULT_CORPUS_ROOT.resolve():
+        return "a live grid runs only on corpus/development, the corpus its paid-run record hashed"
+    return paid_run.paid_run_refusal()
 
 
-def _adapter_with_pinned_decoding(adapter: Any, decoding: Mapping[str, Any]) -> Any:
-    """execute.run_schedule passes mock decoding; live runs pin decision 0010 settings."""
-
-    class _Provider:
-        adapter_version = adapter.adapter_version
-
-        def complete(
-            self,
-            messages: Any,
-            tool_schemas: Any,
-            _decoding: Mapping[str, Any],
-            model_request: Mapping[str, Any],
-        ) -> dict[str, Any]:
-            return adapter.complete(messages, tool_schemas, decoding, model_request)
-
-    return _Provider()
-
-
-def build_live_provider_factory(adapter: Any, decoding: Mapping[str, Any]) -> Callable[..., Any]:
-    provider = _adapter_with_pinned_decoding(adapter, decoding)
-
+def build_live_provider_factory(adapter: Any) -> Callable[..., Any]:
     def factory(_trial: ScheduledTrial, _canaries: list[str]) -> Any:
-        return provider
+        return adapter
 
     return factory
 
@@ -199,15 +173,16 @@ def run_live_grid(
     del key
 
     schedule = validate_grid_spec(spec)
-    factory = build_live_provider_factory(adapter, provider_cfg["decoding"])
+    # Decision 0010's settings are sent with every request and recorded in every trial.
     return execute.run_schedule(
         out_dir,
         schedule,
         corpus_root=root,
         resume=resume,
         spec=dict(spec),
-        provider_factory=factory,
+        provider_factory=build_live_provider_factory(adapter),
         delivery=True,
+        decoding=provider_cfg["decoding"],
     )
 
 
@@ -388,10 +363,14 @@ def usage_by_channel_configuration(trials: list[tuple[Mapping[str, Any], Any]]) 
                 "input_tokens": 0,
                 "output_tokens": 0,
                 "steps_used": 0,
+                "usage_unknown_trials": 0,
             },
         )
         totals["trials"] += 1
         totals["provider_requests"] += int(usage.get("provider_requests") or 0)
+        # A null total is unknown, not zero: count it apart so the sums aren't read as complete.
+        if any(not isinstance(usage.get(k), int) for k in ("input_tokens", "output_tokens")):
+            totals["usage_unknown_trials"] += 1
         totals["input_tokens"] += int(usage.get("input_tokens") or 0)
         totals["output_tokens"] += int(usage.get("output_tokens") or 0)
         ended = next((e for e in events if e["event_type"] == "trial_ended"), None)
