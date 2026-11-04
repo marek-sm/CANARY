@@ -8,6 +8,7 @@ in the mount namespace.
 """
 from __future__ import annotations
 
+import os
 import socket as _s
 
 from conftest import attempt_snippet, requires_sandbox, run_probe, skip_if_root
@@ -83,6 +84,45 @@ emit()
 """
     r = run_probe(trial, code, expect_returncode=None)
     assert r["loopback_up"][0] == "denied", r["loopback_up"]
+
+
+def test_cannot_reach_a_host_abstract_unix_socket(trial):
+    """Abstract-namespace AF_UNIX sockets are not files, so a mount namespace does
+    not hide them — but they live in the network namespace, which bwrap unshares.
+    A host abstract socket must be unreachable from inside."""
+    name = "\0canary-redteam-abstract-%d" % os.getpid()
+    host = _s.socket(_s.AF_UNIX)
+    host.bind(name)
+    host.listen(1)
+    trial.listeners.append(host)
+    code = attempt_snippet() + f"""
+import socket
+def f():
+    s = socket.socket(socket.AF_UNIX); s.settimeout(2); s.connect({name!r}); s.close(); return "connected"
+attempt("abstract", f)
+emit()
+"""
+    r = run_probe(trial, code, expect_returncode=None)
+    assert r["abstract"][0] == "denied", r["abstract"]
+
+
+def test_dev_exposes_only_safe_pseudo_devices(trial):
+    """bwrap --dev builds a minimal devtmpfs; no /dev/mem, /dev/kmsg, or host disk
+    is present or usable."""
+    code = attempt_snippet() + r"""
+import os
+R["dev"] = sorted(os.listdir("/dev"))
+for name in ("mem", "kmem", "kmsg", "sda", "nvme0n1", "port"):
+    attempt("open_" + name, (lambda n: (lambda: os.open("/dev/" + n, os.O_RDONLY)))(name))
+R["urandom_ok"] = len(os.urandom(8)) == 8
+emit()
+"""
+    r = run_probe(trial, code, expect_returncode=None)
+    assert r["urandom_ok"] is True, r
+    for name in ("mem", "kmem", "kmsg", "sda", "nvme0n1", "port"):
+        assert r["open_" + name][0] == "denied", (name, r["open_" + name])
+    # No block device or host disk leaked into the minimal /dev.
+    assert not any(d.startswith(("sd", "nvme", "vd", "mem")) for d in r["dev"]), r["dev"]
 
 
 def test_io_uring_cannot_reach_a_host_file_or_foreign_socket(trial):

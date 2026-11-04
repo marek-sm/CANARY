@@ -14,8 +14,15 @@ calls) or a ``-1``/errno result (raw ``syscall``).
 from __future__ import annotations
 
 import os
+import platform
+import signal
+import subprocess
+import sys
+
+import pytest
 
 from conftest import attempt_snippet, requires_sandbox, run_probe, skip_if_root
+from tools import sandbox
 
 pytestmark = [requires_sandbox, skip_if_root]
 
@@ -218,3 +225,63 @@ emit()
     r = run_probe(trial, code, expect_returncode=None)
     assert r["no_new_privs_is_1"][1] == 1, r["no_new_privs_is_1"]
     assert r["stack_allow_all_then_exec"][1]["exec"].startswith("BLOCKED"), r["stack_allow_all_then_exec"]
+
+
+def _run_raw(trial, code):
+    """Run CODE in the sandbox and return the raw CompletedProcess (for inspecting
+    the exit signal), bypassing the JSON-parsing helper."""
+    argv = [sys.executable, "-I", "-c", code]
+    wrapped = sandbox.wrap(argv, cwd=trial.state, read=[trial.fixtures], write=[trial.state])
+    return subprocess.run(wrapped, cwd=trial.state, capture_output=True, text=True,
+                          timeout=60, env=sandbox.environment([trial.state]))
+
+
+@pytest.mark.skipif(platform.machine() not in ("x86_64", "amd64"),
+                    reason="int 0x80 is an x86 compat-ABI probe")
+def test_i386_int_0x80_syscall_kills_the_process(trial):
+    """A 64-bit process can issue an i386-ABI syscall via `int 0x80`. The filter's
+    arch guard sees AUDIT_ARCH_I386 and returns SECCOMP_RET_KILL_PROCESS, so the
+    tool is killed (SIGSYS) before the syscall runs — it never execs."""
+    code = r"""
+import ctypes, mmap
+# mov eax, 11 (i386 __NR_execve); int 0x80; ret  -- any nr works: the arch guard fires first.
+stub = bytes([0xb8, 0x0b, 0x00, 0x00, 0x00, 0xcd, 0x80, 0xc3])
+buf = mmap.mmap(-1, len(stub), prot=mmap.PROT_READ | mmap.PROT_WRITE | mmap.PROT_EXEC)
+buf.write(stub)
+addr = ctypes.addressof(ctypes.c_char.from_buffer(buf))
+fn = ctypes.CFUNCTYPE(ctypes.c_int)(addr)
+print("ABOUT_TO_CALL", flush=True)
+fn()
+print("SURVIVED_FOREIGN_ABI", flush=True)   # must never print
+"""
+    completed = _run_raw(trial, code)
+    assert "ABOUT_TO_CALL" in completed.stdout, completed.stdout        # the stub ran
+    assert "SURVIVED_FOREIGN_ABI" not in completed.stdout, completed.stdout
+    # SECCOMP_RET_KILL_PROCESS delivers SIGSYS. The direct child is bwrap, which
+    # relays a signal-killed sandbox as exit code 128+signum; a nested run may also
+    # surface the raw -signum. Either way the tool was killed by SIGSYS, not 0.
+    assert completed.returncode in (-signal.SIGSYS, 128 + int(signal.SIGSYS)), \
+        (completed.returncode, completed.stdout, completed.stderr[-500:])
+
+
+@pytest.mark.skipif(platform.machine() not in ("x86_64", "amd64"),
+                    reason="x32 syscall numbering is x86_64-specific")
+def test_x32_execve_returns_eperm(trial):
+    """x32 shares the x86_64 audit arch but carries __X32_SYSCALL_BIT; the filter
+    denies every such number with EPERM, execve (0x40000000|520) included."""
+    code = attempt_snippet() + r"""
+import ctypes, os
+libc = ctypes.CDLL(None, use_errno=True)
+X32 = 0x40000000
+path = b"/bin/sh"; argv = (ctypes.c_char_p * 2)(b"sh", None); envp = (ctypes.c_char_p * 1)(None)
+def call(nr):
+    ctypes.set_errno(0)
+    rc = libc.syscall(ctypes.c_long(nr), path, argv, envp)
+    return {"rc": rc, "errno": ctypes.get_errno()}
+attempt("x32_execve", lambda: call(X32 | 520))
+attempt("x32_execveat", lambda: call(X32 | 545))
+emit()
+"""
+    r = run_probe(trial, code, expect_returncode=None)
+    for name in ("x32_execve", "x32_execveat"):
+        assert r[name][0] == "allowed" and r[name][1]["rc"] == -1 and r[name][1]["errno"] == 1, (name, r[name])
