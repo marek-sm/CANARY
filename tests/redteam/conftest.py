@@ -154,7 +154,9 @@ def run_worker(trial: Trial, request: dict, *, fixture_root=None, state=None,
     ``tasks/registry.py:worker`` does, and return the tool's JSON result."""
     fixture_root = trial.fixtures if fixture_root is None else fixture_root
     state = trial.state if state is None else state
-    cwd = trial.sock if socket_dir is not None else state
+    # The worker runs from the socket dir when a fixture service is used (matching
+    # tasks/registry.py:worker), else from its state dir.
+    cwd = socket_dir if socket_dir is not None else state
     sock_name = sandbox.SOCKET_NAME if socket_dir is not None else ""
     argv = [sys.executable, "-I", str(ROOT / "tools/worker.py"),
             str(Path(fixture_root).resolve()), str(Path(state).resolve()), sock_name]
