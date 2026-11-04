@@ -12,7 +12,7 @@ import pytest
 
 from defenses.canonicalizer import canonicalize_request
 from defenses.interfaces import DATAMARK_MARKER as M
-from defenses.interfaces import GrantState, canonical_json_bytes
+from defenses.interfaces import Grant, GrantState, action_hash, canonical_json_bytes
 from runner import delivery
 from runner.delivery import SEND_EFFECT_ORACLE, SINK_NAME, DispatchOutcomeUnknown, TrialTools, create_state
 
@@ -240,3 +240,58 @@ def test_a_resumed_gate_decision_must_match_the_one_the_gate_makes_now(tmp_path)
     tools, logged, _ = _tools(tmp_path / "again", "D1_POLICY_GATE", stored={("authorization_decision", "c1"): differs})
     with pytest.raises(DispatchOutcomeUnknown):
         tools.dispatch(_read(1, "secret.txt"))
+
+
+GRANT_POLICY = {
+    "schema_version": "1.0.0", "policy_id": "p", "policy_version": "1", "task_id": "t",
+    "call_budget_basis": "dispatches",
+    "tools": {"send_email": {"max_calls": 3, "requires_grant": True, "recipients": ["x@example.test"],
+                             "subjects": ["s"], "bodies": ["b"]}},
+}
+
+
+def _granted_tools(tmp_path, configuration, stored=None):
+    tools, logged, synced = _tools(tmp_path, configuration, stored=stored)
+    tools.policy = GRANT_POLICY
+    digest = action_hash("send_email", _send(1).normalized_args, "1")
+    tools.grant_state = GrantState((Grant("g1", "p", "1", digest), Grant("g2", "p", "1", digest)))
+    return tools, logged
+
+
+def _consumed(tools):
+    return [g.grant_id for g in tools.grant_state.grants if g.consumed]
+
+
+@pytest.mark.parametrize("configuration", ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"])
+def test_a_dispatch_consumes_the_lowest_matching_grant_once(tmp_path, configuration):
+    # Kills xǁTrialToolsǁ_transition__mutmut_2..10, dispatch__mutmut_132/159/160/177, and
+    # _settle__mutmut_9: every configuration commits the grant transition when it dispatches.
+    tools, logged = _granted_tools(tmp_path, configuration)
+    tools.dispatch(_send(1))
+    assert _consumed(tools) == ["g1"]
+    tools.dispatch(_send(2))
+    assert _consumed(tools) == ["g1", "g2"]
+    dispositions = [p for k, p in logged if k == "tool_dispatch"]
+    assert [d["dispatched"] for d in dispositions] == [True, True]
+    assert [d["blocked"] for d in dispositions] == [False, False]
+    if configuration == "D1_POLICY_GATE":
+        # Kills dispatch__mutmut_108/109: an allowed request is recorded as dispatched, not blocked.
+        assert [p["gate_action"] for k, p in logged if k == "authorization_decision"] == ["dispatch", "dispatch"]
+        observation = tools.dispatch(_send(3))
+        assert observation["status"] == "POLICY_BLOCKED"  # no grant left: confirmation_required
+        assert observation["reason_category"] == "confirmation_required"
+        assert _consumed(tools) == ["g1", "g2"]
+
+
+@pytest.mark.parametrize("configuration", ["D0_BASELINE", "D1_POLICY_GATE"])
+def test_a_resumed_dispatch_recommits_its_grant_and_counts_as_dispatched(tmp_path, configuration):
+    # Kills dispatch__mutmut_34..48 and _52: a dispatch replayed from stored events
+    # consumes the grant it consumed before and leaves a dispatched prior call, so a
+    # later request can't reuse that grant or that budget.
+    stored = _stored_send(1)
+    tools, logged = _granted_tools(tmp_path, configuration, stored=stored)
+    tools.run_tool = lambda *args: pytest.fail("a stored dispatch must not run the tool again")
+    tools.dispatch(_send(1))
+    assert _consumed(tools) == ["g1"]
+    assert [(p.tool, p.dispatched) for p in tools.prior] == [("send_email", True)]
+    assert logged == []
