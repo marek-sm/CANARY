@@ -42,6 +42,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Optional
 
+from runner import container
 from runner.mock_provider import MockProvider
 from runner.mock_slice import EVENTS_FILE, REPO_ROOT, validator
 from tools import sandbox
@@ -95,11 +96,13 @@ def code_provenance(root: Optional[Path] = None) -> dict[str, Any]:
     hashed paths, and the digest of ``code_hashes``. Without git each is null,
     which ``build_record`` refuses."""
     root = root or REPO_ROOT
+    # Prototype (runner.container): the daemon-reported image, null on the host.
+    image = {"container_digest": container.container_digest()}
     try:
         return {"code_commit": _git("rev-parse", "HEAD", root=root).strip(), "dirty_paths": dirty_paths(root),
-                "code_digest": code_digest(code_hashes(root))}
+                "code_digest": code_digest(code_hashes(root)), **image}
     except (OSError, subprocess.CalledProcessError):
-        return {"code_commit": None, "dirty_paths": None, "code_digest": None}
+        return {"code_commit": None, "dirty_paths": None, "code_digest": None, **image}
 
 
 def environment_refusal() -> Optional[str]:
@@ -192,6 +195,9 @@ def _check_preflight(mock_run: Path, digest: str, corpus: Path) -> None:
         if line.get("code_digest") != digest:
             raise PaidRunRefused(f"the mock grid ran other code (commit {line.get('code_commit')}) than this "
                                  "checkout; rerun it here")
+        if line.get("container_digest") != container.container_digest():
+            raise PaidRunRefused(f"the mock grid ran in image {line.get('container_digest')}, not this one "
+                                 f"({container.container_digest()}); rerun it here")
         if line.get("corpus_root") != str(corpus):
             raise PaidRunRefused(f"the mock grid ran on {line.get('corpus_root')}, not this checkout's "
                                  "corpus/development")

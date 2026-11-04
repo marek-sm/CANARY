@@ -27,6 +27,7 @@ from jsonschema import Draft202012Validator
 
 from agent.loop import LOOP_VERSION, MAX_STEPS, run_loop
 from defenses.interfaces import canonical_json_bytes
+from runner import container
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 
 RUNNER_VERSION = "mock-slice-v0.1.0"
@@ -355,7 +356,8 @@ def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             "provider_seed": None,
             "max_steps": started["payload"]["max_steps"],
             "code_commit": started["payload"]["code_commit"],
-            "container_digest": None,
+            # The daemon-reported image (runner.container, prototype); null outside a launched container.
+            "container_digest": container.container_digest(),
             "corpus_hash": None,
             "prompt_hash": started["payload"]["prompt_sha256"],
             "defense_hash": None,
