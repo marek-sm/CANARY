@@ -72,6 +72,12 @@ grid-verify:
 grid-summary:
 	python3 -m runner.grid_dev summary "$(RUN)"
 
+# Renders recorded traces: an events file, a trial, or every trial of a run (default:
+# make grid-mock's output). Reads records only: no key, no provider, no network.
+.PHONY: replay
+replay:
+	python3 -m demo.trace "$(or $(RUN),results/development/grid-mock)"
+
 gate2-budget:
 	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" $(if $(TIER),--tier "$(TIER)") $(if $(DEFENSE),--defense "$(DEFENSE)") $(if $(C1_PILOT),--c1-pilot-cost-usd "$(C1_PILOT)") $(if $(OUT),--out "$(OUT)")
 
