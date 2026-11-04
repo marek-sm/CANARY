@@ -101,13 +101,11 @@ def test_budget_prices_from_events_when_the_result_total_is_unknown():
 
 
 def test_budget_cli_computes_the_reserve_and_refuses_a_typed_one(tmp_path, capsys):
-    with pytest.raises(SystemExit):
-        gate2_budget.main([str(tmp_path), "--remaining-balance-usd", "9.9"])
-    assert "--development-trials-used" in capsys.readouterr().err
-    with pytest.raises(SystemExit):
-        gate2_budget.main([str(tmp_path), "--remaining-balance-usd", "9.9", "--development-trials-used", "107",
-                           "--reserve-usd", "0.01"])
-    assert "--reserve-usd" in capsys.readouterr().err
+    """The reserve, and the development trials it subtracts, come from the bound and the spend ledger."""
+    for typed in (["--development-trials-used", "107"], ["--reserve-usd", "0.01"]):
+        with pytest.raises(SystemExit):
+            gate2_budget.main([str(tmp_path), "--remaining-balance-usd", "9.9", *typed])
+        assert typed[0] in capsys.readouterr().err
 
 
 def test_grid_usage_summary_counts_unknown_usage_apart():

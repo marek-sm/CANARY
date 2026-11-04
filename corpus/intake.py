@@ -348,7 +348,8 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(__file__).resolve().parents[1]
     rows = [
         json.loads(line)
-        for line in (root / "corpus" / "candidates.jsonl").read_text(encoding="utf-8").splitlines()
+        # Only at newlines: str.splitlines also splits at U+2028, U+2029, and U+0085, which a source's text can hold.
+        for line in (root / "corpus" / "candidates.jsonl").read_text(encoding="utf-8").split("\n")
         if line.strip()
     ]
     records = load_reserved(root)

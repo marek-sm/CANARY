@@ -7,8 +7,11 @@ import pytest
 
 from analysis.floor_count import CONFIGURATIONS
 
+from types import SimpleNamespace
+
 from analysis import price_bound
 from analysis import gate2_budget
+from runner import paid_run, spend_ledger
 from analysis.gate2_budget import TIERS, evaluate_budget, trial_cost_usd
 from runner.mock_provider import MOCK_MODEL_ID
 from tests.test_floor_count import MODEL, events, grid
@@ -16,6 +19,20 @@ from tests.test_status_consistency import SPEC, tier_table
 
 BOUND = price_bound.PRICE_BOUND_USD
 USED = 107
+
+
+def _ledger_with(trials):
+    """A stand-in spend ledger (tests/conftest.py) holding ``trials`` development trials, the seed's included."""
+    spend_ledger.init()
+    for index in range(trials - 1):
+        spend_ledger.start(SimpleNamespace(adapter_version="fake"), f"dev-{index}")
+
+
+@pytest.fixture
+def cli(monkeypatch):
+    """The CLI on records with no provenance, which tests/test_paid_run_gate.py covers."""
+    monkeypatch.setattr(paid_run, "check_code_matches_run", lambda _run: "not compared: a unit test")
+    _ledger_with(USED)
 
 
 def _live_grid(input_tokens=1000, output_tokens=200):
@@ -124,12 +141,25 @@ def test_a_defense_on_a_row_without_one_to_choose_is_refused():
         _evaluate(tier="M10-ALL", defense="D2_DATAMARKING")
 
 
-def test_the_cli_reports_the_equation_on_a_run_directory(tmp_path, monkeypatch):
+def test_the_cli_reports_the_equation_on_a_run_directory(tmp_path, monkeypatch, cli):
     monkeypatch.setattr(gate2_budget, "load_run", lambda _path: list(_live_grid()))
     out = tmp_path / "budget.json"
-    assert gate2_budget.main([str(tmp_path), "--remaining-balance-usd", "9.95", "--development-trials-used", "107", "--out", str(out)]) == 0
+    assert gate2_budget.main([str(tmp_path), "--remaining-balance-usd", "9.95", "--out", str(out)]) == 0
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["tier"] == "F20" and report["reserve_trials"]["development"] == 13
+    assert report["development_trials_source"] == "runner.spend_ledger"
+
+
+def test_the_cli_counts_development_trials_from_the_ledger(tmp_path, monkeypatch, capsys):
+    """A typed count could lower the reserve; the ledger's can't be typed (decision 0028)."""
+    monkeypatch.setattr(paid_run, "check_code_matches_run", lambda _run: "not compared: a unit test")
+    monkeypatch.setattr(gate2_budget, "load_run", lambda _path: list(_live_grid()))
+    arguments = [str(tmp_path), "--remaining-balance-usd", "100"]
+    assert gate2_budget.main(arguments) == 1
+    assert "no spend ledger" in capsys.readouterr().err
+    _ledger_with(91)  # a 90-trial grid plus the October 10 check
+    assert gate2_budget.main(arguments) == 0
+    assert json.loads(capsys.readouterr().out)["reserve_trials"]["development"] == 29
 
 
 def test_a_long_prompt_trial_whose_attempts_don_t_add_up_is_refused():
@@ -191,11 +221,11 @@ def test_a_summed_trial_under_100000_per_attempt_stays_at_the_lower_rates():
     assert trial_cost_usd(record, attempts) == pytest.approx(150_000 * 0.10e-6 + 200 * 0.50e-6)
 
 
-def test_the_cli_refuses_a_grid_with_a_missing_or_repeated_cell(tmp_path, monkeypatch, capsys):
+def test_the_cli_refuses_a_grid_with_a_missing_or_repeated_cell(tmp_path, monkeypatch, capsys, cli):
     """SPEC.md Section 9 evaluates the equation after the complete 90-trial grid."""
     grid = list(_live_grid())
     assert len(grid) == 90
-    arguments = ["run", "--remaining-balance-usd", "100", "--development-trials-used", "90"]
+    arguments = ["run", "--remaining-balance-usd", "100"]
     for broken, reason in ((grid[:-1], "missing"), (grid + [grid[0]], "repeated")):
         monkeypatch.setattr(gate2_budget, "load_run", lambda _path, broken=broken: list(broken))
         assert gate2_budget.main(arguments) != 0

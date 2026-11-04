@@ -289,8 +289,8 @@ def _total(values: Iterable[Any]) -> Optional[int]:
 def _resolved_model(attempts: Sequence[Mapping[str, Any]]) -> Optional[str]:
     """The one model the trial's responses resolved to, from every attempt, not
     just the last. Null when none resolved, or when more than one did: a
-    mid-trial change is Section 9's stop condition, and each call keeps its own
-    value in ``model_calls``."""
+    mid-trial change is Section 9's stop condition, which ``execute.run_schedule``
+    acts on, and each call keeps its own value in ``model_calls``."""
     resolved = {a["payload"]["model_resolved"] for a in attempts if a["payload"]["model_resolved"] is not None}
     return resolved.pop() if len(resolved) == 1 else None
 
@@ -418,7 +418,7 @@ def run_mock_trial(
 ) -> Path:
     """Run the trial into a new directory and return it."""
     provider = provider or MockProvider()
-    from runner import paid_run  # imported here: paid_run imports this module
+    from runner import paid_run, spend_ledger  # imported here: both import this module
 
     paid_run.require_paid_run(provider)
     out_dir.mkdir(parents=True, exist_ok=False)
@@ -462,6 +462,7 @@ def run_mock_trial(
             raw_sha256=sha256_json(raw),
         )
 
+    ledger_entry = spend_ledger.start(provider, LOGICAL_TRIAL_ID) if paid_run.is_paid(provider) else None
     outcome = run_loop(
         provider,
         messages,
@@ -484,7 +485,10 @@ def run_mock_trial(
         },
     )
 
-    result = assemble_result(read_jsonl(out_dir / EVENTS_FILE, "event"))
+    events = read_jsonl(out_dir / EVENTS_FILE, "event")
+    if ledger_entry is not None:
+        spend_ledger.finish(ledger_entry, events)
+    result = assemble_result(events)
     (out_dir / RESULTS_FILE).open("x").close()
     append_jsonl(out_dir / RESULTS_FILE, result, "result")
     return out_dir

@@ -287,8 +287,8 @@ def describe() -> str:
 
     The hash covers the rules, not where this machine keeps them: the
     interpreter's files and links, ``tools/``, and ``bwrap`` paths are
-    replaced by placeholders, so a mock grid in one checkout and the paid run
-    from a clean checkout of the same commit on the same platform agree.
+    replaced by placeholders, so it doesn't change with where a checkout sits.
+    The mock grid and its paid run still share one checkout (``runner.paid_run``).
     """
     sandbox = mode()
     template = (

@@ -9,6 +9,8 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from analysis.floor_count import floor_count, load_run, main
+from runner import delivery, execute, paid_run
+from runner import schedule as sched
 from runner.mock_provider import MOCK_MODEL_ID
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -268,22 +270,49 @@ def test_no_floor_cell_leaves_consistency_unknown():
     assert floor_count(trials)["ran_on_consistent"] is None
 
 
+class _RealShaped(delivery.DeliveryTaskMock):
+    """The grid mock under a real model's name, so the floor reads it; one cell discloses."""
+
+    def __init__(self, template, channel, disclose):
+        super().__init__(template, channel)
+        self.disclose = disclose
+
+    def complete(self, messages, tool_schemas, decoding, model_request):
+        response = super().complete(messages, tool_schemas, decoding, model_request)
+        if self.disclose and response["raw_response"]["stop_reason"] == "end_turn":
+            response["raw_response"]["content"][0]["text"] += " " + self.disclose
+        return {**response, "model_resolved": model_request["model"]}
+
+
+def _real_run(out):
+    """A recomputable run, since load_run refuses any record its events don't produce (hand-made ones)."""
+    spec = {"experiment_id": "grid-dev", "model_id": MODEL, "seed": "s", "base_case_ids": ["dev-001", "dev-004"],
+            "channels": ["C3"], "conditions": ["attack", "clean"], "configurations": ["D0_BASELINE"], "repeats": 1}
+
+    def factory(trial, canaries):
+        base = json.loads((execute.DEFAULT_CORPUS_ROOT / f"{trial.base_case_id}.json").read_text(encoding="utf-8"))
+        template, _ = delivery.task_for(base, trial.channel)
+        disclose = canaries[1] if (trial.base_case_id, trial.condition) == ("dev-004", "attack") else None
+        return _RealShaped(template, trial.channel, disclose)
+
+    execute.run_schedule(out, sched.generate_schedule(spec), corpus_root=execute.DEFAULT_CORPUS_ROOT, spec=spec,
+                         delivery=True, provider_factory=factory)
+    return spec
+
+
 def test_load_run_reads_each_trial_directory_and_main_writes_json(tmp_path, capsys):
-    for record, log in grid({("dev-004", "C3"): True}):
-        trial_dir = tmp_path / record["logical_trial_id"].replace(":", "_")
-        trial_dir.mkdir()
-        (trial_dir / "results.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
-        (trial_dir / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in log), encoding="utf-8")
-    trials = load_run(tmp_path)
-    assert len(trials) == 90
-    assert all(len(log) == 2 for _, log in trials)
+    run = tmp_path / "run"
+    _real_run(run)
+    trials = load_run(run)
+    assert len(trials) == 4
+    assert all(len(log) > 2 for _, log in trials)
 
     out = tmp_path / "floor.json"
-    assert main([str(tmp_path), "--out", str(out)]) == 0
+    assert main([str(run), "--out", str(out)]) == 0
     written = json.loads(out.read_text(encoding="utf-8"))
     assert written["counts"]["true"] == 1
     assert written["floor_applies"] is True
-    assert main([str(tmp_path)]) == 0
+    assert main([str(run)]) == 0
     assert json.loads(capsys.readouterr().out) == written
 
 
@@ -343,18 +372,15 @@ def test_openai_fallback_settings_are_read_from_their_own_keys():
 
 
 def test_load_run_reads_only_trial_directories_one_level_down(tmp_path):
-    for record, log in grid():
-        trial_dir = tmp_path / record["logical_trial_id"].replace(":", "_")
-        trial_dir.mkdir()
-        (trial_dir / "results.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
-        (trial_dir / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in log), encoding="utf-8")
-    nested = tmp_path / "older-run" / "trial"
+    run = tmp_path / "run"
+    _real_run(run)
+    nested = run / "older-run" / "trial"
     nested.mkdir(parents=True)
     smoke = result("dev-001", "C2", condition="clean")
     smoke["logical_trial_id"] += "-older"
     (nested / "results.jsonl").write_text(json.dumps(smoke) + "\n", encoding="utf-8")
     (nested / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events(smoke)), encoding="utf-8")
-    assert len(load_run(tmp_path)) == 90
+    assert len(load_run(run)) == 4
 
 
 def test_main_refuses_a_trial_without_events_cleanly(tmp_path, capsys):

@@ -71,7 +71,7 @@ def control(record):
             "fixture_sha256": registry.verify(registry.FIXTURES),
             "isolation": "fake local fixture tools only; no external network or delivery",
             "canaries": "fresh synthetic pair per control repeat; never source credentials",
-            "live_blocker": "PR61 audit F-01 paid-path isolation restriction remains in force",
+            "live_blocker": "no live C1 executor exists; any paid call needs the decision 0023 paid-run record",
         },
     }
 

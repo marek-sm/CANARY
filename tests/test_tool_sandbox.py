@@ -3,14 +3,18 @@ without the project lead's paid-run record.
 
 These are negative tests in real subprocesses on the real platform (sandbox-exec
 on macOS, bwrap on Linux CI). A probe launched exactly like the tool worker must
-fail to reach anything SPEC.md Section 3 forbids: the network (TCP or a foreign
-Unix socket), the provider key file, the home directory, the repository, the
-evidence files, ``/tmp``, and any other program. It must still read its fixture
-root, write its state, and reach its own fixture socket. Together with the
-launch-coverage test below, this is the CI proof that no tool can reach an
-arbitrary external endpoint (SPEC.md Section 11, Gate 3).
+fail to reach anything SPEC.md Section 3 forbids: the network (TCP, UDP, DNS, or
+a foreign Unix socket), the provider key file, the home directory, the repository,
+the evidence files, the fixture server's log, ``/tmp``, and any other program. It
+must still read its fixture root, write its state, and reach its own fixture
+socket. The same probe run with no sandbox is the control: each forbidden action
+must work there, and each listener must hear it, so a refusal is the sandbox's and
+never a bad path or a missing binary. Together with the launch-coverage tests
+below, this is the CI proof that no tool can reach an arbitrary external endpoint
+(SPEC.md Section 11, Gate 3).
 """
 
+import ast
 import json
 import os
 import re
@@ -29,15 +33,22 @@ from tools import sandbox
 ROOT = Path(__file__).resolve().parents[1]
 
 PROBE = r"""
-import json, os, socket, subprocess, sys
+import errno, json, os, socket, subprocess, sys
 targets = json.loads(sys.argv[1])
+control = targets.get("control", False)  # the unwrapped control leaves everything it reaches as it found it
 out = {}
 def attempt(name, fn):
+    # Only a permission error is a refusal on its face. Every other failure keeps its class and errno,
+    # so a bad path, a missing binary, or a timeout can't read as containment (see _contained below).
     try:
         fn()
         out[name] = "allowed"
+    except PermissionError:
+        out[name] = "denied:PermissionError"
+    except OSError as exc:
+        out[name] = "error:%s:%s" % (type(exc).__name__, errno.errorcode.get(exc.errno, exc.errno))
     except BaseException as exc:
-        out[name] = "denied:" + type(exc).__name__
+        out[name] = "error:" + type(exc).__name__
 def tcp(host, port):
     def f():
         s = socket.socket(); s.settimeout(2); s.connect((host, port)); s.close()
@@ -46,33 +57,57 @@ def unix(path):
     def f():
         s = socket.socket(socket.AF_UNIX); s.settimeout(2); s.connect(path); s.close()
     return f
+def udp(payload, port):
+    def f():
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.sendto(payload, ("127.0.0.1", port)); s.close()
+    return f
+def route(host, port):
+    # Connecting a UDP socket only asks the kernel for a route: no packet leaves, sandboxed or not.
+    def f():
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect((host, port)); s.close()
+    return f
 def write(path):
     def f():
-        with open(path, "w") as handle:
-            handle.write("x")
+        existed = os.path.exists(path)
+        with open(path, "a") as handle:
+            if not control:
+                handle.write("x")
+        if control and not existed:
+            os.unlink(path)
     return f
 attempt("read_fixture", lambda: open(targets["fixture_file"]).read())
 attempt("write_state", write(targets["state_file"]))
 attempt("own_socket", unix("fixture.sock"))
 attempt("read_key_file", lambda: open(targets["key_file"]).read())
 attempt("read_repository", lambda: open(targets["repo_file"]).read())
+attempt("read_server_log", lambda: open(targets["server_log"]).read())
+attempt("read_resolver_config", lambda: open("/etc/resolv.conf").read())
 def list_home():
-    out["home_listing"] = sorted(os.listdir(targets["home"]))
+    listing = sorted(os.listdir(targets["home"]))
+    if not control:
+        out["home_listing"] = listing
 attempt("list_home", list_home)
 attempt("write_evidence", write(targets["evidence_file"]))
 attempt("write_repository", write(targets["repo_write"]))
+attempt("write_server_log", write(targets["server_log"]))
 attempt("write_tmp", write("/tmp/canary-sandbox-probe"))
 attempt("tcp_loopback", tcp("127.0.0.1", targets["tcp_port"]))
-attempt("tcp_external", tcp("192.0.2.1", 9))  # TEST-NET-1 (RFC 5737): routed nowhere, even unsandboxed
+attempt("route_external", route("192.0.2.1", 9))  # TEST-NET-1 (RFC 5737)
+if "local_address" in targets:
+    attempt("tcp_nonloopback", tcp(targets["local_address"], targets["tcp_port"]))  # this machine's own address
+if not control:  # a SYN would leave the machine, so the control never sends one; route_external stands in for it
+    attempt("tcp_external", tcp("192.0.2.1", 9))
+attempt("udp_loopback", udp(b"canary-udp-probe", targets["udp_port"]))
+attempt("dns_query", udp(bytes.fromhex(targets["dns_query"]), targets["udp_port"]))  # to a local listener, never a resolver
+attempt("dns_system_resolver", lambda: socket.getaddrinfo("localhost", 9))  # the name never leaves the machine
 attempt("foreign_socket", unix(targets["foreign_socket"]))
 attempt("sibling_socket", unix("sibling.sock"))  # a listener beside fixture.sock in the socket directory
 if "planted_socket" in targets:
     attempt("planted_socket", unix(targets["planted_socket"]))
-# An exec probe counts as allowed if the program ran at all, whatever its exit code.
-attempt("exec_shell", lambda: subprocess.run(["/bin/sh", "-c", "true"], timeout=3, capture_output=True))
-# The exec probes never name a URL: even if a sandbox failed, they reach nothing.
-attempt("exec_curl", lambda: subprocess.run(["/usr/bin/curl", "--version"], timeout=3, capture_output=True))
-attempt("exec_open", lambda: subprocess.run(["/usr/bin/open", "-h"], timeout=3, capture_output=True))
+# An exec probe counts as allowed if the program ran at all, whatever its exit code. None of them names a
+# URL: even if a sandbox failed, they reach nothing.
+for name, program in targets["programs"].items():
+    attempt(name, lambda program=program: subprocess.run(program, timeout=3, capture_output=True))
 for program in targets.get("library_programs", []):  # programs inside the mounted system-library folders
     attempt("exec_library:" + program[0], lambda program=program: subprocess.run(program, timeout=3, capture_output=True))
 out["provider_variables"] = sorted(k for k in os.environ if k.startswith(("ANTHROPIC_", "OPENAI_")))
@@ -80,10 +115,37 @@ print(json.dumps(out))
 """
 
 FORBIDDEN = (
-    "read_key_file", "read_repository", "write_evidence", "write_repository",
-    "write_tmp", "tcp_loopback", "tcp_external", "foreign_socket", "sibling_socket",
-    "exec_shell", "exec_curl", "exec_open",
+    "read_key_file", "read_repository", "read_server_log", "write_evidence", "write_repository",
+    "write_server_log", "write_tmp", "tcp_loopback", "foreign_socket", "sibling_socket",
 )
+# Harmless programs: each only prints its version or usage. A machine without one has nothing to prove with
+# it, which is not containment, so _targets leaves it out rather than count its absence as a denial.
+PROGRAMS = {
+    "exec_shell": ["/bin/sh", "-c", "true"],
+    "exec_curl": ["/usr/bin/curl", "--version"],
+    **({"exec_open": ["/usr/bin/open", "-h"]} if sys.platform == "darwin" else {}),  # another program on Linux
+}
+# A well-formed DNS question for a reserved name: one query, A record, class IN.
+DNS_QUERY = (bytes.fromhex("ca7a01000001000000000000") + b"\x14canary-sandbox-probe\x07invalid\x00" + bytes.fromhex("00010001"))
+# macOS refuses every forbidden action with EPERM. bwrap refuses by absence, and each of these is a sandbox
+# refusal only where the unwrapped control shows the action works, so _assert_contained takes both.
+LINUX_ABSENCE = {
+    "error:FileNotFoundError:ENOENT",  # the path isn't mounted
+    "error:OSError:EROFS",  # the read-only root
+    "error:OSError:ENETUNREACH",  # an empty network namespace has no route
+    "error:ConnectionRefusedError:ECONNREFUSED",  # the namespace's own loopback, where nothing listens
+}
+
+
+def _contained(outcome):
+    return outcome == "denied:PermissionError" or (sandbox.mode() == "linux-bwrap" and outcome in LINUX_ABSENCE)
+
+
+def _assert_contained(names, control, result):
+    """Each action works without the sandbox and fails inside it, so the refusal is the sandbox's."""
+    for name in names:
+        assert control[name] == "allowed", (name, "fails without the sandbox too, so its refusal proves nothing", control[name])
+        assert _contained(result[name]), (name, result[name])
 
 
 @pytest.fixture
@@ -95,6 +157,7 @@ def trial(tmp_path, monkeypatch):
         path.mkdir(parents=True)
     (fixtures / "doc.txt").write_text("fixture", encoding="utf-8")
     (tmp_path / "t" / "events.jsonl").write_text("", encoding="utf-8")
+    (sock / "fixture-requests.jsonl").write_text("", encoding="utf-8")
     outside = tmp_path / "outside"
     outside.mkdir()
     (outside / ".env").write_text("ANTHROPIC_API_KEY=synthetic-sentinel\n", encoding="utf-8")
@@ -115,10 +178,13 @@ def trial(tmp_path, monkeypatch):
     tcp = socket.socket()
     tcp.bind(("127.0.0.1", 0))
     tcp.listen(4)
-    listeners += [own, sibling, foreign, tcp]
+    udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp.bind(("127.0.0.1", 0))
+    listeners += [own, sibling, foreign, tcp, udp]
     yield {
         "fixtures": fixtures, "state": state, "sock": sock, "outside": outside,
-        "tcp_port": tcp.getsockname()[1], "listeners": listeners,
+        "tcp_port": tcp.getsockname()[1], "udp_port": udp.getsockname()[1], "listeners": listeners,
+        "heard": {"tcp_loopback": tcp, "foreign_socket": foreign, "sibling_socket": sibling}, "own": own, "udp": udp,
     }
     for listener in listeners:
         listener.close()
@@ -137,6 +203,10 @@ def _targets(trial):
         # Relative to the probe's working directory: a Unix socket path must stay
         # under 104 bytes on macOS, or the connect fails for length, not the sandbox.
         "foreign_socket": os.path.relpath(trial["outside"] / "foreign.sock", trial["sock"]),
+        "server_log": str(trial["sock"] / "fixture-requests.jsonl"),
+        "udp_port": trial["udp_port"],
+        "dns_query": DNS_QUERY.hex(),
+        "programs": {name: argv for name, argv in PROGRAMS.items() if os.access(argv[0], os.X_OK)},
     }
 
 
@@ -150,13 +220,62 @@ def _probe(trial, **extra):
     return json.loads(completed.stdout)
 
 
+def _control(trial, **extra):
+    """The same probe and targets from the same directory and environment, with no sandbox."""
+    argv = [sys.executable, "-I", "-c", PROBE, json.dumps({**_targets(trial), "control": True, **extra})]
+    completed = subprocess.run(argv, cwd=trial["sock"], capture_output=True, text=True, timeout=60,
+                               env=sandbox.environment([trial["state"]]))
+    assert completed.returncode == 0, completed.stderr[-2000:]
+    return json.loads(completed.stdout)
+
+
+def _pending(listener):
+    """How many connections a stream listener heard, emptying its queue. A listener hears what an error can't say."""
+    listener.setblocking(False)
+    count = 0
+    while True:
+        try:
+            connection, _ = listener.accept()
+        except BlockingIOError:
+            return count
+        connection.close()
+        count += 1
+
+
+def _datagrams(listener):
+    """Every datagram a listener heard. A loopback send is delivered before it returns."""
+    listener.setblocking(False)
+    heard = []
+    while True:
+        try:
+            heard.append(listener.recv(4096))
+        except BlockingIOError:
+            return heard
+
+
+def _local_address():
+    """This machine's own non-loopback address, or None without a default route."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+        try:
+            probe.connect(("192.0.2.1", 9))  # picks a route; sends nothing
+        except OSError:
+            return None
+        address = probe.getsockname()[0]
+    return None if address.startswith("127.") or address == "0.0.0.0" else address
+
+
 def test_a_sandboxed_tool_reaches_only_its_fixtures_state_and_socket(trial):
+    control = _control(trial)
+    assert all(_pending(listener) == 1 for listener in trial["heard"].values())  # each was really listening
+    assert _pending(trial["own"]) == 1
     result = _probe(trial)
     assert result["read_fixture"] == "allowed"
     assert result["write_state"] == "allowed"
     assert result["own_socket"] == "allowed"
-    for name in FORBIDDEN:
-        assert result[name].startswith("denied"), (name, result[name])
+    assert _pending(trial["own"]) == 1
+    assert "exec_shell" in _targets(trial)["programs"]
+    _assert_contained([*FORBIDDEN, *_targets(trial)["programs"]], control, result)
+    assert all(_pending(listener) == 0 for listener in trial["heard"].values())
     # bwrap builds empty parent directories for its mounts, so on Linux the home
     # directory may list; it must show nothing but those synthetic parents.
     if result["list_home"] == "allowed":
@@ -166,10 +285,65 @@ def test_a_sandboxed_tool_reaches_only_its_fixtures_state_and_socket(trial):
         parents = {Path(m).relative_to(home).parts[0] for m in mounts if Path(m).is_relative_to(home)}
         assert set(result["home_listing"]) <= parents, result["home_listing"]
     else:
-        assert result["list_home"].startswith("denied")
+        assert _contained(result["list_home"])
     assert result["provider_variables"] == []
     assert not (ROOT / "sandbox-probe-should-not-exist.txt").exists()
     assert (trial["state"].parent.parent / "events.jsonl").read_text(encoding="utf-8") == ""
+    # Never reached, so never recorded by the control: a sandbox refusal is all it can show.
+    assert _contained(result["tcp_external"]), result["tcp_external"]
+
+
+def test_a_tool_has_no_route_the_host_has(trial):
+    """TEST-NET-1 is routed nowhere even unsandboxed, so ``tcp_external`` alone proves little: this compares routes."""
+    address = _local_address()
+    if address is None:
+        pytest.skip("this machine has no default route to compare with the sandbox's")
+    control = _control(trial, local_address=address)
+    assert control["route_external"] == "allowed"
+    # Refused, not unreachable: the connection reached this machine, where nothing listens on that address.
+    assert control["tcp_nonloopback"] == "error:ConnectionRefusedError:ECONNREFUSED"
+    result = _probe(trial, local_address=address)
+    assert result["route_external"] in ("denied:PermissionError", "error:OSError:ENETUNREACH"), result["route_external"]
+    assert result["tcp_nonloopback"] in ("denied:PermissionError", "error:OSError:ENETUNREACH"), result["tcp_nonloopback"]
+
+
+def test_udp_and_dns_reach_nothing_from_the_sandbox(trial):
+    control = _control(trial)
+    assert control["udp_loopback"] == control["dns_query"] == control["dns_system_resolver"] == "allowed"
+    assert sorted(_datagrams(trial["udp"])) == sorted([b"canary-udp-probe", DNS_QUERY])
+    result = _probe(trial)
+    # A send on a Linux sandbox's own loopback can succeed and still reach nothing, so the listener decides.
+    assert _datagrams(trial["udp"]) == []
+    if sandbox.mode() == "macos-sandbox-exec":
+        assert result["udp_loopback"] == result["dns_query"] == "denied:PermissionError"
+        assert result["dns_system_resolver"].startswith("error:gaierror"), result["dns_system_resolver"]
+    # glibc may answer "localhost" itself with no network at all, so on Linux only the resolver's
+    # configuration and the wire query above say anything.
+    if control["read_resolver_config"] == "allowed":
+        assert _contained(result["read_resolver_config"]), result["read_resolver_config"]
+
+
+def test_a_bad_path_or_missing_binary_never_reads_as_containment(trial):
+    control = _control(trial, key_file=str(trial["outside"] / "no-such-file"), foreign_socket="no-such.sock",
+                       programs={"exec_curl": ["/nonexistent/curl", "--version"]})
+    for name in ("read_key_file", "foreign_socket", "exec_curl"):
+        assert control[name] == "error:FileNotFoundError:ENOENT", name
+        # Even a clean-looking denial proves nothing when the action fails without the sandbox too.
+        with pytest.raises(AssertionError, match=name):
+            _assert_contained([name], control, {name: "denied:PermissionError"})
+    if sandbox.mode() == "macos-sandbox-exec":
+        assert not _contained("error:FileNotFoundError:ENOENT")
+
+
+@pytest.mark.parametrize("outcome", ["error:TimeoutError", "error:TimeoutExpired", "error:OSError:ENAMETOOLONG",
+                                     "error:ValueError", "error:OSError:EINVAL", "error:gaierror:8", "allowed"])
+def test_an_unrelated_failure_never_reads_as_containment(outcome):
+    assert not _contained(outcome)
+
+
+def test_a_program_that_only_timed_out_is_not_denied(trial):
+    control = _control(trial, programs={"exec_slow": ["/bin/sh", "-c", "sleep 10"]})
+    assert control["exec_slow"] == "error:TimeoutExpired"
 
 
 def test_the_launcher_refuses_as_root(monkeypatch):
@@ -220,6 +394,135 @@ def test_every_tool_launch_is_sandboxed(tmp_path, monkeypatch):
     assert len(launches) >= 3  # the reader, the fixture service, and at least one worker call
     for argv in launches:
         assert Path(argv[0]).name == Path(prefix).name, argv[:3]
+
+
+# --- no process starts outside the wrapper ----------------------------------------------------------
+
+
+LAUNCHERS = {
+    "subprocess": {"run", "Popen", "call", "check_call", "check_output", "getoutput", "getstatusoutput"},
+    "os": {"system", "popen", "fork", "forkpty", "posix_spawn", "posix_spawnp", "execl", "execle", "execlp",
+           "execlpe", "execv", "execve", "execvp", "execvpe", "spawnl", "spawnle", "spawnlp", "spawnlpe",
+           "spawnv", "spawnve", "spawnvp", "spawnvpe"},
+    "asyncio": {"create_subprocess_exec", "create_subprocess_shell"},
+    "pty": {"fork", "spawn"},
+    "multiprocessing": {"Process", "Pool"},
+    "concurrent.futures": {"ProcessPoolExecutor"},
+}
+
+
+def _through_the_wrapper(call):
+    """A launch is fine when its argv is ``sandbox.wrap(...)`` written at the call, or a literal ``["git", ...]``.
+    An argv built elsewhere fails here on purpose: the wrapper must be visible where the process starts."""
+    argv = call.args[0] if call.args else next((k.value for k in call.keywords if k.arg == "args"), None)
+    if isinstance(argv, ast.Call):
+        func = argv.func
+        return isinstance(func, ast.Attribute) and func.attr == "wrap" and isinstance(func.value, ast.Name) and func.value.id == "sandbox"
+    return (isinstance(argv, ast.List) and bool(argv.elts) and isinstance(argv.elts[0], ast.Constant)
+            and argv.elts[0].value == "git")
+
+
+def _unsandboxed_launches(source):
+    """(line, target) for every call in ``source`` that can start a process outside the wrapper."""
+    tree = ast.parse(source)
+    modules, names, found = {}, {}, []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                modules[alias.asname or alias.name.split(".")[0]] = alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                if alias.name == "*" and node.module in LAUNCHERS:
+                    found.append((node.lineno, f"from {node.module} import *"))
+                names[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+            qualified = f"{modules.get(func.value.id, names.get(func.value.id, func.value.id))}.{func.attr}"
+        elif isinstance(func, ast.Attribute) and isinstance(func.value, ast.Call):
+            inner = func.value.func  # __import__("subprocess").run(...)
+            qualified = None
+            if isinstance(inner, ast.Name) and inner.id == "__import__" and func.value.args:
+                qualified = f"{getattr(func.value.args[0], 'value', '')}.{func.attr}"
+        elif isinstance(func, ast.Name):
+            qualified = names.get(func.id, func.id)
+            if qualified in ("__import__", "importlib.import_module", "getattr") and node.args:
+                first = node.args[0]
+                module = first.value if isinstance(first, ast.Constant) else modules.get(getattr(first, "id", None))
+                if module in LAUNCHERS:
+                    found.append((node.lineno, f"{qualified}({module})"))
+                continue
+        else:
+            qualified = None
+        if qualified is None:
+            continue
+        if qualified == "importlib.import_module" and node.args and getattr(node.args[0], "value", None) in LAUNCHERS:
+            found.append((node.lineno, f"{qualified}({node.args[0].value})"))
+            continue
+        module, _, attr = qualified.rpartition(".")
+        if attr in LAUNCHERS.get(module, ()) and not _through_the_wrapper(node):
+            found.append((node.lineno, qualified))
+    return found
+
+
+def test_no_new_code_starts_a_process_outside_the_wrapper():
+    """Every tool launch goes through ``tools.sandbox.wrap`` (decision 0023). A run can only see the paths it runs."""
+    found = {}
+    scanned = 0
+    for path in sorted(ROOT.rglob("*.py")):
+        relative = path.relative_to(ROOT)
+        if relative.parts[0] in ("tests", "results") or any(part.startswith(".") for part in relative.parts):
+            continue
+        scanned += 1
+        launches = _unsandboxed_launches(path.read_text(encoding="utf-8"))
+        if launches:
+            found[str(relative)] = launches
+    assert scanned > 50
+    assert found == {}
+
+
+@pytest.mark.parametrize("source", [
+    "import subprocess, sys\nsubprocess.run([sys.executable, 'tools/worker.py'])",
+    "import subprocess\nargv = ['python']\nsubprocess.run(argv)",
+    "import subprocess\nsubprocess.Popen(['python', 'tools/fixture_http.py'], stdin=-1)",
+    "import subprocess as sp\nsp.call(['python'])",
+    "import subprocess as sp\nsp.check_output(['python'])",
+    "from subprocess import Popen\nPopen(['python'])",
+    "from subprocess import run as launch\nlaunch(['python'])",
+    "from subprocess import *\nrun(['python'])",
+    "import os\nos.system('python')",
+    "import os\nos.popen('python')",
+    "import os\nos.execv('/bin/sh', ['sh'])",
+    "import os\nos.fork()",
+    "from os import posix_spawn\nposix_spawn('/bin/sh', ['sh'], {})",
+    "import asyncio\nasyncio.create_subprocess_exec('python')",
+    "import multiprocessing\nmultiprocessing.Process(target=print)",
+    "import concurrent.futures as cf\ncf.ProcessPoolExecutor()",
+    "import pty\npty.spawn('sh')",
+    "__import__('subprocess').run(['python'])",
+    "__import__('subprocess')",
+    "import importlib\nimportlib.import_module('subprocess')",
+    "from importlib import import_module\nimport_module('subprocess')",
+    "import subprocess\ngetattr(subprocess, 'run')(['python'])",
+    "import subprocess\nsubprocess.run(sandbox.other(['python']))",
+    "import subprocess\nsubprocess.run(['gitx', 'status'])",
+    "import subprocess\nsubprocess.run(args=['python'])",
+])
+def test_the_launch_scan_catches(source):
+    assert _unsandboxed_launches(source), source
+
+
+@pytest.mark.parametrize("source", [
+    "import subprocess\nsubprocess.run(sandbox.wrap(argv, cwd=root), cwd=root)",
+    "import subprocess\nsubprocess.Popen(sandbox.wrap(argv, cwd=root), stdin=subprocess.PIPE)",
+    "import subprocess\nsubprocess.run(['git', 'rev-parse', 'HEAD'], check=True)",
+    "import subprocess\nsubprocess.run(args=sandbox.wrap(argv, cwd=root))",
+    "import subprocess\nexcept_types = (subprocess.SubprocessError, subprocess.TimeoutExpired)",
+])
+def test_the_launch_scan_accepts(source):
+    assert _unsandboxed_launches(source) == []
 
 
 # --- what each platform's rules expose (#64 review) -----------------------------------------------
@@ -454,47 +757,6 @@ class RealProvider:
         raise AssertionError("a paid provider was called")
 
 
-@pytest.fixture
-def clean_environment(monkeypatch):
-    for name in list(os.environ):
-        if name == "CI" or name.startswith(("ANTHROPIC_", "OPENAI_")):
-            monkeypatch.delenv(name, raising=False)
-
-
-@pytest.fixture
-def repo(tmp_path):
-    """A tiny git repository with hashed code, standing in for the real one."""
-    root = tmp_path / "repo"
-    (root / "runner").mkdir(parents=True)
-    (root / "runner" / "code.py").write_text("VALUE = 1\n", encoding="utf-8")
-    env = {"PATH": os.defpath, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
-           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com", "HOME": str(tmp_path)}
-    for args in (["init", "-q"], ["add", "."], ["commit", "-q", "-m", "init"]):
-        subprocess.run(["git", *args], cwd=root, check=True, env=env)
-    return root, env
-
-
-def _record(root, record_path, **overrides):
-    record = {
-        "schema_version": "1.0.0",
-        "recorded_on": "2026-10-29",
-        "recorded_by": "marek-sm",
-        "recorded_commit": "0" * 40,
-        "sandbox": sandbox.describe(),
-        "conditions": {
-            "tool_result_delivery": {"merged_in": "#61"},
-            "mock_grid": {"experiment_id": "grid-dev", "trials": 90, "verify_complete": True,
-                          "tool_sandbox": sandbox.describe()},
-            "request_to_effect": {"merged_in": "#39"},
-            "tool_sandbox": {"merged_in": "#64"},
-        },
-        "code_sha256": paid_run.code_hashes(root),
-    }
-    record.update(overrides)
-    record_path.write_text(json.dumps(record), encoding="utf-8")
-    return record_path
-
-
 def test_a_mock_provider_never_needs_the_record():
     paid_run.require_paid_run(MockProvider(), record_path=Path("/nonexistent/record.json"))
 
@@ -514,29 +776,27 @@ def test_a_real_provider_is_refused_in_ci_or_with_ambient_keys(clean_environment
         paid_run.require_paid_run(RealProvider(), record_path=tmp_path / "missing.json")
 
 
-def test_a_valid_record_opens_paid_runs_for_exactly_that_code(clean_environment, repo, tmp_path):
-    root, env = repo
-    record = _record(root, tmp_path / "record.json")
-    assert paid_run.paid_run_refusal(record_path=record, root=root) is None
+def test_a_valid_record_opens_paid_runs_for_exactly_that_code(gate):
+    record = gate.open()
+    assert gate.refusal(record) is None
 
-    (root / "runner" / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
-    assert "uncommitted" in paid_run.paid_run_refusal(record_path=record, root=root)
-    subprocess.run(["git", "commit", "-qam", "change"], cwd=root, check=True, env=env)
-    assert "code differs" in paid_run.paid_run_refusal(record_path=record, root=root)
+    (gate.root / "runner" / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
+    assert "uncommitted" in gate.refusal(record)
+    gate.git("commit", "-qam", "change")
+    assert "code differs" in gate.refusal(record)
 
 
-def test_a_record_from_another_sandbox_or_malformed_is_refused(clean_environment, repo, tmp_path):
-    root, _ = repo
-    other = _record(root, tmp_path / "other.json", sandbox="linux-bwrap:tool-sandbox-v0.0.0:0000000000000000")
+def test_a_record_from_another_sandbox_or_malformed_is_refused(gate):
+    healthy = gate.record()
+    other = "linux-bwrap:tool-sandbox-v0.0.0:0000000000000000"
     if sandbox.describe().startswith("linux-bwrap"):
-        other = _record(root, tmp_path / "other.json", sandbox="macos-sandbox-exec:tool-sandbox-v0.0.0:0000000000000000")
-    assert "isn't the recorded mock grid's" in paid_run.paid_run_refusal(record_path=other, root=root)
-    broken = _record(root, tmp_path / "broken.json", recorded_by="")
-    assert "doesn't validate" in paid_run.paid_run_refusal(record_path=broken, root=root)
+        other = "macos-sandbox-exec:tool-sandbox-v0.0.0:0000000000000000"
+    assert "isn't the recorded mock grid's" in gate.refusal(gate.commit_record({**healthy, "sandbox": other}))
+    assert "doesn't validate" in gate.refusal(gate.commit_record({**healthy, "recorded_by": ""}))
 
 
-def test_the_live_smoke_is_the_one_exception(clean_environment, tmp_path):
-    assert paid_run.paid_run_refusal(live_smoke=True, record_path=tmp_path / "missing.json") is None
+def test_the_live_smoke_is_the_one_exception(gate, tmp_path):
+    assert gate.refusal(tmp_path / "missing.json", live_smoke=True) is None
 
 
 def test_every_runner_path_refuses_a_real_provider_without_the_record(clean_environment, tmp_path, monkeypatch):
@@ -586,81 +846,50 @@ class Killed(BaseException):
     """A forced stop; not an Exception, so the runner doesn't catch it."""
 
 
-@pytest.fixture
-def preflight(clean_environment, repo, tmp_path, monkeypatch):
-    """Mock grid cells run from a tiny checkout, so their code provenance is that checkout's."""
-    from runner import execute, grid_dev
-    from runner.mock_provider import MOCK_MODEL_ID
-
-    root, env = repo
-    shutil.copytree(ROOT / "corpus" / "development", root / "corpus" / "development")
-    subprocess.run(["git", "add", "."], cwd=root, check=True, env=env)
-    subprocess.run(["git", "commit", "-qm", "corpus"], cwd=root, check=True, env=env)
-    monkeypatch.setattr(paid_run, "REPO_ROOT", root)
-    monkeypatch.setattr(grid_dev, "verify_grid_run", lambda run, spec: {
-        "complete": True, "experiment_id": spec["experiment_id"], "trials_found": 90})
-    spec = json.loads((ROOT / "protocol" / "development_grid_spec.json").read_text(encoding="utf-8"))
-    spec["model_id"] = MOCK_MODEL_ID
-    trial = grid_dev.validate_grid_spec(spec)[0]
-
-    def run(out, corpus=root / "corpus" / "development", **kwargs):
-        execute.run_schedule(out, [trial], corpus_root=corpus, spec=spec, delivery=True, **kwargs)
-        return out
-
-    def record(out):
-        return paid_run.build_record(out, delivery="#61", sandbox_pr="#64", request_to_effect="#39", root=root)
-
-    return root, env, run, record
-
-
-def test_the_record_refuses_a_preflight_of_code_committed_since(preflight, tmp_path):
-    root, env, run, record = preflight
-    mock = run(tmp_path / "mock")
-    assert record(mock)["code_sha256"] == paid_run.code_hashes(root)
-    (root / "runner" / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
-    subprocess.run(["git", "commit", "-qam", "change"], cwd=root, check=True, env=env)
+def test_the_record_refuses_a_preflight_of_code_committed_since(gate):
+    assert gate.record()["code_sha256"] == paid_run.code_hashes(gate.root)
+    gate.commit_code("runner/code.py", "VALUE = 2\n")
     with pytest.raises(paid_run.PaidRunRefused, match="other code"):
-        record(mock)
+        gate.record()
 
 
-def test_the_record_refuses_a_preflight_run_with_uncommitted_code(preflight, tmp_path):
-    root, _, run, record = preflight
-    extra = root / "runner" / "extra.py"  # untracked, so the committed hashes alone can't see it
+def test_the_record_refuses_a_preflight_run_with_uncommitted_code(gate):
+    extra = gate.root / "runner" / "extra.py"  # untracked, so the committed hashes alone can't see it
     extra.write_text("VALUE = 3\n", encoding="utf-8")
-    mock = run(tmp_path / "mock")
+    gate.rerun()
     extra.unlink()
     with pytest.raises(paid_run.PaidRunRefused, match="uncommitted"):
-        record(mock)
+        gate.record()
 
 
-def test_the_record_refuses_a_preflight_on_another_corpus(preflight, tmp_path):
-    root, _, run, record = preflight
-    other = shutil.copytree(root / "corpus" / "development", tmp_path / "other-corpus")
+def test_the_record_refuses_a_preflight_on_another_corpus(gate, tmp_path):
+    gate.rerun(shutil.copytree(gate.root / "corpus" / "development", tmp_path / "other-corpus"))
     with pytest.raises(paid_run.PaidRunRefused, match="corpus"):
-        record(run(tmp_path / "mock", other))
+        gate.record()
 
 
-def test_every_invocation_records_its_code_even_when_stopped(preflight, tmp_path):
-    root, _, run, record = preflight
+def test_every_invocation_records_its_code_even_when_stopped(gate, tmp_path):
+    from runner import execute, grid_dev
+    from runner.mock_provider import MOCK_MODEL_ID
 
     def stopped(trial, canaries):
         raise Killed()
 
+    spec = {**gate.spec, "model_id": MOCK_MODEL_ID}
     with pytest.raises(Killed):
-        run(tmp_path / "mock", provider_factory=stopped)
+        execute.run_schedule(tmp_path / "mock", grid_dev.validate_grid_spec(spec)[:1], spec=spec, delivery=True,
+                             corpus_root=gate.root / "corpus" / "development", provider_factory=stopped)
     lines = [json.loads(line) for line in (tmp_path / "mock" / paid_run.PROVENANCE_FILE).read_text().splitlines()]
     assert [line["phase"] for line in lines] == ["start", "stop"]
-    assert {line["code_digest"] for line in lines} == {paid_run.code_digest(paid_run.code_hashes(root))}
+    assert {line["code_digest"] for line in lines} == {paid_run.code_digest(paid_run.code_hashes(gate.root))}
     assert all(line["dirty_paths"] == [] for line in lines)
 
 
-def test_the_record_refuses_a_preflight_that_stopped_unrecorded(preflight, tmp_path):
-    _, _, run, record = preflight
-    mock = run(tmp_path / "mock")
-    provenance = mock / paid_run.PROVENANCE_FILE
+def test_the_record_refuses_a_preflight_that_stopped_unrecorded(gate):
+    provenance = gate.mock / paid_run.PROVENANCE_FILE
     provenance.write_text(provenance.read_text().splitlines()[0] + "\n")  # killed before its stop line
     with pytest.raises(paid_run.PaidRunRefused, match="without recording"):
-        record(mock)
+        gate.record()
 
 
 def test_a_paid_provider_must_ask_for_one_tool_call_per_reply(monkeypatch):
