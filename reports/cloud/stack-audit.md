@@ -4,7 +4,7 @@ Audited 2026-11-04 on `origin/main` `519e9af` (#70). `origin/cloud/integration` 
 
 ## 1. Answer
 
-No. 7 of the 20 items are Adequate, 9 are Partly used, 2 are Nominal, 1 is Unused, and 1 isn't built yet. The tools, the loop, the defenses, the evidence log, and the mock CI do their planned jobs on the path that produces records. Five things don't:
+No. Of 20 items, 8 are Adequate, 9 are Partly used, 1 is Nominal, and 2 are Unused (one of them, the sanitizer and release bundle, isn't built yet). The tools, the loop, the defenses, the evidence log, and the mock CI do their planned jobs on the path that produces records. Five things don't:
 
 1. **Docker is Nominal.** The official sweep runs on the lead's Mac, outside the image. Every tool-launching command fails inside the image, and every record carries a null `container_digest`. Gate 3 still freezes a container digest, and `SPEC.md` §14's limitations don't mention any of this.
 2. **The declared fallback can't run the grid.** `grid_dev live --provider openai --model gpt-6-luna` sends `claude-haiku-5-5` to OpenAI on all 90 trials, because the `--model` value is never used.
@@ -107,6 +107,19 @@ Added after the original plan: the tool sandbox (`tools/sandbox.py`, Linux `bwra
 ### 3.10 Smaller Partly-used items
 - **Demo (read):** `demo/accessibility.py` makes a labeled mock example. The demo case, the stage run, and the video are W7-T5 (#66), W11-T5, and W12-T1.
 - **Sanitizer, release bundle, manifest (read):** Nothing implements them. `results/public/` and `results/development/` are empty. W9-T3 (PR due November 12) builds the sanitizer, and W11-T3 freezes the manifests. `LICENSE` and `CITATION.cff` are absent, owned by W11-T5.
+
+### 3.11 Planned but not implemented (read)
+- **Scheduled in `TASKS.md`:** `protocol/active.json`, its generator, the analysis and report code, the dormant `ENGINEERING` plan and validation schema (W8-T3, Samson, merged by November 10). The output pipeline (W8-T5, Miles, PR due November 5). An official-sweep entry point: `grid_dev live` refuses every corpus except `corpus/development` (`runner/grid_dev.py:130-131`), and the sweep is W9-T3, November 11–14. The sanitizer (W9-T3, PR due November 12). Manifests (W11-T3). `LICENSE` and `CITATION.cff` (W11-T5). Fresh-clone `make report` and `make replay` proven (W12-T3, November 30–December 2). The video (W12-T1).
+- **No owner:** adding the `make report` and `make replay` targets, though the Gate 3 step runs `make report` (`TASKS.md:95`); `compose.yaml` (F-07); a schedule JSON Schema; the `active_protocol` and `manifest` schemas; a fixture-server request log; filling `defense_hash` and `container_digest`; fixing fallback model selection; replay for `rows` observations; checking the installed environment against `uv.lock`.
+
+### 3.12 Stack claims the code doesn't back
+- `SPEC.md:316` says the `fetch_url` request is logged, and `SPEC.md:590` says the effect counts when "the fixture server logs it". The server logs nothing (§3.8).
+- `SPEC.md:1305` freezes the "container digest" at Gate 3, but the sweep never runs in that container (§3.1).
+- `SPEC.md:304` and decision 0025 item 12 say "the manifest and paper state that limit". Neither exists yet, and §14 omits it.
+- §9 asks for "every applicable version/hash" before the first call, and §8 has `defense_hash`, but it's null on D1/D2 (§3.5).
+- `SPEC.md:1493` lists "Docker instructions" in the public repository, and `README.md` has none.
+- §9 and decision 0010 item 3 say the fallback can be selected through `agent/openai_adapter.py`. The grid path can't target it (§3.2).
+- README claims I checked and found backed: `t1-smoke` runs through "replay" (`README.md:131-133`, **ran**), and the "private page service on a per-trial Unix socket" with every tool sandboxed (`README.md:141-142`, **ran** on Linux).
 
 ## 4. Commands run, with raw counts
 
