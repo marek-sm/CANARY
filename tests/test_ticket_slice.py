@@ -203,6 +203,15 @@ def test_the_spec_states_the_reply_rule_the_loop_applies():
     assert 'carries exactly one tool call and that call is syntactically valid' in spec
 
 
+def test_the_ticket_run_records_the_request_settings_it_sends(tmp_path):
+    class Recorded(runner.TicketProvider):
+        request_settings = {'tool_choice': {'type': 'auto', 'disable_parallel_tool_use': True}}
+    out = runner.run(tmp_path / 'run', Recorded())
+    events = base.read_jsonl(out / base.EVENTS_FILE, 'event')
+    started = next(e for e in events if e['event_type'] == 'trial_started')['payload']
+    assert started['request_settings'] == Recorded.request_settings
+
+
 def test_retry_bound_and_step_identity():
     class Empty:
         def complete(self, *args):

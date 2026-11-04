@@ -2,7 +2,9 @@
 
 The locked result schema has no C1 channel. This mock-only harness therefore
 writes its own versioned engineering evidence, reusing the agent loop and local
-fixture tools without changing that schema or admitting paid providers.
+fixture tools without changing that schema or admitting paid providers. Every
+event carries its time and component versions, and each control and the summary
+name the tool sandbox and the code that ran.
 """
 from __future__ import annotations
 
@@ -13,14 +15,16 @@ import os
 from pathlib import Path
 import secrets
 
-from agent.loop import run_loop
+from agent.loop import LOOP_VERSION, MAX_STEPS, run_loop
 from corpus import build_c1
 from defenses.interfaces import GrantState
-from runner import delivery
-from runner.mock_provider import MOCK_MODEL_ID, MockProvider
+from runner import delivery, paid_run
+from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
+from runner.mock_slice import utc_now
 from tasks import registry
+from tools import sandbox
 
-VERSION = "c1-mock-check-v0.1.1"
+VERSION = "c1-mock-check-v0.2.0"
 
 
 def write(path, data):
@@ -95,32 +99,42 @@ def run_control(directory, control):
         path.chmod(0o400)
     state = delivery.create_state(directory / "state", fresh=True)
     events_path = directory / "events.jsonl"
+    versions = {"runner": VERSION, "agent_loop": LOOP_VERSION, "provider_adapter": PROVIDER_ADAPTER_VERSION,
+                **delivery.component_versions("D0_BASELINE")}
     def log(kind, payload):
+        line = {"event_type": kind, "recorded_at": utc_now(), "component_versions": versions, "payload": payload}
         with events_path.open("a") as stream:
-            stream.write(json.dumps({"event_type": kind, "payload": payload}) + "\n")
+            stream.write(json.dumps(line) + "\n")
             stream.flush()
             os.fsync(stream.fileno())
     sink = []
     def sync(receipts):
         sink[:] = receipts
+    # The code it ran, as the coverage summary names it. The paid gate's machine facts stay out of
+    # committed evidence; each run's own code_provenance.jsonl isn't written by this check.
+    provenance = {key: paid_run.code_provenance()[key] for key in ("code_commit", "code_digest", "dirty_paths")}
     log("c1_started", {"version": VERSION, "control_sha256": registry.digest(control),
                        "messages": control["messages"], "provider": "mock_only",
-                       "fixture_sha256": registry.digest(delivery._file_hashes(root))})
+                       "fixture_sha256": registry.digest(delivery._file_hashes(root)),
+                       "database_hash": registry.verify_database(root), "max_steps": MAX_STEPS,
+                       "tool_sandbox": sandbox.describe(), "code_provenance": provenance})
     # No indirect task policy is meaningful for a trusted hostile user prompt.
     # No authorization verdict is claimed; D0 dispatch and effects are observed.
     policy = {"schema_version": "1.0.0", "policy_id": "c1-mock-no-policy-claim",
               "policy_version": "0.1.0", "task_id": control["base_case_id"],
               "call_budget_basis": "dispatches", "tools": {}}
-    with registry.fixture_service(root) as port:
-        tools = delivery.TrialTools("D0_BASELINE", policy, GrantState(), root, state, port, log, sync)
+    with registry.fixture_service(root, directory / "sock") as endpoint:
+        tools = delivery.TrialTools("D0_BASELINE", policy, GrantState(), root, state, endpoint, log, sync)
         outcome = run_loop(C1Mock(control), control["messages"], tool_schemas=registry.TOOL_SCHEMAS,
                            decoding={}, model_request={"model": MOCK_MODEL_ID},
                            on_attempt=lambda step, attempt, response: log("model_attempt", {"step": step, "attempt": attempt, "response": response}),
-                           max_steps=4, logical_trial_id=f"c1-mock:{control['base_case_id']}:r1",
+                           # Every task template's bound (SPEC.md Section 4). The earlier 4 had no recorded
+                           # reason; these canned actions take at most three steps, so neither bound decides them.
+                           max_steps=MAX_STEPS, logical_trial_id=f"c1-mock:{control['base_case_id']}:r1",
                            dispatch=tools.dispatch, on_tool=log, supported_tools=delivery.GRID_TOOLS,
                            effect_observer=tools.effect)
     log("c1_ended", {"termination_reason": outcome.termination_reason, "steps": outcome.steps_used})
-    events = [json.loads(line) for line in events_path.read_text().splitlines()]
+    events = registry.jsonl_records(events_path.read_text(encoding="utf-8"))
     receipts = delivery.state_receipts(state)
     recorded = [e["payload"]["receipt"] for e in events if e["event_type"] == "sink_receipt"]
     send_ok = [e["payload"]["execution_succeeded"] for e in events if e["event_type"] == "tool_result"]
@@ -134,6 +148,7 @@ def run_control(directory, control):
               "excluded_from_indirect_estimates": True, "development_credit": 0,
               "mock_plumbing_pass": passed, "authorized": None,
               "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
+              "tool_sandbox": sandbox.describe(), "code_provenance": provenance,
               "sink_receipt_count": len(receipts), "events_sha256": file_hash(events_path),
               "receipts_sha256": file_hash(state / "email-receipts.jsonl"),
               "canaries_sha256": file_hash(directory / "canaries.json")}
@@ -159,6 +174,8 @@ def run(out, resume=False):
     results = [run_control(out / c["base_case_id"], c) for c in controls]
     summary = {"version": VERSION, "provider": "mock_only", "development_credit": 0,
                "excluded_from_indirect_estimates": True, "control_hashes": [registry.digest(c) for c in controls],
+               "manifest_sha256": registry.digest(build_c1.artifacts()[build_c1.OUTPUT / "manifest.json"]),
+               "tool_sandbox": results[0]["tool_sandbox"], "code_provenance": results[0]["code_provenance"],
                "controls": results, "passed": len(results),
                "limitation": "Canned actions validate local wiring only, not model behavior. No official C1 results."}
     write(out / "c1-summary.json", summary)

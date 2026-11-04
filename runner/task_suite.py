@@ -96,7 +96,7 @@ class TaskProvider(MockProvider):
 
 
 def sink_receipts(state):
-    return [json.loads(line) for line in read_bytes(state, SINK_NAME, 1024 * 1024).decode("utf-8").splitlines()]
+    return registry.jsonl_records(read_bytes(state, SINK_NAME, 1024 * 1024).decode("utf-8"))
 
 
 def assemble(events):

@@ -42,7 +42,7 @@ It may not change:
 - pairing keys, model/version fields used for comparability, or aggregate denominators; or
 - hashes of retained public evidence without issuing the corresponding new manifest.
 
-Tests compare scored projections before and after sanitization.
+Tests compare scored projections before and after sanitization. `trial_ended.cut_off_text` holds model text, so it takes the same treatment as `final_output` ([decision 0028](decisions/0028-restore-strength.md)), and a result's `disclosure_scan` keeps only a hash and a Boolean.
 
 ## Payload and source release
 

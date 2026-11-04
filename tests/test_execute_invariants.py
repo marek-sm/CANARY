@@ -16,7 +16,7 @@ import shutil
 
 import pytest
 
-from runner import execute
+from runner import delivery, execute
 from runner import schedule as sched
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
 
@@ -653,3 +653,84 @@ def test_component_versions_name_the_provider_used(tmp_path):
     }
     meta = _result(out, trial)["run_metadata"]
     assert meta["component_versions"]["provider_adapter"] == "fake-adapter-v9"
+
+
+# --- SPEC.md Section 9: a change in the resolved version stops the experiment -----------------
+
+
+class _Resolves(delivery.DeliveryTaskMock):
+    """The delivery mock, reporting whatever resolved version the test's script names."""
+
+    def __init__(self, template, channel, resolved, fingerprint, calls):
+        super().__init__(template, channel)
+        self.resolved, self.fingerprint, self.calls_seen = resolved, fingerprint, calls
+
+    def complete(self, messages, tool_schemas, decoding, model_request):
+        self.calls_seen.append(self.resolved)
+        return {**super().complete(messages, tool_schemas, decoding, model_request),
+                "model_resolved": self.resolved, "provider_fingerprint": self.fingerprint}
+
+
+def _drift_run(out, resolved_by_index, fingerprint_by_index=None, **kwargs):
+    corpus = execute.DEFAULT_CORPUS_ROOT
+    spec = {"experiment_id": "drift", "model_id": "model-a", "seed": "s", "base_case_ids": ["dev-002"],
+            "channels": ["C2"], "conditions": ["attack", "clean"], "configurations": ["D0_BASELINE", "D2_DATAMARKING"],
+            "repeats": 1}
+    schedule = sched.generate_schedule(spec)
+    calls = []
+
+    def factory(trial, canaries):
+        base = json.loads((corpus / f"{trial.base_case_id}.json").read_text(encoding="utf-8"))
+        template, _ = delivery.task_for(base, trial.channel)
+        index = trial.schedule_index
+        return _Resolves(template, trial.channel, resolved_by_index(index),
+                         fingerprint_by_index(index) if fingerprint_by_index else None, calls)
+
+    return schedule, calls, lambda: execute.run_schedule(out, schedule, corpus_root=corpus, spec=spec, delivery=True,
+                                                         provider_factory=factory, **kwargs)
+
+
+def test_a_run_on_one_resolved_model_finishes(tmp_path):
+    schedule, _, run = _drift_run(tmp_path / "run", lambda index: "model-a-2026")
+    run()
+    assert all((tmp_path / "run" / execute.trial_slug(t) / "results.jsonl").exists() for t in schedule)
+
+
+def test_a_change_in_the_resolved_model_stops_the_run(tmp_path):
+    schedule, calls, run = _drift_run(tmp_path / "run", lambda index: "model-a-2026" if index == 0 else "model-a-2027")
+    with pytest.raises(ValueError, match="model-a-2027"):
+        run()
+    ran = [t for t in schedule if (tmp_path / "run" / execute.trial_slug(t) / "results.jsonl").exists()]
+    assert len(ran) == 2  # the trial that showed the change keeps its evidence, and no later trial starts
+    assert set(calls) == {"model-a-2026", "model-a-2027"}
+
+
+def test_a_change_in_the_provider_fingerprint_stops_the_run(tmp_path):
+    _, _, run = _drift_run(tmp_path / "run", lambda index: "model-a-2026", lambda index: f"fp-{min(index, 1)}")
+    with pytest.raises(ValueError, match="fp-1"):
+        run()
+
+
+def test_a_provider_that_supplies_no_fingerprint_never_stops_on_one(tmp_path):
+    _, _, run = _drift_run(tmp_path / "run", lambda index: "model-a-2026", lambda index: None)
+    run()
+
+
+def test_a_stopped_experiment_can_t_be_resumed_into_a_mixed_one(tmp_path):
+    schedule, _, run = _drift_run(tmp_path / "run", lambda index: "model-a-2026" if index == 0 else "model-a-2027")
+    with pytest.raises(ValueError, match="Section 9"):
+        run()
+    _, calls, resume = _drift_run(tmp_path / "run", lambda index: "model-a-2027", resume=True)
+    with pytest.raises(ValueError, match="Section 9"):
+        resume()
+    assert calls == []  # it stops on the stored evidence, before any further provider call
+
+
+def test_a_resume_on_a_new_resolved_model_stops(tmp_path):
+    schedule, _, run = _drift_run(tmp_path / "run", lambda index: "model-a-2026")
+    run()
+    (tmp_path / "run" / execute.trial_slug(schedule[-1]) / "results.jsonl").unlink()
+    (tmp_path / "run" / execute.trial_slug(schedule[-1]) / "events.jsonl").unlink()
+    _, _, resume = _drift_run(tmp_path / "run", lambda index: "model-a-2027", resume=True)
+    with pytest.raises(ValueError, match="Section 9"):
+        resume()

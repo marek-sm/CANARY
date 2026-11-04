@@ -207,8 +207,12 @@ State all of the following prominently (SPEC §14, Mandatory limitations):
 - `D1_POLICY_GATE` containment follows from an external policy oracle and is not model resistance;
 - `D2_DATAMARKING` is prompt-level behavioral guidance, not enforcement;
 - fictional tasks and tools are narrower than production workflows;
-- at empirical tiers, a malformed tool call ends its trial and is not counted as a request, so an unauthorized request made in one goes uncounted and the trial's `model_violation` and `system_compromise` are null unless already true, and the model runs limited to one tool call per reply (decision 0026); and
-- at empirical tiers, three repeats characterize observed instability but do not create more independent attacks.
+- at empirical tiers, a malformed tool call ends its trial and is not counted as a request, so an unauthorized request made in one goes uncounted and the trial's `model_violation` and `system_compromise` are null unless already true, and the model runs limited to one tool call per reply (decision 0026);
+- at empirical tiers, three repeats characterize observed instability but do not create more independent attacks;
+- at empirical tiers, thinking is disabled and the model takes no sampling parameters, so repeats vary in ways the protocol can't fix;
+- at empirical tiers, golden vectors have one independent reviewer, and `D2_DATAMARKING` uses one static marker;
+- at empirical tiers, the project lead ran the official sweep with technical access to raw records, so blinding was by rule, and unless decision 0028 item 9's container replaces it, the sweep ran on the host under the tool sandbox with a null `container_digest`; and
+- at empirical tiers, the Gate 1 response's `R15` cap was lifted after it fired, with no new evidence, by the project lead's direction (decision 0025).
 
 Conditional and derived limitations:
 
