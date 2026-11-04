@@ -73,7 +73,7 @@ from defenses.interfaces import (
 )
 from oracles.authorization.audit import AUDIT_EVALUATOR_VERSION, AuditAuthorizer
 from oracles.utility import task_suite as task_utility
-from runner import paid_run
+from runner import container, paid_run
 from runner import delivery as tool_delivery
 from tasks import registry
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
@@ -1320,6 +1320,9 @@ def run_schedule(
     if unsupported:
         raise ValueError(f"configurations not wired into this runner: {unsupported}")
 
+    # Prototype (runner.container): a container file for another container
+    # refuses here, before the run directory exists.
+    container.container_digest()
     run_dir = Path(run_dir)
     stored_spec = run_dir / SPEC_FILE
     if resume and spec is not None and stored_spec.exists():

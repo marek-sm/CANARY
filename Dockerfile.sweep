@@ -12,7 +12,12 @@
 # the code, and container_digest covers everything else.
 #
 # Build (linux/amd64, any network that reaches Docker Hub, ghcr.io, and Debian):
-#   docker build -f Dockerfile.sweep -t canary-sweep:proto .
+#   SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) docker buildx build -f Dockerfile.sweep \
+#     --platform linux/amd64 --provenance=false --build-arg SOURCE_DATE_EPOCH \
+#     --output type=image,name=canary-sweep:proto,rewrite-timestamp=true .
+# --provenance=false matters: with buildx's default attestation the image ID is a
+# manifest list that changes on every build of identical content, so the
+# container_digest it yields could never be reproduced.
 # The build in the report used TOOLS_SOURCE=ubuntu, UV_SOURCE=pypi, mirror.gcr.io
 # bases at the same digests, and a build_ca secret, because that VM's egress
 # blocked Debian mirrors and ghcr.io blobs. See the report for the exact command.
