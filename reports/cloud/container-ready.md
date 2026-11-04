@@ -95,7 +95,14 @@ What doesn't change, and what isn't known:
 
 ## Final checks (host, `sweeper`, `987e640`)
 
-FINAL_CHECKS
+| Command | Result |
+|---|---|
+| `make test` | **2666 passed, 0 failed** in 1080 s. The baseline on untouched `main` gave 2608 passed. #71's expected review-test failure didn't occur. The exit code wasn't captured, but no `make` error followed the last line |
+| `make sandbox-check` | 78 passed |
+| `make t1-suite` | exit 0, 20 of 20 `utility=True` |
+| `make grid-check` | exit 0, 70 passed, mock and verify `complete: true` |
+
+The first full run on this branch caught one bug of mine: `docker/sweep/outcome_digest.py` used `splitlines()` on JSONL, flagged by `tests/test_verify_evidence.py::test_no_jsonl_reader_splits_with_splitlines` (1 failed, 2665 passed). I fixed it to split on `\n` only.
 
 ## What I didn't do
 
