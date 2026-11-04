@@ -121,7 +121,7 @@ SWEEP_CHECK_ARGS ?=
 sweep-image:
 	@epoch=$$(git log -1 --format=%ct -- Dockerfile.sweep docker/sweep/uv-requirements.txt pyproject.toml uv.lock); \
 	SOURCE_DATE_EPOCH=$${epoch:-0} docker buildx build -f Dockerfile.sweep --platform "$(SWEEP_PLATFORM)" \
-	  --provenance=false --build-arg SOURCE_DATE_EPOCH --build-arg CANARY_IMAGE_EPOCH=$${epoch:-0} $(SWEEP_BUILD_ARGS) \
+	  --provenance=false --build-arg SOURCE_DATE_EPOCH --no-cache $(SWEEP_BUILD_ARGS) \
 	  --output "type=image,name=$(SWEEP_IMAGE),rewrite-timestamp=true" .
 
 sweep-container-check:

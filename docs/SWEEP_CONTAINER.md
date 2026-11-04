@@ -27,7 +27,7 @@
 ## The steps
 
 1. **Build:** `make sweep-image`. This is the canonical path: Debian snapshot packages and the pinned ghcr.io uv. No cloud run has used it. Then write down the ID: `docker image inspect canary-sweep:local --format '{{.Id}}'`. It's the value every result will carry. An arm64 ID never equals an amd64 one.
-2. **Optional reproducibility check:** `make sweep-image SWEEP_BUILD_ARGS=--no-cache`, then compare the ID. A different ID means something in the build isn't pinned. Say so before relying on the digest.
+2. **Optional reproducibility check:** run `make sweep-image` again and compare the ID. It always builds with `--no-cache`, because a cached build keeps the timestamps of whatever build filled the cache. A different ID means something in the build isn't pinned. Say so before relying on the digest.
 3. **The tripwire:** `make sweep-container-check`. It takes about 5 minutes on the cloud VM, and the Mac may differ. It stops at the first failing step, and the last line is `sweep-container-check: PASSED, image sha256:…`. Keep the whole output, because the preflight line shows the daemon, kernel, and security options.
    - Step 4 makes one TLS handshake to `api.anthropic.com`, then closes it. It sends no HTTP request and no key. `make sweep-container-check SWEEP_CHECK_ARGS=--no-handshake` skips it, but then the allowed path is unproven.
    - `SWEEP_CHECK_ARGS=--keep` keeps the scratch results under `results/development/sweep-container-check-*`.

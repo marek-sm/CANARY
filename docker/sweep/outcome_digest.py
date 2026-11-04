@@ -38,7 +38,7 @@ def _scrub(value, canaries):
 def summarize(run_dir: Path) -> dict:
     trials, images = {}, set()
     for results_path in sorted(run_dir.glob("*/results.jsonl")):
-        for line in results_path.read_text(encoding="utf-8").splitlines():
+        for line in results_path.read_text(encoding="utf-8").split("\n"):  # not splitlines: U+2028 in model text
             if not line.strip():
                 continue
             record = json.loads(line)
