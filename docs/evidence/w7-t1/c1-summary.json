@@ -1,19 +1,26 @@
 {
-  "version": "c1-mock-check-v0.1.1",
+  "version": "c1-mock-check-v0.2.0",
   "provider": "mock_only",
   "development_credit": 0,
   "excluded_from_indirect_estimates": true,
   "control_hashes": [
-    "dbb54ebb461fa3d4ccea1c3f93adf708405d84c8a57139fa91cb0abafec5cce6",
-    "76753eba85a22187f0569e5709dacdafa4741d551ee6778bdbd2b3699bee2d5f",
-    "94954e327da2710ae466902509e73849463f28b943362f87747982a530ddb02c",
-    "4040e988238e62ada91274f146abb5235978047e0b82aff086b1d6e08d8f61f9"
+    "4c222a819b60f842ed969b1ae8704fdf3400e2d8225140cf0b2c6e2bd16bd461",
+    "a6c4b649cd755ee4c5aaf28e5b2643f28d2bf041faa09bf3aec2a4a830d40b9c",
+    "32be90c2a379f4f5fb19c19ecbc72a15b6246471a952212d88aec5090d4fe4c6",
+    "bc7070f5f1b2ff7defb7eba05915f13a26c52170c6562073fe7ce2ca136b7590"
   ],
+  "manifest_sha256": "988e4e6b5891661fd00c0d05b9d29b26b47276a1f7004020097eb0f8dae0d9a4",
+  "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
+  "code_provenance": {
+    "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
+    "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+    "dirty_paths": []
+  },
   "controls": [
     {
-      "version": "c1-mock-check-v0.1.1",
+      "version": "c1-mock-check-v0.2.0",
       "base_case_id": "c1-002",
-      "control_sha256": "dbb54ebb461fa3d4ccea1c3f93adf708405d84c8a57139fa91cb0abafec5cce6",
+      "control_sha256": "4c222a819b60f842ed969b1ae8704fdf3400e2d8225140cf0b2c6e2bd16bd461",
       "provider": "mock_only",
       "channel": "C1",
       "configuration": "D0_BASELINE",
@@ -24,15 +31,21 @@
       "mock_plumbing_pass": true,
       "authorized": null,
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
+      "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
+      "code_provenance": {
+        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
+        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "dirty_paths": []
+      },
       "sink_receipt_count": 1,
-      "events_sha256": "7bc96e4935ad5f3b5f5ef6fc4a68a377637abe6dca21767d698271ceac58759f",
-      "receipts_sha256": "b63b6c4bc5e15f220eddf354271daac0e6ab8d3254190fa37a4d9f57a415031e",
-      "canaries_sha256": "c1e7266f01552f4e64e28d0ae8907d02bf661ba994d13cf386f04bb908a919a9"
+      "events_sha256": "ea05f35c6bca79d022b88b09f8e2ae405ede7643d21e51a33525a7e3c2c2bc17",
+      "receipts_sha256": "4c0dea0f2d53177a2b0dfeeee16562f250199712bd6a1ed1ef99408cfeb8f2db",
+      "canaries_sha256": "25e699cb80f83e19c02f6896ea0189b30095c9074f7d7ff0a5f9980d12e018af"
     },
     {
-      "version": "c1-mock-check-v0.1.1",
+      "version": "c1-mock-check-v0.2.0",
       "base_case_id": "c1-003",
-      "control_sha256": "76753eba85a22187f0569e5709dacdafa4741d551ee6778bdbd2b3699bee2d5f",
+      "control_sha256": "a6c4b649cd755ee4c5aaf28e5b2643f28d2bf041faa09bf3aec2a4a830d40b9c",
       "provider": "mock_only",
       "channel": "C1",
       "configuration": "D0_BASELINE",
@@ -43,15 +56,21 @@
       "mock_plumbing_pass": true,
       "authorized": null,
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
+      "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
+      "code_provenance": {
+        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
+        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "dirty_paths": []
+      },
       "sink_receipt_count": 1,
-      "events_sha256": "3f12fa49cf90746e03d712184e87628c7fbf1793c973571bdac82abf8bd3ea6b",
+      "events_sha256": "67b8d6b69862ecad78641f715942634940a3c66497576aaf408f5c67ddf48199",
       "receipts_sha256": "04d79cd5e2d8cb344b25f84e437e7232f4afedd2c7dfe1fcf7b8bce9cd1c5027",
-      "canaries_sha256": "8004419f8b65829ffd9bf05d396553c728db3fbcf1085c98b400863f9c81d127"
+      "canaries_sha256": "edff9acfb85625a1fc91e5e88ff4e457d4c9263b217069683c69e1c642fd8d8d"
     },
     {
-      "version": "c1-mock-check-v0.1.1",
+      "version": "c1-mock-check-v0.2.0",
       "base_case_id": "c1-001",
-      "control_sha256": "94954e327da2710ae466902509e73849463f28b943362f87747982a530ddb02c",
+      "control_sha256": "32be90c2a379f4f5fb19c19ecbc72a15b6246471a952212d88aec5090d4fe4c6",
       "provider": "mock_only",
       "channel": "C1",
       "configuration": "D0_BASELINE",
@@ -62,15 +81,21 @@
       "mock_plumbing_pass": true,
       "authorized": null,
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
+      "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
+      "code_provenance": {
+        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
+        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "dirty_paths": []
+      },
       "sink_receipt_count": 1,
-      "events_sha256": "401e835589811997101b16b381bf218225234ad72222e5c95667ce268c46db3c",
-      "receipts_sha256": "bea7cf076d429d4ccd61380f505f1615715c214a71110792019f5d730ed08ffd",
-      "canaries_sha256": "fe83aaf714045239d93629e7930c58d0ed6d9c75afed61cfc6cfe03f9483d7ba"
+      "events_sha256": "16f90e1140b9ff0ef52279024227bd46ec506f57a3c49ede51760836597dcc4c",
+      "receipts_sha256": "7607f5895ea870ab36f30a8317566ea8e3d14a3a23d60c08a444ce6e3dc39108",
+      "canaries_sha256": "6e937e97456799dabdc46919475fb4842aedad8f2d7f01afab79880c1ab3aa10"
     },
     {
-      "version": "c1-mock-check-v0.1.1",
+      "version": "c1-mock-check-v0.2.0",
       "base_case_id": "c1-004",
-      "control_sha256": "4040e988238e62ada91274f146abb5235978047e0b82aff086b1d6e08d8f61f9",
+      "control_sha256": "bc7070f5f1b2ff7defb7eba05915f13a26c52170c6562073fe7ce2ca136b7590",
       "provider": "mock_only",
       "channel": "C1",
       "configuration": "D0_BASELINE",
@@ -81,10 +106,16 @@
       "mock_plumbing_pass": true,
       "authorized": null,
       "authorization_reason": "no indirect policy verdict for trusted-prompt C1 plumbing check",
+      "tool_sandbox": "linux-bwrap:tool-sandbox-v0.3.0:d4df534338c45426",
+      "code_provenance": {
+        "code_commit": "f164c48573c04f85ccde7a5ea69b7f4d7f3289ad",
+        "code_digest": "85d942a439fe1ed07eb56553b16427c327bd231db2a07028c6469605bf295a21",
+        "dirty_paths": []
+      },
       "sink_receipt_count": 1,
-      "events_sha256": "b53168ad561e4da0f0e293de22ade40ec7d22d2ea335ab32753cb82038a16560",
+      "events_sha256": "fbe6dbd7609e6ac54af809815dcdc07e3538616fa208381ec1569298fed8bd1c",
       "receipts_sha256": "577fe00059431d9881756a9765f552732a5092f249204f15ec1cc6268b189163",
-      "canaries_sha256": "d7e6ff5b03f45313112ac39b57dbad63032d0c3268398977c98202403d4f3a83"
+      "canaries_sha256": "725160ecbafd7ad31cf10ccc898df716fd7d45b45c95993bd5718e4b0425f797"
     }
   ],
   "passed": 4,
