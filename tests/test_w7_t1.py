@@ -215,7 +215,7 @@ def test_c1_evidence_names_its_sandbox_code_steps_and_versions(tmp_path):
     report = c1_mock.run(out)
     assert report["tool_sandbox"] == sandbox.describe()
     assert set(report["code_provenance"]) == PROVENANCE_KEYS
-    assert report["code_provenance"] == paid_run.code_provenance()
+    assert report["code_provenance"] == {key: paid_run.code_provenance()[key] for key in PROVENANCE_KEYS}
     for result in report["controls"]:
         assert result["tool_sandbox"] == sandbox.describe()
         assert set(result["code_provenance"]) == PROVENANCE_KEYS

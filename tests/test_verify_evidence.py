@@ -945,7 +945,7 @@ def test_the_budget_cli_refuses_without_a_traceback(grid_run, tmp_path, capsys):
 
     copy = _copy(grid_run, tmp_path)
     (sorted(copy.glob("t*"))[0] / EVENTS_FILE).write_text('{"not": "an event"}\n', encoding="utf-8")
-    args = [str(copy), "--remaining-balance-usd", "10", "--conservative-c1-trial-cost-usd", "0.01", "--reserve-usd", "1"]
+    args = [str(copy), "--remaining-balance-usd", "10"]
     assert gate2_budget.main(args) == 1
     assert "gate2-budget:" in capsys.readouterr().err
 
@@ -1869,6 +1869,7 @@ class FakeAdapter:
     """
 
     adapter_version = "fake-adapter-v0"
+    request_settings = paid_run.ONE_CALL_SETTINGS[0]  # decision 0026 item 3, which every paid path enforces
 
     def __init__(self, wrong_answers=()):
         self.calls = 0

@@ -25,7 +25,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from runner import grid_dev, paid_run
+from runner import execute, grid_dev, paid_run
 from runner.mock_provider import MOCK_MODEL_ID, MockProvider
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,9 +126,14 @@ def test_the_record_refuses_a_gate_cell_with_no_request(gate):
         gate.record()
 
 
-def test_an_unauthorized_dispatch_outside_the_gate_is_no_conformance_failure(gate):
+def test_an_unauthorized_dispatch_outside_the_gate_is_no_conformance_failure(gate, monkeypatch):
     # Under D0_BASELINE the audit is observational, and every valid request is dispatched (Section 6).
     gate.edit_result(gate.trial("D0_BASELINE"), lambda r: _first_tool_event(r, authorized=False, dispatched=True))
+    # A hand-edited result no longer recomputes from its events, so verify refuses it...
+    with pytest.raises(paid_run.PaidRunRefused, match="recompute"):
+        gate.record()
+    # ...but the conformance check itself doesn't, which is what this test is about.
+    monkeypatch.setattr(execute, "check_stored_run", lambda *args, **kwargs: None)
     assert gate.record()["conditions"]["mock_grid"]["trials"] == 90
 
 
@@ -511,13 +516,17 @@ def _other_sandbox():
     return "linux-bwrap:tool-sandbox-v0.0.0:0000000000000000"
 
 
-def test_a_grid_from_another_sandbox_is_refused_though_the_record_names_this_one(gate):
+def test_a_grid_from_another_sandbox_is_refused_though_the_record_names_this_one(gate, monkeypatch):
     """Every trial really ran elsewhere, with digests that match; only reading the grid can tell."""
     healthy = gate.record()
     for trial_dir in sorted(p.parent for p in gate.mock.glob("*/events.jsonl")):
         gate.edit_events(trial_dir, _set_sandbox(_other_sandbox()))
     healthy["conditions"]["mock_grid"].update(tool_sandbox=_other_sandbox(), **paid_run.mock_run_digests(gate.mock))
-    assert "ran under" in gate.refusal(gate.commit_record(healthy))
+    record = gate.commit_record(healthy)
+    assert "recompute" in gate.refusal(record)  # edited events no longer replay to their results
+    monkeypatch.setattr(execute, "check_stored_run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(paid_run, "_READ_MOCK_RUNS", {})
+    assert "ran under" in gate.refusal(record)
 
 
 def test_a_record_that_misstates_the_grid_s_sandbox_is_refused(gate):
@@ -695,19 +704,11 @@ BUDGET_ARGUMENTS = ["--remaining-balance-usd", "9.0"]  # the reserve, C1 cost, a
 
 
 @pytest.fixture
-def live_grid(gate, tmp_path, monkeypatch):
-    """A live-model grid's records with the provenance a real invocation writes, and no paid-run record."""
-    from tests.test_floor_count import grid
-
+def live_grid(gate, live_grid_run, tmp_path, monkeypatch):
+    """A live-model grid that really ran this checkout's code, with its own provenance, and no paid-run record."""
     monkeypatch.setattr(paid_run, "RECORD", tmp_path / "no-record.json")
     run = tmp_path / "grid-live"
-    for index, (record, log) in enumerate(grid()):
-        trial_dir = run / f"t{index:04d}"
-        trial_dir.mkdir(parents=True)
-        record["usage"].update(input_tokens=1000, output_tokens=200)
-        (trial_dir / "results.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
-        (trial_dir / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in log), encoding="utf-8")
-    _append_provenance(run)
+    shutil.copytree(live_grid_run, run, ignore=shutil.ignore_patterns("*.sock"))
     return run
 
 

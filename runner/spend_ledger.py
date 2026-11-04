@@ -121,7 +121,8 @@ def read(path: Optional[Path] = None) -> list[dict[str, Any]]:
                           "partial line by hand, then reconcile with the provider's console, because the start or "
                           "finish it held is lost")
     try:
-        lines = [json.loads(line) for line in text.splitlines()]
+        # Split only at newlines: str.splitlines also splits at U+2028, U+2029, and U+0085.
+        lines = [json.loads(line) for line in text.split("\n")[:-1]] if text else []
         for line in lines:
             validator(SCHEMA).validate(line)
     except Exception as exc:

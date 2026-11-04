@@ -77,13 +77,42 @@ def mock_grid_checkout(tmp_path_factory):
     return SimpleNamespace(root=root, env=env, grid=base / "grid", spec=spec, head=head)
 
 
+@pytest.fixture(scope="session")
+def live_grid_run(mock_grid_checkout):
+    """A real-model-named 90-cell grid of the tiny checkout, with recorded usage. load_run
+    recomputes every result from its events, so a Gate 2 script's input must really have run."""
+    from runner import delivery
+    from tests.test_floor_count import MODEL
+
+    root = mock_grid_checkout.root
+    spec = {**mock_grid_checkout.spec, "model_id": MODEL}
+
+    class RealShaped(delivery.DeliveryTaskMock):
+        def complete(self, messages, tool_schemas, decoding, model_request):
+            response = super().complete(messages, tool_schemas, decoding, model_request)
+            return {**response, "model_resolved": model_request["model"],
+                    "usage": {"input_tokens": 1000, "output_tokens": 200}}
+
+    def factory(trial, _canaries):
+        base = json.loads((root / "corpus" / "development" / f"{trial.base_case_id}.json").read_text(encoding="utf-8"))
+        return RealShaped(delivery.task_for(base, trial.channel)[0], trial.channel)
+
+    run = mock_grid_checkout.grid.parent / "grid-live"
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(paid_run, "REPO_ROOT", root)
+        execute.run_schedule(run, grid_dev.validate_grid_spec(spec), corpus_root=root / "corpus" / "development",
+                             spec=spec, delivery=True, provider_factory=factory)
+    return run
+
+
 class GateCheckout:
     """One test's view of the checkout, with its own copy of the mock grid."""
 
     def __init__(self, checkout):
         self.root, self.env, self.spec = checkout.root, checkout.env, checkout.spec
         self.mock = self.root / MOCK_RUN
-        shutil.copytree(checkout.grid, self.mock, ignore=shutil.ignore_patterns("env"))
+        # Verify reads each trial's env/ (fixtures, state, server log); only sockets can't be copied.
+        shutil.copytree(checkout.grid, self.mock, ignore=shutil.ignore_patterns("*.sock"))
 
     def git(self, *args):
         _git(self.root, self.env, *args)

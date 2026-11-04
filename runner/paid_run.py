@@ -571,13 +571,15 @@ def _check_mock_run(mock_run: Path, *, root: Path) -> dict[str, Any]:
         return _READ_MOCK_RUNS[read_key]
     try:
         spec = grid_dev.load_spec(root / "protocol" / "development_grid_spec.json")
-        summary = grid_dev.verify_grid_run(mock_run, spec)
-        if not summary["complete"]:
-            raise PaidRunRefused("the mock grid isn't complete")
+        # The named checks first, so a grid that fails one says which; then verify, which
+        # also recomputes every stored result from its events and environment.
         _check_spec(mock_run, spec)
         _check_trials(mock_run)
         mode = _mock_run_sandbox(mock_run)
         _check_preflight(mock_run, code_digest(code_hashes(root)), (root / "corpus" / "development").resolve())
+        summary = grid_dev.verify_grid_run(mock_run, spec)
+        if not summary["complete"]:
+            raise PaidRunRefused("the mock grid isn't complete")
     except PaidRunRefused:
         raise
     except Exception as exc:

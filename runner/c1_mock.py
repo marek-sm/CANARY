@@ -110,7 +110,9 @@ def run_control(directory, control):
     sink = []
     def sync(receipts):
         sink[:] = receipts
-    provenance = paid_run.code_provenance()
+    # The code it ran, as the coverage summary names it. The paid gate's machine facts stay out of
+    # committed evidence; each run's own code_provenance.jsonl isn't written by this check.
+    provenance = {key: paid_run.code_provenance()[key] for key in ("code_commit", "code_digest", "dirty_paths")}
     log("c1_started", {"version": VERSION, "control_sha256": registry.digest(control),
                        "messages": control["messages"], "provider": "mock_only",
                        "fixture_sha256": registry.digest(delivery._file_hashes(root)),
