@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import textwrap
 from pathlib import Path
 from typing import Any, Mapping, Optional
@@ -102,6 +101,16 @@ def resolved_display_label(result: Mapping[str, Any]) -> Optional[str]:
     return stored or derived
 
 
+def _observation_text(observation: Mapping[str, Any]) -> Optional[str]:
+    """Readable fallback for legacy text and current structured tool results."""
+
+    text = observation.get("text")
+    if isinstance(text, str):
+        return text
+    structured = {key: value for key, value in observation.items() if key != "ok"}
+    return json.dumps(structured, ensure_ascii=False, sort_keys=True) if structured else None
+
+
 def _event_line(event: Mapping[str, Any]) -> str:
     kind = event["event_type"]
     p = event["payload"]
@@ -154,16 +163,6 @@ def _event_line(event: Mapping[str, Any]) -> str:
     else:
         text = kind.replace("_", " ").upper()
     return f"[{event['sequence']}] {text}"
-
-
-def _observation_text(observation: Mapping[str, Any]) -> Optional[str]:
-    """Readable fallback for legacy text and current structured tool results."""
-
-    text = observation.get("text")
-    if isinstance(text, str):
-        return text
-    structured = {key: value for key, value in observation.items() if key != "ok"}
-    return json.dumps(structured, ensure_ascii=False, sort_keys=True) if structured else None
 
 
 def render_trace(events_path: Path) -> str:
@@ -264,6 +263,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("events", type=Path, help="events.jsonl, a trial directory, or a run directory")
     args = parser.parse_args(argv)
+    import sys
+
     paths = events_paths(args.events)
     if not paths:
         print(f"refusing: no recorded trial under {args.events}; run make grid-mock, or pass RUN=DIR",
