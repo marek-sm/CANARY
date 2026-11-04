@@ -85,6 +85,8 @@ def _tls(address: str, name: str | None) -> str:
                 cert = tls.getpeercert() or {}
                 subject = dict(item[0] for item in cert.get("subject", ()))
                 return f"handshake:{subject.get('commonName')}:{tls.version()}"
+    except ssl.SSLCertVerificationError as exc:
+        return f"answered:{type(exc).__name__}"  # a server spoke TLS back: that's reach, not refusal
     except (OSError, ssl.SSLError, ValueError) as exc:
         return f"refused:{type(exc).__name__}"
 
@@ -127,7 +129,10 @@ def main(argv: list[str] | None = None) -> int:
     reach = not args.expect_no_network
     expect(f"runner: {ALLOWED} resolves (to the proxy, from /etc/hosts)", proxy, reach)
     if proxy_address and not args.no_handshake:
-        expect(f"runner: verified TLS handshake to {ALLOWED}", _tls(proxy_address, ALLOWED), reach)
+        observed = _tls(proxy_address, ALLOWED)
+        # Reach alone isn't enough here: the certificate must verify as the allowed name.
+        checks.append((f"runner: verified TLS handshake to {ALLOWED}", observed,
+                       observed.startswith("handshake") == reach))
     if proxy_address:
         expect("runner: TLS naming example.com, through the proxy", _tls(proxy_address, "example.com"), False)
         expect("runner: TLS naming no host, through the proxy", _tls(proxy_address, None), False)

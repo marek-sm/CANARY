@@ -22,7 +22,7 @@
 # Usage:
 #   docker/sweep/launch.sh [--image REF] [--checkout DIR] [--results DIR]
 #       [--writable-protocol] [--key-file FILE] [--network none|egress]
-#       [--name NAME] [--apparmor-unconfined] -- COMMAND...
+#       [--name NAME] [--apparmor-unconfined] [--writable-checkout] -- COMMAND...
 #
 #   --results DIR   host directory mounted read-write at /app/results/development
 #                   (default: the checkout's own results/development)
@@ -30,6 +30,10 @@
 #                   docker/sweep/egress_proxy.py, which forwards TLS for
 #                   api.anthropic.com:443 and nothing else. Tools have no network
 #                   in either mode (bwrap --unshare-net).
+#   --writable-checkout  mount the checkout read-write. Only for the sandbox tests:
+#                   their controls write the repository unsandboxed, so on a
+#                   read-only checkout a refusal would prove nothing. Never for a
+#                   grid, a record, or a paid run.
 #   --key-file FILE mounted read-only at /run/secrets/provider.env for the outer
 #                   runner. Never pass a key with -e.
 set -eu
@@ -44,6 +48,7 @@ KEY_FILE=""
 NETWORK="none"
 NAME=""
 APPARMOR=0
+CHECKOUT_MODE=",readonly"
 
 die() { echo "launch.sh: $*" >&2; exit 2; }
 
@@ -57,6 +62,7 @@ while [ $# -gt 0 ]; do
     --network) NETWORK=$2; shift 2 ;;
     --name) NAME=$2; shift 2 ;;
     --apparmor-unconfined) APPARMOR=1; shift ;;
+    --writable-checkout) CHECKOUT_MODE=""; shift ;;
     --) shift; break ;;
     *) die "unknown option $1 (put the command after --)" ;;
   esac
@@ -128,7 +134,7 @@ set -- \
   --read-only \
   --tmpfs /tmp:rw,nosuid,nodev,noexec,size=256m \
   --pids-limit 512 \
-  --mount "type=bind,src=$CHECKOUT,dst=/app,readonly" \
+  --mount "type=bind,src=$CHECKOUT,dst=/app$CHECKOUT_MODE" \
   --mount "type=bind,src=$RESULTS,dst=/app/results/development" \
   --mount "type=bind,src=$STATE,dst=/run/canary,readonly" \
   --label "org.canary.launcher=$LAUNCHER_VERSION" \
