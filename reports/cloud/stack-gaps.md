@@ -4,13 +4,14 @@ Run 2026-11-04 on branch `cloud/stack-gaps`, from `origin/main` `5f3a52d` (decis
 
 ## 1. Answer
 
-All seven are done, each with a failing test written first. Every new test passes. Two limits remain. (a) The `actions/checkout` SHA is one I couldn't verify from here (item 7). (b) Once #66 merges, the Makefile will have two `replay` recipes (item 2). The final runs are in Section 3.
+All seven are done, each with a failing test written first. Every new test passes. All four final targets pass on `af8193a`: `make test` gives 2656 passed and 1 skipped, with no failures. The expected #71 review-test failure didn't appear. Two limits remain. (a) The `actions/checkout` SHA is one I couldn't verify from here (item 7). (b) Once #66 merges, the Makefile will have two `replay` recipes (item 2).
 
 Ranked by what's left, most urgent first:
 
 1. **Item 7:** confirm `11bd71901bbe5b1630ceea73d27597364c9af683` is `actions/checkout` `v4.2.2` before merging. If it's wrong, CI fails at checkout, so it can't pass silently.
 2. **Item 2 vs #66:** `git merge-tree` shows the trace fix merges cleanly. The Makefile then holds two `replay` recipes, and `make` warns and runs this branch's (**ran**, `make -n` on the merged Makefile). #66's owner keeps one.
-3. **Item 3:** `REPORT_MODULE ?= analysis.report` is a placeholder name. `W8-T3` sets it to the module it commits.
+3. **Item 4, `paid_run_record.schema.json`:** I widened its `code_sha256` path pattern to admit the fallback spec, and left the version at `1.1.0`. The schema isn't locked and no record exists yet. Bumping the version is your call.
+4. **Item 3:** `REPORT_MODULE ?= analysis.report` is a placeholder name. `W8-T3` sets it to the module it commits.
 
 ## 2. Each item
 
@@ -48,8 +49,9 @@ Ranked by what's left, most urgent first:
   - `W8-T3`'s row owns the `active.json` generator and the `ENGINEERING` validation schema, not the `active_protocol` schema. I didn't add `engineering_validation.schema.json`.
   - `W9-T3` and `W11-T3` own the sanitizer and the frozen manifests, so the manifest schema stays unlocked for them.
   - `runner.raw_manifest` keeps its own decision 0025 format.
-- Tests (**ran**): 22 in `tests/test_schema_runtime.py`, all passed.
-- One fixture changed. `tests/test_sweep.py` relabelled `dev-001` as an evaluation base, which the schema refuses (`^eval-`). It now uses `eval-901`, with its renders copied under a temporary fixture root, the way `tests/test_delivery.py:211` repoints `delivery.REPO_ROOT`. No check was weakened.
+- `runner.coverage`'s generated `coverage-*` records (W7-T1) were never `base_case`-valid, because they have no candidate or source. Only a `coverage-` ID in `native-task-coverage-v1` mode skips validation. A test shows a `dev-` base marked that way is still refused.
+- Tests (**ran**): 23 in `tests/test_schema_runtime.py`, all passed.
+- Two test changes. A stub in `tests/test_grid_live_decoding.py` now accepts the new `provider_name` keyword. The other is a fixture: `tests/test_sweep.py` relabelled `dev-001` as an evaluation base, which the schema refuses (`^eval-`). It now uses `eval-901`, with its renders copied under a temporary fixture root, the way `tests/test_delivery.py:211` repoints `delivery.REPO_ROOT`. No check was weakened.
 
 **5. `compose.yaml`.** It now has `read_only: true` and the two `tmpfs` mounts, beside `network_mode: none`. With `docker compose run --rm mock`, that's the CI docker job's flags exactly. `README.md:31` adds "Docker instructions": the one command, its CI equivalent, and its limits (no bubblewrap or `make` in the image, tools fail inside it, the sweep runs outside it with a null `container_digest`). That covers `SPEC.md` Section 16's promise.
 - Tests (**ran**): 3 in `tests/test_compose.py`. Two passed. The container test skips unless `CANARY_DOCKER_IMAGE` is set.
@@ -65,7 +67,14 @@ Ranked by what's left, most urgent first:
 
 ## 3. Final runs (as `dev`)
 
-Pending: this draft was pushed before the final runs finished.
+| Command | Result |
+|---|---|
+| `make sandbox-check` | 78 passed (49 s). Rerun on `af8193a`: 78 passed |
+| `make t1-suite` | exit 0, 20 of 20 `utility=True`. Rerun on `af8193a`: same |
+| `make grid-check` | exit 0: grid-validate, 80 passed, mock grid verified `complete: true` (273 s) |
+| `make test` on `af8193a` | exit 0: grid-check 80 passed, then `pytest -q` 2656 passed, 1 skipped (the docker test), 0 failed (1545 s) |
+
+The first `make test` (on `ee3f655`) failed: 8 failed and 28 errors. The causes were the coverage records, the paid-run record pattern, and the stub, all fixed above. A targeted rerun once failed `test_verify_evidence.py::test_a_torn_coverage_summary_is_refused_on_resume`. It passed alone and in the final full run, so I can't explain that one failure.
 
 ## 4. What I didn't do
 
