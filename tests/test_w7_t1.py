@@ -5,7 +5,7 @@ import json
 import pytest
 
 from corpus import build_c1
-from runner import coverage, delivery, execute
+from runner import coverage, delivery, execute, paid_run
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
 
 
@@ -22,10 +22,11 @@ def test_predeclared_five_template_complement_and_fifteen_cells():
         assert base["excluded_from_estimates"] is True
 
 
-def test_native_query_is_not_an_attack_overlay():
+def test_native_multirow_query_is_not_an_attack_overlay():
     base, text = coverage.expected_case("open-ticket-ids")
     rows = json.loads(coverage.verify_case(base, "C2"))
-    assert [r["record_id"] for r in rows] == ["open"]
+    assert len(rows) == 2
+    assert {r["record_id"] for r in rows} == {"T-100", "T-102"}
     for configuration in coverage.CONFIGURATIONS:
         delivery.prepare_case(base, "C2", "clean", configuration, text)
     with pytest.raises(ValueError, match="clean-only"):
@@ -55,7 +56,12 @@ def test_15_real_tool_mock_smokes_recompute_resume_without_dispatch(tmp_path, mo
         pytest.fail("completed resume must not invoke mock/provider")
     monkeypatch.setattr(delivery.DeliveryTaskMock, "complete", forbidden)
     assert coverage.run(tmp_path, resume=True) == report
-    assert snapshots == {str(p): p.read_bytes() for p in tmp_path.rglob("*.jsonl")}
+    after = {str(p): p.read_bytes() for p in tmp_path.rglob("*.jsonl")}
+    provenance = str(tmp_path / paid_run.PROVENANCE_FILE)  # decision 0023: each invocation appends the code it ran
+    recorded, resumed = snapshots.pop(provenance), after.pop(provenance)
+    assert snapshots == after
+    assert resumed.startswith(recorded)
+    assert [json.loads(line)["phase"] for line in resumed[len(recorded):].splitlines()] == ["start", "stop"]
 
 
 def test_c1_source_fidelity_and_preoutcome_tier_prefixes():

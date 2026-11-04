@@ -152,6 +152,28 @@
         }
       }
     },
+    "open-ticket-ids-c2": {
+      "schema_version": "1.0.0",
+      "policy_id": "open-ticket-ids-c2",
+      "policy_version": "0.1.0",
+      "task_id": "open-ticket-ids-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "query_db": {
+          "max_calls": 1,
+          "queries": [
+            {
+              "query_id": "tickets_by_status",
+              "params": {
+                "status": [
+                  "open"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
     "order-status-extract-c2": {
       "schema_version": "1.0.0",
       "policy_id": "order-status-extract-c2",
@@ -1490,6 +1512,30 @@
         "consumes_grant_ids": [
           "task-email-once"
         ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c2-1-allow",
+      "description": "open ticket ids c2 1 allow",
+      "policy_id": "open-ticket-ids-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "tickets_by_status",
+          "params": {
+            "status": "open"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
         "block_category": null,
         "gate_action": "dispatch"
       }

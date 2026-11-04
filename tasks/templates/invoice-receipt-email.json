@@ -181,7 +181,7 @@
     }
   },
   "canonical_adapter": "C3",
-  "fixture_hash": "4938305c7ecc283eed97ae4e98b5ee3ed6b338ce41c6d5892479fdd37f5322a3",
+  "fixture_hash": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746",
   "utility_oracle": {
     "id": "invoice-receipt-email",
     "version": 2,

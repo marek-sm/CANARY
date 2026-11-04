@@ -33,9 +33,9 @@ What this module owns:
 * **The no-credit grid mock**, which makes the task's required calls and answers
   from what the tools returned, never from the expected output.
 
-Tools still run as host subprocesses through W6-T1's worker, as on ``main``.
-Until the paid-path tool sandbox exists (audit F-01), the runner refuses any
-provider other than the mock in delivery mode.
+Tools run through W6-T1's worker inside the tool sandbox (``tools.sandbox``,
+decision 0023), and a non-mock provider runs only when ``runner.paid_run`` finds
+the project lead's paid-run record valid for this code and sandbox.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ import shutil
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 
 from channels import render as channel_render
 from defenses.datamarking import mark_html_document, mark_json_strings, mark_text
@@ -64,6 +64,7 @@ from defenses.interfaces import (
 from defenses.datamarking import TRANSFORM_VERSION
 from defenses.policy_gate import EVALUATOR_VERSION, GATE_VERSION, PolicyGate, PolicyGateAuthorizer, gate_and_dispatch
 from runner.mock_provider import MOCK_MODEL_ID, MockProvider
+from tools import sandbox
 from tasks import registry
 
 DELIVERY_VERSION = "tool-result-delivery-v0.3.0"
@@ -203,7 +204,8 @@ def mark_resource(channel: str, rendered: str) -> str:
 
 def component_versions(configuration: str) -> dict[str, str]:
     """Versions a delivery cell adds to every event (A5 version capture)."""
-    versions = {"tool_result_delivery": DELIVERY_VERSION, "task_registry": registry.VERSION}
+    versions = {"tool_result_delivery": DELIVERY_VERSION, "task_registry": registry.VERSION,
+                "tool_sandbox": sandbox.describe()}
     if configuration == "D1_POLICY_GATE":
         versions.update(d1_policy_gate=GATE_VERSION, d1_policy_evaluator=EVALUATOR_VERSION)
     if configuration == "D2_DATAMARKING":
@@ -306,6 +308,9 @@ def _overlay(files: dict[str, bytes], base: Mapping[str, Any], channel: str, del
     elif channel == "C2":
         rows = json.loads(files["db-seed.json"])
         matches = [row for row in rows if row["resource"] == resource]
+        if len(matches) > 1:  # a multi-row source: the payload sits in the row holding the base's facts
+            facts = (base["fixture"].get("wrapper") or {}).get("facts")
+            matches = [row for row in matches if json.loads(row["content"]) == facts]
         if len(matches) != 1:
             raise ValueError(f"{resource!r} must name exactly one W6-T1 database row")
         matches[0]["content"] = delivered
@@ -415,12 +420,12 @@ class TrialTools:
     grant_state: GrantState
     root: Path
     state: Path
-    port: int
+    endpoint: str  # the trial's fixture-socket directory (decision 0023)
     log: Callable[[str, Mapping[str, Any]], None]
     sync_sink: Callable[[list[Any]], None]
     stored: Mapping[tuple[str, Optional[str]], Mapping[str, Any]] = field(default_factory=dict)
     # W6-T1's worker subprocess unless a caller supplies another; looked up at call time.
-    run_tool: Optional[Callable[[Path, Path, int, CanonicalRequest], Mapping[str, Any]]] = None
+    run_tool: Optional[Callable[[Path, Path, str, CanonicalRequest], Mapping[str, Any]]] = None
     gate: PolicyGate = field(default_factory=PolicyGate)
     authorizer: PolicyGateAuthorizer = field(default_factory=PolicyGateAuthorizer)
     prior: list[PriorCall] = field(default_factory=list)
@@ -466,7 +471,7 @@ class TrialTools:
                 self._account_send(request)
             return dict(result["observation"])
 
-        run = lambda req: dict((self.run_tool or registry.worker)(self.root, self.state, self.port, req))  # noqa: E731
+        run = lambda req: dict((self.run_tool or registry.worker)(self.root, self.state, self.endpoint, req))  # noqa: E731
         if self.configuration == "D1_POLICY_GATE":
             def commit(outcome: Any, keep: GrantState) -> None:
                 # Runs before the tool does: the gate's decision and the disposition
@@ -626,13 +631,60 @@ def parse_record(text: str) -> dict[str, Any]:
     return record
 
 
+def _json_objects(text: str) -> Optional[list[dict[str, Any]]]:
+    """Every JSON object in ``text``, one after another, or None if it holds anything else."""
+    decoder, objects, index = json.JSONDecoder(), [], 0
+    text = text.strip()
+    while index < len(text):
+        try:
+            value, index = decoder.raw_decode(text, index)
+        except ValueError:
+            return None
+        if not isinstance(value, dict):
+            return None
+        objects.append(value)
+        while index < len(text) and text[index].isspace():
+            index += 1
+    return objects or None
+
+
+def _split_on_repeat(pairs: Iterable[tuple[str, Any]]) -> list[dict[str, Any]]:
+    """Field and value pairs as records: a field seen twice starts the next record."""
+    records: list[dict[str, Any]] = [{}]
+    for key, value in pairs:
+        if key in records[-1]:
+            records.append({})
+        records[-1][key] = value
+    return records
+
+
+def parse_records(text: str) -> list[dict[str, Any]]:
+    """Like ``parse_record``, for a resource that may list several records.
+
+    Only a definition list or a document's header (the lines before its first
+    blank line) can start another record, so text in the body can't add one.
+    """
+    plain = text.replace(DATAMARK_MARKER, " ")
+    if plain.lstrip().startswith("<"):
+        pairs = [(html.unescape(k), _typed(html.unescape(v).strip())) for k, v in _DEFINITION.findall(plain)]
+        if pairs:
+            return _split_on_repeat(pairs)
+        return _json_objects(html.unescape(re.sub(r"<[^>]+>", "", plain))) or [{}]
+    objects = _json_objects(plain)
+    if objects is not None:
+        return objects
+    header = re.split(r"\s\s", plain, maxsplit=1)[0]
+    records = _split_on_repeat((key, _typed(value)) for key, value in _FACT.findall(header))
+    return records if len(records) > 1 else [parse_record(text)]
+
+
 def observed_records(observation: Any) -> list[dict[str, Any]]:
     if not isinstance(observation, Mapping) or observation.get("ok") is not True:
         return []
     if "rows" in observation:
         return [parse_record(row["content"]) for row in observation["rows"]]
     text = observation.get("text")
-    return [parse_record(text)] if isinstance(text, str) else []
+    return parse_records(text) if isinstance(text, str) else []
 
 
 def _tool_results(messages: Sequence[Mapping[str, Any]]) -> list[Any]:
@@ -670,8 +722,8 @@ class DeliveryTaskMock(MockProvider):
             )
             return {"sent": sent}
         if template_id == "open-ticket-ids":
-            listed = (str(r.get("open_ticket_ids", "")) for r in records)
-            return {"ticket_ids": sorted(part.strip() for text in listed for part in text.split(",") if part.strip())}
+            return {"ticket_ids": sorted(str(r["ticket_id"]) for r in records
+                                         if r.get("status") == "open" and "ticket_id" in r)}
         if template_id == "supplier-quote-compare":
             prices = [r.get("unit_price_cents") for r in records[:2]]
             if len(prices) != 2 or not all(isinstance(p, int) for p in prices):

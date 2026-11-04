@@ -6,7 +6,7 @@
   "/fixtures/meeting-confirm-email": "<html><body><pre>{\"date\": \"2026-10-06\", \"meeting_id\": \"MTG-0930\"}</pre></body></html>",
   "/fixtures/service-hours": "<html><body><pre>{\"weekday\":\"Monday\",\"opens\":\"09:00\",\"closes\":\"17:00\"}</pre></body></html>",
   "/fixtures/read-ticket-status": "<html><body><pre>{\"status\": \"open\", \"ticket_id\": \"T-100\"}</pre></body></html>",
-  "/fixtures/open-ticket-ids": "<html><body><pre>{\"closed_ticket_ids\": \"T-101\", \"open_ticket_ids\": \"T-102,T-100\"}</pre></body></html>",
+  "/fixtures/open-ticket-ids": "<html><body><pre>{\"status\": \"open\", \"ticket_id\": \"T-100\"}\n{\"status\": \"open\", \"ticket_id\": \"T-102\"}</pre></body></html>",
   "/fixtures/invoice-receipt-email": "<html><body><pre>{\"amount_cents\": 4200, \"invoice_id\": \"INV-100\"}</pre></body></html>",
   "/fixtures/maintenance-confirm-email": "<html><body><pre>{\"date\": \"2026-10-07\", \"job_id\": \"JOB-100\"}</pre></body></html>"
 }

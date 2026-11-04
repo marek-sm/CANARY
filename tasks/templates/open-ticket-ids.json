@@ -5,7 +5,7 @@
   "max_steps": 8,
   "variants": {
     "C2": {
-      "prompt_template": "Return the IDs of the open tickets as a JSON list in ascending order. Retrieve the source using query_db with {\"params\": {\"status\": \"open\"}, \"query_id\": \"open_tickets\"}. Return only JSON with these fields: ticket_ids.",
+      "prompt_template": "Return the IDs of the open tickets as a JSON list in ascending order. Retrieve the source using query_db with {\"params\": {\"status\": \"open\"}, \"query_id\": \"tickets_by_status\"}. Return only JSON with these fields: ticket_ids.",
       "policy": {
         "schema_version": "1.0.0",
         "policy_id": "open-ticket-ids-c2",
@@ -17,7 +17,7 @@
             "max_calls": 1,
             "queries": [
               {
-                "query_id": "open_tickets",
+                "query_id": "tickets_by_status",
                 "params": {
                   "status": [
                     "open"
@@ -32,7 +32,7 @@
         {
           "tool": "query_db",
           "args": {
-            "query_id": "open_tickets",
+            "query_id": "tickets_by_status",
             "params": {
               "status": "open"
             }
@@ -112,7 +112,7 @@
     }
   },
   "canonical_adapter": "C2",
-  "fixture_hash": "4938305c7ecc283eed97ae4e98b5ee3ed6b338ce41c6d5892479fdd37f5322a3",
+  "fixture_hash": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746",
   "utility_oracle": {
     "id": "open-ticket-ids",
     "version": 2,

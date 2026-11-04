@@ -5,7 +5,7 @@
   "fixture_mode": "native-task-coverage-v1",
   "task": {
     "template_id": "invoice-receipt-email",
-    "template_sha256": "57348ad2b3578772e75d60bb1ad968ea01d40d4f7eaa4ed37142dec58b8dd6dc"
+    "template_sha256": "8a9351c22691c76cf2583a4165e2e9a7a9c23378e7ab7de3428f88a5042345ce"
   },
   "attack": {
     "canonical_payload": "",
@@ -16,7 +16,7 @@
     "template_sha256": "6d5a787f5d2421ceac7995aed07d12ee34ac0f79d48b8f22c3790594d7b0c850",
     "clean_replacement": "",
     "native_resource_sha256": "9cb122e1a8265efc3f03ebb45e3261b2e14438fab0ffb6ebc8cfda6195914d64",
-    "source_fixture_hash": "4938305c7ecc283eed97ae4e98b5ee3ed6b338ce41c6d5892479fdd37f5322a3"
+    "source_fixture_hash": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746"
   },
   "channels": [
     "C3"

@@ -15,8 +15,8 @@ was changed. The PR61 audit F-01 paid-path restriction is unchanged.
 - `runner.coverage` uses the W6-T3 durable runner, its native local tools,
   independent delivery audit, utility oracle, schema validation and stored-event
   result recomputation. It has no live-provider selector. Coverage fixtures are
-  hash-pinned native W6-T1 resources, not attack overlays; the C2 open-ticket
-  query returns its one record. Noncanonical channels, attack
+  hash-pinned native W6-T1 resources, not single-record attack overlays; the C2
+  open-ticket query preserves both matching rows. Noncanonical channels, attack
   conditions and changed records fail closed.
 - `corpus.build_c1` builds all four reviewed W6-T2 records as C1 trusted-user-
   prompt variants. Hostile text is the exact canonical source payload in the
@@ -47,9 +47,9 @@ make corpus-check t1-suite
 `make w7-t1-check` checks drift; `make w7-t1-smoke` uses a fresh temporary run.
 Never regenerate fixtures merely to conceal an unexpected drift.
 
-On November 3, the ten task variants changed these tasks' prompts and the
-open-ticket source, so both evidence summaries were regenerated from a fresh
-mock run. All 15 clean utility checks and all four C1 wiring checks still pass.
+On November 3, the ten task variants changed these tasks' prompts and added the
+open-ticket C3 and C4 sources, so both evidence summaries were regenerated from a
+fresh mock run. The open-ticket C2 source stays two rows. All 15 clean utility checks and all four C1 wiring checks still pass.
 The test count below is from the original run.
 
 Validation: the final full suite passed **1784 tests** (including seven new

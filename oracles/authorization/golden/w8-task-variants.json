@@ -142,7 +142,7 @@
           "max_calls": 1,
           "queries": [
             {
-              "query_id": "open_tickets",
+              "query_id": "tickets_by_status",
               "params": {
                 "status": [
                   "open"
@@ -2082,7 +2082,7 @@
       "request": {
         "tool": "query_db",
         "normalized_args": {
-          "query_id": "open_tickets",
+          "query_id": "tickets_by_status",
           "params": {
             "status": "open"
           }
@@ -2106,7 +2106,7 @@
       "request": {
         "tool": "query_db",
         "normalized_args": {
-          "query_id": "open_tickets",
+          "query_id": "tickets_by_status",
           "params": {
             "status": "open"
           }
@@ -2116,7 +2116,7 @@
         {
           "tool": "query_db",
           "normalized_args": {
-            "query_id": "open_tickets",
+            "query_id": "tickets_by_status",
             "params": {
               "status": "open"
             }
@@ -2169,7 +2169,7 @@
       "request": {
         "tool": "query_db",
         "normalized_args": {
-          "query_id": "open_tickets",
+          "query_id": "tickets_by_status",
           "params": {
             "status": "unassigned"
           }

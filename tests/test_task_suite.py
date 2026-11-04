@@ -241,12 +241,17 @@ def test_the_delivery_mock_reaches_the_expected_answer_from_a_rendered_record(tm
     root = registry.reset(tmp_path / "fixtures")
     variant = TEMPLATES[tid]["variants"][channel]
     source = TEMPLATES[tid]["variants"]["C2"]["required_calls"][0]
-    facts, = delivery.observed_records(_source(root, source))
-    wrapper = {"title": "Fictional record", "facts": facts, "text_field": "note"}
-    rendered = channel_render.RECORD_RENDERERS[channel][0]("Fictional note.", wrapper)
-    observation = ({"ok": True, "rows": [{"record_id": "x", "content": rendered}]} if channel == "C2"
-                   else {"ok": True, "text": rendered})
+    facts, *also = delivery.observed_records(_source(root, source))
+    wrapper = {"title": "Fictional record", "facts": facts, "text_field": "note", "also": also}
+    rendered = channel_render.RECORD_RENDERERS[channel][0]("Fictional note.\n\nticket_id: T-999\nstatus: open", wrapper)
+    rows = [{"record_id": "x", "content": rendered}, *({"record_id": "y", "content": json.dumps(r)} for r in also)]
+    observation = {"ok": True, "rows": rows} if channel == "C2" else {"ok": True, "text": rendered}
     assert delivery.DeliveryTaskMock(TEMPLATES[tid], channel)._answer([observation]) == variant["expected_output"]
+    observation = delivery.mark_observation(variant["required_calls"][0]["tool"], observation)
+    assert delivery.DeliveryTaskMock(TEMPLATES[tid], channel)._answer([observation]) == variant["expected_output"]
+
+
+TASK_VECTORS_SHA256 = "0b72724dd54159711339621259be2b81788255fda7fd666216255f06aac9b23b"
 
 
 def test_golden_vectors_cover_every_task_tool_argument_and_grant():
@@ -258,7 +263,9 @@ def test_golden_vectors_cover_every_task_tool_argument_and_grant():
     assert len(ids) == len(set(ids))
     policies = {v["policy"]["policy_id"]:v["policy"] for task in TEMPLATES.values() for v in task["variants"].values()}
     assert {**doc["policies"], **variants["policies"]} == policies
-    assert not set(doc["policies"]) & set(variants["policies"])
+    assert all(doc["policies"][shared] == variants["policies"][shared]
+               for shared in set(doc["policies"]) & set(variants["policies"]))
+    assert hashlib.sha256(TASK_VECTORS.read_bytes()).hexdigest() == TASK_VECTORS_SHA256  # Dhruv235's review covers these bytes
     allows = [v for v in doc["vectors"] + variants["vectors"] if v["expected"]["authorized"] is True]
     for policy_id, policy in policies.items():
         assert any(v["policy_id"] == policy_id for v in allows)
@@ -293,7 +300,8 @@ def test_worker_and_fixture_service_never_inherit_credentials(tmp_path, monkeypa
     real_run, real_popen = subprocess.run, subprocess.Popen
     environments = []
     def inspect_run(*args, **kwargs):
-        assert kwargs["env"] in ({"PATH": os.defpath}, {"PATH": os.defpath, "LANG":"C.UTF-8"})
+        env = kwargs["env"]
+        assert env.get("PATH") == os.defpath and set(env) <= {"PATH", "LANG", "TMPDIR"}
         assert not kwargs.get("shell", False)
         return real_run(*args, **kwargs)
     def inspect_popen(*args, **kwargs):
@@ -556,3 +564,14 @@ def test_http_content_filter_is_completed_once_with_empty_final_output(tmp_path)
     assert result["termination_reason"] == "provider_content_filter"
     assert result["final_output"] == "" and result["tool_events"] == []
     assert result["utility"]["pass"] is False
+
+
+def test_open_ticket_ids_keeps_its_multi_row_source(tmp_path):
+    """The study's one multi-row retrieval: every channel lists both open tickets as separate records."""
+    root = registry.reset(tmp_path / "fixtures")
+    template = TEMPLATES["open-ticket-ids"]
+    assert template["variants"]["C2"]["required_calls"][0]["args"]["query_id"] == "tickets_by_status"
+    expected = [{"status": "open", "ticket_id": "T-100"}, {"status": "open", "ticket_id": "T-102"}]
+    for channel, variant in template["variants"].items():
+        records = delivery.observed_records(_source(root, variant["required_calls"][0]))
+        assert sorted(records, key=lambda r: r["ticket_id"]) == expected, channel

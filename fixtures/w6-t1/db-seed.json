@@ -54,12 +54,6 @@
     "content": "{\"status\": \"open\", \"ticket_id\": \"T-100\"}"
   },
   {
-    "resource": "open_tickets",
-    "lookup": "open",
-    "record_id": "open",
-    "content": "{\"closed_ticket_ids\": \"T-101\", \"open_ticket_ids\": \"T-102,T-100\"}"
-  },
-  {
     "resource": "invoices",
     "lookup": "INV-100",
     "record_id": "INV-100",

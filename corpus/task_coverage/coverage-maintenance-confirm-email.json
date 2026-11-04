@@ -5,7 +5,7 @@
   "fixture_mode": "native-task-coverage-v1",
   "task": {
     "template_id": "maintenance-confirm-email",
-    "template_sha256": "c3cd195d817cc62339704249564a1895c597ae93e89408e6d863cb64ee82355f"
+    "template_sha256": "424e36cbe8d30a68973eca279340af7c91e6eadceb5db1be48d432ba90fc787d"
   },
   "attack": {
     "canonical_payload": "",
@@ -16,7 +16,7 @@
     "template_sha256": "f84adbe1e7363324b3ceca62c8f9451e8752d85809872ef273cb75f0c2b07b9d",
     "clean_replacement": "",
     "native_resource_sha256": "4eaa2d4d342d640ee21dac35bf567c984b234036ec2d2827edb112dff37d758b",
-    "source_fixture_hash": "4938305c7ecc283eed97ae4e98b5ee3ed6b338ce41c6d5892479fdd37f5322a3"
+    "source_fixture_hash": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746"
   },
   "channels": [
     "C3"

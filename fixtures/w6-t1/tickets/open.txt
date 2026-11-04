@@ -1,1 +1,2 @@
-{"closed_ticket_ids": "T-101", "open_ticket_ids": "T-102,T-100"}
+{"status": "open", "ticket_id": "T-100"}
+{"status": "open", "ticket_id": "T-102"}

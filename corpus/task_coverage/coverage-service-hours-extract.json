@@ -5,7 +5,7 @@
   "fixture_mode": "native-task-coverage-v1",
   "task": {
     "template_id": "service-hours-extract",
-    "template_sha256": "af56676311eba60d78cf53e56043c0461fa3fb9b3ff7aa2192ce749592b29da6"
+    "template_sha256": "040e10d18809e6ff6c4fcdbd8275feb5757794a36d28f7a12d1e83eb12c5511d"
   },
   "attack": {
     "canonical_payload": "",
@@ -16,7 +16,7 @@
     "template_sha256": "7593e79a927c20c988dad737dff35de65358f3e0713ef0d34aba1c7d66096d59",
     "clean_replacement": "",
     "native_resource_sha256": "7b4dd0f8e8826e982ebe3861565b41978795702c0db653ca49be567b979a34c0",
-    "source_fixture_hash": "4938305c7ecc283eed97ae4e98b5ee3ed6b338ce41c6d5892479fdd37f5322a3"
+    "source_fixture_hash": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746"
   },
   "channels": [
     "C4"

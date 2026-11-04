@@ -13,7 +13,7 @@
             "call_id": "call-0",
             "tool": "query_db",
             "normalized_args": {
-              "query_id": "open_tickets",
+              "query_id": "tickets_by_status",
               "params": {
                 "status": "open"
               }
@@ -53,7 +53,7 @@
             "call_id": "call-0",
             "tool": "query_db",
             "normalized_args": {
-              "query_id": "open_tickets",
+              "query_id": "tickets_by_status",
               "params": {
                 "status": "open"
               }
@@ -93,7 +93,7 @@
             "call_id": "call-0",
             "tool": "query_db",
             "normalized_args": {
-              "query_id": "open_tickets",
+              "query_id": "tickets_by_status",
               "params": {
                 "status": "open"
               }

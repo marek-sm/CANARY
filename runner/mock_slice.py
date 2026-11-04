@@ -417,8 +417,11 @@ def run_mock_trial(
     clock: Callable[[], str] = utc_now,
 ) -> Path:
     """Run the trial into a new directory and return it."""
-    out_dir.mkdir(parents=True, exist_ok=False)
     provider = provider or MockProvider()
+    from runner import paid_run  # imported here: paid_run imports this module
+
+    paid_run.require_paid_run(provider)
+    out_dir.mkdir(parents=True, exist_ok=False)
     log = EventLog(out_dir / EVENTS_FILE, clock)
     model_request = {"model": MOCK_MODEL_ID}
     messages = [

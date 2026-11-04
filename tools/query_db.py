@@ -9,7 +9,7 @@ try:
 except ImportError:  # isolated worker, without repository imports
     from local_fs import read_bytes
 
-VERSION = "query-db-v0.1.2"
+VERSION = "query-db-v0.1.3"
 MAX_DB_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 100
 # Trusted code, never supplied by the model or a retrieved document.
@@ -21,7 +21,6 @@ QUERIES = {
     "meeting_requests": ("meeting_id", "meeting_requests"),
     "tickets_by_status": ("status", "tickets"),
     "ticket_records": ("ticket_id", "ticket_records"),
-    "open_tickets": ("status", "open_tickets"),
     "invoices": ("invoice_id", "invoices"),
     "maintenance_jobs": ("job_id", "maintenance_jobs"),
     "service_hours": ("location_id", "service_hours"),
@@ -53,7 +52,10 @@ def query_db(root: Path, query_id: str, params: dict) -> dict:
         connection = sqlite3.connect(":memory:")
         connection.deserialize(snapshot)
         connection.execute("PRAGMA query_only = ON")
-        connection.enable_load_extension(False)
+        # Builds without extension loading (python.org macOS) lack this method and
+        # can't load extensions at all; elsewhere it is switched off explicitly.
+        if hasattr(connection, "enable_load_extension"):
+            connection.enable_load_extension(False)
         connection.set_authorizer(readonly_authorizer)
         connection.set_progress_handler(lambda: 1, 100000)
         rows = connection.execute(

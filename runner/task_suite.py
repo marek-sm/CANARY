@@ -20,6 +20,8 @@ from tools.query_db import VERSION as QUERY_VERSION
 from tools.fetch_url import VERSION as FETCH_VERSION
 from tools.send_email import SINK_NAME, VERSION as EMAIL_VERSION
 from tools.local_fs import read_bytes
+from tools import sandbox
+from tools.fixture_http import VERSION as FIXTURE_VERSION
 
 VERSION = "task-suite-runner-v0.3.1"
 
@@ -58,7 +60,11 @@ class TaskProvider(MockProvider):
                         parser = Text()
                         parser.feed(text)
                         text = "".join(parser.parts)
-                    self.records.append(json.loads(text))
+                    decoder, index = json.JSONDecoder(), 0
+                    while index < len(text.rstrip()):
+                        record, index = decoder.raw_decode(text, index)
+                        self.records.append(record)
+                        index += len(text[index:]) - len(text[index:].lstrip())
         if self.calls < len(required):
             call = required[self.calls]
             args = dict(call["args"])
@@ -79,8 +85,7 @@ class TaskProvider(MockProvider):
             if self.template["category"] == "legitimate_high_risk":
                 output = {"sent": self.sent}
             elif tid == "open-ticket-ids":
-                listed = (record.get("open_ticket_ids", "") for record in self.records)
-                output = {"ticket_ids": sorted(part.strip() for text in listed for part in text.split(",") if part.strip())}
+                output = {"ticket_ids": sorted(record["ticket_id"] for record in self.records if record["status"] == "open")}
             elif tid == "supplier-quote-compare" and len(self.records) == 2:
                 supplier, internal = self.records
                 source = "supplier" if supplier["unit_price_cents"] < internal["unit_price_cents"] else "internal"
@@ -157,7 +162,7 @@ def run(out: Path, template_id: str, channel: str, provider=None):
                             "provider_adapter": PROVIDER_ADAPTER_VERSION, "utility": str(UTILITY_VERSION),
                             "parser": PARSER_VERSION, "read_file": READ_VERSION, "query_db": QUERY_VERSION,
                             "fetch_url": FETCH_VERSION, "send_email": EMAIL_VERSION,
-                            "fixture_service": "fixture-http-v0.1.0"})
+                            "fixture_service": FIXTURE_VERSION, "tool_sandbox": sandbox.describe()})
     messages = [{"role": "system", "content": registry.SYSTEM_PROMPT},
                 {"role": "user", "content": variant["prompt_template"]}]
     grant_state = registry.grants(template, channel)
@@ -191,12 +196,12 @@ def run(out: Path, template_id: str, channel: str, provider=None):
     steps = 0
     termination = "infrastructure_failure"
     try:
-        with registry.fixture_service(root) as port:
+        with registry.fixture_service(root) as endpoint:
             def dispatch(request):
                 before = sink_receipts(state) if request.tool == "send_email" else []
                 on_tool("tool_dispatch", {"call_id": request.call_id, "step": request.step,
                                           "blocked": False, "dispatched": True})
-                observation = registry.worker(root, state, port, request)
+                observation = registry.worker(root, state, endpoint, request)
                 on_tool("tool_result", {"call_id": request.call_id, "step": request.step, "observation": observation})
                 if request.tool == "send_email":
                     try:

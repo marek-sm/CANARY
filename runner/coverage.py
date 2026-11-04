@@ -2,8 +2,8 @@
 
 Uses the W6-T3 durable runner and real local task tools, not answer injection.
 The native W6-T1 fixture is already the canonical adapter for these tasks; no
-attack/clean overlay is appropriate. All provider execution here is mock-only
-and earns no development credit.
+attack/clean overlay is appropriate (in particular, the ticket query has two
+rows). All provider execution here is mock-only and earns no development credit.
 """
 from __future__ import annotations
 
