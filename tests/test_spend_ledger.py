@@ -28,6 +28,7 @@ def _lines():
 
 class Paid:
     adapter_version = "fake-paid-adapter-v0"
+    request_settings = paid_run.ONE_CALL_SETTINGS[0]  # decision 0026 item 3, which the gate enforces
 
 
 # --- where it lives -----------------------------------------------------------------------------
@@ -238,6 +239,7 @@ class FakePaid:
     """A paid provider to the gate, the delivery mock underneath; it never leaves this process."""
 
     adapter_version = "fake-paid-adapter-v0"
+    request_settings = paid_run.ONE_CALL_SETTINGS[0]  # decision 0026 item 3, which the gate enforces
 
     def __init__(self, inner, calls, usage, raises=None):
         self.inner, self.calls, self.usage, self.raises = inner, calls, usage, raises
@@ -491,6 +493,8 @@ def test_the_mock_slice_paid_path_is_ledgered(tmp_path, monkeypatch):
 
     class PaidScript(MockProvider):
         adapter_version = "fake-paid-adapter-v0"
+        request_settings = paid_run.ONE_CALL_SETTINGS[0]
+    request_settings = paid_run.ONE_CALL_SETTINGS[0]  # decision 0026 item 3, which the gate enforces
 
     monkeypatch.setattr(paid_run, "is_paid", lambda provider: True)
     monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **kwargs: None)
