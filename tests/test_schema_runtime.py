@@ -141,7 +141,7 @@ def test_a_generated_task_coverage_record_loads_and_nothing_else_skips_the_schem
     source); only they skip base_case.schema.json, and a marked dev base is still refused."""
     from runner import coverage
 
-    record = coverage.expected_case(sorted(coverage.CANONICAL)[0])
+    record, _template = coverage.expected_case(sorted(coverage.CANONICAL)[0])
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / f"{record['base_case_id']}.json").write_text(json.dumps(record), encoding="utf-8")
