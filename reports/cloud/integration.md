@@ -13,7 +13,7 @@
 | 2 `make sandbox-check` | PASS: 78 passed under real bwrap |
 | 2 `trace`, `t1-smoke`, `t1-suite`, `w7-t1-smoke`, `corpus-check` | PASS: every target exited 0 |
 | 2 `make grid-check` | PASS: 70 passed in 240.80s, then the 90-cell mock grid and its verify |
-| 2 `make test` | PENDING: running on `72f92bd` when this was pushed |
+| 2 `make test` | PASS but for the expected one: on `72f92bd`, 2750 passed and 1 failed in 22 min 33 s. The failure is `test_the_task_variant_vectors_have_their_independent_review`. Before the `defense_hash` fix, 11 task-variant cells also failed (see merge 5) |
 | 3 Paid-path rehearsal | PASS: all 19 scripted steps, the record commit, and the killed first grid run behaved as expected. **No false refusal** (see below) |
 | 4 Sweep after Gate 3 | Runs now, at a ledger of 116 and of 120, after three code fixes and one new entry point, all pushed here |
 | 5 Known fixes | PASS: all 10 fault-injection probes were caught by a failing test |
