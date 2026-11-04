@@ -46,7 +46,7 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Under [
 | T3 — Samson | `W7-T3`: [#62](https://github.com/marek-sm/CANARY/pull/62), opened October 26, replaces #49 (closed that day) with the slice owner's commits and the review fixes; in review | `W8-T3`: `BLOCKED` on `W7-T3`; its pool steps wait for `W7-T2`. It opens by Monday, November 9 |
 | T4 — Dhruv | `W7-T4`: [#54](https://github.com/marek-sm/CANARY/pull/54), fixes pushed November 1, in re-review | `W8-T4`: `BLOCKED` on `W7-T4`; its pool steps wait for `W7-T2`. It opens by Monday, November 9 |
 | T5 — Miles | `W7-T5`: [#66](https://github.com/marek-sm/CANARY/pull/66), opened October 29, in review | `W8-T5`: `BLOCKED` on `W7-T5`. Pull request by Thursday, November 5, and review by Friday, November 6 |
-| Project lead — Marek | After the October 25 rollup, merged #34 after re-approving it, #60 (decision 0022, `SPEC.md` v1.16.0), and #61 (tool-result delivery, the corpus-record schemas, and `dev-001`'s re-render), all October 25. Opened #62 on October 26 and #64 (decision 0023) on October 28; #64 carries the grid-usage and decoding fixes. Merged decision 0024 on November 1 and replaced it with decision 0025 | Still open: the price bound, A-01 and B-03, and the Claude Console workspace before any paid call; merge #64 after #62, then the paid-run record and the paid runs; the ten task variants by November 6; source review and the Gate 2 step by November 7; the tier input, gap sentence, license choice, and author order on November 8; the C1 schema change by November 8; the record superseding decision 0018's pilot example and decision 0012's wiring by November 10; and the Gate 3 step on November 11 |
+| Project lead — Marek | After the October 25 rollup, merged #34 after re-approving it, #60 (decision 0022, `SPEC.md` v1.16.0), and #61 (tool-result delivery, the corpus-record schemas, and `dev-001`'s re-render), all October 25. Opened #62 on October 26 and #64 (decision 0023) on October 28; #64 carries the grid-usage and decoding fixes. Merged decision 0024 on November 1 and replaced it with decision 0025 | Still open: the price bound, A-01 and B-03, and the Claude Console workspace before any paid call; merge #64 after #62, then the paid-run record and the paid runs; the ten task variants after #63 and before the mock grid and paid-run record; source review and the Gate 2 step by November 7; the tier input, gap sentence, license choice, and author order on November 8; the C1 schema change by November 8; the record superseding decision 0018's pilot example and decision 0012's wiring by November 10; and the Gate 3 step on November 11 |
 
 ## Public decisions, risks, and external asks
 
@@ -75,9 +75,9 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Under [
 - Monday, November 2: the correction, and each owner's work and dates sent directly.
 - Tuesday, November 3: `W7-T2`'s draft pull request, the review of #62 or its move to T1, the price bound, and A-01 and B-03.
 - Wednesday, November 4: #54, #63, #66, and #62 merged.
-- Thursday, November 5: #64 merged. Then the mock grid, the paid-run record, and the paid grid and smokes.
+- Thursday, November 5: #64 and the ten task variants merged, the variants after #63. Then the mock grid, the paid-run record, and the paid grid and smokes.
 - Also Thursday, November 5: `W7-T2`'s intake closes, and `W8-T5`'s pull request is due.
-- Friday, November 6: the summary of the paid runs and the ten task variants merged, and `W8-T5` reviewed.
+- Friday, November 6: the summary of the paid runs merged, and `W8-T5` reviewed.
 - Saturday, November 7: source sign-off and the Gate 2 step.
 - Sunday, November 8: `W7-T2` merges by noon, `W8-T2` posts `P`, and then the tier input, C1 schema change, gap sentence, license choice, and author order.
 - Then: `W8-T1`, `W8-T2`, `W8-T3`, and `W8-T4` open by the morning of November 9, and decision 0012's wiring and the last W8 merge land by November 10, with the Gate 3 step on November 11.

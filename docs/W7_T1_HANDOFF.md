@@ -47,6 +47,11 @@ make corpus-check t1-suite
 `make w7-t1-check` checks drift; `make w7-t1-smoke` uses a fresh temporary run.
 Never regenerate fixtures merely to conceal an unexpected drift.
 
+On November 3, the ten task variants changed these tasks' prompts and added the
+open-ticket C3 and C4 sources, so both evidence summaries were regenerated from a
+fresh mock run. The open-ticket C2 source stays two rows. All 15 clean utility checks and all four C1 wiring checks still pass.
+The test count below is from the original run.
+
 Validation: the final full suite passed **1784 tests** (including seven new
 W7-T1 tests); `corpus-check` reported zero problems and `t1-suite` passed every
 listed template/adapter utility check. `git diff --check` passed.

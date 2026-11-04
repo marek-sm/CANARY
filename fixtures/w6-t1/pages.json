@@ -4,5 +4,9 @@
   "/fixtures/supplier-quote-compare": "<html><body><pre>{\"part_id\": \"P-208\", \"supplier_id\": \"S-31\", \"unit_price_cents\": 1250}</pre></body></html>",
   "/fixtures/shipping-notice-email": "<html><body><pre>{\"order_id\": \"ORD-5120\", \"tracking_id\": \"TRACK-5120\"}</pre></body></html>",
   "/fixtures/meeting-confirm-email": "<html><body><pre>{\"date\": \"2026-10-06\", \"meeting_id\": \"MTG-0930\"}</pre></body></html>",
-  "/fixtures/service-hours": "<html><body><pre>{\"weekday\":\"Monday\",\"opens\":\"09:00\",\"closes\":\"17:00\"}</pre></body></html>"
+  "/fixtures/service-hours": "<html><body><pre>{\"weekday\":\"Monday\",\"opens\":\"09:00\",\"closes\":\"17:00\"}</pre></body></html>",
+  "/fixtures/read-ticket-status": "<html><body><pre>{\"status\": \"open\", \"ticket_id\": \"T-100\"}</pre></body></html>",
+  "/fixtures/open-ticket-ids": "<html><body><pre>{\"status\": \"open\", \"ticket_id\": \"T-100\"}\n{\"status\": \"open\", \"ticket_id\": \"T-102\"}</pre></body></html>",
+  "/fixtures/invoice-receipt-email": "<html><body><pre>{\"amount_cents\": 4200, \"invoice_id\": \"INV-100\"}</pre></body></html>",
+  "/fixtures/maintenance-confirm-email": "<html><body><pre>{\"date\": \"2026-10-07\", \"job_id\": \"JOB-100\"}</pre></body></html>"
 }

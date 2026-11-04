@@ -50,7 +50,7 @@ import shutil
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 
 from channels import render as channel_render
 from defenses.canonicalizer import NORMALIZER_VERSION
@@ -375,6 +375,9 @@ def _overlay(files: dict[str, bytes], base: Mapping[str, Any], channel: str, del
     elif channel == "C2":
         rows = json.loads(files["db-seed.json"])
         matches = [row for row in rows if row["resource"] == resource]
+        if len(matches) > 1:  # a multi-row source: the payload sits in the row holding the base's facts
+            facts = (base["fixture"].get("wrapper") or {}).get("facts")
+            matches = [row for row in matches if json.loads(row["content"]) == facts]
         if len(matches) != 1:
             raise ValueError(f"{resource!r} must name exactly one W6-T1 database row")
         matches[0]["content"] = delivered
@@ -731,13 +734,60 @@ def parse_record(text: str) -> dict[str, Any]:
     return record
 
 
+def _json_objects(text: str) -> Optional[list[dict[str, Any]]]:
+    """Every JSON object in ``text``, one after another, or None if it holds anything else."""
+    decoder, objects, index = json.JSONDecoder(), [], 0
+    text = text.strip()
+    while index < len(text):
+        try:
+            value, index = decoder.raw_decode(text, index)
+        except ValueError:
+            return None
+        if not isinstance(value, dict):
+            return None
+        objects.append(value)
+        while index < len(text) and text[index].isspace():
+            index += 1
+    return objects or None
+
+
+def _split_on_repeat(pairs: Iterable[tuple[str, Any]]) -> list[dict[str, Any]]:
+    """Field and value pairs as records: a field seen twice starts the next record."""
+    records: list[dict[str, Any]] = [{}]
+    for key, value in pairs:
+        if key in records[-1]:
+            records.append({})
+        records[-1][key] = value
+    return records
+
+
+def parse_records(text: str) -> list[dict[str, Any]]:
+    """Like ``parse_record``, for a resource that may list several records.
+
+    Only a definition list or a document's header (the lines before its first
+    blank line) can start another record, so text in the body can't add one.
+    """
+    plain = text.replace(DATAMARK_MARKER, " ")
+    if plain.lstrip().startswith("<"):
+        pairs = [(html.unescape(k), _typed(html.unescape(v).strip())) for k, v in _DEFINITION.findall(plain)]
+        if pairs:
+            return _split_on_repeat(pairs)
+        return _json_objects(html.unescape(re.sub(r"<[^>]+>", "", plain))) or [{}]
+    objects = _json_objects(plain)
+    if objects is not None:
+        return objects
+    header = re.split(r"\s\s", plain, maxsplit=1)[0]
+    records = _split_on_repeat((key, _typed(value)) for key, value in _FACT.findall(header))
+    return records if len(records) > 1 else [parse_record(text)]
+
+
 def observed_records(observation: Any) -> list[dict[str, Any]]:
     if not isinstance(observation, Mapping) or observation.get("ok") is not True:
         return []
     if "rows" in observation:
         return [parse_record(row["content"]) for row in observation["rows"]]
     text = observation.get("text")
-    return [parse_record(text)] if isinstance(text, str) else []
+    return parse_records(text) if isinstance(text, str) else []
 
 
 def _tool_results(messages: Sequence[Mapping[str, Any]]) -> list[Any]:
@@ -775,7 +825,8 @@ class DeliveryTaskMock(MockProvider):
             )
             return {"sent": sent}
         if template_id == "open-ticket-ids":
-            return {"ticket_ids": sorted(r["ticket_id"] for r in records if "ticket_id" in r)}
+            return {"ticket_ids": sorted(str(r["ticket_id"]) for r in records
+                                         if r.get("status") == "open" and "ticket_id" in r)}
         if template_id == "supplier-quote-compare":
             prices = [r.get("unit_price_cents") for r in records[:2]]
             if len(prices) != 2 or not all(isinstance(p, int) for p in prices):
