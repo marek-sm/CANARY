@@ -12,6 +12,16 @@ paper-shells:
 paper-shells-check:
 	python -m analysis.report_shells --check
 
+# The Gate 3 step runs this (TASKS.md). It generates what main has, the estimand shells,
+# then runs W8-T3's analysis and report code, and fails in words until that code exists.
+# REPORT_MODULE is a placeholder name: W8-T3 sets it to the module it commits.
+REPORT_MODULE ?= analysis.report
+.PHONY: report
+report: paper-shells
+	@python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$(REPORT_MODULE)') is None)" || \
+	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) were generated." >&2; exit 2; }
+	python -m $(REPORT_MODULE)
+
 demo-example:
 	python -m demo.accessibility
 
