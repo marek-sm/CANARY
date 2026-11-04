@@ -1,7 +1,7 @@
 #!/bin/bash
 # Constant-mutation tier: one worker copy per argument group, targeted tests per file.
 PY=/home/canary/work/CANARY/.venv/bin/python
-OUT=/home/canary/probes/const_results.jsonl
+OUT=/home/canary/probes/const_results2.jsonl
 run() { # worker file tests...
   local w=$1 f=$2; shift 2
   (cd /home/canary/cm/$w/CANARY && $PY /home/canary/probes/const_mutator.py "$f" --tests "$*" --out $OUT)
@@ -29,4 +29,4 @@ w4() {
 }
 w1 & w2 & w3 & w4 &
 wait
-echo CONST_DONE >> /home/canary/probes/const_done.txt
+echo CONST_DONE >> /home/canary/probes/const_done2.txt

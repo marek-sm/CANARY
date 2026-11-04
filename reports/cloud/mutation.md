@@ -11,6 +11,7 @@ This is evidence for the project lead to decide on. An AI agent ran it and wrote
 - **Survival by module** ranged from 2.6% (`oracles/authorization/audit.py`) to 52.0% (`runner/paid_run.py`). Most survivors are error-message text, CLI help, JSON formatting, or equivalent mutants. The ones that matter are ranked below.
 - **Most serious surviving mutants**, each now killed by a new test:
   - The paid-run gate stops refusing an ambient `ANTHROPIC_*` variable.
+  - The paid-run record stops hashing `defenses/`, `corpus/`, or eight other directories (a module constant, found by the hand-written constant mutator).
   - Under D0_BASELINE and D2_DATAMARKING, dispatching no longer consumes the matching grant.
   - D0_BASELINE and D2_DATAMARKING dispatches are recorded as `blocked: true`.
   - The grant action hash ignores the contents of list arguments.
@@ -90,6 +91,8 @@ A full tier 2 would take about 190 seconds per mutant for 707 mutants, over 9 ho
 ### Constant mutation (hand-written)
 
 mutmut 3 mutates only code inside functions and methods, so a module constant such as `FLOOR_THRESHOLD = 3` or the per-token prices is never mutated by tier 1. `reports/cloud/mutation_tools/const_mutator.py` mutates each literal in every module- and class-level assignment (numbers ±1 and 0, booleans flipped, strings wrapped in `XX`, one element dropped from a collection), one at a time, in a scratch copy. It then runs a targeted test selection for that file (`run_const.sh`), using the existing tests only, and restores the file. `*VERSION` constants were skipped. Results are under [Raw counts](#raw-counts).
+
+My first constant run was discarded. Because the tool rewrites the source file for each mutant, two successive mutants of equal size written within the same second could load the previous mutant's cached `.pyc`, since pyc validation uses mtime in seconds and size. That gave spurious kills in about half a second; for example, 3 of 6 equivalent `'str' -> 'XXstrXX'` mutants in `audit.py` were reported killed. The tool now clears the module's `__pycache__` and sets `PYTHONDONTWRITEBYTECODE=1` for each run, and every constant number below comes from the rerun. mutmut, `killcheck.sh`, and `tier2.py` never rewrite source files, so they aren't affected.
 
 ## Raw counts
 

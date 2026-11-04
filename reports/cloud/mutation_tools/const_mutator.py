@@ -23,6 +23,15 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import os
+import shutil
+
+
+def _fresh_env(path: Path) -> dict:
+    """No stale bytecode: two same-size mutants written in the same second would
+    otherwise reuse the first one's cached .pyc (pyc validation is mtime + size)."""
+    shutil.rmtree(path.parent / "__pycache__", ignore_errors=True)
+    return dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
 
 
 def _literal_mutations(node: ast.AST):
@@ -128,7 +137,7 @@ def main() -> int:
             try:
                 proc = subprocess.run(
                     [sys.executable, "-m", "pytest", "-x", "-q", "-p", "no:cacheprovider", *shlex.split(args.tests)],
-                    capture_output=True, text=True, timeout=args.timeout,
+                    capture_output=True, text=True, timeout=args.timeout, env=_fresh_env(path),
                 )
                 status = "killed" if proc.returncode != 0 else "survived"
             except subprocess.TimeoutExpired:
