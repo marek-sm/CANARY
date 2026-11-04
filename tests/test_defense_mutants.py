@@ -73,8 +73,8 @@ def test_html_comments_and_multiple_attributes_survive_marking():
     # Kills xǁ_HtmlMarkerǁhandle_comment__mutmut_1 (a page with a comment crashed) and
     # xǁ_HtmlMarkerǁ_attrs__mutmut_18 (attributes joined by "XXXX").
     marked, count = mark_html_document('<p class="a b" title="c d">e f<!-- keep me --></p>')
-    assert marked == f'<p class="a{M}b" title="c{M}d">e{M}f<!-- keep me --></p>'
-    assert count == 3
+    assert marked == f'<p class="a{M}b" title="c{M}d">e{M}f<!--{M}keep{M}me{M}--></p>'
+    assert count == 4
 
 
 # --- the conformance harness's single-use replay -----------------------------
