@@ -7,7 +7,12 @@ from types import MappingProxyType
 import pytest
 
 from defenses import interfaces as di
-from defenses.canonicalizer import CanonicalizationError, canonicalize_arguments
+from defenses.canonicalizer import (
+    NORMALIZER_VERSION,
+    CanonicalizationError,
+    canonicalize_arguments,
+    canonicalize_tool_use,
+)
 from defenses.policy_gate import PolicyGate, PolicyGateAuthorizer, gate_and_dispatch
 from oracles.authorization.audit import AuditAuthorizer
 from tests.test_policy_gate import _policy, _req
@@ -106,3 +111,25 @@ def test_a_missing_argument_does_not_hide_a_later_wrong_type(evaluator):
     request = di.CanonicalRequest("c", "trial", 1, "send_email", MappingProxyType({"subject": 5, "body": "b"}), "t")
     decision = evaluator.authorize(policy, request, (), di.GrantState())
     assert decision.reason_codes == ("argument_missing", "argument_type_invalid")
+
+
+@pytest.mark.parametrize("query_id", ["", "q\x00", "\x00"])
+def test_an_empty_query_id_or_one_with_a_nul_byte_fails_canonicalization(query_id):
+    # Kills canonicalizer.x_canonicalize_arguments__mutmut_61/63.
+    with pytest.raises(CanonicalizationError, match="^unrepresentable query_id$"):
+        canonicalize_arguments("query_db", {"query_id": query_id, "params": {}})
+
+
+def test_a_leading_double_slash_collapses_to_one_and_keeps_the_rest():
+    # Kills canonicalizer.x__path__mutmut_19 (characters other than '/' stripped too).
+    assert canonicalize_arguments("read_file", {"path": "//Xdocs/a.txt"})["path"] == "/Xdocs/a.txt"
+    assert canonicalize_arguments("read_file", {"path": "///etc/x"})["path"] == "/etc/x"
+
+
+def test_a_tool_use_block_keeps_its_trial_and_step():
+    # Kills x_canonicalize_tool_use__mutmut_35 and x_canonicalize_request__mutmut_7/8: the
+    # call ID every event carries is built from the trial and the step.
+    block = {"type": "tool_use", "id": "toolu_1", "name": "read_file", "input": {"path": "docs/a.txt"}}
+    request = canonicalize_tool_use(block, "trial-7", 3)
+    assert (request.call_id, request.logical_trial_id, request.step, request.tool, request.normalizer_version) == (
+        "trial-7:step3:call1", "trial-7", 3, "read_file", NORMALIZER_VERSION)
