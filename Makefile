@@ -1,10 +1,15 @@
-.PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check
+.PHONY: test trace replay paper-shells paper-shells-check demo-example demo-example-check
 # grid-check is part of test so CI needs no separate workflow edit (OAuth workflow scope).
 test: grid-check
 	pytest -q
 
 trace:
 	python -m runner.mock_slice
+
+# Read-only fallback: replays the staged current-schema W6-T3 C2 attack record.
+# Override with `make replay RUN=path/to/run-or-events` when needed.
+replay:
+	python -m demo.replay $(if $(RUN),"$(RUN)")
 
 paper-shells:
 	python -m analysis.report_shells

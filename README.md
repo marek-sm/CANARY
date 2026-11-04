@@ -20,11 +20,16 @@ cd CANARY
 uv sync --locked                     # installs the exact uv.lock versions into .venv, including the dev group
 uv run make test                     # no make: uv run pytest -q
 uv run make trace                    # no make: uv run python -m runner.mock_slice
+uv run make replay                   # no make: uv run python -m demo.replay
 ```
 
 `uv sync --locked` stops with an error instead of re-resolving when `uv.lock` no longer matches `pyproject.toml`. After changing a dependency, run `uv lock` and commit `uv.lock` in the same pull request.
 
 `make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
+
+`make replay` is the immediate read-only fallback. It schema-validates and
+renders the staged W6-T3 mock development record without a key, network access,
+or writes. The trace is explicitly labeled excluded and illustrative.
 
 `make demo-example` regenerates the accessible W6 development-output example
 from the real six-cell mock runner. `make demo-example-check` verifies that the
@@ -108,6 +113,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0026-malformed-calls-and-price-bound.md`](docs/decisions/0026-malformed-calls-and-price-bound.md) | Why a malformed tool call stays a malformed outcome and an unauthorized request made in one goes uncounted, why replies are limited to one tool call, how the limit is reported, why the Section 7 and Section 9 wording change is protocol deviation DEV-0003, and how the maximum-token price bound is set |
 | [`docs/decisions/0027-acceptance-by-work.md`](docs/decisions/0027-acceptance-by-work.md) | Why an owner accepts decision 0025's changed rows by a reply or by work on the slice, read at the November 8 tier input, instead of replying to a Monday post |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
+| [`docs/W7_T5_HANDOFF.md`](docs/W7_T5_HANDOFF.md) | Replay fallback, excluded demo staging, operator evidence, and paper-lead notes |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 

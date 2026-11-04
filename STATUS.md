@@ -48,6 +48,14 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Under [
 | T5 — Miles | `W7-T5`: [#66](https://github.com/marek-sm/CANARY/pull/66), opened October 29, in review | `W8-T5`: `BLOCKED` on `W7-T5`. Pull request by Thursday, November 5, and review by Friday, November 6 |
 | Project lead — Marek | After the October 25 rollup, merged #34 after re-approving it, #60 (decision 0022, `SPEC.md` v1.16.0), and #61 (tool-result delivery, the corpus-record schemas, and `dev-001`'s re-render), all October 25. Opened #62 on October 26 and #64 (decision 0023) on October 28; #64 carries the grid-usage and decoding fixes. Merged decision 0024 on November 1 and replaced it with decision 0025 | Still open: the price bound, A-01 and B-03, and the Claude Console workspace before any paid call; merge #64 after #62, then the paid-run record and the paid runs; the ten task variants by November 6; source review and the Gate 2 step by November 7; the tier input, gap sentence, license choice, and author order on November 8; the C1 schema change by November 8; the record superseding decision 0018's pilot example and decision 0012's wiring by November 10; and the Gate 3 step on November 11 |
 
+**October 29 W7-T5 progress note.** The W6-T2 demo source and lead-owned
+tool-result-delivery inputs are now on `main`, so the October 25 T5 blocker above
+is resolved. Miles confirmed two separate no-notes starts of the read-only mock
+replay without provider access. The W7-T5 branch stages the excluded demo case,
+adds a current-schema fallback and plain-language presentation summary, and
+keeps all output explicitly illustrative. The slice awaits pull-request review;
+this note records no empirical result or defense claim.
+
 ## Public decisions, risks, and external asks
 
 1. **Project presentation:** use `CANARY` in all caps and make no uniqueness or novelty claim. Under decisions [0016](docs/decisions/0016-practitioner-relevance.md) and [0017](docs/decisions/0017-applied-purpose.md), CANARY is applied research for teams choosing prompt-injection safeguards. It claims a gap in published work only in a sentence scoped to sources the project lead has opened, due November 8, and never a market gap.
