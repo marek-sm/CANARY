@@ -120,6 +120,27 @@ def test_the_next_message_returns_every_result_in_reply_order():
     assert [(m["role"], m["tool_call_id"]) for m in chat[-2:]] == [("tool", "p1"), ("tool", "p2")]
 
 
+def test_both_adapters_normalize_a_multi_call_reply_for_the_loop():
+    from agent import anthropic_adapter, openai_adapter
+
+    body = {"content": [{"type": "text", "text": "Reading both."},
+                        {"type": "tool_use", "id": "toolu_1", "name": "read_file", "input": {"path": "x"}},
+                        {"type": "tool_use", "id": "toolu_2", "name": "read_file", "input": {"path": "y"}}],
+            "stop_reason": "tool_use"}
+    choice = {"finish_reason": "tool_calls", "message": {"content": None, "tool_calls": [
+        {"id": "call_1", "type": "function", "function": {"name": "read_file", "arguments": '{"path": "x"}'}},
+        {"id": "call_2", "type": "function", "function": {"name": "read_file", "arguments": '{"path": "y"}'}}]}}
+    for raw in (anthropic_adapter.normalize(body), openai_adapter.normalize(choice)):
+        assert raw["stop_reason"] == "tool_use"
+        outcome, seam, _ = run([raw, END])
+        assert outcome.termination_reason == "final_answer"
+        assert [r.normalized_args["path"] for r in seam.dispatched] == ["x", "y"]
+    # One unparseable argument string among parsed ones makes the OpenAI reply malformed as a whole.
+    choice["message"]["tool_calls"][1]["function"]["arguments"] = '{"path": '
+    outcome, seam, _ = run([openai_adapter.normalize(choice)])
+    assert outcome.termination_reason == "malformed_model_output" and seam.events == []
+
+
 def test_steps_count_replies_so_a_trial_can_dispatch_more_calls_than_max_steps():
     script = [reply(*[use(f"s{s}c{c}", f"{s}-{c}") for c in range(MAX_CALLS_PER_REPLY)]) for s in range(3)]
     outcome, seam, _ = run(script, max_steps=3)
