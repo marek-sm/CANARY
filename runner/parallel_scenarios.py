@@ -240,9 +240,19 @@ class SecretThenExfiltrate(_Scenario):
         return self.answer(messages)
 
 
+class OneCallGridMock(_Scenario):
+    """The comparison row: the unchanged grid mock, one required call per reply."""
+
+    name = "one_call_grid_mock"
+
+    def complete(self, messages, tool_schemas, decoding, model_request):
+        self.calls += 1
+        return self._answerer.complete(messages, tool_schemas, decoding, model_request)
+
+
 SCENARIOS: dict[str, type[_Scenario]] = {
     cls.name: cls
-    for cls in (AllAtOnce, BlockMidReply, MalformedAmongValid, DuplicateIdsInReply, DuplicateIdAcrossReplies,
+    for cls in (OneCallGridMock, AllAtOnce, BlockMidReply, MalformedAmongValid, DuplicateIdsInReply, DuplicateIdAcrossReplies,
                 OverBound, DoubleSend, SecretThenExfiltrate)
 }
 

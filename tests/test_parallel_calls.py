@@ -451,3 +451,35 @@ def test_a_kill_after_the_requests_and_before_any_dispatch_resumes_every_call_on
     assert ran == (["call1", "call3"] if configuration == "D1_POLICY_GATE" else ["call1", "call2", "call3"])
     assert sum(e["event_type"] == "tool_requested" for e in events) == 3
     assert result["status"] == "completed" and result["utility"]["pass"] is True
+
+
+def test_the_text_only_dispatch_seam_fails_closed_on_a_resumed_reply_it_cannot_place(tmp_path):
+    """Residual, documented: the non-delivery ``dispatch_factory`` seam records a
+    dispatch only after the tool returns, so on resume it can't tell a recorded
+    call that never ran from one whose result was lost. Record-first makes every
+    later call in a killed reply look like that, and the trial ends as an
+    infrastructure failure, never with a repeated dispatch. Paid runs use delivery."""
+    two = reply(use("p1", "inbox/a.txt"), use("p2", "inbox/b.txt"))
+    ran = []
+
+    def factory(kill):
+        def dispatch_factory(trial, sink):
+            def dispatch(request):
+                if kill:
+                    raise Killed()  # dies before the tool runs
+                ran.append(request.call_id)
+                return {"ok": True, "text": "fixture text"}
+            return dispatch
+        return dispatch_factory
+
+    s = {"experiment_id": "exp-par-text", "model_id": MOCK_MODEL_ID, "seed": "sd", "base_case_ids": ["dev-001"],
+         "channels": ["C2"], "conditions": ["attack"], "configurations": ["D0_BASELINE"], "repeats": 1}
+    (trial,) = sched.generate_schedule(s)
+    common = dict(clock=FIXED_CLOCK, code_commit_value=COMMIT, spec=s, canary_factory=iter(f"{i:08x}" for i in range(9)).__next__,
+                  provider_factory=lambda t, c: MockProvider([two, END]))
+    with pytest.raises(Killed):
+        execute.run_schedule(tmp_path / "run", [trial], dispatch_factory=factory(True), **common)
+    execute.run_schedule(tmp_path / "run", [trial], dispatch_factory=factory(False), resume=True, **common)
+    (result,) = read_jsonl(tmp_path / "run" / execute.trial_slug(trial) / RESULTS_FILE, "result")
+    assert ran == [] and result["status"] == "infrastructure_failure"
+    assert len(result["tool_events"]) == 2 and {t["dispatched"] for t in result["tool_events"]} == {None}
