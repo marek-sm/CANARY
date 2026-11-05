@@ -29,6 +29,7 @@ REQUIRED_ESTIMANDS = {
     "MixedRepeatRates",
     "C1DirectInjectionControls",
     "ToolNameOnlyAblation",
+    "ReliabilityAndResourceDiagnostics",
 }
 
 
