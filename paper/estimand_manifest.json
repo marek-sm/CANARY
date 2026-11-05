@@ -17,7 +17,7 @@
       "group": "Primary rates",
       "caption": "Model-violation rates by retained configuration and adapter, including the equal-adapter macro-average and conditional cluster-resampling intervals where applicable.",
       "alt_text": "Placeholder for model-violation rates; no values are available before the frozen analysis run.",
-      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval", "Boundary warning"]
+      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval", "Boundary warning", "Scheduled / observed / unresolved endpoint counts by component arm", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "SystemCompromiseRate",
@@ -25,7 +25,7 @@
       "group": "Primary rates",
       "caption": "System-compromise rates by retained configuration and adapter, including the equal-adapter macro-average and required intervals.",
       "alt_text": "Placeholder for system-compromise rates; no values are available before the frozen analysis run.",
-      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval", "Boundary warning"]
+      "columns": ["Configuration", "Adapter", "Observed true / observed endpoint", "Rate", "95% conditional cluster-resampling interval", "Boundary warning", "Scheduled / observed / unresolved endpoint counts by component arm", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "CleanUtility",
@@ -33,7 +33,7 @@
       "group": "Primary rates",
       "caption": "Clean utility by configuration, task template, and adapter with equal-adapter and equal-task macro-averages.",
       "alt_text": "Placeholder for clean-utility component rates and macro-averages; no values are available before the frozen analysis run.",
-      "columns": ["Configuration", "Task template", "Adapter", "Passed / observed", "Rate or macro-average", "95% conditional cluster-resampling interval"]
+      "columns": ["Configuration", "Task template", "Adapter", "Passed / observed", "Rate or macro-average", "95% conditional cluster-resampling interval", "Scheduled / observed / unresolved endpoint counts by component arm", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "DatamarkingAttackRiskDifference",
@@ -41,7 +41,7 @@
       "group": "Primary paired effects",
       "caption": "Paired attacked-case model-violation risk difference for D2_DATAMARKING versus D0_BASELINE, computed within adapters and macro-averaged.",
       "alt_text": "Placeholder for the D2_DATAMARKING attacked-case paired difference; negative values would favor D2_DATAMARKING, but no value is available.",
-      "columns": ["Adapter", "Complete pairs", "Missing pairs", "Risk difference", "95% conditional cluster-resampling interval"]
+      "columns": ["Adapter", "Complete pairs", "Missing pairs", "Risk difference", "95% conditional cluster-resampling interval", "Scheduled / observed / unresolved endpoint counts by component arm", "Planned pairing keys", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "DatamarkingInjectionSpecificDifference",
@@ -49,7 +49,7 @@
       "group": "Primary paired effects",
       "caption": "Clean-adjusted difference-in-differences for D2_DATAMARKING versus D0_BASELINE, with complete and missing four-cell pair counts.",
       "alt_text": "Placeholder for the D2_DATAMARKING clean-adjusted paired effect; no value is available before frozen analysis.",
-      "columns": ["Adapter", "Complete four-cell pairs", "Missing pairs", "Difference-in-differences", "95% conditional cluster-resampling interval"]
+      "columns": ["Adapter", "Complete four-cell pairs", "Missing pairs", "Difference-in-differences", "95% conditional cluster-resampling interval", "Scheduled / observed / unresolved endpoint counts by component arm", "Planned pairing keys", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "CleanUtilityCost",
@@ -57,7 +57,7 @@
       "group": "Primary paired effects",
       "caption": "Matched clean-utility cost by retained defense, task template, and adapter; a positive value means utility worsened.",
       "alt_text": "Placeholder for matched clean-utility costs; no values are available before frozen analysis.",
-      "columns": ["Configuration", "Task template", "Adapter", "Complete pairs", "Missing pairs", "Utility cost percentage points", "95% conditional cluster-resampling interval"]
+      "columns": ["Configuration", "Task template", "Adapter", "Complete pairs", "Missing pairs", "Utility cost percentage points", "95% conditional cluster-resampling interval", "Scheduled / observed / unresolved endpoint counts by component arm", "Planned pairing keys", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "PolicyGateResidualSystemRiskDifference",
@@ -65,7 +65,7 @@
       "group": "Primary paired effects",
       "caption": "Paired system-compromise risk difference for D1_POLICY_GATE versus D0_BASELINE, computed within adapters and macro-averaged.",
       "alt_text": "Placeholder for the D1_POLICY_GATE residual system-risk difference; negative values would favor D1_POLICY_GATE, but no value is available.",
-      "columns": ["Adapter", "Complete pairs", "Missing pairs", "Risk difference", "95% conditional cluster-resampling interval"]
+      "columns": ["Adapter", "Complete pairs", "Missing pairs", "Risk difference", "95% conditional cluster-resampling interval", "Scheduled / observed / unresolved endpoint counts by component arm", "Planned pairing keys", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "AuthorizedHighRiskCleanUtility",
@@ -73,7 +73,7 @@
       "group": "Primary paired effects",
       "caption": "Clean utility for active legitimate high-risk task templates by configuration, averaged equally over adapters and task templates.",
       "alt_text": "Placeholder for authorized high-risk clean utility; no values are available before frozen analysis.",
-      "columns": ["Configuration", "High-risk task template", "Adapter", "Passed / observed", "Macro-average", "95% conditional cluster-resampling interval"]
+      "columns": ["Configuration", "High-risk task template", "Adapter", "Passed / observed", "Macro-average", "95% conditional cluster-resampling interval", "Scheduled / observed / unresolved endpoint counts by component arm", "Section 9 missingness range", "Headline eligibility under Section 9 / Section 10 interpretation rules"]
     },
     {
       "id": "PolicyGateUnauthorizedBlockRate",
@@ -167,9 +167,9 @@
       "id": "ReliabilityAndResourceDiagnostics",
       "title": "Reliability and resource diagnostics",
       "group": "Predeclared diagnostic outputs",
-      "caption": "Model refusals, malformed calls, step-limit outcomes, infrastructure failures, latency, and token use by configuration.",
-      "alt_text": "Placeholder for reliability, latency, and token-use diagnostics; no values are available.",
-      "columns": ["Configuration", "Diagnostic", "Count", "Observed denominator", "Summary value", "Unknown count"]
+      "caption": "Model refusals, malformed calls, step-limit outcomes, infrastructure failures, latency, and token use by configuration. Decision 0028 item 4 also requires count-only diagnostics from raw events: tool blocks in malformed replies (including multi-call replies), filtered pairs by exposure timing and unrecorded tool blocks, no-request trials by ending, canaries in tool arguments and raw versus normalized recipients, and required calls satisfied only by unauthorized requests. Preserve each diagnostic's specified strata and true/false/null values. These counts change no endpoint, range, or threshold and stay hidden during the sweep.",
+      "alt_text": "Placeholder for reliability and resource diagnostics, including malformed-call and filtered-pair exposure counts; no values are available. Counts do not correct missingness.",
+      "columns": ["Configuration or configuration pair", "Condition (where specified)", "Delivery channel / adapter", "Diagnostic", "Ending or exposure timing (where specified)", "Unrecorded tool block (where specified)", "Count", "Observed denominator", "Summary value", "Unknown count"]
     },
     {
       "id": "MixedRepeatRates",
