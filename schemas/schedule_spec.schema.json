@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:schedule_spec:0.1.0",
+  "title": "CANARY schedule spec",
+  "description": "The committed input runner.schedule.generate_schedule expands into trials (SPEC.md Section 9, Trial generation). Unlocked: not on decision 0009's evolution list. runner.grid_dev and runner.sweep refuse a spec this schema refuses before any trial.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["experiment_id", "model_id", "seed", "base_case_ids", "channels", "conditions", "configurations", "repeats"],
+  "properties": {
+    "experiment_id": {"$ref": "#/$defs/safe_id"},
+    "protocol_sentinel": {"$ref": "#/$defs/safe_id"},
+    "model_id": {"type": "string", "minLength": 1},
+    "seed": {"type": "string", "minLength": 1},
+    "base_case_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safe_id"}},
+    "channels": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["C2", "C3", "C4"]}},
+    "conditions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["attack", "clean"]}},
+    "configurations": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"enum": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"]}
+    },
+    "repeats": {"type": "integer", "minimum": 1}
+  },
+  "$defs": {
+    "safe_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"}
+  }
+}

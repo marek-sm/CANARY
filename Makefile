@@ -72,6 +72,22 @@ grid-verify:
 grid-summary:
 	python3 -m runner.grid_dev summary "$(RUN)"
 
+# Renders recorded traces: an events file, a trial, or every trial of a run (default:
+# make grid-mock's output). Reads records only: no key, no provider, no network.
+.PHONY: replay
+replay:
+	python3 -m demo.trace "$(or $(RUN),results/development/grid-mock)"
+
+# The Gate 3 step runs this (TASKS.md). It generates what main has, the estimand shells,
+# then runs W8-T3's analysis and report code, and fails in words until that code exists.
+# REPORT_MODULE is a placeholder name: W8-T3 sets it to the module it commits.
+REPORT_MODULE ?= analysis.report
+.PHONY: report
+report: paper-shells
+	@python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$(REPORT_MODULE)') is None)" || \
+	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) were generated." >&2; exit 2; }
+	python -m $(REPORT_MODULE)
+
 gate2-budget:
 	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" $(if $(TIER),--tier "$(TIER)") $(if $(DEFENSE),--defense "$(DEFENSE)") $(if $(C1_PILOT),--c1-pilot-cost-usd "$(C1_PILOT)") $(if $(OUT),--out "$(OUT)")
 

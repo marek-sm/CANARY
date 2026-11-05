@@ -204,8 +204,8 @@ provider's first call, in `execute.execute_trial`, `ticket_slice.run`, and
 The hashed files are the git-tracked files under `agent/`, `analysis/`, `channels/`,
 `defenses/`, `oracles/`, `runner/`, `tasks/`, `tools/`, `corpus/`, `fixtures/`, and
 `schemas/`, plus `paper/estimand_manifest.json`, `protocol/development_grid_spec.json`,
-and `uv.lock`, so any change to the code, scoring code, corpus, fixtures, schemas, grid
-spec, or locked dependencies closes paid runs until the project lead records again. A
+`protocol/development_grid_spec_fallback.json`, and `uv.lock`, so any change to the code,
+scoring code, corpus, fixtures, schemas, grid specs, or locked dependencies closes paid runs until the project lead records again. A
 paid grid also takes only the committed spec, and only the model that spec and its
 provider both name. The live smoke passes `live_smoke=True`, which skips only the record
 and the checks that read it. `grid_dev.live_run_refusal` refuses any corpus other than
