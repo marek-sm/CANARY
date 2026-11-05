@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:active_protocol:0.1.0",
+  "title": "CANARY active protocol manifest",
+  "description": "Machine-readable statement of the tier that actually runs for one release (SPEC.md Section 10 'Active-protocol manifest' and Section 12). Field meaning is owned by SPEC.md; this schema owns the serialized shape. An empirical tier carries non-null empirical fields and a non-empty geometry; ENGINEERING carries explicit null-with-reason official fields, empty geometry lists, zero counts, and a non-null validation block. Pre-lock version: additive changes land with fixtures and tests.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "protocol_id",
+    "protocol_version",
+    "tier",
+    "tier_class",
+    "active_contributor_count",
+    "selection_reason_category",
+    "accountable_roles",
+    "tier_arithmetic",
+    "base_case_ids",
+    "base_case_count",
+    "channels",
+    "c1_controls",
+    "configurations",
+    "run_indices",
+    "stage_configurations",
+    "stage_configuration_count",
+    "official_trial_count",
+    "common_hashes",
+    "empirical",
+    "engineering_fallback",
+    "budget_cap_usd",
+    "data_cutoff"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "protocol_id": {"type": "string", "minLength": 1},
+    "protocol_version": {"type": "string", "minLength": 1},
+    "tier": {"$ref": "#/$defs/tier"},
+    "tier_class": {
+      "description": "ALL retains both defenses; ONE retains one; BASE retains none; ENGINEERING runs no official model; STOP is a governed stop.",
+      "enum": ["ALL", "ONE", "BASE", "ENGINEERING", "STOP"]
+    },
+    "active_contributor_count": {"type": "integer", "minimum": 0},
+    "selection_reason_category": {
+      "description": "Non-personal reason category only; never a name or performance commentary (SPEC Section 12 step 5).",
+      "type": "string",
+      "minLength": 1
+    },
+    "accountable_roles": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "tier_arithmetic": {
+      "description": "The Section 12 row's exact components and the recomputed official trial count that must equal official_trial_count.",
+      "type": "object",
+      "required": ["bases", "tasks", "channels", "conditions", "configurations", "repeats", "c1_controls", "c1_repeats", "primary_trials", "c1_trials", "computed_official_trial_count"],
+      "properties": {
+        "bases": {"type": "integer", "minimum": 0},
+        "tasks": {"type": "integer", "minimum": 0},
+        "channels": {"type": "integer", "minimum": 0},
+        "conditions": {"type": "integer", "minimum": 0},
+        "configurations": {"type": "integer", "minimum": 0},
+        "repeats": {"type": "integer", "minimum": 0},
+        "c1_controls": {"type": "integer", "minimum": 0},
+        "c1_repeats": {"type": "integer", "minimum": 0},
+        "primary_trials": {"type": "integer", "minimum": 0},
+        "c1_trials": {"type": "integer", "minimum": 0},
+        "computed_official_trial_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "base_case_ids": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "base_case_count": {"type": "integer", "minimum": 0},
+    "channels": {"type": "array", "items": {"enum": ["C2", "C3", "C4"]}},
+    "c1_controls": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "configurations": {"type": "array", "items": {"$ref": "#/$defs/configuration"}},
+    "run_indices": {"type": "array", "items": {"type": "integer", "minimum": 1}},
+    "stage_configurations": {"type": "array", "items": {"$ref": "#/$defs/configuration"}},
+    "stage_configuration_count": {"type": "integer", "minimum": 0},
+    "official_trial_count": {"type": "integer", "minimum": 0},
+    "common_hashes": {
+      "description": "Common task-registry, prompt/tool, code/container, schema, and oracle/scorer hashes. Nullable only before the Gate 3 freeze fills them.",
+      "type": "object",
+      "required": ["task_registry", "prompt_tool", "code_commit", "container_digest", "schema", "oracle_scorer"],
+      "properties": {
+        "task_registry": {"$ref": "#/$defs/nullable_hash"},
+        "prompt_tool": {"$ref": "#/$defs/nullable_hash"},
+        "code_commit": {"type": ["string", "null"]},
+        "container_digest": {"type": ["string", "null"]},
+        "schema": {"$ref": "#/$defs/nullable_hash"},
+        "oracle_scorer": {"$ref": "#/$defs/nullable_hash"}
+      },
+      "additionalProperties": false
+    },
+    "empirical": {
+      "description": "Empirical model/defense/corpus/analysis fields + experiment id + schedule + development-floor. At ENGINEERING every field is null and carries a sibling *_null_reason. At an empirical tier the identifiers and hashes are non-null (nullable only before the Gate 3 freeze).",
+      "type": "object",
+      "required": [
+        "experiment_id",
+        "model_requested",
+        "model_resolved",
+        "model_endpoint",
+        "reasoning_effort",
+        "defense_hash",
+        "corpus_hash",
+        "analysis_hash",
+        "schedule_seed",
+        "schedule_concurrency",
+        "development_floor",
+        "null_reasons"
+      ],
+      "properties": {
+        "experiment_id": {"type": ["string", "null"]},
+        "model_requested": {"type": ["string", "null"]},
+        "model_resolved": {"type": ["string", "null"]},
+        "model_endpoint": {"type": ["string", "null"]},
+        "reasoning_effort": {"type": ["string", "null"]},
+        "defense_hash": {"$ref": "#/$defs/nullable_hash"},
+        "corpus_hash": {"$ref": "#/$defs/nullable_hash"},
+        "analysis_hash": {"$ref": "#/$defs/nullable_hash"},
+        "schedule_seed": {"type": ["string", "null"]},
+        "schedule_concurrency": {"type": ["integer", "null"], "minimum": 1},
+        "development_floor": {
+          "type": ["object", "null"],
+          "description": "SPEC Section 10 development-floor counts/outcome copied from the Gate 2 step, with the model/endpoint/effort those cells ran on. Null before the Gate 2 step input lands."
+        },
+        "null_reasons": {
+          "description": "For ENGINEERING, a reason string per null official field; empty object at an empirical tier.",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "engineering_fallback": {
+      "description": "Frozen dormant ENGINEERING fallback for every non-STOP tier (SPEC Section 11). validation_id + source_ledger_hash are non-null at ENGINEERING; the plan/schema/report-generator hashes are present for every non-STOP tier.",
+      "type": "object",
+      "required": ["validation_id", "source_ledger_hash", "validation_plan_hash", "validation_schema_hash", "report_generator_hash"],
+      "properties": {
+        "validation_id": {"type": ["string", "null"]},
+        "source_ledger_hash": {"$ref": "#/$defs/nullable_hash"},
+        "validation_plan_hash": {"$ref": "#/$defs/nullable_hash"},
+        "validation_schema_hash": {"$ref": "#/$defs/nullable_hash"},
+        "report_generator_hash": {"$ref": "#/$defs/nullable_hash"}
+      },
+      "additionalProperties": false
+    },
+    "budget_cap_usd": {"type": ["number", "null"], "minimum": 0},
+    "data_cutoff": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "ENGINEERING: empty geometry, zero counts, null official fields with reasons, non-null validation block.",
+      "if": {"properties": {"tier_class": {"const": "ENGINEERING"}}},
+      "then": {
+        "properties": {
+          "base_case_ids": {"maxItems": 0},
+          "base_case_count": {"const": 0},
+          "channels": {"maxItems": 0},
+          "c1_controls": {"maxItems": 0},
+          "configurations": {"maxItems": 0},
+          "run_indices": {"maxItems": 0},
+          "stage_configurations": {"maxItems": 0},
+          "stage_configuration_count": {"const": 0},
+          "official_trial_count": {"const": 0},
+          "empirical": {
+            "properties": {
+              "experiment_id": {"const": null},
+              "model_resolved": {"const": null},
+              "schedule_seed": {"const": null}
+            }
+          },
+          "engineering_fallback": {
+            "properties": {
+              "validation_id": {"type": "string", "minLength": 1},
+              "source_ledger_hash": {"$ref": "#/$defs/hash"}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "tier": {"enum": ["F20", "R15", "M10-ALL", "M10-ONE", "M10-BASE", "L8-ONE", "L8-BASE", "R6-ONE", "R6-BASE", "ENGINEERING", "STOP"]},
+    "configuration": {"enum": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"]},
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullable_hash": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+  }
+}
