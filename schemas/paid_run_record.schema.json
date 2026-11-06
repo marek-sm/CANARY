@@ -104,7 +104,7 @@
       "type": "object",
       "minProperties": 1,
       "propertyNames": {
-        "pattern": "^((agent|analysis|channels|defenses|oracles|runner|tasks|tools|corpus|fixtures|schemas)/|paper/estimand_manifest\\.json$|protocol/development_grid_spec\\.json$|uv\\.lock$)"
+        "pattern": "^((agent|analysis|channels|defenses|oracles|runner|tasks|tools|corpus|fixtures|schemas)/|paper/estimand_manifest\\.json$|protocol/development_grid_spec(_fallback)?\\.json$|uv\\.lock$)"
       },
       "additionalProperties": {
         "type": "string",

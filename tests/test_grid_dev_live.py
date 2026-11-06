@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from analysis import price_bound
 from runner import delivery, execute, grid_dev, live_smoke
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -190,3 +191,104 @@ def test_a_resume_is_checked_only_for_the_trials_it_hasn_t_started(tmp_path, mon
     assert asked == [50, 50]
     assert grid_dev.live_run_refusal(CORPUS, _spec()) == "stop here"
     assert asked[-1] == 90
+
+
+# Stack-gaps item 1: the declared fallback runs the grid through its own committed spec.
+FALLBACK_PATH = ROOT / "protocol" / "development_grid_spec_fallback.json"
+
+
+def _fallback():
+    return json.loads(FALLBACK_PATH.read_text(encoding="utf-8"))
+
+
+def _open_env(monkeypatch):
+    monkeypatch.setenv("CANARY_PAID_RUN_ACK", "1")
+    monkeypatch.delenv("CI", raising=False)
+    for name in list(__import__("os").environ):
+        if name.startswith(("ANTHROPIC_", "OPENAI_")):
+            monkeypatch.delenv(name, raising=False)
+
+
+def test_the_fallback_spec_is_the_grid_spec_on_the_fallback_model():
+    """Only the model differs, so the one mock preflight the paid-run record checks covers both."""
+    assert _fallback() == {**_spec(), "model_id": live_smoke.PROVIDERS["openai"]["model"]}
+    assert _fallback()["model_id"] == "gpt-6-luna"
+
+
+def test_each_provider_has_its_committed_spec():
+    assert grid_dev.committed_spec("anthropic") == _spec()
+    assert grid_dev.committed_spec("openai") == _fallback()
+
+
+def test_the_paid_run_gate_hashes_the_fallback_spec():
+    from runner import paid_run
+
+    assert "protocol/development_grid_spec_fallback.json" in paid_run.HASHED_DIRS
+    assert "protocol/development_grid_spec_fallback.json" in paid_run.code_hashes()
+
+
+@pytest.mark.parametrize(("spec_name", "provider", "allowed"), [
+    ("primary", "anthropic", True), ("fallback", "openai", True),
+    ("primary", "openai", False), ("fallback", "anthropic", False),
+])
+def test_a_live_grid_runs_only_its_provider_s_committed_spec(monkeypatch, spec_name, provider, allowed):
+    from runner import paid_run
+
+    _open_env(monkeypatch)
+    monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **_kwargs: None)
+    monkeypatch.setattr(grid_dev, "FALLBACK_DECISION", "a committed decision record")
+    spec = _spec() if spec_name == "primary" else _fallback()
+    reason = grid_dev.live_run_refusal(CORPUS, spec, provider_name=provider)
+    assert (reason is None) is allowed, reason
+
+
+def test_the_fallback_grid_stays_closed_until_a_decision_names_it(monkeypatch):
+    # Decision 0010 item 3: a paid-run record names no provider, so without this a record made
+    # for the primary grid would also open 90 fallback trials, past the 120-trial ceiling.
+    from runner import paid_run
+
+    _open_env(monkeypatch)
+    monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **_kwargs: pytest.fail("reached the paid gate"))
+    assert grid_dev.FALLBACK_DECISION is None
+    assert "decision 0010 item 3" in grid_dev.live_run_refusal(CORPUS, _fallback(), provider_name="openai")
+
+
+@pytest.mark.parametrize(("provider", "limit"), [("anthropic", "max_tokens"), ("openai", "max_completion_tokens")])
+def test_every_provider_s_decoding_holds_a_reply_to_the_price_bound(provider, limit):
+    # analysis/price_bound.py prices a trial's replies at MAX_TOKENS, which the per-trial
+    # spend check relies on, so no provider may send a request without that limit.
+    config = live_smoke.PROVIDERS[provider]
+    assert config["decoding"][limit] == price_bound.MAX_TOKENS
+    config["check"](config["decoding"])
+
+
+def test_every_fallback_trial_requests_the_fallback_model(tmp_path, monkeypatch):
+    """All 90 trials of the openai grid carry gpt-6-luna into the request."""
+    scheduled = []
+    monkeypatch.setattr(grid_dev, "live_run_refusal", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(grid_dev, "load_api_key", lambda _path, _variable: "not-a-real-key")
+    monkeypatch.setitem(live_smoke.PROVIDERS["openai"], "module", types.SimpleNamespace(build_client=lambda _key: object()))
+    monkeypatch.setitem(live_smoke.PROVIDERS["openai"], "adapter", lambda _client: object())
+    monkeypatch.setattr(execute, "run_schedule", lambda out, schedule, **kwargs: scheduled.extend(schedule) or out)
+    grid_dev.run_live_grid(tmp_path / "live", spec=_fallback(), env_file=tmp_path / "never-read.env",
+                           provider_name="openai", model="gpt-6-luna")
+    assert len(scheduled) == grid_dev.EXPECTED_TRIALS
+    assert {trial.model_id for trial in scheduled} == {"gpt-6-luna"}
+
+
+def test_a_fallback_trial_sends_the_fallback_model(tmp_path, open_gate_with_a_recording_adapter, monkeypatch):
+    from runner.schedule import generate_schedule
+
+    sent = open_gate_with_a_recording_adapter
+    monkeypatch.setattr(grid_dev, "validate_grid_spec", lambda spec: generate_schedule(spec)[:1])
+    grid_dev.run_live_grid(tmp_path / "live", spec=_fallback(), env_file=tmp_path / "never-read.env",
+                           provider_name="openai", model="gpt-6-luna", corpus_root=CORPUS)
+    assert sent and set(sent) == {"gpt-6-luna"}
+
+
+def test_the_cli_loads_the_provider_s_spec_by_default(tmp_path, monkeypatch):
+    seen = []
+    monkeypatch.setattr(grid_dev, "live_run_refusal", lambda _root, spec, _out=None, **kw: seen.append((spec, kw)) or "stop")
+    assert grid_dev.main(["live", "--provider", "openai", "--out", str(tmp_path / "o"),
+                          "--env-file", str(tmp_path / "never-read.env")]) == 2
+    assert seen == [(_fallback(), {"provider_name": "openai"})]

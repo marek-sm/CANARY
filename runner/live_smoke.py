@@ -46,7 +46,7 @@ PROVIDERS = {
     "openai": {
         "module": openai_adapter, "adapter": openai_adapter.OpenAIChatAdapter,
         "check": lambda decoding: openai_adapter.check_decoding(decoding, has_tools=True), "model": "gpt-6-luna",
-        "decoding": {"endpoint": "chat_completions", "reasoning_effort": "none"},
+        "decoding": {"endpoint": "chat_completions", "reasoning_effort": "none", "max_completion_tokens": 4096},
         "key": "OPENAI_API_KEY", "usage_page": "the OpenAI usage page", "price_step_tokens": None,
     },
 }

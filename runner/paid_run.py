@@ -79,7 +79,8 @@ RECORD = REPO_ROOT / "protocol" / "paid_run_record.json"
 # (decision 0025 item 4).
 HASHED_DIRS = (
     "agent", "analysis", "channels", "defenses", "oracles", "runner", "tasks", "tools",
-    "corpus", "fixtures", "schemas", "paper/estimand_manifest.json", "protocol/development_grid_spec.json", "uv.lock",
+    "corpus", "fixtures", "schemas", "paper/estimand_manifest.json", "protocol/development_grid_spec.json",
+    "protocol/development_grid_spec_fallback.json", "uv.lock",
 )
 RECORD_SCHEMA = "paid_run_record"
 PROVENANCE_FILE = "code_provenance.jsonl"
