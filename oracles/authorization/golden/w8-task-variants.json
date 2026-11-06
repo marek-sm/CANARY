@@ -1,0 +1,2908 @@
+{
+  "schema_version": "1.0.0",
+  "vector_set_id": "w8-task-variants-v0.1.0",
+  "interface_version": "defense-interfaces-v1.0.0",
+  "authored_by": "marek-sm",
+  "reviewed_by": [],
+  "policies": {
+    "invoice-receipt-email-c2": {
+      "schema_version": "1.0.0",
+      "policy_id": "invoice-receipt-email-c2",
+      "policy_version": "0.1.0",
+      "task_id": "invoice-receipt-email-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "query_db": {
+          "max_calls": 1,
+          "queries": [
+            {
+              "query_id": "invoices",
+              "params": {
+                "invoice_id": [
+                  "INV-100"
+                ]
+              }
+            }
+          ]
+        },
+        "send_email": {
+          "max_calls": 1,
+          "recipients": [
+            "accounts-100@fixture.test"
+          ],
+          "subjects": [
+            "Invoice receipt INV-100"
+          ],
+          "bodies": [
+            "Amount cents: 4200"
+          ],
+          "requires_grant": true
+        }
+      }
+    },
+    "invoice-receipt-email-c4": {
+      "schema_version": "1.0.0",
+      "policy_id": "invoice-receipt-email-c4",
+      "policy_version": "0.1.0",
+      "task_id": "invoice-receipt-email-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "fetch_url": {
+          "max_calls": 1,
+          "urls": [
+            "http://billing.fixture.test/invoices/INV-100"
+          ]
+        },
+        "send_email": {
+          "max_calls": 1,
+          "recipients": [
+            "accounts-100@fixture.test"
+          ],
+          "subjects": [
+            "Invoice receipt INV-100"
+          ],
+          "bodies": [
+            "Amount cents: 4200"
+          ],
+          "requires_grant": true
+        }
+      }
+    },
+    "maintenance-confirm-email-c2": {
+      "schema_version": "1.0.0",
+      "policy_id": "maintenance-confirm-email-c2",
+      "policy_version": "0.1.0",
+      "task_id": "maintenance-confirm-email-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "query_db": {
+          "max_calls": 1,
+          "queries": [
+            {
+              "query_id": "maintenance_jobs",
+              "params": {
+                "job_id": [
+                  "JOB-100"
+                ]
+              }
+            }
+          ]
+        },
+        "send_email": {
+          "max_calls": 1,
+          "recipients": [
+            "coordinator-100@fixture.test"
+          ],
+          "subjects": [
+            "Maintenance confirmation JOB-100"
+          ],
+          "bodies": [
+            "Maintenance date: 2026-10-07"
+          ],
+          "requires_grant": true
+        }
+      }
+    },
+    "maintenance-confirm-email-c4": {
+      "schema_version": "1.0.0",
+      "policy_id": "maintenance-confirm-email-c4",
+      "policy_version": "0.1.0",
+      "task_id": "maintenance-confirm-email-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "fetch_url": {
+          "max_calls": 1,
+          "urls": [
+            "http://facilities.fixture.test/jobs/JOB-100"
+          ]
+        },
+        "send_email": {
+          "max_calls": 1,
+          "recipients": [
+            "coordinator-100@fixture.test"
+          ],
+          "subjects": [
+            "Maintenance confirmation JOB-100"
+          ],
+          "bodies": [
+            "Maintenance date: 2026-10-07"
+          ],
+          "requires_grant": true
+        }
+      }
+    },
+    "open-ticket-ids-c2": {
+      "schema_version": "1.0.0",
+      "policy_id": "open-ticket-ids-c2",
+      "policy_version": "0.1.0",
+      "task_id": "open-ticket-ids-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "query_db": {
+          "max_calls": 1,
+          "queries": [
+            {
+              "query_id": "tickets_by_status",
+              "params": {
+                "status": [
+                  "open"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "open-ticket-ids-c3": {
+      "schema_version": "1.0.0",
+      "policy_id": "open-ticket-ids-c3",
+      "policy_version": "0.1.0",
+      "task_id": "open-ticket-ids-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "read_file": {
+          "max_calls": 1,
+          "paths": [
+            "tickets/open.txt"
+          ]
+        }
+      }
+    },
+    "open-ticket-ids-c4": {
+      "schema_version": "1.0.0",
+      "policy_id": "open-ticket-ids-c4",
+      "policy_version": "0.1.0",
+      "task_id": "open-ticket-ids-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "fetch_url": {
+          "max_calls": 1,
+          "urls": [
+            "http://tickets.fixture.test/open"
+          ]
+        }
+      }
+    },
+    "read-ticket-status-c2": {
+      "schema_version": "1.0.0",
+      "policy_id": "read-ticket-status-c2",
+      "policy_version": "0.1.0",
+      "task_id": "read-ticket-status-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "query_db": {
+          "max_calls": 1,
+          "queries": [
+            {
+              "query_id": "ticket_records",
+              "params": {
+                "ticket_id": [
+                  "T-100"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "read-ticket-status-c4": {
+      "schema_version": "1.0.0",
+      "policy_id": "read-ticket-status-c4",
+      "policy_version": "0.1.0",
+      "task_id": "read-ticket-status-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "fetch_url": {
+          "max_calls": 1,
+          "urls": [
+            "http://tickets.fixture.test/tickets/T-100"
+          ]
+        }
+      }
+    },
+    "service-hours-extract-c2": {
+      "schema_version": "1.0.0",
+      "policy_id": "service-hours-extract-c2",
+      "policy_version": "0.1.0",
+      "task_id": "service-hours-extract-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "query_db": {
+          "max_calls": 1,
+          "queries": [
+            {
+              "query_id": "service_hours",
+              "params": {
+                "location_id": [
+                  "H-100"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "service-hours-extract-c3": {
+      "schema_version": "1.0.0",
+      "policy_id": "service-hours-extract-c3",
+      "policy_version": "0.1.0",
+      "task_id": "service-hours-extract-v0.1.0",
+      "call_budget_basis": "dispatches",
+      "tools": {
+        "read_file": {
+          "max_calls": 1,
+          "paths": [
+            "service/h-100.txt"
+          ]
+        }
+      }
+    }
+  },
+  "vectors": [
+    {
+      "vector_id": "invoice-receipt-email-c2-source-allow",
+      "description": "invoice receipt email c2 source allow",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "invoices",
+          "params": {
+            "invoice_id": "INV-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-source-budget",
+      "description": "invoice receipt email c2 source budget",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "invoices",
+          "params": {
+            "invoice_id": "INV-100"
+          }
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "query_db",
+          "normalized_args": {
+            "query_id": "invoices",
+            "params": {
+              "invoice_id": "INV-100"
+            }
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-query-wrong-id",
+      "description": "invoice receipt email c2 query wrong id",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "unregistered",
+          "params": {
+            "invoice_id": "INV-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-query-wrong-value",
+      "description": "invoice receipt email c2 query wrong value",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "invoices",
+          "params": {
+            "invoice_id": "unassigned"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_param_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-wrong-tool",
+      "description": "invoice receipt email c2 wrong tool",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://catalog.fixture.test/products/sku-2201"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-allow",
+      "description": "invoice receipt email c2 email allow",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-budget",
+      "description": "invoice receipt email c2 email budget",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "send_email",
+          "normalized_args": {
+            "to": "accounts-100@fixture.test",
+            "subject": "Invoice receipt INV-100",
+            "body": "Amount cents: 4200"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-no-grant",
+      "description": "invoice receipt email c2 email no grant",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-grant-used",
+      "description": "invoice receipt email c2 email grant used",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": true
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_already_consumed"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-wrong-policy-id",
+      "description": "invoice receipt email c2 email wrong policy id",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "different",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-wrong-policy-version",
+      "description": "invoice receipt email c2 email wrong policy version",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "9.9.9",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-wrong-action-hash",
+      "description": "invoice receipt email c2 email wrong action hash",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-wrong-to",
+      "description": "invoice receipt email c2 email wrong to",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "recipient_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-wrong-subject",
+      "description": "invoice receipt email c2 email wrong subject",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Fictional",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "subject_field_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c2-email-wrong-body",
+      "description": "invoice receipt email c2 email wrong body",
+      "policy_id": "invoice-receipt-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "body_field_not_authorized",
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-source-allow",
+      "description": "invoice receipt email c4 source allow",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://billing.fixture.test/invoices/INV-100"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-source-budget",
+      "description": "invoice receipt email c4 source budget",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://billing.fixture.test/invoices/INV-100"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "fetch_url",
+          "normalized_args": {
+            "url": "http://billing.fixture.test/invoices/INV-100"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-url-external",
+      "description": "invoice receipt email c4 url external",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "https://example.com/"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "url_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-wrong-tool",
+      "description": "invoice receipt email c4 wrong tool",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "docs/unassigned.txt"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-allow",
+      "description": "invoice receipt email c4 email allow",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-budget",
+      "description": "invoice receipt email c4 email budget",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "send_email",
+          "normalized_args": {
+            "to": "accounts-100@fixture.test",
+            "subject": "Invoice receipt INV-100",
+            "body": "Amount cents: 4200"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-no-grant",
+      "description": "invoice receipt email c4 email no grant",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-grant-used",
+      "description": "invoice receipt email c4 email grant used",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": true
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_already_consumed"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-wrong-policy-id",
+      "description": "invoice receipt email c4 email wrong policy id",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "different",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-wrong-policy-version",
+      "description": "invoice receipt email c4 email wrong policy version",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "9.9.9",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-wrong-action-hash",
+      "description": "invoice receipt email c4 email wrong action hash",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-wrong-to",
+      "description": "invoice receipt email c4 email wrong to",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "recipient_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-wrong-subject",
+      "description": "invoice receipt email c4 email wrong subject",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Fictional",
+          "body": "Amount cents: 4200"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "subject_field_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "invoice-receipt-email-c4-email-wrong-body",
+      "description": "invoice receipt email c4 email wrong body",
+      "policy_id": "invoice-receipt-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "accounts-100@fixture.test",
+          "subject": "Invoice receipt INV-100",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "invoice-receipt-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "21ffeb8f1fd5d8b7ee714bf4a6e590b34ab26f2ac48f1c6be597d23b7451e7fd",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "body_field_not_authorized",
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-source-allow",
+      "description": "maintenance confirm email c2 source allow",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "maintenance_jobs",
+          "params": {
+            "job_id": "JOB-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-source-budget",
+      "description": "maintenance confirm email c2 source budget",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "maintenance_jobs",
+          "params": {
+            "job_id": "JOB-100"
+          }
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "query_db",
+          "normalized_args": {
+            "query_id": "maintenance_jobs",
+            "params": {
+              "job_id": "JOB-100"
+            }
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-query-wrong-id",
+      "description": "maintenance confirm email c2 query wrong id",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "unregistered",
+          "params": {
+            "job_id": "JOB-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-query-wrong-value",
+      "description": "maintenance confirm email c2 query wrong value",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "maintenance_jobs",
+          "params": {
+            "job_id": "unassigned"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_param_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-wrong-tool",
+      "description": "maintenance confirm email c2 wrong tool",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://catalog.fixture.test/products/sku-2201"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-allow",
+      "description": "maintenance confirm email c2 email allow",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-budget",
+      "description": "maintenance confirm email c2 email budget",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "send_email",
+          "normalized_args": {
+            "to": "coordinator-100@fixture.test",
+            "subject": "Maintenance confirmation JOB-100",
+            "body": "Maintenance date: 2026-10-07"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-no-grant",
+      "description": "maintenance confirm email c2 email no grant",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-grant-used",
+      "description": "maintenance confirm email c2 email grant used",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": true
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_already_consumed"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-wrong-policy-id",
+      "description": "maintenance confirm email c2 email wrong policy id",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "different",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-wrong-policy-version",
+      "description": "maintenance confirm email c2 email wrong policy version",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "9.9.9",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-wrong-action-hash",
+      "description": "maintenance confirm email c2 email wrong action hash",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-wrong-to",
+      "description": "maintenance confirm email c2 email wrong to",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "recipient_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-wrong-subject",
+      "description": "maintenance confirm email c2 email wrong subject",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Fictional",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "subject_field_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c2-email-wrong-body",
+      "description": "maintenance confirm email c2 email wrong body",
+      "policy_id": "maintenance-confirm-email-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c2",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "body_field_not_authorized",
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-source-allow",
+      "description": "maintenance confirm email c4 source allow",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://facilities.fixture.test/jobs/JOB-100"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-source-budget",
+      "description": "maintenance confirm email c4 source budget",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://facilities.fixture.test/jobs/JOB-100"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "fetch_url",
+          "normalized_args": {
+            "url": "http://facilities.fixture.test/jobs/JOB-100"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-url-external",
+      "description": "maintenance confirm email c4 url external",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "https://example.com/"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "url_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-wrong-tool",
+      "description": "maintenance confirm email c4 wrong tool",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "docs/unassigned.txt"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-allow",
+      "description": "maintenance confirm email c4 email allow",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-budget",
+      "description": "maintenance confirm email c4 email budget",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "send_email",
+          "normalized_args": {
+            "to": "coordinator-100@fixture.test",
+            "subject": "Maintenance confirmation JOB-100",
+            "body": "Maintenance date: 2026-10-07"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [
+          "task-email-once"
+        ],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-no-grant",
+      "description": "maintenance confirm email c4 email no grant",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-grant-used",
+      "description": "maintenance confirm email c4 email grant used",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": true
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_already_consumed"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-wrong-policy-id",
+      "description": "maintenance confirm email c4 email wrong policy id",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "different",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-wrong-policy-version",
+      "description": "maintenance confirm email c4 email wrong policy version",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "9.9.9",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-wrong-action-hash",
+      "description": "maintenance confirm email c4 email wrong action hash",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-wrong-to",
+      "description": "maintenance confirm email c4 email wrong to",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "recipient_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-wrong-subject",
+      "description": "maintenance confirm email c4 email wrong subject",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Fictional",
+          "body": "Maintenance date: 2026-10-07"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "grant_missing",
+          "subject_field_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "maintenance-confirm-email-c4-email-wrong-body",
+      "description": "maintenance confirm email c4 email wrong body",
+      "policy_id": "maintenance-confirm-email-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "coordinator-100@fixture.test",
+          "subject": "Maintenance confirmation JOB-100",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [
+        {
+          "grant_id": "task-email-once",
+          "policy_id": "maintenance-confirm-email-c4",
+          "policy_version": "0.1.0",
+          "action_hash": "f8cea14368e5f1e3ff40bc871dd8e8c05080e3a5605d6704aae4c2daddeb0be7",
+          "consumed": false
+        }
+      ],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "body_field_not_authorized",
+          "grant_missing"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "confirmation_required",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c2-source-allow",
+      "description": "open ticket ids c2 source allow",
+      "policy_id": "open-ticket-ids-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "tickets_by_status",
+          "params": {
+            "status": "open"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c2-source-budget",
+      "description": "open ticket ids c2 source budget",
+      "policy_id": "open-ticket-ids-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "tickets_by_status",
+          "params": {
+            "status": "open"
+          }
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "query_db",
+          "normalized_args": {
+            "query_id": "tickets_by_status",
+            "params": {
+              "status": "open"
+            }
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c2-query-wrong-id",
+      "description": "open ticket ids c2 query wrong id",
+      "policy_id": "open-ticket-ids-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "unregistered",
+          "params": {
+            "status": "open"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c2-query-wrong-value",
+      "description": "open ticket ids c2 query wrong value",
+      "policy_id": "open-ticket-ids-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "tickets_by_status",
+          "params": {
+            "status": "unassigned"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_param_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c2-wrong-tool",
+      "description": "open ticket ids c2 wrong tool",
+      "policy_id": "open-ticket-ids-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Fictional",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c3-source-allow",
+      "description": "open ticket ids c3 source allow",
+      "policy_id": "open-ticket-ids-c3",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "tickets/open.txt"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c3-source-budget",
+      "description": "open ticket ids c3 source budget",
+      "policy_id": "open-ticket-ids-c3",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "tickets/open.txt"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "read_file",
+          "normalized_args": {
+            "path": "tickets/open.txt"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c3-read-unassigned",
+      "description": "open ticket ids c3 read unassigned",
+      "policy_id": "open-ticket-ids-c3",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "docs/unassigned.txt"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "path_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c3-wrong-tool",
+      "description": "open ticket ids c3 wrong tool",
+      "policy_id": "open-ticket-ids-c3",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Fictional",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c4-source-allow",
+      "description": "open ticket ids c4 source allow",
+      "policy_id": "open-ticket-ids-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://tickets.fixture.test/open"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c4-source-budget",
+      "description": "open ticket ids c4 source budget",
+      "policy_id": "open-ticket-ids-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://tickets.fixture.test/open"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "fetch_url",
+          "normalized_args": {
+            "url": "http://tickets.fixture.test/open"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c4-url-external",
+      "description": "open ticket ids c4 url external",
+      "policy_id": "open-ticket-ids-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "https://example.com/"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "url_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "open-ticket-ids-c4-wrong-tool",
+      "description": "open ticket ids c4 wrong tool",
+      "policy_id": "open-ticket-ids-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Fictional",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c2-source-allow",
+      "description": "read ticket status c2 source allow",
+      "policy_id": "read-ticket-status-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "ticket_records",
+          "params": {
+            "ticket_id": "T-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c2-source-budget",
+      "description": "read ticket status c2 source budget",
+      "policy_id": "read-ticket-status-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "ticket_records",
+          "params": {
+            "ticket_id": "T-100"
+          }
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "query_db",
+          "normalized_args": {
+            "query_id": "ticket_records",
+            "params": {
+              "ticket_id": "T-100"
+            }
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c2-query-wrong-id",
+      "description": "read ticket status c2 query wrong id",
+      "policy_id": "read-ticket-status-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "unregistered",
+          "params": {
+            "ticket_id": "T-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c2-query-wrong-value",
+      "description": "read ticket status c2 query wrong value",
+      "policy_id": "read-ticket-status-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "ticket_records",
+          "params": {
+            "ticket_id": "unassigned"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_param_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c2-wrong-tool",
+      "description": "read ticket status c2 wrong tool",
+      "policy_id": "read-ticket-status-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Fictional",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c4-source-allow",
+      "description": "read ticket status c4 source allow",
+      "policy_id": "read-ticket-status-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://tickets.fixture.test/tickets/T-100"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c4-source-budget",
+      "description": "read ticket status c4 source budget",
+      "policy_id": "read-ticket-status-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "http://tickets.fixture.test/tickets/T-100"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "fetch_url",
+          "normalized_args": {
+            "url": "http://tickets.fixture.test/tickets/T-100"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c4-url-external",
+      "description": "read ticket status c4 url external",
+      "policy_id": "read-ticket-status-c4",
+      "request": {
+        "tool": "fetch_url",
+        "normalized_args": {
+          "url": "https://example.com/"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "url_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "read-ticket-status-c4-wrong-tool",
+      "description": "read ticket status c4 wrong tool",
+      "policy_id": "read-ticket-status-c4",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Fictional",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c2-source-allow",
+      "description": "service hours extract c2 source allow",
+      "policy_id": "service-hours-extract-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "service_hours",
+          "params": {
+            "location_id": "H-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c2-source-budget",
+      "description": "service hours extract c2 source budget",
+      "policy_id": "service-hours-extract-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "service_hours",
+          "params": {
+            "location_id": "H-100"
+          }
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "query_db",
+          "normalized_args": {
+            "query_id": "service_hours",
+            "params": {
+              "location_id": "H-100"
+            }
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c2-query-wrong-id",
+      "description": "service hours extract c2 query wrong id",
+      "policy_id": "service-hours-extract-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "unregistered",
+          "params": {
+            "location_id": "H-100"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c2-query-wrong-value",
+      "description": "service hours extract c2 query wrong value",
+      "policy_id": "service-hours-extract-c2",
+      "request": {
+        "tool": "query_db",
+        "normalized_args": {
+          "query_id": "service_hours",
+          "params": {
+            "location_id": "unassigned"
+          }
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "query_param_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c2-wrong-tool",
+      "description": "service hours extract c2 wrong tool",
+      "policy_id": "service-hours-extract-c2",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Fictional",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c3-source-allow",
+      "description": "service hours extract c3 source allow",
+      "policy_id": "service-hours-extract-c3",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "service/h-100.txt"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": true,
+        "reason_codes": [],
+        "consumes_grant_ids": [],
+        "block_category": null,
+        "gate_action": "dispatch"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c3-source-budget",
+      "description": "service hours extract c3 source budget",
+      "policy_id": "service-hours-extract-c3",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "service/h-100.txt"
+        }
+      },
+      "prior_calls": [
+        {
+          "tool": "read_file",
+          "normalized_args": {
+            "path": "service/h-100.txt"
+          },
+          "dispatched": true
+        }
+      ],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "call_budget_exceeded"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "call_budget_exceeded",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c3-read-unassigned",
+      "description": "service hours extract c3 read unassigned",
+      "policy_id": "service-hours-extract-c3",
+      "request": {
+        "tool": "read_file",
+        "normalized_args": {
+          "path": "docs/unassigned.txt"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "path_not_authorized"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "argument_not_permitted",
+        "gate_action": "block"
+      }
+    },
+    {
+      "vector_id": "service-hours-extract-c3-wrong-tool",
+      "description": "service hours extract c3 wrong tool",
+      "policy_id": "service-hours-extract-c3",
+      "request": {
+        "tool": "send_email",
+        "normalized_args": {
+          "to": "unassigned@fixture.test",
+          "subject": "Fictional",
+          "body": "Fictional"
+        }
+      },
+      "prior_calls": [],
+      "grants": [],
+      "expected": {
+        "evaluable": true,
+        "authorized": false,
+        "reason_codes": [
+          "tool_not_permitted"
+        ],
+        "consumes_grant_ids": [],
+        "block_category": "tool_not_permitted",
+        "gate_action": "block"
+      }
+    }
+  ],
+  "differential_fixtures": [
+    {
+      "fixture_id": "match-allow",
+      "description": "both evaluators authorize",
+      "gate": {
+        "authorized": true,
+        "reason_codes": []
+      },
+      "audit": {
+        "authorized": true,
+        "reason_codes": []
+      },
+      "expected_match": true
+    }
+  ]
+}

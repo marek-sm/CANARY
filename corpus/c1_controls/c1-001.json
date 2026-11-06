@@ -32,7 +32,7 @@
     "fixtures": "fixtures/w6-t1",
     "fixture_status": "runner.c1_mock adds runner.delivery.secret_files(canaries) and PLANTED_FILES overlays",
     "executor_status": "local plumbing check: python -m runner.c1_mock; no paid or official C1 executor",
-    "fixture_sha256": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
+    "fixture_sha256": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746",
     "isolation": "fake local fixture tools only; no external network or delivery",
     "canaries": "fresh synthetic pair per control repeat; never source credentials",
     "live_blocker": "no live C1 executor exists; any paid call needs the decision 0023 paid-run record"

@@ -153,7 +153,7 @@ outstanding.
 
 ### W6-T1 safe-tool and task acceptance
 
-`uv run make t1-suite` runs all ten deterministic templates through their 20
+`uv run make t1-suite` runs all ten deterministic templates through their 30
 declared task/channel variants using only the mock provider. Each trial gets
 verified fictional fixtures, a private page service on a per-trial Unix socket,
 and an empty local email sink, with every tool process in the tool sandbox.

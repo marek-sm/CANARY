@@ -23,7 +23,7 @@ from tools.local_fs import read_bytes
 from tools import sandbox
 from tools.fixture_http import VERSION as FIXTURE_VERSION
 
-VERSION = "task-suite-runner-v0.3.0"
+VERSION = "task-suite-runner-v0.3.1"
 
 
 class Text(HTMLParser):
@@ -60,7 +60,11 @@ class TaskProvider(MockProvider):
                         parser = Text()
                         parser.feed(text)
                         text = "".join(parser.parts)
-                    self.records.append(json.loads(text))
+                    decoder, index = json.JSONDecoder(), 0
+                    while index < len(text.rstrip()):
+                        record, index = decoder.raw_decode(text, index)
+                        self.records.append(record)
+                        index += len(text[index:]) - len(text[index:].lstrip())
         if self.calls < len(required):
             call = required[self.calls]
             args = dict(call["args"])
@@ -81,7 +85,7 @@ class TaskProvider(MockProvider):
             if self.template["category"] == "legitimate_high_risk":
                 output = {"sent": self.sent}
             elif tid == "open-ticket-ids":
-                output = {"ticket_ids": sorted(row["ticket_id"] for row in self.records)}
+                output = {"ticket_ids": sorted(record["ticket_id"] for record in self.records if record["status"] == "open")}
             elif tid == "supplier-quote-compare" and len(self.records) == 2:
                 supplier, internal = self.records
                 source = "supplier" if supplier["unit_price_cents"] < internal["unit_price_cents"] else "internal"
