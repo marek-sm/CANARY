@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.19.0**  
+**Public project and experimental specification v1.20.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -9,7 +9,7 @@ This is the public, human-readable authority for CANARY's scope, measurement sem
 
 Versioned JSON Schemas define serialized structure, and `protocol/active.json` identifies the exact tier, artifacts, hashes, and schedule used for a release. Neither may contradict this specification. Any conflict blocks release until the documents, schemas, tests, and implementation are reconciled through the change-control process in Section 11.
 
-All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 no later than Wednesday, November 11, 2026 (club week 12), before official outcomes are inspected, official data locks no later than November 22, 2026, and the public release freezes no later than December 6, 2026. Each date is a deadline: work may finish and gates may run earlier, never later. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
+All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 no later than Saturday, November 14, 2026 (club week 12; [decision 0029](docs/decisions/0029-gate-chain-shift.md)), before official outcomes are inspected, official data locks no later than November 22, 2026, and the public release freezes no later than December 6, 2026. Each date is a deadline: work may finish and gates may run earlier, never later. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
 
 ---
 
@@ -43,8 +43,8 @@ When options are otherwise equal under this list, choose the one more useful to 
 | Quantitative utility | Ten deterministic task templates, including legitimate authorized high-risk actions |
 | Development split | Five separate base cases that never enter reported estimates |
 | Contract lock | End of club week 5 |
-| Full protocol freeze | Gate 3, no later than Wednesday, November 11, 2026, before official outcomes are inspected |
-| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved after the Gate 3 freeze, by club week 12 |
+| Full protocol freeze | Gate 3, no later than Saturday, November 14, 2026, before official outcomes are inspected |
+| Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved after the Gate 3 freeze, in club weeks 12 and 13 |
 | Absolute data cutoff | Sunday, November 22, 2026 |
 | Public release freeze | No later than Sunday, December 6, 2026 |
 | Required public proof | Repository, sanitized frozen evidence, no-key report/replay, captioned video, and accessible paper/report |
@@ -207,7 +207,7 @@ The list below is the planned full scope. Section 12 and the frozen `protocol/ac
 - A live dashboard or any static page outside the bounded replay-only exception below.
 - An external workshop submission during the term.
 
-D1_POLICY_GATE+D2_DATAMARKING composition may begin after Demo Day only as a new, separately versioned experiment. A no-backend static replay page is the sole optional fall exception. It is eligible only after an empirical Gate 4 passes by November 15 and only if the generated-results paper draft, terminal replay, video script, accessibility pipeline, and every required release artifact pass their checks. The project lead may authorize it no later than Tuesday, November 17. It may consume at most four total person-hours and all work on it ends by November 22. It is ineligible at `ENGINEERING`, may display only frozen sanitized data, and may not add a model call, experimental condition, public input surface, or dependency that can delay a required artifact. It is cut automatically if Gate 4 uses its contingency window or any prerequisite slips.
+D1_POLICY_GATE+D2_DATAMARKING composition may begin after Demo Day only as a new, separately versioned experiment. A no-backend static replay page is the sole optional fall exception. It is eligible only after an empirical Gate 4 passes by November 15 and only if the generated-results paper draft, terminal replay, video script, accessibility pipeline, and every required release artifact pass their checks. The project lead may authorize it no later than Tuesday, November 17. It may consume at most four total person-hours and all work on it ends by November 22. It is ineligible at `ENGINEERING`, may display only frozen sanitized data, and may not add a model call, experimental condition, public input surface, or dependency that can delay a required artifact. It is cut automatically if Gate 4 uses its contingency window or any prerequisite slips. For the fall 2026 run it is cut: [decision 0029](docs/decisions/0029-gate-chain-shift.md) moves Gate 4's target to November 19.
 
 ---
 
@@ -1291,7 +1291,7 @@ Presentation criteria may change presentation emphasis or demo wording. They do 
 
 ### End of week 8 — full protocol freeze
 
-This freeze is Gate 3, no later than Wednesday, November 11, 2026. Elsewhere in this specification, "the week-8 freeze" and "freeze … in week 8" name it, whatever club week it falls in.
+This freeze is Gate 3, no later than Saturday, November 14, 2026. Elsewhere in this specification, "the week-8 freeze" and "freeze … in week 8" name it, whatever club week it falls in.
 
 Freeze and hash the artifacts applicable to the selected tier:
 
@@ -1358,8 +1358,8 @@ Gate status is evidence-based and recorded against a commit, manifest, and date.
 |---|---|---|
 | Gate 1 — vertical slice and contract lock | September 27 | One excluded base renders as attack and exact clean twin through C2/C3/C4; all six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`; structural diff, payload round-trip, schemas, deterministic scores, mock CI, and no-key replay pass; the measurement contract is versioned |
 | Gate 2 — development instrument | October 11 | The 90-cell one-repeat development grid and 15 clean task-coverage smokes complete; forced stop/resume creates no gaps, duplicates, or repeated effects; D1_POLICY_GATE/D2_DATAMARKING receive binary readiness decisions; cost and context-window forecasts support the proposed tier; demo/replay succeeds twice |
-| Gate 3 — protocol freeze | November 11 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container, fixtures, and hashes reconcile in `protocol/active.json` |
-| Gate 4 — data or validation integrity | November 15 target; November 22 absolute cutoff | Scheduled cells or validation checks, missingness, comparability, IDs, hashes, resets, attempt histories, raw-to-endpoint recomputation, sanitized manifests, and generated outputs pass; all claims match the active tier |
+| Gate 3 — protocol freeze | November 14 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container (or, for a host run, the host environment [decision 0029](docs/decisions/0029-gate-chain-shift.md) names), fixtures, and hashes reconcile in `protocol/active.json` |
+| Gate 4 — data or validation integrity | November 19 target; November 20 final supported-results decision; November 22 absolute cutoff | Scheduled cells or validation checks, missingness, comparability, IDs, hashes, resets, attempt histories, raw-to-endpoint recomputation, sanitized manifests, and generated outputs pass; all claims match the active tier |
 | Gate 5 — release candidate | December 3 | Fresh-clone `make report` and `make replay` pass without a key or network in under five minutes; citations, licenses, accessibility, offline media, replay, and failure-mode rehearsals pass; release hashes agree |
 
 Mandatory responses are outcome-blind:

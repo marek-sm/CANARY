@@ -294,7 +294,7 @@ grid, and report code landing elsewhere in `analysis/` doesn't refuse. Neither d
 `analysis/price_bound.py`, and the budget report names the bound it used. The budget
 counts the development trials already used from the spend ledger, never a typed number,
 and the ledger's rates and per-trial bound are `analysis/price_bound.py`'s. The paid-run record
-plays no part, so decision 0025 item 4's November 7 close evaluates whatever grid records
+plays no part, so the Gate 2 step's close (decision 0025 item 4; November 10 under decision 0029) evaluates whatever grid records
 exist. A mock run with no provenance is allowed, and each report's `code_check` says so; a
 non-mock run with none is refused, so deleting the file can't evade the check. Any later
 script that scores a paid grid calls the same check.

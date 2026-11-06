@@ -1,6 +1,6 @@
 # 0025: Replace decision 0024 and target the full `F20` study
 
-- Status: Accepted. Approved by the project lead on 2026-11-02; drafted with AI assistance.
+- Status: Accepted. Approved by the project lead on 2026-11-02; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md).
 - Date: 2026-11-02
 - Decision scope: Protocol
 - Secondary scopes: Governance
