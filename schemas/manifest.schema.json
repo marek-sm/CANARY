@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:manifest:0.1.0",
+  "title": "CANARY bundle manifest",
+  "description": "A raw, sanitized, validation, report, or release bundle manifest (SPEC.md Section 8; docs/DATA_CONTRACTS.md). Records file paths, sizes, hashes, the producing commit/configuration, the bundle type, and the sanitizer version. Pre-lock version: additive changes land with fixtures and tests.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "bundle_type",
+    "produced_by_commit",
+    "protocol_id",
+    "sanitizer_version",
+    "created_at",
+    "files"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "bundle_type": {"enum": ["raw", "sanitized", "validation", "report", "release"]},
+    "produced_by_commit": {"type": ["string", "null"]},
+    "container_digest": {"type": ["string", "null"]},
+    "protocol_id": {"type": ["string", "null"]},
+    "experiment_or_validation_id": {"type": ["string", "null"]},
+    "sanitizer_version": {
+      "description": "Null for a raw bundle that the sanitizer did not produce; non-null for a sanitized/release bundle.",
+      "type": ["string", "null"]
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "size_bytes", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "sha256": {"$ref": "#/$defs/hash"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"bundle_type": {"enum": ["sanitized", "release"]}}},
+      "then": {"properties": {"sanitizer_version": {"type": "string", "minLength": 1}}}
+    }
+  ],
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
