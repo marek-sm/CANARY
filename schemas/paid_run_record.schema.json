@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:paid_run_record:1.0.0",
+  "$id": "urn:CANARY:schema:paid_run_record:1.1.0",
   "title": "CANARY paid-run record",
-  "description": "The project lead's dated record that every paid-run condition holds (TASKS.md paid-run condition; decision 0023). runner.paid_run refuses any non-mock provider unless this record validates, the running tool sandbox equals the recorded mock grid's, and the hashed code equals code_sha256.",
+  "description": "The project lead's dated record that every paid-run condition holds (TASKS.md paid-run condition; decision 0023). runner.paid_run refuses any non-mock provider unless this record validates and is committed, its commit is on this history, the running tool sandbox equals the recorded mock grid's, the hashed code equals code_sha256, the installed environment equals environment, and the mock grid at run_path still matches its digests and passes every check.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -12,11 +12,12 @@
     "recorded_commit",
     "sandbox",
     "conditions",
-    "code_sha256"
+    "code_sha256",
+    "environment"
   ],
   "properties": {
     "schema_version": {
-      "const": "1.0.0"
+      "const": "1.1.0"
     },
     "recorded_on": {
       "type": "string",
@@ -61,7 +62,11 @@
             "experiment_id",
             "trials",
             "verify_complete",
-            "tool_sandbox"
+            "tool_sandbox",
+            "run_path",
+            "run_files_sha256",
+            "results_sha256",
+            "events_sha256"
           ],
           "properties": {
             "experiment_id": {
@@ -77,6 +82,19 @@
             "tool_sandbox": {
               "type": "string",
               "minLength": 1
+            },
+            "run_path": {
+              "type": "string",
+              "pattern": "^results/[A-Za-z0-9._/-]+$"
+            },
+            "run_files_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "results_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "events_sha256": {
+              "$ref": "#/$defs/sha256"
             }
           }
         }
@@ -86,15 +104,41 @@
       "type": "object",
       "minProperties": 1,
       "propertyNames": {
-        "pattern": "^((agent|channels|defenses|oracles|runner|tasks|tools|corpus|fixtures|schemas)/|protocol/development_grid_spec\\.json$|uv\\.lock$)"
+        "pattern": "^((agent|analysis|channels|defenses|oracles|runner|tasks|tools|corpus|fixtures|schemas)/|paper/estimand_manifest\\.json$|protocol/development_grid_spec(_fallback)?\\.json$|uv\\.lock$)"
       },
       "additionalProperties": {
         "type": "string",
         "pattern": "^[0-9a-f]{64}$"
       }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python",
+        "packages"
+      ],
+      "properties": {
+        "python": {
+          "type": "string",
+          "minLength": 1
+        },
+        "packages": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
     }
   },
   "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "merged": {
       "type": "object",
       "additionalProperties": false,

@@ -3,7 +3,7 @@
 AI-assisted engineering implementation against main `029b4eb`, October 26, 2026.
 This is review-ready local work, not a scope reacceptance, merged PR, official
 run, or human source/oracle sign-off. No pinned protocol text or locked schema
-was changed. The PR61 audit F-01 paid-path restriction is unchanged.
+was changed. The November 3 note below records what changed since.
 
 ## Implemented
 
@@ -14,7 +14,7 @@ was changed. The PR61 audit F-01 paid-path restriction is unchanged.
   D1_POLICY_GATE and D2_DATAMARKING: 15 cells total.
 - `runner.coverage` uses the W6-T3 durable runner, its native local tools,
   independent delivery audit, utility oracle, schema validation and stored-event
-  result recomputation. It has no live-provider selector. Coverage fixtures are
+  result recomputation. Its live path is gated (November 3 note). Coverage fixtures are
   hash-pinned native W6-T1 resources, not single-record attack overlays; the C2
   open-ticket query preserves both matching rows. Noncanonical channels, attack
   conditions and changed records fail closed.
@@ -90,7 +90,47 @@ manifest, and must never be mixed into official indirect estimates.
   redispatch; incomplete mock runs fail closed and must be preserved/inspected,
   not resumed with possibly duplicate actions.
 - Live clean coverage, C1-cost pilots and official C1 runs remain unperformed.
-  Paid execution remains blocked by PR61 audit F-01; resolving isolation and
-  obtaining the appropriate authorization/gates is separate work.
+  The tool sandbox resolved audit F-01 ([decision 0023](decisions/0023-tool-sandbox.md)).
+  Paid execution now opens only through the paid-run record, once the project lead
+  confirms the paid-run condition in `TASKS.md`.
 - Accountable humans still own source/adaptation review, oracle review, W7-T1
   row reacceptance and merge approval. Nothing was pushed, sent or deployed.
+
+## November 3, 2026 note
+
+Audit follow-up, mock-only and with no provider call:
+
+- **Evidence.** [`evidence/w7-t1/*.json`](evidence/w7-t1) are regenerated with
+  `make w7-t1-evidence` and now record their code commit, code digest,
+  uncommitted hashed paths, and tool sandbox, plus the control and manifest hashes.
+  `tests/test_w7_t1.py` compares those hashes with current code. Result and event
+  hashes aren't compared: a fresh run mints fresh canaries and timestamps, so they
+  differ by design. These two files were regenerated before this change was
+  committed, so their `dirty_paths` list its files; rerun the target after the
+  commit to record a clean tree.
+- **Resume.** A completed `runner.coverage` resume verifies its summary and never
+  rewrites it, and it refuses a changed summary, sink file, fixture, or canary map.
+- **C1.** Every `runner.c1_mock` event carries its time and component versions, and
+  each control and the summary name the sandbox and code. `max_steps` is 8, every
+  template's bound; the earlier 4 had no recorded reason, and the canned actions
+  take at most three steps, so neither bound decides them. The C1 controls'
+  `live_blocker` text dropped the same stale F-01 claim, which changes their hashes.
+- **The live path.** `python -m runner.coverage --live` (`make coverage-live`) runs
+  the 15 cells on a real provider, by hand only, on the project lead's machine
+  (decision 0023 item 8). It takes the paid-run gate first, and every cell takes it
+  again. `make coverage-verify RUN=<dir>` is the matching check for the smokes, and
+  `make raw-manifest RUNS="<dir> ..." OUT=<file>` is the SHA-256 manifest decision
+  0025 item 5 names. Neither has run on a real provider, and both still make no
+  claim about model resistance or defense efficacy.
+
+## November 5, 2026 note
+
+`main` (decisions 0028 and 0029, the stack-gap fixes, and the sandbox death-signal
+fix) is merged into the task variants, mock-only and with no provider call.
+`DELIVERY_VERSION` moves to v0.6.0, past both sides' versions (v0.3.0 here, v0.5.0
+on `main`). `make w7-t1-build` re-pinned the C1 controls and coverage files to the
+merged code, and `make w7-t1-evidence` regenerated
+[`evidence/w7-t1/*.json`](evidence/w7-t1): coverage 15 of 15, C1 4 of 4. As on
+November 3, they were regenerated before the merge was committed, so their
+`dirty_paths` list the merged files; rerun the target after the commit to record a
+clean tree.

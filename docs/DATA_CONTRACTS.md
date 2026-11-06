@@ -12,8 +12,12 @@ This is a readable index, not a duplicate schema. `SPEC.md` Section 8 owns field
 | `result.schema.json` | One logical empirical trial and derived endpoints | Exact schedule keys, requested/resolved model, canaries or references, Boolean-or-null facts, utility, infrastructure status, attempts |
 | `engineering_validation.schema.json` | One frozen `ENGINEERING` check | Validation ID, check ID, deterministic evidence, Boolean-or-null `passed`, failure/indeterminate reasons, versions and hashes; no empirical model estimate |
 | `active_protocol.schema.json` | Machine-readable active tier | Active-contributor count, exact tier, ordered cases, channels, conditions, configurations, repeats, counts, seeds, hashes, cutoffs, model or null-with-reason fields |
-| `paid_run_record.schema.json` | The project lead's dated paid-run record ([decision 0023](decisions/0023-tool-sandbox.md)) | Recorder, commit, tool sandbox, each paid-run condition's evidence, and the SHA-256 of every hashed file; `runner.paid_run` refuses any paid call that doesn't match it |
+| `paid_run_record.schema.json` | The project lead's dated paid-run record ([decision 0023](decisions/0023-tool-sandbox.md)) | Recorder, commit, tool sandbox, each paid-run condition's evidence, the mock grid's path and digests, the installed Python and packages, and the SHA-256 of every hashed file; `runner.paid_run` refuses any paid call that doesn't match it |
+| `spend_ledger.schema.json` | One line of the local spend and pilot ledger (`runner/spend_ledger.py`) | The October 10 seed, then a start and a finish per paid invocation, priced from its `provider_attempt` usage; a local count to reconcile with the provider's console, never evidence or a released artifact |
 | `manifest.schema.json` | Raw, sanitized, validation, report, or release bundle | File paths, sizes, hashes, producing commit/configuration, bundle type, sanitizer version |
+| `schedule_spec.schema.json` | The committed spec `runner.schedule` expands into trials | Safe experiment and base IDs, model, seed, the `SPEC.md` channel, condition, and configuration enums, repeats of at least 1; `runner.grid_dev` and `runner.sweep` refuse a spec it refuses |
+
+`schedule_spec` is committed at `0.1.0` and is unlocked: it isn't a contract schema under decision 0009, so it may be revised. `runner.raw_manifest`'s decision 0025 evidence manifest keeps its own format. `runner.execute` validates every base case against `base_case.schema.json` when it loads one.
 
 Names may change before the first schema commit, but the families and semantics may not disappear. Once referenced by frozen data, filenames and schema IDs are versioned rather than silently repurposed.
 

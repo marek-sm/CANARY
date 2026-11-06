@@ -93,17 +93,19 @@ def test_budget_prices_from_events_when_the_result_total_is_unknown():
         _attempt("model_response", {"input_tokens": 400, "output_tokens": 40}),
         _attempt("model_response", {"input_tokens": 600, "output_tokens": 60}),
     ]
-    expected = 1000 * gate2_budget.DEFAULT_INPUT_USD_PER_TOKEN + 100 * gate2_budget.DEFAULT_OUTPUT_USD_PER_TOKEN
+    expected = 1000 * gate2_budget.INPUT_USD_PER_TOKEN + 100 * gate2_budget.OUTPUT_USD_PER_TOKEN
     assert gate2_budget.trial_cost_usd(record, events) == pytest.approx(expected)
     events.append(_attempt("model_response", {"input_tokens": None, "output_tokens": None}))
     with pytest.raises(ValueError, match="without recorded usage"):
         gate2_budget.trial_cost_usd(record, events)
 
 
-def test_budget_cli_requires_the_reserve_term(tmp_path, capsys):
-    with pytest.raises(SystemExit):
-        gate2_budget.main([str(tmp_path), "--remaining-balance-usd", "9.9", "--conservative-c1-trial-cost-usd", "0.03"])
-    assert "--reserve-usd" in capsys.readouterr().err
+def test_budget_cli_computes_the_reserve_and_refuses_a_typed_one(tmp_path, capsys):
+    """The reserve, and the development trials it subtracts, come from the bound and the spend ledger."""
+    for typed in (["--development-trials-used", "107"], ["--reserve-usd", "0.01"]):
+        with pytest.raises(SystemExit):
+            gate2_budget.main([str(tmp_path), "--remaining-balance-usd", "9.9", *typed])
+        assert typed[0] in capsys.readouterr().err
 
 
 def test_grid_usage_summary_counts_unknown_usage_apart():

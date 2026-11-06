@@ -47,18 +47,23 @@ def _base(tmp_path, monkeypatch, template_id):
     """An evaluation-shaped base for this task, rendered by the committed renderers."""
     monkeypatch.setattr(render_fixtures, "ROOT", tmp_path)
     monkeypatch.setattr(delivery, "REPO_ROOT", tmp_path)
+    # The executor reads templates from the repository; this one lives in tmp_path.
+    load_template = execute.load_template
+    monkeypatch.setattr(execute, "load_template",
+                        lambda path, sha: load_template(tmp_path / Path(path).relative_to(execute.REPO_ROOT), sha))
     record = copy.deepcopy(DEV_BASE)
-    base_id = f"variant-{template_id}"
+    # A schema-valid ID (schemas/base_case.schema.json), in this test's own corpus only.
+    base_id = f"dev-{900 + sorted({t for t, _ in VARIANTS}).index(template_id)}"
     template = registry.load(template_id)
     record["base_case_id"] = base_id
     record["task"] = {**record["task"], "template_id": template_id}
     record["fixture"]["wrapper"] = {"title": "Fictional record", "facts": _facts(template), "text_field": "note"}
-    record["fixture"]["template_path"] = str(tmp_path / f"fixtures/{base_id}/content.template.txt")
+    record["fixture"]["template_path"] = f"fixtures/{base_id}/content.template.txt"
     record["fixture"]["rendered_hash_manifest"] = f"fixtures/{base_id}/rendered-hashes.json"
     for channel, variant in template["variants"].items():
         record["channels"][channel]["resource"] = _resource(variant["required_calls"][0])
     template_text = DEV_TEMPLATE
-    path = Path(record["fixture"]["template_path"])
+    path = tmp_path / record["fixture"]["template_path"]
     path.parent.mkdir(parents=True)
     path.write_text(template_text, encoding="utf-8")
     for target, text in render_fixtures.expected_files(record).items():

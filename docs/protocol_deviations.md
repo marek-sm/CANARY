@@ -155,3 +155,38 @@ The superseded text is `SPEC.md` v1.17.0 in Git history, with Section 7 pinned a
 ### Claim impact
 
 None. No table, figure, README value, demo aggregate, or report sentence exists that depends on this text. Section 14 gains the limitation that decision 0026 states.
+
+## DEV-0004 — Section 7 left the request log and final-output surfaces undefined at the step limit and for a tool-free trial
+
+- Date detected: 2026-11-03
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.18.0 (Section 7 pinned under decision 0026)
+- New protocol version: `SPEC.md` v1.19.0
+- Prior experiment/validation ID: None. No experiment or validation ID exists before Gate 3.
+- Replacement experiment/validation ID: Not applicable (Section 11 step 3): no experiment or validation ID exists to replace.
+- Affected cells/checks/artifacts: the malformed-call paragraph in `SPEC.md` Section 7, the content-filter sentence in Section 9, the Section 14 limitations, the version header, the Section 7 and Failure and retry policy pins in `tests/test_contract_lock.py`, `agent/loop.py`, `runner/execute.py`, the new `cut_off_text` and `unrecorded_tool_call` fields of `trial_ended`, the new `grants` field of `trial_started`, the new `disclosure_scan` diagnostic field of a result, `DELIVERY_VERSION`, `oracles/authorization/audit.py`'s type-strict parameter comparison, `docs/DATA_RELEASE.md`, and `tests/test_scoring_surfaces.py`.
+- Outcome visibility at decision time: None. No evaluation candidate is on `main`, no paid grid call has run, and no development or evaluation outcome exists.
+
+### Defect
+
+Two independent checks found the grid path scoring an empty request log as null when Section 7's rule makes it false, leaving a filtered call's dispatch facts and D1_POLICY_GATE `disposition_observed` null when Section 9 and the Section 7 definition make them false, and keeping false action facts after an infrastructure failure left the log incomplete. Section 7 also never said whether a step-limit ending completes the final-output surface, and null there drops the pair where D1_POLICY_GATE won from the residual-risk comparison.
+
+### Scope determination
+
+Changed nullability is material (`docs/DATA_CONTRACTS.md`), so this entry lists every change even where the code only conforms to existing text. The formulas, the locked schemas, the gate, the audit, and utility don't change. `score_tool_events` keeps its null for a caller that doesn't report a complete log. Text-only cells outside tool-result delivery don't change. DEV-0003's statement that the loop already followed the reply rule was wrong for a filtered reply reusing a provider ID, and this corrects it.
+
+### Required response
+
+Decision 0028 states the two surfaces in Section 7, re-pins it, and conforms the grid path, and `SPEC.md` moves to v1.19.0. No symmetric rerun or validation rerun is required (Section 11 step 5), because no evaluation result exists. The change merges before the first paid grid call, while no outcome exists.
+
+### Preserved evidence
+
+The superseded text is `SPEC.md` v1.18.0 in Git history, with Section 7 pinned at SHA-256 `9466163d21ca58eb718ee4413b1b9f8d2bfcdcedead5f646318a2c1ad6f6a2e4` and the Failure and retry policy at `221288a8a0a3e192cfaa7d6ea773a191729b53a066cc3b6ce7d689ed8e3d45f4`.
+
+### Claim impact
+
+None. No table, figure, README value, demo aggregate, or report sentence exists that depends on these surfaces.
+
+### Verification
+
+`tests/test_scoring_surfaces.py` runs each surface through real tool-result delivery under each configuration. `tests/test_contract_lock.py` passes with only the Section 7 and Failure and retry policy values updated, and `tests/test_tool_event_scoring.py`, `tests/test_corpus_rules_freeze.py`, and `tests/test_request_effect.py` pass unchanged.

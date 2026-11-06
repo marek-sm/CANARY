@@ -40,7 +40,8 @@ t1-suite:
 	python -m runner.task_suite --out "$$(mktemp -d)/task-suite"
 
 # Paid: one real call sequence on the decision 0010 development candidate (Anthropic).
-# Run by hand only; refuses when CI or any ANTHROPIC_* or OPENAI_* variable is set.
+# Run by hand only; refuses when CI or any ANTHROPIC_* or OPENAI_* variable is set, and
+# without python -m runner.spend_ledger init and set-cap, which the project lead runs once.
 .PHONY: live-smoke
 live-smoke:
 	python -m runner.live_smoke
@@ -71,11 +72,27 @@ grid-verify:
 grid-summary:
 	python3 -m runner.grid_dev summary "$(RUN)"
 
-gate2-budget:
-	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" --conservative-c1-trial-cost-usd "$(C1_COST)" --reserve-usd "$(RESERVE)" $(if $(OUT),--out "$(OUT)")
+# Renders recorded traces: an events file, a trial, or every trial of a run (default:
+# make grid-mock's output). Reads records only: no key, no provider, no network.
+.PHONY: replay
+replay:
+	python3 -m demo.trace "$(or $(RUN),results/development/grid-mock)"
 
-# W7-T1: local/mock only. No provider selector and no development/live credit.
-.PHONY: w7-t1-build w7-t1-check w7-t1-smoke
+# The Gate 3 step runs this (TASKS.md). It generates what main has, the estimand shells,
+# then runs W8-T3's analysis and report code, and fails in words until that code exists.
+# REPORT_MODULE is a placeholder name: W8-T3 sets it to the module it commits.
+REPORT_MODULE ?= analysis.report
+.PHONY: report
+report: paper-shells
+	@python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$(REPORT_MODULE)') is None)" || \
+	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) were generated." >&2; exit 2; }
+	python -m $(REPORT_MODULE)
+
+gate2-budget:
+	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" $(if $(TIER),--tier "$(TIER)") $(if $(DEFENSE),--defense "$(DEFENSE)") $(if $(C1_PILOT),--c1-pilot-cost-usd "$(C1_PILOT)") $(if $(OUT),--out "$(OUT)")
+
+# W7-T1: the mock checks are local and earn no development or live credit.
+.PHONY: w7-t1-build w7-t1-check w7-t1-smoke w7-t1-evidence coverage-verify coverage-live raw-manifest
 w7-t1-build:
 	python -m runner.coverage --build
 	python -m corpus.build_c1
@@ -87,3 +104,23 @@ w7-t1-check:
 w7-t1-smoke: w7-t1-check
 	python -m runner.coverage --out "$$(mktemp -d)/coverage"
 	python -m runner.c1_mock --out "$$(mktemp -d)/c1"
+
+# Regenerates docs/evidence/w7-t1 from fresh mock runs of this checkout's code.
+w7-t1-evidence: w7-t1-build
+	@tmp=$$(mktemp -d); \
+	trap 'rm -rf "$$tmp"' EXIT; \
+	python -m runner.coverage --out "$$tmp/coverage" > /dev/null && \
+	python -m runner.c1_mock --out "$$tmp/c1" > /dev/null && \
+	cp "$$tmp/coverage/coverage-summary.json" "$$tmp/c1/c1-summary.json" docs/evidence/w7-t1/
+
+# The smokes' 15-cell check (decision 0025 item 5). Reads records only; makes no provider call.
+coverage-verify:
+	python -m runner.coverage --verify "$(RUN)"
+
+# Paid: the 15 clean smokes on a real provider, through the paid-run gate. Run by hand only (decision 0023 item 8).
+coverage-live:
+	python -m runner.coverage --live $(if $(OUT),--out "$(OUT)") $(if $(filter true,$(RESUME)),--resume)
+
+# The SHA-256 manifest of raw results and events files (decision 0025 item 5): hashes only, safe to commit.
+raw-manifest:
+	python -m runner.raw_manifest $(RUNS) $(if $(OUT),--out "$(OUT)")

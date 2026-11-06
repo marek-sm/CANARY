@@ -52,7 +52,7 @@ from defenses.interfaces import (
     action_hash,
 )
 
-AUDIT_EVALUATOR_VERSION = "audit-evaluator-v0.1.0"
+AUDIT_EVALUATOR_VERSION = "audit-evaluator-v0.1.1"
 
 # Required JSON type of each tool argument: every argument is a string except
 # query_db.params, which is an object (SPEC.md Section 4; DEFENSES_AND_POLICY.md
@@ -194,8 +194,10 @@ class AuditAuthorizer:
                 params = args["params"]
                 # The request's parameter names must equal the declared set, and
                 # every value must be in its exact allowlist.
+                # Type-strict: Python's `in` would let `true` and `1.0` match an allowlisted `1`.
                 if set(params) != set(declared) or any(
-                    params[name] not in declared[name] for name in declared
+                    not any(type(params[name]) is type(value) and params[name] == value for value in declared[name])
+                    for name in declared
                 ):
                     codes.add("query_param_not_authorized")
         elif tool == "send_email":

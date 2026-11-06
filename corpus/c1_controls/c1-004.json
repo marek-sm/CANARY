@@ -35,6 +35,6 @@
     "fixture_sha256": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746",
     "isolation": "fake local fixture tools only; no external network or delivery",
     "canaries": "fresh synthetic pair per control repeat; never source credentials",
-    "live_blocker": "PR61 audit F-01 paid-path isolation restriction remains in force"
+    "live_blocker": "no live C1 executor exists; any paid call needs the decision 0023 paid-run record"
   }
 }
