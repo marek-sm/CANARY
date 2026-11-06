@@ -308,6 +308,44 @@ def test_a_killed_paid_trial_is_charged_and_its_resume_counts_once(gate, tmp_pat
     assert spend_ledger.totals(spend_ledger.read())[1] == 2
 
 
+class DeadKeyFirst(FakePaid):
+    """The run's first call meets a dead key, as a revoked key would; later calls answer."""
+
+    def complete(self, messages, tool_schemas, decoding, model_request):
+        if not self.calls:
+            self.calls.append(model_request["model"])
+            return {"outcome": "no_model_content", "provider_request_id": None, "model_requested": model_request["model"],
+                    "model_resolved": None, "provider_fingerprint": None, "raw_response": None,
+                    "usage": {"input_tokens": None, "output_tokens": None},
+                    "error": {"type": "AuthenticationError", "status": 401, "provider_code": None,
+                              "provider_type": "authentication_error"}}
+        return super().complete(messages, tool_schemas, decoding, model_request)
+
+
+def test_a_paid_trial_the_stop_rule_stops_is_priced_and_its_resume_adds_no_trial(gate, tmp_path):
+    """Decision 0029's stop leaves the trial open, so its ledger entry closes with the
+    attempt it made, and the resume after the fix adds no development trial."""
+    gate.open()
+    corpus = gate.root / "corpus" / "development"
+    calls, usage = [], {"input_tokens": 1000, "output_tokens": 100}
+    schedule = grid_dev.validate_grid_spec(gate.spec)[:2]
+
+    def factory(trial, canaries):
+        return DeadKeyFirst(execute.delivery_provider_factory(corpus)(trial, canaries), calls, usage)
+
+    with pytest.raises(execute.RunWideFailure):
+        execute.run_schedule(tmp_path / "grid", schedule, corpus_root=corpus, spec=gate.spec, delivery=True,
+                             provider_factory=factory)
+    lines = _lines()
+    assert [line["phase"] for line in lines] == ["seed", "started", "finished"]  # the second trial never started
+    assert lines[2]["attempts"] == 1 and lines[2]["cost_usd"] == pytest.approx(spend_ledger.REQUEST_BOUND_USD)
+    _, resume = _paid_grid(gate, tmp_path / "grid", 2, resume=True)
+    resume()
+    started = [line for line in _lines() if line["phase"] == "started"]
+    assert [line["new_trial"] for line in started] == [True, False, True]
+    assert spend_ledger.totals(spend_ledger.read())[1] == 3  # the seed's one, then two trials
+
+
 def test_a_mock_grid_writes_no_ledger_line(gate):
     gate.rerun()
     assert [line["phase"] for line in _lines()] == ["seed"]
