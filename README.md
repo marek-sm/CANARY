@@ -127,6 +127,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0028-restore-strength.md`](docs/decisions/0028-restore-strength.md) | Which reductions were repaired, which stayed because reversing would make results worse, and the scorer's surface fixes (DEV-0004, `SPEC.md` v1.19.0) |
 | [`docs/decisions/0029-gate-chain-shift.md`](docs/decisions/0029-gate-chain-shift.md) | Why the W7 slip moved the Gate 2 close to November 10, the tier input to November 11, and Gate 3 to November 14 to keep `F20`, what that costs, and why Demo Day re-planning waits for the confirmed date (`SPEC.md` v1.20.0) |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
+| [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
@@ -166,3 +167,9 @@ tool boundaries, utility evidence, and independent-review requirements.
 `uv run make corpus-check` re-renders every development base and fails if a
 committed fixture or hash drifted, then checks the candidate ledger against the
 development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).
+
+### W7-T2 evaluation intake and selection
+
+`uv run make select` prints the largest prefix the reviewed pool supports, the
+nested smaller prefixes, each base's task, and the recheck samples. It reads only
+candidate metadata, never a result. See [the W7-T2 handoff](docs/W7_T2_HANDOFF.md).

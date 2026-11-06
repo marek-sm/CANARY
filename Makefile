@@ -18,13 +18,16 @@ demo-example:
 demo-example-check:
 	python -m demo.accessibility --check
 
-.PHONY: corpus-fixtures corpus-check
+.PHONY: corpus-fixtures corpus-check select
 corpus-fixtures:
 	python -m corpus.render_fixtures
 
 corpus-check:
 	python -m corpus.render_fixtures --check
 	python -m corpus.intake
+
+select:
+	python -m corpus.select
 
 .PHONY: sandbox-check
 # Decision 0023: every tool process runs sandboxed. Run once on a new machine; it
