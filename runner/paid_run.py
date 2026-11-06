@@ -271,7 +271,7 @@ def check_code_matches_run(run_dir: Path, *, root: Optional[Path] = None) -> str
     scoreable, which matters because the ceiling rules out a second grid, and later report
     code elsewhere in ``analysis/`` doesn't refuse.
 
-    The record plays no part, so decision 0025 item 4's November 7 close evaluates whatever
+    The record plays no part, so the Gate 2 step's close (decision 0025 item 4; November 10 under decision 0029) evaluates whatever
     grid records exist, and a new record can't evade this. A mock run without provenance
     stays allowed, and the returned note, which goes in the report, says so; a non-mock run
     without it is refused, or deleting the file would evade the check.

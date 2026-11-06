@@ -1,6 +1,6 @@
 # 0028: Fix the scorer's surfaces, enforce what was only stated, and keep what reversing would damage
 
-- Status: Accepted. Directed by the project lead on 2026-11-03 and approved by merging this record; drafted with AI assistance.
+- Status: Accepted. Directed by the project lead on 2026-11-03 and approved by merging this record; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md).
 - Date: 2026-11-03
 - Decision scope: Protocol
 - Secondary scopes: Governance, Budget
