@@ -162,7 +162,10 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
   through `tools/no_exec.py`, whose seccomp filter fails every `execve`,
   `execveat`, `ptrace`, and `process_vm_writev` before the tool's first line
   runs, with the tool as the sandbox's only process (`--as-pid-1`), so the
-  programs in the mounted system-library folders can't run.
+  programs in the mounted system-library folders can't run. `tools/no_exec.py`
+  also sets SIGKILL as the tool's death signal again after the exec, because the
+  kernel can clear the one bwrap's `--die-with-parent` set, and a tool that
+  outlives a killed bwrap would keep every child it forked.
 - `environment(write=())` is the only environment a tool process gets: `PATH`,
   `LANG`, and `TMPDIR` set to its first writable directory. No provider variable
   ever enters it.
