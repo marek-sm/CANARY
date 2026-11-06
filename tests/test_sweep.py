@@ -74,7 +74,7 @@ def test_a_sweep_runs_at_116_development_trials_and_verifies(gate, provider, cor
     _run(provider, corpus, out)
     report = sweep.verify_sweep(out, corpus)
     assert report == {"trials_expected": 18, "trials_found": 18, "missing": 0, "status_counts": {"completed": 18},
-                      "protocol_versions": ["1.19.0"]}
+                      "protocol_versions": ["1.19.0"], "run_wide_stops": [], "complete": True}
     for results in out.glob("*/results.jsonl"):
         [record] = [json.loads(line) for line in results.read_text(encoding="utf-8").split("\n") if line]
         assert record["split"] == "evaluation" and ":v1-19-0:" in record["logical_trial_id"] and record["channel"]
@@ -87,7 +87,8 @@ def test_verify_prints_no_outcome_aggregate(gate, provider, corpus, tmp_path, ca
     _run(provider, corpus, tmp_path / "sweep")
     assert sweep.main(["verify", str(tmp_path / "sweep"), "--corpus-root", str(corpus)]) == 0
     printed = json.loads(capsys.readouterr().out)
-    assert set(printed) == {"trials_expected", "trials_found", "missing", "status_counts", "protocol_versions"}
+    assert set(printed) == {"trials_expected", "trials_found", "missing", "status_counts", "protocol_versions",
+                            "run_wide_stops", "complete"}
 
 
 @pytest.mark.parametrize("change, reason", [
