@@ -3,18 +3,34 @@
 Uses the W6-T3 durable runner and real local task tools, not answer injection.
 The native W6-T1 fixture is already the canonical adapter for these tasks; no
 attack/clean overlay is appropriate (in particular, the ticket query has two
-rows). All provider execution here is mock-only and earns no development credit.
+rows). A mock run earns no development credit and never counts as a smoke.
+
+The project lead's live smokes (``--live``, decision 0023 item 8) run the same 15
+cells on a real provider. They open only through ``runner.paid_run``'s gate, which
+this path checks first and every cell checks again, and they write raw records
+only where Git can't take them. ``--verify`` is the 15-cell check decision 0025
+item 5 calls the matching check for the smokes: every result recomputes from its
+events, and each cell's evidence holds. It makes no provider call.
+
+Usage:
+  python -m runner.coverage --build | --check
+  python -m runner.coverage --out DIR [--resume]
+  python -m runner.coverage --verify RUN
+  python -m runner.coverage --live [--out DIR] [--resume] [--provider anthropic|openai] [--env-file PATH] [--model ID]
 """
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from dataclasses import replace
 import hashlib
 import json
+import os
 from pathlib import Path
+import sys
 
 from channels.render import INSERTION_MARKER
-from runner import execute
+from runner import execute, grid_dev, paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
 from runner.schedule import CONFIGURATIONS, generate_schedule
@@ -24,6 +40,13 @@ ROOT = registry.ROOT
 CASES = ROOT / "corpus/task_coverage"
 MANIFEST = ROOT / "tasks/coverage-smokes.json"
 VERSION = "task-coverage-v0.1.0"
+SUMMARY_VERSION = "coverage-summary-v0.2.0"
+SUMMARY_FILE = "coverage-summary.json"
+DEFAULT_LIVE_OUT = ROOT / "results/development/coverage-live"
+MOCK_EXPERIMENT = "w7-t1-coverage-mock"
+LIVE_EXPERIMENT = "w7-t1-coverage-live"
+SEED = "w7-t1-coverage-v1"
+EXPECTED_CELLS = 15
 # Fixed before outcomes; complement of the development-base task assignment.
 CANONICAL = {
     "invoice-receipt-email": "C3",
@@ -115,11 +138,11 @@ def build(check=False):
             path.write_text(text, encoding="utf-8")
 
 
-def schedule(experiment_id="w7-t1-coverage-mock", seed="w7-t1-coverage-v1"):
+def schedule(experiment_id=MOCK_EXPERIMENT, seed=SEED, model=MOCK_MODEL_ID):
     build(check=True)
     result = []
     for case in manifest()["cases"]:
-        spec = {"experiment_id": experiment_id, "model_id": MOCK_MODEL_ID, "seed": seed,
+        spec = {"experiment_id": experiment_id, "model_id": model, "seed": seed,
                 "base_case_ids": [case["base_case_id"]], "channels": [case["channel"]],
                 "conditions": ["clean"], "configurations": list(CONFIGURATIONS), "repeats": 1}
         for trial in generate_schedule(spec):
@@ -127,45 +150,162 @@ def schedule(experiment_id="w7-t1-coverage-mock", seed="w7-t1-coverage-v1"):
     return result
 
 
-def run(out, resume=False):
-    trials = schedule()
-    execute.run_schedule(out, trials, corpus_root=CASES, delivery=True, resume=resume,
-                         spec={"coverage_manifest": manifest(), "provider": "mock_only"})
-    cells = []
+def _run_spec(provider, experiment_id, model):
+    return {"coverage_manifest": manifest(), "provider": provider, "experiment_id": experiment_id,
+            "seed": SEED, "model_id": model}
+
+
+def _one_value(values, what):
+    """The one value a whole run recorded; a run that recorded two is refused."""
+    distinct = {json.dumps(v, sort_keys=True) for v in values}
+    if len(distinct) != 1:
+        raise ValueError(f"the run didn't record one {what}: {sorted(distinct)[:3]}")
+    return json.loads(distinct.pop())
+
+
+def verify(out):
+    """Fail closed unless ``out`` holds exactly the 15 predeclared cells, each with no
+    repeated tool fact, its real defense path, its pinned resource, and a result that
+    recomputes from its events. Returns the summary; a mock run says it is one."""
+    out = Path(out)
+    spec = json.loads((out / execute.SPEC_FILE).read_text(encoding="utf-8"))
+    if spec.get("coverage_manifest") != manifest():
+        raise ValueError(f"{out.name} ran another manifest than this checkout predeclares; check it from the run's own commit")
+    trials = schedule(spec["experiment_id"], spec["seed"], spec["model_id"])
+    expected = {execute.trial_slug(trial) for trial in trials}
+    found = {path.parent.name for path in out.glob(f"*/{RESULTS_FILE}")}
+    directories = {path.name for path in out.iterdir() if path.is_dir()}
+    missing, extra = sorted(expected - found), sorted(directories - expected)
+    if missing or extra:
+        raise ValueError(f"coverage verify failed: missing={missing[:3]}, extra={extra[:3]}")
+
+    cells, pairs, sandboxes = [], [], []
+    checked, statuses = Counter(), Counter()
     for trial in trials:
         directory = out / execute.trial_slug(trial)
-        result, = read_jsonl(directory / RESULTS_FILE, "result")
+        records = read_jsonl(directory / RESULTS_FILE, "result")
+        if len(records) != 1:
+            raise ValueError(f"{trial.logical_trial_id}: expected one result, found {len(records)}")
+        result = records[0]
         events = read_jsonl(directory / EVENTS_FILE, "event")
-        base = json.loads((CASES / f"{trial.base_case_id}.json").read_text())
-        audited = execute.delivery_audit(events=events, trial=trial, base=base, canaries=result["canaries"])
-        recomputed = execute.assemble_result(trial, events, result["canaries"], None, tool_events=audited, base=base)
-        if result != recomputed:
-            raise ValueError("stored coverage result does not recompute")
+        checked[trial.configuration] += grid_dev.check_trial_behavior(result, events)
+        pairs.append((trial, result))
+        statuses[result["status"]] += 1
+        sandboxes.append(events[0]["component_versions"].get("tool_sandbox"))
         cells.append({"logical_trial_id": trial.logical_trial_id, "utility_pass": result["utility"]["pass"],
-                      "result_sha256": digest_text((directory / RESULTS_FILE).read_text()),
-                      "events_sha256": digest_text((directory / EVENTS_FILE).read_text())})
-    report = {"version": VERSION, "provider": "mock_only", "development_credit": 0,
-              "excluded_from_estimates": True, "cells": cells, "passed": sum(c["utility_pass"] is True for c in cells)}
-    (out / "coverage-summary.json").write_text(json.dumps(report, indent=2) + "\n")
-    if report["passed"] != 15:
-        raise ValueError(f"only {report['passed']}/15 mock coverage cells passed")
+                      "result_sha256": hashlib.sha256((directory / RESULTS_FILE).read_bytes()).hexdigest(),
+                      "events_sha256": hashlib.sha256((directory / EVENTS_FILE).read_bytes()).hexdigest()})
+    execute.check_stored_run(out, pairs, corpus_root=CASES)
+
+    lines = registry.jsonl_records((out / paid_run.PROVENANCE_FILE).read_text(encoding="utf-8"))
+    # What the paid gate compares: hashed code, not commits, so a docs-only commit between a kill
+    # and its resume runs the same code. It names the first invocation's commit, so no resume changes it.
+    code = _one_value([{key: line.get(key) for key in ("code_digest", "dirty_paths")} for line in lines], "code version")
+    mock = spec["provider"] == "mock_only"
+    return {
+        "version": VERSION, "summary_version": SUMMARY_VERSION, "provider": spec["provider"],
+        "model_requested": spec["model_id"], "mock": mock,
+        "development_credit": 0 if mock else len(cells), "excluded_from_estimates": True,
+        "trials_expected": EXPECTED_CELLS, "trials_found": len(cells),
+        "manifest_sha256": registry.digest(manifest()),
+        "case_hashes": {case["base_case_id"]: case["case_sha256"] for case in manifest()["cases"]},
+        "tool_sandbox": _one_value(sandboxes, "tool sandbox"),
+        "code_provenance": {"code_commit": lines[0].get("code_commit"), **code},
+        "delivered_resources_checked": {name: checked[name] for name in CONFIGURATIONS},
+        "status_counts": dict(sorted(statuses.items())),
+        "cells": cells, "passed": sum(c["utility_pass"] is True for c in cells),
+    }
+
+
+def _execute(out, spec, *, resume, provider_factory=None, decoding=execute.DECODING):
+    trials = schedule(spec["experiment_id"], spec["seed"], spec["model_id"])
+    execute.run_schedule(out, trials, corpus_root=CASES, delivery=True, resume=resume, spec=spec,
+                         provider_factory=provider_factory, decoding=decoding)
+    report = verify(out)
+    summary = out / SUMMARY_FILE
+    text = json.dumps(report, indent=2) + "\n"
+    # A completed run's summary is evidence: a resume checks it and never rewrites it.
+    if resume and summary.exists():
+        if summary.read_text(encoding="utf-8") != text:
+            raise ValueError(f"{SUMMARY_FILE} differs from what this run's evidence produces")
+    else:
+        execute._write_durably(summary, text)
     return report
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def run(out, resume=False):
+    report = _execute(out, _run_spec("mock_only", MOCK_EXPERIMENT, MOCK_MODEL_ID), resume=resume)
+    if report["passed"] != EXPECTED_CELLS:
+        raise ValueError(f"only {report['passed']}/{EXPECTED_CELLS} mock coverage cells passed")
+    return report
+
+
+def live_refusal():
+    """Why a live smoke can't start here, or ``None``: the paid-run gate's own answer."""
+    if os.environ.get("CANARY_PAID_RUN_ACK") != "1":
+        return ("set CANARY_PAID_RUN_ACK=1 only after the project lead confirms the paid-run condition "
+                "(TASKS.md) and writes the paid-run record")
+    return paid_run.paid_run_refusal()
+
+
+def run_live(out, env_file, provider_name="anthropic", model=None, resume=False):
+    """The 15 smokes on a real provider. A wrong answer is data, not a failed run."""
+    reason = live_refusal() or execute.raw_evidence_refusal(out)
+    if reason:
+        raise paid_run.PaidRunRefused(reason)
+
+    from runner import live_smoke
+    from runner.provider_config import load_api_key
+
+    config = live_smoke.PROVIDERS[provider_name]
+    config["check"](config["decoding"])
+    try:
+        key = load_api_key(Path(env_file), config["key"])
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"{env_file} must hold exactly one {config['key']}= line") from exc
+    if not key:
+        raise ValueError(f"{config['key']} in {env_file} is empty")
+    adapter = config["adapter"](config["module"].build_client(key))
+    del key
+    paid_run.require_paid_run(adapter)  # the gate on this provider; execute_trial asks again for every cell
+    spec = _run_spec(provider_name, LIVE_EXPERIMENT, model or config["model"])
+    return _execute(out, spec, resume=resume, provider_factory=lambda trial, canaries: adapter,
+                    decoding=config["decoding"])
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--build", action="store_true")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--resume", action="store_true")
-    args = parser.parse_args()
+    parser.add_argument("--verify", type=Path, metavar="RUN", help="check a run's 15 cells; makes no provider call")
+    parser.add_argument("--live", action="store_true", help="run on a real provider (hand only; paid-run gate applies)")
+    parser.add_argument("--provider", choices=("anthropic", "openai"), default="anthropic")
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
+    parser.add_argument("--model", default=None, help="defaults to the provider's decision 0010 model")
+    args = parser.parse_args(argv)
     if args.build or args.check:
         build(check=args.check)
-    if args.out:
+    if args.verify:
+        try:
+            print(json.dumps(verify(args.verify), indent=2))
+        except grid_dev.REFUSALS as exc:
+            print(f"coverage: {exc}", file=sys.stderr)
+            return 1
+    elif args.live:
+        try:
+            report = run_live(args.out or DEFAULT_LIVE_OUT, args.env_file, args.provider, args.model, args.resume)
+        except grid_dev.REFUSALS as exc:  # PaidRunRefused is a ValueError
+            print(f"refusing: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(report, indent=2))
+    elif args.out:
         print(json.dumps(run(args.out, args.resume), indent=2))
-    if not (args.build or args.check or args.out):
-        parser.error("choose --build, --check, or --out")
+    elif not (args.build or args.check):
+        parser.error("choose --build, --check, --out, --verify, or --live")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

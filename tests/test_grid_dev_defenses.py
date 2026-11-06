@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from defenses.interfaces import DATAMARK_MARKER
-from runner import grid_dev
+from runner import grid_dev, paid_run
 from runner.mock_slice import EVENTS_FILE, RESULTS_FILE, read_jsonl
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -159,17 +159,19 @@ def test_live_cli_refuses_with_the_ack_and_a_clean_environment(monkeypatch, tmp_
         if name == "CI" or name.startswith(("ANTHROPIC_", "OPENAI_")):
             monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("CANARY_PAID_RUN_ACK", "1")
+    monkeypatch.setattr(paid_run, "RECORD", tmp_path / "missing.json")
     env_file = tmp_path / "never-read.env"
     with pytest.raises(ValueError, match="paid"):
         grid_dev.run_live_grid(tmp_path / "out", spec=_spec(), env_file=env_file, corpus_root=CORPUS)
     assert not env_file.exists() and not (tmp_path / "out").exists()
 
 
-def test_live_grid_refuses_even_with_the_ack_and_a_clean_environment(monkeypatch):
+def test_live_grid_refuses_even_with_the_ack_and_a_clean_environment(monkeypatch, tmp_path):
     for name in list(__import__("os").environ):
         if name == "CI" or name.startswith(("ANTHROPIC_", "OPENAI_")):
             monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("CANARY_PAID_RUN_ACK", "1")
+    monkeypatch.setattr(paid_run, "RECORD", tmp_path / "missing.json")
     reason = grid_dev.live_run_refusal(CORPUS, _spec())
     assert reason is not None
     assert "paid" in reason

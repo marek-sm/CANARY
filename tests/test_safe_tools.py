@@ -2,6 +2,7 @@
 import json
 import os
 import socket
+import socketserver
 import sqlite3
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
@@ -50,7 +51,8 @@ def test_sqlite_authorizer_denies_mutation_attach_extensions_and_functions(root,
     connection = sqlite3.connect(":memory:")
     try:
         connection.deserialize((root / "fixture.sqlite").read_bytes())
-        connection.enable_load_extension(False)
+        if hasattr(connection, "enable_load_extension"):  # absent where extension loading is compiled out
+            connection.enable_load_extension(False)
         connection.set_authorizer(db.readonly_authorizer)
         with pytest.raises(sqlite3.Error):
             connection.execute(statement)
@@ -85,8 +87,8 @@ def test_database_rejects_links_special_files_and_bad_snapshots(root, tmp_path):
     "http://catalog.fixture.test/products/%73ku-2201", "http://catalog.fixture.test/products/../sku-2201", None, [],
 ])
 def test_url_denial_never_constructs_connection(url, monkeypatch):
-    monkeypatch.setattr(web, "LoopbackConnection", lambda *a, **k: pytest.fail("denied URL connected"))
-    assert not web.fetch_url(url, {"http://catalog.fixture.test/products/sku-2201": "/fixtures/review"}, 1234)["ok"]
+    monkeypatch.setattr(web, "FixtureSocketConnection", lambda *a, **k: pytest.fail("denied URL connected"))
+    assert not web.fetch_url(url, {"http://catalog.fixture.test/products/sku-2201": "/fixtures/review"}, "fixture.sock")["ok"]
 
 
 def test_real_fixture_server_has_exact_routes(root, monkeypatch):
@@ -95,12 +97,13 @@ def test_real_fixture_server_has_exact_routes(root, monkeypatch):
     monkeypatch.setenv("HTTPS_PROXY", "http://example.com:8000")
     monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **k: pytest.fail("fixture fetch used DNS"))
     routes = json.loads((root / "routes.json").read_text())
-    with registry.fixture_service(root) as port:
-        assert web.fetch_url("http://catalog.fixture.test/products/sku-2201", routes, port)["ok"]
+    with registry.fixture_service(root) as endpoint:
+        monkeypatch.chdir(endpoint)
+        assert web.fetch_url("http://catalog.fixture.test/products/sku-2201", routes, "fixture.sock")["ok"]
 
 
 @pytest.mark.parametrize("status", [301, 302, 307, 308])
-def test_redirects_never_follow_location(status):
+def test_redirects_never_follow_location(status, tmp_path, monkeypatch):
     requests = []
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -111,11 +114,17 @@ def test_redirects_never_follow_location(status):
             self.end_headers()
         def log_message(self, *args):
             pass
-    server = HTTPServer(("127.0.0.1", 0), Handler)
+    monkeypatch.chdir(tmp_path)
+
+    class UnixServer(socketserver.UnixStreamServer):
+        pass
+
+    Handler.address_string = lambda self: "fixture-socket"
+    server = UnixServer("redirect.sock", Handler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        assert web.fetch_url("http://content.fixture.test/page", {"http://content.fixture.test/page":"/page"}, server.server_port)["error"] == "fixture_http_status"
+        assert web.fetch_url("http://content.fixture.test/page", {"http://content.fixture.test/page":"/page"}, "redirect.sock")["error"] == "fixture_http_status"
         assert requests == ["/page"]
     finally:
         server.shutdown()

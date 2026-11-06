@@ -5,8 +5,13 @@ default provider is the development candidate; ``--provider openai`` runs the
 declared fallback. It refuses when ``CI`` is set, and when any ambient
 ``ANTHROPIC_*`` or ``OPENAI_*`` variable could redirect or reconfigure a client.
 The key comes only from the explicit env file, stays in this outer process,
-and never reaches the tool worker, whose environment is PATH and LANG only
-(runner.ticket_slice.worker).
+and never reaches the sandboxed tool worker, whose whole environment comes from
+tools.sandbox.environment: PATH, LANG, and TMPDIR for a tool that writes.
+
+It needs no paid-run record, but ``runner.paid_run`` still refuses changed hashed
+code, packages ``uv.lock`` doesn't pin, and anything past ``runner.spend_ledger``'s
+limits, and each smoke counts in that ledger. It exits nonzero unless a
+``model_response`` came back, because nothing less shows the provider accepts the request.
 
 Usage: python -m runner.live_smoke [--provider anthropic|openai] [--env-file .env] [--model ID] [--out DIR]
 """
@@ -20,8 +25,9 @@ from pathlib import Path
 from typing import Optional
 
 from agent import anthropic_adapter, openai_adapter
+from runner import execute
 from runner import mock_slice as base
-from runner import ticket_slice
+from runner import paid_run, ticket_slice
 from runner.provider_config import load_api_key
 
 DEFAULT_PROVIDER = "anthropic"
@@ -40,7 +46,7 @@ PROVIDERS = {
     "openai": {
         "module": openai_adapter, "adapter": openai_adapter.OpenAIChatAdapter,
         "check": lambda decoding: openai_adapter.check_decoding(decoding, has_tools=True), "model": "gpt-6-luna",
-        "decoding": {"endpoint": "chat_completions", "reasoning_effort": "none"},
+        "decoding": {"endpoint": "chat_completions", "reasoning_effort": "none", "max_completion_tokens": 4096},
         "key": "OPENAI_API_KEY", "usage_page": "the OpenAI usage page", "price_step_tokens": None,
     },
 }
@@ -60,15 +66,27 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--provider", choices=sorted(PROVIDERS), default=DEFAULT_PROVIDER)
     parser.add_argument("--env-file", type=Path, default=base.REPO_ROOT / ".env")
-    parser.add_argument("--model", default=None, help="defaults to the provider's decision 0010 model")
+    parser.add_argument("--model", default=None, help="must be the provider's decision 0010 model, the default")
     parser.add_argument("--out", type=Path, default=None, help="new output directory")
     args = parser.parse_args(argv)
     provider = PROVIDERS[args.provider]
-    model = args.model or provider["model"]
+    model = provider["model"]
 
     reason = refusal()
     if reason:
         print(reason, file=sys.stderr)
+        return 2
+    if args.model not in (None, model):
+        print(f"refusing: a {args.provider} pilot runs only its decision 0010 model, {model}", file=sys.stderr)
+        return 2
+    raw = execute.raw_evidence_refusal(args.out or DEFAULT_OUT_ROOT)
+    if raw:
+        print(f"refusing: {raw}", file=sys.stderr)
+        return 2
+    # Before the key is read: the smoke needs no paid-run record, but the rest of the gate still applies.
+    reason = paid_run.paid_run_refusal(live_smoke=True)
+    if reason:
+        print(f"refusing: {reason}", file=sys.stderr)
         return 2
     try:
         key = load_api_key(args.env_file, provider["key"])
@@ -84,7 +102,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     del key
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     out = ticket_slice.run(args.out or DEFAULT_OUT_ROOT / stamp, adapter, model=model, decoding=provider["decoding"],
-                           experiment_id=f"live-dev-{stamp}", analysis_role="excluded_development")
+                           experiment_id=f"live-dev-{stamp}", analysis_role="excluded_development", live_smoke=True)
 
     events = base.read_jsonl(out / base.EVENTS_FILE, "event")
     [result] = base.read_jsonl(out / base.RESULTS_FILE, "result")
@@ -115,6 +133,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         elif any(n is None for n in prompts):
             print(f"warning: a prompt's token count is unknown, so whether it crossed {step:,} tokens is unknown")
     print(f"Compare the token totals with {provider['usage_page']} (decision 0010, Verification).")
+    if not responses:
+        print("no model_response came back, so this smoke doesn't show the provider accepts the request", file=sys.stderr)
+        return 1
     return 0
 
 
