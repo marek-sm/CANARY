@@ -9,7 +9,8 @@ runs the tool in this same interpreter. It also fails ``ptrace`` and
 and bwrap starts the tool as the sandbox's only process (``--as-pid-1``). The
 filter can't be removed, and every thread or child the tool starts inherits it.
 First, it sets the tool's death signal again (``die_with_launcher``), because the
-kernel may clear the one bwrap set when it execs this interpreter.
+kernel may clear the one bwrap set when it execs this interpreter, and the filter
+then fails ``prctl(PR_SET_PDEATHSIG)``, so the tool can't clear it itself.
 macOS needs no bootstrap: its profile already allows running only the
 interpreter.
 
@@ -30,6 +31,8 @@ import sys
 # architecture's unistd.h.
 ARCHES = {"x86_64": (0xC000003E, 59, 322, 101, 311), "aarch64": (0xC00000B7, 221, 281, 117, 271)}
 ARCHES["amd64"], ARCHES["arm64"] = ARCHES["x86_64"], ARCHES["aarch64"]
+PRCTL = {"x86_64": 157, "aarch64": 167, "amd64": 157, "arm64": 167}
+ARG0_LOW = 16  # offsetof(struct seccomp_data, args[0]); its low word, on these little-endian ABIs
 X32_SYSCALL_BIT = 0x40000000
 PR_SET_PDEATHSIG, PR_GET_PDEATHSIG, SIGKILL = 1, 2, 9
 PR_SET_NO_NEW_PRIVS, PR_SET_SECCOMP, SECCOMP_MODE_FILTER = 38, 22, 2
@@ -38,15 +41,22 @@ LD_ABS, JEQ, JGE, RET = 0x20, 0x15, 0x35, 0x06  # BPF_LD|BPF_W|BPF_ABS, BPF_JMP|
 
 
 def program(machine: str) -> list[tuple[int, int, int, int]]:
-    """The filter, as (code, jump if true, jump if false, constant) instructions."""
+    """The filter, as (code, jump if true, jump if false, constant) instructions.
+
+    ``prctl`` is failed only for ``PR_SET_PDEATHSIG``. The kernel reads its option as
+    an int, so only the argument's low word is compared, and no high bits get past."""
     arch, *denied = ARCHES[machine]
+    n = len(denied)
     return [
         (LD_ABS, 0, 0, 4),  # seccomp_data.arch
         (JEQ, 1, 0, arch),
         (RET, 0, 0, KILL),  # another ABI's system calls: never expected
         (LD_ABS, 0, 0, 0),  # seccomp_data.nr
-        (JGE, len(denied) + 1, 0, X32_SYSCALL_BIT),  # x32's numbering on x86_64
-        *((JEQ, len(denied) - i, 0, nr) for i, nr in enumerate(denied)),
+        (JGE, n + 4, 0, X32_SYSCALL_BIT),  # x32's numbering on x86_64
+        *((JEQ, n + 3 - i, 0, nr) for i, nr in enumerate(denied)),
+        (JEQ, 0, 2, PRCTL[machine]),
+        (LD_ABS, 0, 0, ARG0_LOW),
+        (JEQ, 1, 0, PR_SET_PDEATHSIG),
         (RET, 0, 0, ALLOW),
         (RET, 0, 0, DENY),
     ]
@@ -79,7 +89,11 @@ def die_with_launcher() -> None:
     interpreter, and the kernel clears a death signal on a secure exec, as an LSM
     transition such as AppArmor's bwrap profile makes. The tool is pid 1
     (``--as-pid-1``), so if it outlives a killed bwrap, every child it forked does
-    too. Set after the exec, the signal stays: the filter fails every later exec.
+    too. Set after the exec, the signal stays: the filter fails every later exec
+    and every later ``PR_SET_PDEATHSIG``. A change of credentials also clears it,
+    but only a change of kernel user or group IDs or a gain in capabilities, and
+    the tool can make neither: it holds no capability, a user namespace it creates
+    can map only its own IDs, and the capabilities it holds there count as no gain.
     A launcher killed in the instant before this line leaves the tool with no
     death signal; the launch timeout is seconds, and this runs at once.
     """

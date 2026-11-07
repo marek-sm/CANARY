@@ -673,9 +673,12 @@ def test_linux_refuses_a_machine_without_an_exec_filter(monkeypatch):
         sandbox.mode()
 
 
-def _run_filter(program, nr, arch):
-    """Evaluate a seccomp cBPF program (the four opcodes it uses) on one syscall."""
-    data = {0: nr, 4: arch}
+def _run_filter(program, nr, arch, arg0=0):
+    """Evaluate a seccomp cBPF program (the four opcodes it uses) on one syscall.
+
+    ``seccomp_data`` is little-endian on both architectures: ``nr`` at 0, ``arch`` at 4,
+    and the first argument's low and high words at 16 and 20."""
+    data = {0: nr, 4: arch, 16: arg0 & 0xFFFFFFFF, 20: arg0 >> 32}
     accumulator, pc = 0, 0
     while True:
         code, jt, jf, k = program[pc]
@@ -691,8 +694,11 @@ def _run_filter(program, nr, arch):
 
 
 # Written out from <linux/audit.h> and each architecture's unistd.h, not read from no_exec, so a wrong
-# number there fails here: audit arch, then execve, execveat, ptrace, and process_vm_writev.
+# number there fails here: audit arch, then execve, execveat, ptrace, and process_vm_writev. prctl, failed only for
+# PR_SET_PDEATHSIG, is checked in its own test below.
 SYSCALLS = {"x86_64": (0xC000003E, (59, 322, 101, 311)), "aarch64": (0xC00000B7, (221, 281, 117, 271))}
+PRCTL = {"x86_64": 157, "aarch64": 167}
+PR_SET_PDEATHSIG = 1
 EPERM, ALLOW, KILL_PROCESS = 0x00050000 | 1, 0x7FFF0000, 0x80000000
 
 
@@ -705,12 +711,28 @@ def test_the_exec_filter_fails_exactly_the_calls_that_start_a_program(machine):
     for nr in denied:
         assert _run_filter(program, nr, arch) == EPERM, nr
     for nr in range(0, 460):
-        if nr not in denied:
+        if nr not in denied and nr != PRCTL[machine]:
             assert _run_filter(program, nr, arch) == ALLOW, nr
+            assert _run_filter(program, nr, arch, PR_SET_PDEATHSIG) == ALLOW, nr  # e.g. write(1, ...)
     if machine == "x86_64":
         for nr in (0x40000000 | 520, 0x40000000 | 545):  # x32's execve and execveat
             assert _run_filter(program, nr, arch) == EPERM
     assert _run_filter(program, 11, 0x40000003) == KILL_PROCESS  # i386's execve, another ABI
+
+
+@pytest.mark.parametrize("machine", ["x86_64", "aarch64"])
+def test_the_exec_filter_keeps_the_tool_from_changing_its_death_signal(machine):
+    """``no_exec.py`` sets SIGKILL as the tool's death signal; a tool that could set it
+    again, to 0, would outlive a killed bwrap with every child it forked. The kernel
+    reads ``prctl``'s option as an int, so the filter compares only its low word."""
+    from tools import no_exec
+
+    arch, _ = SYSCALLS[machine]
+    program, prctl = no_exec.program(machine), PRCTL[machine]
+    for option in (PR_SET_PDEATHSIG, (1 << 32) | PR_SET_PDEATHSIG, (0xFFFFFFFF << 32) | PR_SET_PDEATHSIG):
+        assert _run_filter(program, prctl, arch, option) == EPERM, hex(option)
+    for option in (0, 2, 15, 16, 38, 0xFFFFFFFF, 1 << 32):  # PR_GET_PDEATHSIG, PR_SET_NAME, ... allowed
+        assert _run_filter(program, prctl, arch, option) == ALLOW, hex(option)
 
 
 def test_on_linux_the_worker_mounts_the_fixture_socket_alone(trial, linux):

@@ -165,7 +165,8 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
   programs in the mounted system-library folders can't run. `tools/no_exec.py`
   also sets SIGKILL as the tool's death signal again after the exec, because the
   kernel can clear the one bwrap's `--die-with-parent` set, and a tool that
-  outlives a killed bwrap would keep every child it forked.
+  outlives a killed bwrap would keep every child it forked. Its filter then fails
+  `prctl(PR_SET_PDEATHSIG)`, so the tool can't clear that signal itself.
 - `environment(write=())` is the only environment a tool process gets: `PATH`,
   `LANG`, and `TMPDIR` set to its first writable directory. No provider variable
   ever enters it.
