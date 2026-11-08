@@ -15,6 +15,9 @@ What changed and why.
 
 - Commands run:
 - Observed results:
+- Tier impact: None | Which row or count changes:
+- Generated artifacts: None | How each was regenerated, and that none was hand-edited:
+- Owner attestation: I can explain this change without notes (`SPEC.md` Section 15):
 
 ## Checks
 

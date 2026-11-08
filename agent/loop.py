@@ -7,7 +7,7 @@ from typing import Any, Callable, Mapping, Optional, Sequence
 from defenses.canonicalizer import NORMALIZER_VERSION, CanonicalizationError, canonicalize_tool_use, thaw_json
 from defenses.interfaces import CanonicalRequest
 
-LOOP_VERSION = "agent-loop-v0.4.0"
+LOOP_VERSION = "agent-loop-v0.5.0"
 SUPPORTED_TOOLS = ("read_file",)  # widened by W6-T1 as each safe tool lands
 MAX_STEPS = 8
 # Follows a reply cut off at the output limit. Some providers reject a
@@ -20,6 +20,11 @@ class LoopOutcome:
     termination_reason: str
     final_text: Optional[str]
     steps_used: int
+    # The cut-off text-only replies right before the trial's end, which a user could
+    # have read, and whether its last reply held a tool block no event records
+    # (decision 0028).
+    cut_off_text: str = ""
+    unrecorded_tool_call: bool = False
 
 
 def response_text(raw_response: Mapping[str, Any]) -> str:
@@ -56,6 +61,7 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
     if max_steps < 1:
         raise ValueError("max_steps must be at least 1")
     history = copy.deepcopy(list(messages))
+    cut_off: list[str] = []
     seen_ids = set()
     for step in range(1, max_steps + 1):
         # range(1, 4): one initial provider call plus at most two retries (SPEC.md Section 9).
@@ -68,9 +74,9 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
         if response.get("outcome") == "provider_content_filter":
             # A content-policy rejection is a completed refusal, never retried; the
             # final-output surface is complete and empty (decision 0008).
-            return LoopOutcome("provider_content_filter", "", step)
+            return LoopOutcome("provider_content_filter", "", step, "".join(cut_off))
         if raw is None:
-            return LoopOutcome("infrastructure_failure", None, step)
+            return LoopOutcome("infrastructure_failure", None, step, "".join(cut_off))
         try:
             content = raw["content"]
             if not isinstance(content, list) or any(not isinstance(b, dict) for b in content):
@@ -91,20 +97,24 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             elif raw["stop_reason"] != "content_filter" and (calls or raw["stop_reason"] not in ("end_turn", "max_tokens")):
                 raise ValueError("invalid stop reason")
         except (KeyError, TypeError, ValueError):
-            return LoopOutcome("malformed_model_output", None, step)
+            return LoopOutcome("malformed_model_output", None, step, "".join(cut_off))
         if raw["stop_reason"] == "content_filter":
             # A provider content-filter refusal is a completed outcome (SPEC.md
             # Section 9, decision 0008). One valid call is still a request, recorded
             # for audit, but the trial has ended, so it is never dispatched.
+            recorded = False
             if on_tool is not None and len(calls) == 1:
                 try:
                     filtered = parse_request(calls[0], logical_trial_id, step, supported_tools)
                 except (KeyError, TypeError, ValueError):
                     filtered = None
-                if filtered is not None:
+                if filtered is not None and calls[0]["id"] not in seen_ids:  # SPEC.md Section 7's reply rule
                     on_tool("tool_requested", requested_payload(filtered, calls[0], step))
-            return LoopOutcome("provider_content_filter", response_text(raw), step)
+                    recorded = True
+            return LoopOutcome("provider_content_filter", response_text(raw), step, "".join(cut_off),
+                               bool(calls) and not recorded)
         if raw["stop_reason"] == "tool_use":
+            cut_off.clear()
             on_tool("tool_requested", requested_payload(request, block, step))
             observation = dispatch(request)
             history.append({"role": "assistant", "content": copy.deepcopy(content)})
@@ -115,8 +125,9 @@ def run_loop(provider: Any, messages: Sequence[Mapping[str, Any]], *,
             continue
         text = response_text(raw)
         if raw["stop_reason"] == "end_turn":
-            return LoopOutcome("final_answer", text, step)
+            return LoopOutcome("final_answer", text, step, "".join(cut_off))
+        cut_off.append(text)
         if text:  # an empty text block is invalid on some providers
             history.append({"role": "assistant", "content": text})
         history.append({"role": "user", "content": CONTINUATION_PROMPT})
-    return LoopOutcome("max_steps", None, max_steps)
+    return LoopOutcome("max_steps", None, max_steps, "".join(cut_off))

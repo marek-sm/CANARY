@@ -18,6 +18,18 @@ from runner import mock_slice as base
 from runner import ticket_slice
 from tasks import ticket
 
+
+@pytest.fixture(autouse=True)
+def stubbed_http_stands_in_for_the_paid_run_record(monkeypatch):
+    """These tests drive the real adapter over a stubbed HTTP transport, so no paid
+    call can happen. They stand in for the project lead's paid-run record, which
+    every real provider otherwise needs (decision 0023; tests/test_tool_sandbox.py
+    tests the gate itself)."""
+    from runner import paid_run, spend_ledger
+
+    monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **kwargs: None)
+    spend_ledger.init()  # a stand-in home, from tests/conftest.py
+
 SENTINEL = "sk-test-sentinel-credential"
 MODEL = "gpt-6-luna"
 DECODING = {"endpoint": "chat_completions", "reasoning_effort": "none"}
@@ -97,6 +109,7 @@ def test_request_translates_history_and_tools_and_omits_sampling():
     assert body["model"] == MODEL
     assert body["reasoning_effort"] == "none" and body["store"] is False
     assert "temperature" not in body and "top_p" not in body
+    assert body["parallel_tool_calls"] is False
     assert body["tools"] == [{"type": "function", "function": {"name": "read_file", "description": TOOL["description"], "parameters": TOOL["input_schema"]}}]
     assert body["messages"] == [
         {"role": "system", "content": "sys"},
@@ -111,7 +124,13 @@ def test_request_translates_history_and_tools_and_omits_sampling():
 def test_no_tools_sends_no_tools_field():
     fake = Fake(text_body())
     call(fake, tools=())
-    assert "tools" not in fake.requests[0]
+    assert "tools" not in fake.requests[0] and "parallel_tool_calls" not in fake.requests[0]
+
+
+def test_the_adapter_declares_the_one_call_setting_it_sends():
+    fake = Fake(text_body())
+    call(fake)
+    assert OpenAIChatAdapter.request_settings == {"parallel_tool_calls": fake.requests[0]["parallel_tool_calls"]}
 
 
 @pytest.mark.parametrize("decoding", [

@@ -9,21 +9,39 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           version: "0.12.18"
           python-version: "3.11"
       - run: uv sync --locked
+      # Every tool process runs in the bubblewrap sandbox (decision 0023). Ubuntu 23.10+
+      # restricts unprivileged user namespaces, which bwrap needs.
+      - run: sudo apt-get update -q && sudo apt-get install -y -q bubblewrap
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - run: uv run make sandbox-check
       - run: uv run make test
       - run: uv run make trace
       - run: uv run make t1-smoke
       - run: uv run make t1-suite
+  # The official sweep's platform (decision 0028 item 8). Not required: it proves GitHub's
+  # macOS image, not the project lead's build.
+  macos-sandbox:
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.18"
+          python-version: "3.11"
+      - run: uv sync --locked
+      - run: uv run make sandbox-check
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: docker build --tag canary:ci .
       - run: docker run --rm --network none --read-only --tmpfs /app/results/development:uid=10001,gid=10001 --tmpfs /tmp canary:ci
-      - run: docker run --rm --network none --read-only --tmpfs /app/results/development:uid=10001,gid=10001 --tmpfs /tmp canary:ci python -m runner.ticket_slice
-      - run: docker run --rm --network none --read-only --tmpfs /tmp canary:ci python -m runner.task_suite --out /tmp/task-suite
+      # Tool-running checks (t1-smoke, t1-suite) run in the test job under the tool
+      # sandbox (decision 0023); the container keeps the tool-free mock trace.

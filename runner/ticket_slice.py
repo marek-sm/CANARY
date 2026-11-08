@@ -13,6 +13,8 @@ from oracles.utility.ticket import validate, VERSION as UTILITY_VERSION
 from tasks import ticket
 from runner import mock_slice as base
 from runner.mock_provider import MockProvider, MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION
+from runner import paid_run, spend_ledger
+from tools import sandbox
 
 VERSION = "ticket-runner-v0.2.0"
 # Present only in real-provider responses (agent/anthropic_adapter.py, agent/openai_adapter.py); the mock has none.
@@ -42,10 +44,13 @@ class TicketProvider(MockProvider):
 
 
 def worker(root, request):
+    """The read tool, sandboxed (decision 0023): it reads only ``root`` and writes nothing."""
+    root = Path(root).resolve()  # the tool runs from ``root``, so the path can't stay relative
+    argv = [sys.executable, "-I", str(ticket.ROOT / "tools/read_file.py"), str(root)]
     completed = subprocess.run(
-        [sys.executable, "-I", str(ticket.ROOT / "tools/read_file.py"), str(root)],
+        sandbox.wrap(argv, cwd=root, read=[root]), cwd=root,
         input=json.dumps(dict(request.normalized_args)), capture_output=True, text=True,
-        env={"PATH": os.defpath, "LANG": "C.UTF-8"}, timeout=5, check=True,
+        env=sandbox.environment(), timeout=5, check=True,
     )
     return json.loads(completed.stdout)
 
@@ -85,17 +90,20 @@ def assemble(events, analysis_role="excluded_mock"):
 
 
 def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING, experiment_id=base.EXPERIMENT_ID,
-        analysis_role="excluded_mock"):
-    out.mkdir(parents=True, exist_ok=False)
+        analysis_role="excluded_mock", live_smoke=False):
     provider = provider or TicketProvider()
+    # Any real provider passes the paid-run gate first; the live smoke is its one exception (decision 0023).
+    paid_run.require_paid_run(provider, live_smoke=live_smoke)
+    out.mkdir(parents=True, exist_ok=False)
     fixture = ticket.reset(out / "fixtures")
     manifest = ticket.manifest()
     base.validator("policy").validate(manifest["policy"])
     trial = f"{experiment_id}:unfrozen:{model}:{ticket.TASK_ID}:none:none:D0_BASELINE:r1"
-    log = base.EventLog(out / base.EVENTS_FILE, base.utc_now, logical_trial_id=trial, experiment_id=experiment_id, component_versions={**base.COMPONENT_VERSIONS, "provider_adapter": getattr(provider, "adapter_version", PROVIDER_ADAPTER_VERSION), "runner": VERSION, "read_file": "read-file-v0.1.0", "utility": str(UTILITY_VERSION)})
+    log = base.EventLog(out / base.EVENTS_FILE, base.utc_now, logical_trial_id=trial, experiment_id=experiment_id, component_versions={**base.COMPONENT_VERSIONS, "provider_adapter": getattr(provider, "adapter_version", PROVIDER_ADAPTER_VERSION), "runner": VERSION, "read_file": "read-file-v0.1.0", "utility": str(UTILITY_VERSION), "tool_sandbox": sandbox.describe()})
     messages = [{"role": "system", "content": ticket.SYSTEM_PROMPT}, {"role": "user", "content": ticket.TASK_PROMPT}]
     log.append("trial_started", {"task_prompt": ticket.TASK_PROMPT, "prompt_sha256": base.sha256_json(messages),
-               "model_requested": model, "decoding": dict(decoding), "max_steps": manifest["max_steps"],
+               "model_requested": model, "decoding": dict(decoding),
+               "request_settings": dict(getattr(provider, "request_settings", {})), "max_steps": manifest["max_steps"],
                "code_commit": base.code_commit(), "tier": None, "fixture_hash": ticket.verify(fixture),
                "policy_hash": base.sha256_json(manifest["policy"]),
                "utility_hash": base.sha256_text((ticket.ROOT / "oracles/utility/ticket.py").read_text()),
@@ -120,6 +128,7 @@ def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING
         on_tool("tool_result", {"call_id": request.call_id, "step": request.step, "observation": observation})
         return observation
 
+    ledger_entry = spend_ledger.start(provider, trial, analysis_role=analysis_role) if paid_run.is_paid(provider) else None
     try:
         outcome = run_loop(provider, messages, tool_schemas=[ticket.TOOL_SCHEMA],
                            decoding=decoding, model_request={"model": model}, on_attempt=on_attempt,
@@ -132,6 +141,8 @@ def run(out: Path, provider=None, *, model=MOCK_MODEL_ID, decoding=base.DECODING
         termination, steps = "infrastructure_failure", len({e["payload"]["step"] for e in base.read_jsonl(out / base.EVENTS_FILE, "event") if e["event_type"] == "provider_attempt"})
     log.append("trial_ended", {"status": "infrastructure_failure" if termination == "infrastructure_failure" else "completed", "termination_reason": termination, "steps_used": steps})
     events = base.read_jsonl(out / base.EVENTS_FILE, "event")
+    if ledger_entry is not None:
+        spend_ledger.finish(ledger_entry, events)
     (out / base.RESULTS_FILE).touch(exist_ok=False)
     base.append_jsonl(out / base.RESULTS_FILE, assemble(events, analysis_role), "result")
     return out

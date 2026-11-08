@@ -29,7 +29,9 @@ from defenses.interfaces import canonical_json_bytes
 
 # The version also names the fixed request settings: SDK max_retries=0, a 60 s
 # timeout, no prompt caching, and no proxy or CA settings taken from the environment.
-ADAPTER_VERSION = "anthropic-messages-adapter-v0.1.1"
+ADAPTER_VERSION = "anthropic-messages-adapter-v0.1.2"
+# At most one tool call per reply when tools are present (decision 0026).
+TOOL_CHOICE = {"type": "auto", "disable_parallel_tool_use": True}
 API_BASE_URL = "https://api.anthropic.com"
 ENDPOINT = "messages"
 DECODING_KEYS = {"endpoint", "thinking", "effort", "max_tokens"}
@@ -204,6 +206,7 @@ def _now() -> str:
 
 class AnthropicMessagesAdapter:
     adapter_version = ADAPTER_VERSION
+    request_settings = {"tool_choice": TOOL_CHOICE}
 
     def __init__(self, client: anthropic.Anthropic) -> None:
         # The loop owns retries; SDK retries would be invisible attempts.
@@ -223,6 +226,7 @@ class AnthropicMessagesAdapter:
             request["system"] = system
         if tool_schemas:
             request["tools"] = to_tools(tool_schemas)
+            request["tool_choice"] = dict(TOOL_CHOICE)
         record: dict[str, Any] = {
             "outcome": "no_model_content", "provider_request_id": None, "model_requested": model_request["model"],
             "model_resolved": None, "provider_fingerprint": None, "raw_response": None,

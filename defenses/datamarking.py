@@ -29,6 +29,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import re
 import unicodedata
 from html.parser import HTMLParser
 from typing import Any, Callable, Mapping, Sequence
@@ -43,8 +44,9 @@ from defenses.interfaces import (
     UntrustedSpan,
 )
 
-TRANSFORM_VERSION = "d2-datamarking-transform-v0.1.0"
+TRANSFORM_VERSION = "d2-datamarking-transform-v0.1.1"
 _CHANNELS = ("C2", "C3", "C4")
+_PLAIN_DOCTYPE = re.compile(r"doctype\s+html", re.IGNORECASE)
 
 _SERIALIZERS: Mapping[str, Callable[[str], str]] = {
     "text": lambda s: s,
@@ -153,7 +155,8 @@ def mark_json_strings(value: Any) -> tuple[Any, int]:
 
 
 class _HtmlMarker(HTMLParser):
-    """C4 coverage: mark every text node and attribute value; leave tags and structure alone."""
+    """C4 coverage: mark every text node, attribute value, comment, processing instruction,
+    and marked section, and any doctype but the plain one; leave tags and structure alone."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -184,11 +187,23 @@ class _HtmlMarker(HTMLParser):
         self.marked_spans += 1
         self.out.append(serialize_span("html_text", mark_text(data)[0]))
 
+    def _mark_unescaped(self, data: str) -> str:
+        """HTML has no escaping inside these constructs, so step 4 adds none."""
+        self.marked_spans += 1
+        return mark_text(data)[0]
+
     def handle_comment(self, data: str) -> None:
-        self.out.append(f"<!--{data}-->")
+        self.out.append(f"<!--{self._mark_unescaped(data)}-->")
+
+    def handle_pi(self, data: str) -> None:
+        self.out.append(f"<?{self._mark_unescaped(data)}>")  # a closing "?" arrives in data
+
+    def unknown_decl(self, data: str) -> None:
+        closer = "]]>" if "[" in data else "]>"  # "<![CDATA[x]]>", but "<![if x]>"
+        self.out.append(f"<![{self._mark_unescaped(data)}{closer}")
 
     def handle_decl(self, decl: str) -> None:
-        self.out.append(f"<!{decl}>")
+        self.out.append(f"<!{decl if _PLAIN_DOCTYPE.fullmatch(decl) else self._mark_unescaped(decl)}>")
 
 
 def mark_html_document(document: str) -> tuple[str, int]:
