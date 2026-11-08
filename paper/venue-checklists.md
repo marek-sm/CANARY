@@ -15,7 +15,7 @@ The 2026 guide puts the checklist after the references and any supplemental mate
 
 | # | Item, paraphrased | Where CANARY answers it | Open, and whose |
 |---:|---|---|---|
-| 1 | Claims: the abstract and introduction claim only what the results support, at the scope they support | `SPEC.md` Section 1 (problem statement, predeclared result sentence, contribution statement, and the claims CANARY may not make); Section 14 release language; `paper/lead-inputs.md` | Claim language is the project lead's (December 1, before Gate 5 on December 3; decision 0021) |
+| 1 | Claims: the abstract and introduction claim only what the results support, at the scope they support | `SPEC.md` Section 1 (problem statement, predeclared result sentence, contribution statement, and the claims CANARY may not make); Section 14 release language; `paper/lead-inputs.md` | Claim language is the project lead's (November 24, before Gate 5 on November 26; [decision 0030](../docs/decisions/0030-done-by-november-30.md); was December 1 and December 3 under decision 0021) |
 | 2 | Limitations: assumptions, how robust the results are to them, and the scope | `SPEC.md` Section 14, "Mandatory limitations"; Sections 2 (scope), 15, and 16 (technical risks); paper outline section 9 | Each owner's W8 limitation; the project lead approves |
 | 3 | Theory, assumptions, and proofs | No theoretical results, so NA | — |
 | 4 | Reproducibility: enough detail to reproduce the main results | `SPEC.md` Section 11 reproducibility criteria; `protocol/active.json` (Gate 3); fresh-clone `make report` and `make replay` (Gate 5); paper outline section 10 | `W11-T3` reproducibility material |
