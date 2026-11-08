@@ -1,6 +1,6 @@
 # 0021: Two-working-week shift of W7 onward: Gate 3 on November 11, data cutoff November 22, release freeze December 6
 
-- Status: Accepted. Approved by the project lead on 2026-10-23; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md).
+- Status: Accepted. Approved by the project lead on 2026-10-23; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md), and by [decision 0030](0030-done-by-november-30.md).
 - Date: 2026-10-23
 - Decision scope: Protocol
 - Secondary scopes: Governance, Release

@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.20.0**  
+**Public project and experimental specification v1.21.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -9,7 +9,7 @@ This is the public, human-readable authority for CANARY's scope, measurement sem
 
 Versioned JSON Schemas define serialized structure, and `protocol/active.json` identifies the exact tier, artifacts, hashes, and schedule used for a release. Neither may contradict this specification. Any conflict blocks release until the documents, schemas, tests, and implementation are reconciled through the change-control process in Section 11.
 
-All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 no later than Saturday, November 14, 2026 (club week 12; [decision 0029](docs/decisions/0029-gate-chain-shift.md)), before official outcomes are inspected, official data locks no later than November 22, 2026, and the public release freezes no later than December 6, 2026. Each date is a deadline: work may finish and gates may run earlier, never later. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
+All dates below are protocol dates. The measurement contract locks at the end of club week 5, the full protocol freezes at Gate 3 no later than Saturday, November 14, 2026 (club week 12; [decision 0029](docs/decisions/0029-gate-chain-shift.md)), before official outcomes are inspected, official data locks no later than November 22, 2026, and the public release freezes no later than noon on Sunday, November 29, 2026 ([decision 0030](docs/decisions/0030-done-by-november-30.md); was December 6). Each date is a deadline: work may finish and gates may run earlier, never later. Event logistics and later administrative metadata do not reopen those scientific or release artifacts.
 
 ---
 
@@ -46,7 +46,7 @@ When options are otherwise equal under this list, choose the one more useful to 
 | Full protocol freeze | Gate 3, no later than Saturday, November 14, 2026, before official outcomes are inspected |
 | Official sweep | D0_BASELINE, D1_POLICY_GATE, and D2_DATAMARKING randomized and interleaved after the Gate 3 freeze, in club weeks 12 and 13 |
 | Absolute data cutoff | Sunday, November 22, 2026 |
-| Public release freeze | No later than Sunday, December 6, 2026 |
+| Public release freeze | No later than noon on Sunday, November 29, 2026 ([decision 0030](docs/decisions/0030-done-by-november-30.md)) |
 | Required public proof | Repository, sanitized frozen evidence, no-key report/replay, captioned video, and accessible paper/report |
 
 ### Reading guide
@@ -1360,7 +1360,7 @@ Gate status is evidence-based and recorded against a commit, manifest, and date.
 | Gate 2 — development instrument | October 11 | The 90-cell one-repeat development grid and 15 clean task-coverage smokes complete; forced stop/resume creates no gaps, duplicates, or repeated effects; D1_POLICY_GATE/D2_DATAMARKING receive binary readiness decisions; cost and context-window forecasts support the proposed tier; demo/replay succeeds twice |
 | Gate 3 — protocol freeze | November 14 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container (or, for a host run, the host environment [decision 0029](docs/decisions/0029-gate-chain-shift.md) names), fixtures, and hashes reconcile in `protocol/active.json` |
 | Gate 4 — data or validation integrity | November 19 target; November 20 final supported-results decision; November 22 absolute cutoff | Scheduled cells or validation checks, missingness, comparability, IDs, hashes, resets, attempt histories, raw-to-endpoint recomputation, sanitized manifests, and generated outputs pass; all claims match the active tier |
-| Gate 5 — release candidate | December 3 | Fresh-clone `make report` and `make replay` pass without a key or network in under five minutes; citations, licenses, accessibility, offline media, replay, and failure-mode rehearsals pass; release hashes agree |
+| Gate 5 — release candidate | November 26 ([decision 0030](docs/decisions/0030-done-by-november-30.md)) | Fresh-clone `make report` and `make replay` pass without a key or network in under five minutes; citations, licenses, accessibility, offline media, replay, and failure-mode rehearsals pass; release hashes agree |
 
 Mandatory responses are outcome-blind:
 
@@ -1479,7 +1479,7 @@ The table is the `F20` script. A `ONE` tier omits the absent defense and spends 
 - If no first model response arrives within ten seconds, or authentication/network/provider fails, press one key and visibly switch to **RECORDED TRACE**.
 - If D0_BASELINE unexpectedly resists, say one run is not evidence, show the representative replay, and continue to the aggregate. If a defense fails, do not conceal it; say mitigation is not elimination and continue.
 - At an empirical tier, a live-first demo requires the intended development/demo-case stage behavior in at least 9 of 10 complete dry runs across all `K` retained stage configurations. At `F20`, those consume the 30-trial rehearsal allowance and the on-stage D0_BASELINE/D1_POLICY_GATE/D2_DATAMARKING set consumes the separate three-trial reserve; lower empirical tiers consume `10K` and `K`. Replays cost neither allowance. Otherwise the planned presentation is replay-first. `ENGINEERING` has `K = 0` and is always replay-first.
-- Rehearse provider timeout, defense failure, no network, terminal resize, presentation-equivalent hardware in club week 15, confirmation hardware in club week 16 before the event, and a second tested device.
+- Rehearse provider timeout, defense failure, no network, terminal resize, presentation-equivalent hardware during W12, confirmation hardware before the event, and a second tested device. Under [decision 0030](docs/decisions/0030-done-by-november-30.md), the live-first gate's dry runs run on the project lead's Mac on the frozen release, and the confirmation-hardware rehearsal is replay-only unless that hardware is the lead's Mac; if organizer hardware isn't available before the event, the rehearsal runs replay-only on presentation-equivalent hardware and the item is recorded unmet.
 
 Every replay is schema-valid, tied to a code/configuration hash, and visibly labeled. A trace may be selected for clarity and stability, but it is never substituted for the applicable empirical aggregate or `ENGINEERING` validation bundle, nor silently presented as live.
 
@@ -1489,8 +1489,8 @@ Every replay is schema-valid, tied to a code/configuration hash, and visibly lab
 
 ### Required artifacts
 
-1. **Accessible paper/report.** Target a six-to-eight-page main body plus generated appendices unless the collection supplies another template. It is submission-ready by December 6.
-2. **Public repository.** Code, schemas, corpus metadata and payloads as licensing permits, adaptation/rejection ledger, frozen sanitized results or engineering-validation evidence, analysis, tables where applicable, replay, Docker instructions, and contribution statements. An immutable release tag/commit and manifest, made no later than December 6, identify the frozen package.
+1. **Accessible paper/report.** Target a six-to-eight-page main body plus generated appendices unless the collection supplies another template. It is submission-ready by the release freeze, November 29 ([decision 0030](docs/decisions/0030-done-by-november-30.md)).
+2. **Public repository.** Code, schemas, corpus metadata and payloads as licensing permits, adaptation/rejection ledger, frozen sanitized results or engineering-validation evidence, analysis, tables where applicable, replay, Docker instructions, and contribution statements. An immutable release tag/commit and manifest, made no later than the release freeze, November 29, identify the frozen package.
 3. **Captioned demo video.** Two to three minutes, offline-capable, with transcript and the tier-appropriate frozen aggregate result or `ENGINEERING` validation summary.
 4. **Optional static replay page.** Only under the bounded replay-only rule in Section 2; its absence is not a project failure.
 
