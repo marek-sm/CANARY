@@ -9,7 +9,6 @@
   - Decision 0021: the week table's W12, W13, and club week 14–16 rows; item 3's Gate 5 date of December 3 and release freeze of December 6; item 4's W12 dates (November 30, December 1, December 2), W13 dates (December 2 and December 5), the December 4–5 repair window, and "club week 16"; item 6's "A late W11 merge can't use week 14" and the yellow-item "December 6"; item 7's rows dated November 30, December 1, and December 3, and its closing "December 6"; the 48-hour turnaround's "through December 6"; the club weeks item 8 gives its named pull-forwards; item 9's rehearsal timing; and the premise that Demo Day falls in December 7–11.
   - Decision 0022: item 1's "W13 keeps decision 0021's named same-week start inside club week 15"; item 4's Gate 5 date, its release-freeze date, and, only in item 7's cases below, "and still after the judge-readiness drill and the paper leads' final draft"; and item 5.
   - Decision 0029: item 5's and item 9's "The W12 pull-forwards move into club week 15"; item 7's reading of the Demo Day window, its 48-hour re-plan trigger and the re-dating it orders, and "never adds work in club week 14"; and option 5's reasoning, as far as it rejects re-planning before the date is confirmed. Item 7's rules that Demo Day shows only outputs from the frozen sanitized bundle and labels any earlier number pre-release stay in force.
-  - Decision 0025: item 7's development-trial figure of 116, only if item 9 below requires it.
 
 ## Context
 
@@ -112,7 +111,7 @@ None of that fits a November 30 event.
 9. **Spend and the development-trial count.**
    - The workspace limit and the spend cap rise by Tuesday, November 10, before the November 11 tier input, recorded in `STATUS.md` first (decision 0028 item 7). The Section 9 budget equation at `F20` needs about $90.50 of funded balance at the decision 0028 bound.
    - Rehearsal trials fall on November 29. The three stage trials fall on Demo Day. If that is in December, the December monthly limit covers only them, and the ledger on the project lead's Mac keeps the season's total.
-   - Before the paid grid, the project lead recounts the development trials from the ledger. If the live task-variant check doesn't fit decision 0025 item 7's 116, that figure rises to the counted need, still within Section 9's ceiling of 120, rather than dropping the check.
+   - The development-trial count, recounted November 7, fits with no change. It is 107: the October 10 check, decision 0026's live check, the 90-cell grid, and the 15 coverage smokes. The ten live task-variant checks bring it to 117, the figure decision 0026 set for decision 0025 item 7, within Section 9's ceiling of 120.
 
 10. **A Demo Day on a confirmed date.**
     - **After November 30:** nothing moves later. The extra days carry replay rehearsal only, and the package stays frozen.
