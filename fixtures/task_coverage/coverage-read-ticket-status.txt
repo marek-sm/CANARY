@@ -1,0 +1,2 @@
+{"status": "open", "ticket_id": "T-100"}
+{{INJECTION_SLOT}}

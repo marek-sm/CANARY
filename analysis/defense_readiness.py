@@ -58,19 +58,20 @@ D2 record checks, over every ``D2_DATAMARKING`` trial:
 D2 code checks: the datamarking coverage, round-trip, and vector tests pass with
 none skipped.
 
-Code checks run each predeclared suite in full: the pytest subprocess gets an
-environment without any ``PYTEST_*`` variable (so ``PYTEST_ADDOPTS`` cannot
-select, skip, or reorder tests), and a run that reports any deselected, skipped,
+Code checks run each predeclared suite in full, in this process (no process starts
+outside the tool sandbox's wrapper, decision 0023), with every ``PYTEST_*`` variable
+set aside for the run (so ``PYTEST_ADDOPTS`` cannot select, skip, or reorder tests), and a run that reports any deselected, skipped,
 xfailed, xpassed, or errored test is not a pass.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence
@@ -85,6 +86,7 @@ from analysis.floor_count import (
     _is_mock,
     load_run,
 )
+from runner import paid_run
 
 READINESS_VERSION = "defense-readiness-v0.2.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -338,25 +340,31 @@ def d2_record_checks(
 _SELECTION_LOSSES = ("deselected", "skipped", "xfailed", "xpassed", "error", "errors")
 
 
-def _clean_environment() -> dict[str, str]:
-    """The caller's environment without any PYTEST_* variable, so inherited
-    options such as PYTEST_ADDOPTS cannot select or skip part of a suite."""
-    return {key: value for key, value in os.environ.items() if not key.startswith("PYTEST_")}
+def _run_pytest(files: Sequence[str]) -> tuple[int, str]:
+    """Run the suite in this process, so no process starts outside the tool sandbox's wrapper
+    (decision 0023; ``tests/test_tool_sandbox.py``) and no child inherits the caller's
+    environment. Every PYTEST_* variable is set aside for the run, so inherited options such
+    as PYTEST_ADDOPTS cannot select or skip part of a suite. Returns the exit code and the
+    text pytest printed."""
+    import pytest
+
+    paths = [str(path if Path(path).is_absolute() else REPO_ROOT / path) for path in files]
+    saved = {key: os.environ.pop(key) for key in [key for key in os.environ if key.startswith("PYTEST_")]}
+    out, err = io.StringIO(), io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = pytest.main(["-q", "-rs", "-p", "no:cacheprovider", "--rootdir", str(REPO_ROOT), *paths])
+    finally:
+        os.environ.update(saved)
+    return int(code), out.getvalue() + err.getvalue()
 
 
 def run_tests(check_id: str, files: Sequence[str]) -> dict[str, Any]:
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider", *files],
-        cwd=REPO_ROOT,
-        env=_clean_environment(),
-        capture_output=True,
-        text=True,
-    )
-    output = proc.stdout + proc.stderr
+    returncode, output = _run_pytest(files)
     summary = output.strip().splitlines()[-1] if output.strip() else ""
     counts = {word: int(n) for n, word in re.findall(r"\b(\d+) (deselected|skipped|xfailed|xpassed|errors?|failed|passed)\b", output)}
     lost = sorted(word for word in _SELECTION_LOSSES if counts.get(word))
-    passed = proc.returncode == 0 and counts.get("passed", 0) > 0 and not lost and not counts.get("failed")
+    passed = returncode == 0 and counts.get("passed", 0) > 0 and not lost and not counts.get("failed")
     detail = summary
     if lost:
         detail += f" (the suite did not run in full: {', '.join(lost)}; none of these is a pass)"
@@ -407,7 +415,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         validate_budget(args.context_window, args.output_reserve)
-        report = defense_readiness(load_run(args.run_dir), context_window=args.context_window, output_reserve=args.output_reserve)
+        # Decision 0028 and docs/INTERFACES.md: refuse a run whose Gate 2 scoring code changed
+        # after the grid, as floor_count and gate2_budget do, before reading it.
+        code_check = paid_run.check_code_matches_run(args.run_dir)
+        print(f"defense-readiness: {code_check}", file=sys.stderr)
+        report = {**defense_readiness(load_run(args.run_dir), context_window=args.context_window,
+                                      output_reserve=args.output_reserve), "code_check": code_check}
     except (ValueError, OSError, ValidationError) as error:
         print(f"defense-readiness: {error}", file=sys.stderr)
         return 1

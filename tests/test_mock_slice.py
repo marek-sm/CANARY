@@ -310,13 +310,17 @@ def test_no_provider_credential_is_read(tmp_path, monkeypatch):
 # Result derivation from stored attempts --------------------------------------
 
 
-class Scripted:
-    """Provider records shaped like the real adapters', with usage and latency."""
+class Scripted(MockProvider):
+    """Provider records shaped like the real adapters', with usage and latency.
+
+    A test double, so it is a ``MockProvider``: the paid-run gate (decision 0023)
+    refuses any provider that isn't one."""
 
     adapter_version = "scripted-test"
 
     def __init__(self, *records):
         self.records = list(records)
+        self.calls = 0
 
     def complete(self, messages, tool_schemas, decoding, model_request):
         return dict(self.records.pop(0), model_requested=model_request["model"])

@@ -1,0 +1,16 @@
+{
+  "experiment_id": "grid-dev",
+  "model_id": "claude-haiku-5-5",
+  "seed": "w7-t3-grid-dev-seed",
+  "base_case_ids": [
+    "dev-001",
+    "dev-002",
+    "dev-003",
+    "dev-004",
+    "dev-005"
+  ],
+  "channels": ["C2", "C3", "C4"],
+  "conditions": ["attack", "clean"],
+  "configurations": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"],
+  "repeats": 1
+}

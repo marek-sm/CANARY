@@ -248,7 +248,7 @@ def test_code_checks_fail_when_a_test_is_skipped(monkeypatch):
         stdout = "1 skipped in 0.01s\n"
         stderr = ""
 
-    monkeypatch.setattr(dr.subprocess, "run", lambda *a, **k: Proc())
+    monkeypatch.setattr(dr, "_run_pytest", lambda files: (Proc.returncode, Proc.stdout + Proc.stderr))
     check = dr.run_tests("D1-TESTS", ("tests/test_policy_gate.py",))
     assert not check["passed"] and "skip" in check["detail"]
 
@@ -259,7 +259,7 @@ def test_code_checks_pass_on_a_clean_run(monkeypatch):
         stdout = "12 passed in 0.4s\n"
         stderr = ""
 
-    monkeypatch.setattr(dr.subprocess, "run", lambda *a, **k: Proc())
+    monkeypatch.setattr(dr, "_run_pytest", lambda files: (Proc.returncode, Proc.stdout + Proc.stderr))
     assert dr.run_tests("D2-TESTS", ("tests/test_datamarking.py",))["passed"]
 
 
@@ -342,7 +342,7 @@ def test_code_checks_reject_a_deselected_partial_run(monkeypatch):
         stdout = "1 passed, 218 deselected in 0.02s\n"
         stderr = ""
 
-    monkeypatch.setattr(dr.subprocess, "run", lambda *a, **k: Proc())
+    monkeypatch.setattr(dr, "_run_pytest", lambda files: (Proc.returncode, Proc.stdout + Proc.stderr))
     check = dr.run_tests("D1-TESTS", ("tests/test_policy_gate.py",))
     assert not check["passed"] and "deselected" in check["detail"]
 
@@ -354,7 +354,7 @@ def test_code_checks_reject_xfail_xpass_and_errors(monkeypatch, line):
         stdout = line + "\n"
         stderr = ""
 
-    monkeypatch.setattr(dr.subprocess, "run", lambda *a, **k: Proc())
+    monkeypatch.setattr(dr, "_run_pytest", lambda files: (Proc.returncode, Proc.stdout + Proc.stderr))
     assert not dr.run_tests("D1-TESTS", ("tests/x.py",))["passed"]
 
 
@@ -365,3 +365,21 @@ def test_code_checks_strip_inherited_pytest_options(monkeypatch, tmp_path):
     monkeypatch.setenv("PYTEST_ADDOPTS", "-k test_a")
     check = dr.run_tests("D1-TESTS", (str(suite),))
     assert check["passed"] and "2 passed" in check["detail"] and "deselected" not in check["detail"]
+
+
+def test_readiness_refuses_a_run_scored_by_changed_gate2_code(tmp_path, monkeypatch, capsys):
+    """Decision 0028 and docs/INTERFACES.md: like floor_count and gate2_budget, the readiness
+    script calls paid_run.check_code_matches_run before it reads a run, so a threshold
+    edited after the grid is refused."""
+    from runner import paid_run
+
+    called = []
+
+    def refuse(run_dir):
+        called.append(Path(run_dir))
+        raise paid_run.PaidRunRefused("the Gate 2 scoring code differs from what ran the grid")
+
+    monkeypatch.setattr(paid_run, "check_code_matches_run", refuse)
+    assert main([str(tmp_path), "--context-window", "200000", "--output-reserve", "40000"]) == 1
+    assert called == [tmp_path]
+    assert "differs from what ran the grid" in capsys.readouterr().err

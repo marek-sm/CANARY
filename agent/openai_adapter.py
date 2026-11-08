@@ -28,7 +28,7 @@ from defenses.interfaces import canonical_json_bytes
 
 # The version also names the fixed request settings: store=False, SDK max_retries=0,
 # a 60 s timeout, and no proxy or CA settings taken from the environment.
-ADAPTER_VERSION = "openai-chat-adapter-v0.2.1"
+ADAPTER_VERSION = "openai-chat-adapter-v0.2.2"
 API_BASE_URL = "https://api.openai.com/v1"
 ENDPOINT = "chat_completions"
 DECODING_KEYS = {"endpoint", "reasoning_effort", "max_completion_tokens"}
@@ -187,6 +187,8 @@ def _now() -> str:
 
 class OpenAIChatAdapter:
     adapter_version = ADAPTER_VERSION
+    # At most one tool call per reply when tools are present (decision 0026).
+    request_settings = {"parallel_tool_calls": False}
 
     def __init__(self, client: openai.OpenAI) -> None:
         # The loop owns retries; SDK retries would be invisible attempts.
@@ -203,6 +205,7 @@ class OpenAIChatAdapter:
         request: dict[str, Any] = {"model": model_request["model"], "messages": to_chat_messages(messages), "store": False, **params}
         if tool_schemas:
             request["tools"] = to_chat_tools(tool_schemas)
+            request.update(self.request_settings)
         record: dict[str, Any] = {
             "outcome": "no_model_content", "provider_request_id": None, "model_requested": model_request["model"],
             "model_resolved": None, "provider_fingerprint": None, "raw_response": None,

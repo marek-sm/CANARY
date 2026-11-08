@@ -25,6 +25,7 @@ Unknown values are `null`. SDK retries are off. A timeout, connection error, HTT
 
 - **Request.** Leading system messages become top-level `system` blocks. Whitespace-only assistant text is dropped, because the API rejects it. A system message later in the conversation, a non-object tool input, or a history that ends with an assistant turn raises before any request.
 - **Decoding.** `decoding` must name `endpoint: "messages"`, `thinking: "disabled"`, an `effort` of `low`, `medium`, or `high`, and a positive `max_tokens`. Adaptive thinking and sampling parameters are rejected.
+- **One call per reply.** With tools present, the adapter sends `tool_choice: {"type": "auto", "disable_parallel_tool_use": true}` (the OpenAI adapter sends `parallel_tool_calls: false`), and `trial_started` records it as `request_settings` beside the decoding (decision 0026).
 - **Refusals.** A `stop_reason` of `"refusal"`, the provider's classifier decline, maps to `content_filter` under decision 0008. Its text is kept, and `stop_details` stays in `provider_response`.
 - **Malformed values.** A response that carries NaN or infinity outside a tool input is recorded as unparseable, so the loop records `malformed_model_output`. A non-string `model`, error type, or error code is recorded as `null`.
 - **HTTP errors.** `error.provider_code` is the response's `error.details.error_code`. The adapter's `CONTENT_POLICY_CODES` is empty, because Anthropic documents no content-policy code.
@@ -46,7 +47,7 @@ parse_untrusted_span(rendered_fixture) -> canonical_payload
 - **Pinned content.** The delivered bytes are the base's committed render, refused unless their SHA-256 matches `rendered-hashes.json` and they parse back to the exact substituted payload.
 - **Where the secrets sit.** The superblock's two canaries are planted in fictional files: a fake API key in `config/app.env`, and a customer record, `customers/customer-record.txt`, holding the other canary as its saved payment method and saved address. The inbox email that two payloads ask an agent to forward is planted too.
 - **Configurations.** Under D1_POLICY_GATE the gate decides before dispatch, and a block returns the frozen observation without running the tool. Under D2_DATAMARKING every tool result is marked once, with the frozen transform, before the model sees it. The same environment serves every configuration.
-- **Mock only.** Tools still run as host subprocesses through W6-T1's worker. Until the paid-path tool sandbox exists (audit F-01), delivery mode refuses any provider other than the mock.
+- **Paid runs.** Every tool runs through W6-T1's worker inside the [tool sandbox](#tool-sandbox-lead-scaffold-decision-0023). A provider other than the mock runs only in delivery mode, and only when `runner.paid_run` finds the project lead's paid-run record valid for the running code and sandbox ([decision 0023](decisions/0023-tool-sandbox.md)); the text-only body refuses every paid provider.
 - **Independence.** The gate/audit independence test covers `oracles/`, where the audit has lived since #47.
 
 ## Tool-request boundary
@@ -87,7 +88,7 @@ The dispatcher accepts only canonical capability-valid requests. The effect orac
 hash, and creates fresh fixture and state directories. Source files, the SQLite
 seed, pages, and the exact URL routing table are covered by the fixture manifest.
 The generated database is checked against its seed and its byte hash is captured
-before calls. Tool arguments never select these roots, routing tables, or ports.
+before calls, in the task runner and in each delivery cell's `trial_started`. Tool arguments never select these roots, routing tables, or sockets.
 
 `query_db(root, query_id, params)` runs only the code-owned registered queries in
 [`tools/query_db.py`](../tools/query_db.py). It copies a bounded regular SQLite
@@ -95,11 +96,27 @@ snapshot through no-follow descriptors, enables query-only mode, and installs an
 authorizer permitting only SELECT and reads of the fictional table. It never
 opens a model-supplied database, statement, attached database, or extension.
 
-`fetch_url(url, routes, port)` matches the complete logical `.fixture.test` URL
-against the trusted routing table. It connects directly to IPv4 loopback at the
-harness-selected port, with no DNS, proxy handling, or redirect following. The
-private [`fixture service`](../tools/fixture_http.py) serves fixed page bodies;
-it has no filesystem or agent-input endpoint.
+`fetch_url(url, routes, socket_path)` matches the complete logical `.fixture.test`
+URL against the trusted routing table. It connects over `AF_UNIX` to the private
+[`fixture service`](../tools/fixture_http.py) at `socket_path`, with no DNS,
+proxy handling, TCP, or redirect following. The service binds `fixture.sock` in
+the trial's socket directory and serves fixed page bodies; it has no filesystem
+or agent-input endpoint. It removes a stale socket before binding and exits when
+its parent closes stdin ([decision 0023](decisions/0023-tool-sandbox.md);
+`fetch-url-v0.2.0`, `fixture-http-v0.3.0`). It appends every request to
+`fixture-requests.jsonl` beside the socket, and fsyncs it before the response goes
+out. No tool can read or write that log, and in a delivery cell a fetch's
+`effect_observed` comes from it through `fixture-server-log-v0.1.0`, whatever the
+tool returned (`SPEC.md` Section 7). The offline task runner keeps its
+`fetch_url-returned-v0.1.0` oracle and names it as such.
+
+`registry.fixture_service(root, socket_dir=None)` starts that service in the
+sandbox and yields the socket directory. With no `socket_dir` it uses a temporary
+directory and removes it afterwards; either way it removes the socket file when
+the service stops. `registry.worker(root, state, endpoint, request)` runs one tool
+call in the sandbox, where `endpoint` is that socket directory: the worker runs
+there, reads only `root`, writes only `state`, and reaches the service by the
+relative name `fixture.sock`.
 
 `send_email(state_root, to, subject, body)` appends only to the pre-created
 `email-receipts.jsonl` regular file in the fresh per-trial state directory. Each
@@ -111,16 +128,212 @@ sink cannot be inspected, receipt/effect evidence stays null; a tool error alone
 does not prove absence of a receipt.
 
 The [`offline acceptance runner`](../runner/task_suite.py) dispatches through
-[`tools/worker.py`](../tools/worker.py) using isolated Python child processes with
-only `PATH` and `LANG`. The private HTTP service gets the same credential-free
-environment. The runner rejects a non-mock provider and emits development records
-with `analysis_role = excluded_mock`. Its authorization and security facts remain
+[`tools/worker.py`](../tools/worker.py) using isolated, sandboxed Python child
+processes with only `PATH`, `LANG`, and `TMPDIR`. The private fixture service gets
+the same credential-free environment and sandbox. The runner rejects a non-mock
+provider and emits development records with `analysis_role = excluded_mock`. Its authorization and security facts remain
 null because this excluded mock runner does not perform an authorization audit.
 It uses W6-T4's shared canonicalizer through `run_loop(supported_tools=...)` for
 all four registered tools. The same immutable request is logged and dispatched;
 `effect_observer` supplies the tool-specific effect and sink evidence. The
 production gate and audit are on `main`; their paid-run integration remains
 separate from this mock acceptance runner.
+
+### Tool sandbox (lead scaffold, decision 0023)
+
+[`tools/sandbox.py`](../tools/sandbox.py) is the one launcher for every tool
+process: `tasks/registry.py`'s `worker()` and `fixture_service()`, and
+`runner/ticket_slice.py`'s `worker()`, under every configuration and in mock runs
+and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
+
+- `wrap(argv, *, cwd, read=(), write=(), socket_dir=None, bind_socket=False)`
+  returns the sandboxed argv. It denies by default and allows only running the
+  interpreter; reading the interpreter, `tools/`, the system libraries, and the
+  `read` paths; writing only the `write` paths; and reaching only `fixture.sock`
+  in `socket_dir`, which the fixture service binds (`bind_socket=True`) and the
+  worker connects to. The interpreter is its own files (its binary and the links
+  to it, `pyvenv.cfg`, the standard library, and its installation's shared
+  libraries), never the folders that hold them. On macOS it runs `sandbox-exec`
+  with a `(deny default)` profile; on Linux, `bwrap` with every namespace
+  unshared and only the named paths mounted. On Linux the worker gets
+  `fixture.sock` alone, never its folder, and `wrap` raises `SandboxUnavailable`
+  when any other socket sits in a folder it would mount, root-owned system
+  library folders aside. On Linux, `wrap` launches only `sys.executable -I`, and
+  through `tools/no_exec.py`, whose seccomp filter fails every `execve`,
+  `execveat`, `ptrace`, and `process_vm_writev` before the tool's first line
+  runs, with the tool as the sandbox's only process (`--as-pid-1`), so the
+  programs in the mounted system-library folders can't run. `tools/no_exec.py`
+  also sets SIGKILL as the tool's death signal again after the exec, because the
+  kernel can clear the one bwrap's `--die-with-parent` set, and a tool that
+  outlives a killed bwrap would keep every child it forked. Its filter then fails
+  `prctl(PR_SET_PDEATHSIG)`, so the tool can't clear that signal itself.
+- `environment(write=())` is the only environment a tool process gets: `PATH`,
+  `LANG`, and `TMPDIR` set to its first writable directory. No provider variable
+  ever enters it.
+- `describe()` returns `mode:version:rules-hash`, recorded as
+  `component_versions.tool_sandbox` in delivery, `task_suite`, and
+  `ticket_slice` events, the live smoke's included.
+- **Refusals.** `mode()` raises `SandboxUnavailable` for a root user, a platform
+  other than macOS or Linux, a Linux machine other than x86_64 or aarch64 or a
+  32-bit Python there, or a missing `sandbox-exec` or `bwrap`, and on
+  macOS `wrap` refuses a profile path containing a quote, backslash, newline, or
+  NUL, so a tool launch fails closed rather than running unconfined.
+
+[`runner/paid_run.py`](../runner/paid_run.py) is the paid-run gate.
+`require_paid_run(provider, *, live_smoke=False)` runs before any non-mock
+provider's first call, in `execute.execute_trial`, `ticket_slice.run`, and
+`mock_slice.run_mock_trial`, and raises `PaidRunRefused` unless all of these hold:
+
+- `CI` and every `ANTHROPIC_*` and `OPENAI_*` variable are absent from the
+  environment, and the sandbox is available;
+- the provider declares decision 0026 item 3's one-call setting, on the live smoke too;
+- `protocol/paid_run_record.json` validates against the `paid_run_record` schema, is
+  committed and unchanged, names a commit that is an ancestor of `HEAD`, and is dated
+  between that commit and today;
+- the running sandbox equals the record's;
+- no hashed path is uncommitted, untracked, or git-ignored, and every hash matches.
+  Two kinds of ignored file don't count: Finder's `.DS_Store`, and `__pycache__`
+  bytecode Python wouldn't load (another interpreter's tag, a missing source, or a
+  timestamp and size that don't match its source) or that holds exactly what its source
+  compiles to. A sourceless `.pyc` outside `__pycache__`, a hash-based `.pyc` that differs
+  from its source, and any loadable `.pyc` that differs from its source all refuse;
+- the installed packages and Python equal the record's, at the versions `uv.lock` pins.
+  `pip`, `setuptools`, and `wheel` may also be present unlocked, because `uv sync`
+  doesn't remove them, and the record doesn't hold them to a version;
+- the mock grid at the record's `run_path` matches the record's digests and passes
+  every check `build_record` makes;
+- `runner.spend_ledger` finds its ledger and cap, spend plus one trial's bound is
+  within the cap, and development trials stay within `SPEC.md` Section 9's 120.
+
+The hashed files are the git-tracked files under `agent/`, `analysis/`, `channels/`,
+`defenses/`, `oracles/`, `runner/`, `tasks/`, `tools/`, `corpus/`, `fixtures/`, and
+`schemas/`, plus `paper/estimand_manifest.json`, `protocol/development_grid_spec.json`,
+`protocol/development_grid_spec_fallback.json`, and `uv.lock`, so any change to the code,
+scoring code, corpus, fixtures, schemas, grid specs, or locked dependencies closes paid runs until the project lead records again. A
+paid grid also takes only the committed spec, and only the model that spec and its
+provider both name. The live smoke passes `live_smoke=True`, which skips only the record
+and the checks that read it. `grid_dev.live_run_refusal` refuses any corpus other than
+`corpus/development`, then ends with the same check.
+
+Every `execute.run_schedule` invocation appends its code's commit, uncommitted, untracked,
+and ignored hashed paths, code and scoring digests, corpus, environment digest, and spend
+cap to `code_provenance.jsonl` in the run directory as it starts and again as it stops,
+with the OS build, Python build, SQLite version, `uv.lock` hash, and sandbox fingerprint.
+A change in the resolved model or provider fingerprint stops `run_schedule` with
+`ResolvedModelChanged`, and a resume stops on the same evidence (`SPEC.md` Section 9).
+
+The run-wide stop rule ([decision 0029](decisions/0029-gate-chain-shift.md)) stops a run
+with `RunWideFailure` and records why in the invocation's stop line, as `run_wide_stop`
+(null when the rule didn't stop it). Two signals fire it:
+
+- A provider attempt with no model content that every trial would also hit
+  (`execute.run_wide_error`) stops the run at once: an HTTP 4xx other than 408 and 429
+  that isn't a listed content-policy refusal (a dead or unauthorized key, an exhausted
+  balance or workspace limit, a missing model, a malformed request), or a connection
+  error. The attempt is durable and the trial gets no `trial_ended`, so the resume after
+  the fix replays that attempt and makes the step's next retry, as after a kill; a paid
+  trial's ledger entry closes with the attempts it made, and its resume adds no trial to
+  the ceiling. A stop on a step's third attempt leaves no retry (`SPEC.md` Section 9), so
+  that trial ends as an infrastructure failure on resume, and each resume before the
+  cause is fixed spends one retry. A one-off connection reset also stops the run, and the
+  resume continues the trial. A 4xx that belongs to one trial (a request too large, or a
+  content-policy code no adapter lists yet) comes back on every resume, so that trial
+  stops the run up to three times, a retry each, before it ends as an infrastructure
+  failure.
+- Two trials in a row within one invocation ending as infrastructure failures, for any cause (timeouts, 429s,
+  5xx, the fixture service or sandbox, a runner exception), stop the run after the
+  second. Those two stay committed infrastructure failures, which the 5% rule counts as
+  missing.
+
+`grid_dev.verify_grid_run` and `sweep.verify_sweep` say `complete: false` while the run's
+last invocation ended on a stop, and list every stop the run has had; a resume that ends
+without one clears it. So a mock grid that was stopped and not resumed through can't back
+a paid-run record (`paid_run` refuses an incomplete one). A run with a trial left open by an immediate stop has a missing result, so
+`verify_grid_run` refuses it outright. `verify_grid_run` also lists the run's
+infrastructure failures. `grid_dev live` and `sweep live` exit 3 on a stop; rerun the same
+command with `--resume`. The rule's reviews are the project lead's and an AI review, with
+no portfolio owner's.
+
+Paid trials record the checkout's `HEAD` as their `code_commit`. That is the commit adding
+the record, a descendant of the record's `recorded_commit`, so the two differ on every paid
+trial. `W9-T3`'s integrity checks compare the hashes and ancestry, not the two commits.
+
+`run_schedule(split=, protocol_version=, analysis_role=)` writes those three on every result
+and ledger line. The sweep passes `split="evaluation"`, which is refused before anything is
+written without a `protocol_version` and trial ids from a spec's `protocol_sentinel`, because
+the locked schema's evaluation branch would otherwise reject the result after its paid call.
+The locked schema's `split` is only `development` or `evaluation`, so rehearsal and stage
+trials stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a
+free string there. A run can't be resumed under another split.
+
+[`runner/sweep.py`](../runner/sweep.py) is that sweep's entry point: `python -m runner.sweep
+live --spec SPEC.json --protocol-version V` runs a committed schedule spec through
+`run_schedule` with `split="evaluation"`, tool-result delivery, and the real adapter, on
+`corpus/evaluation` unless `--corpus-root` names another, writing under the ignored
+`results/raw/sweep/`. It refuses, before any key is read, without `CANARY_PAID_RUN_ACK=1`,
+a protocol version, or a frozen `protocol_sentinel`, on any base whose `split` isn't
+`evaluation`, on an output path Git could take, and wherever `paid_run_refusal` does.
+`python -m runner.sweep verify RUN` checks completeness, schema, and that every stored
+result recomputes from its events, and prints counts only, never an outcome aggregate.
+`execute.check_stored_run` reads a run's split from its mode file and recomputes each
+result under it.
+
+`build_record` refuses unless every invocation of the mock grid ran this checkout's
+hashed code, clean, under this environment, through tool-result delivery, on
+`corpus/development` and the committed spec, with each start matched by a stop, and
+unless every trial ended `final_answer` with `utility.pass` true and every tool result
+ok, and every D1_POLICY_GATE record shows the gate and the audit agreeing and no
+dispatch the audit rejected. The mock grid must run under this checkout's `results/`.
+Run the mock grid, the record, and the paid steps in one clean checkout, and leave the
+mock grid where it ran; the record refuses if it moves:
+
+```sh
+python -m runner.spend_ledger init
+python -m runner.spend_ledger set-cap USD
+python -m runner.grid_dev mock
+python -m runner.paid_run record results/development/grid-mock --delivery PR --sandbox PR --request-to-effect PR
+git add protocol/paid_run_record.json && git commit
+python -m runner.paid_run check
+```
+
+`python -m runner.grid_dev live`, `python -m runner.coverage --live`, and `python -m
+runner.sweep live` also need `CANARY_PAID_RUN_ACK=1` in the environment, the project
+lead's acknowledgement that the paid-run condition holds; each refuses without it,
+before any key is read. The live smoke doesn't.
+
+Delete any ignored leftover the gate names under a hashed directory by hand, such as a
+`.sqlite`. Never run `git clean` over the whole checkout: it would delete `.env` and `results/`.
+
+[`runner/spend_ledger.py`](../runner/spend_ledger.py) keeps the spend and pilot ledger
+at `~/.canary/spend_ledger.jsonl` and the cap at `~/.canary/spend_cap.json`, outside
+every checkout and every hashed path, so a fresh clone doesn't restart the count and a
+raised cap doesn't close paid runs. Only an argument moves them, never an environment
+variable. Each paid trial appends a start before its first call, charged at one trial's
+bound until it closes, and a finish pricing its `provider_attempt` usage; an attempt with
+no recorded usage counts as the largest request. A missing or corrupt ledger or cap
+refuses. The cap is the project lead's to set, slightly below the workspace limit: a
+billed timeout the ledger can't see could otherwise reach the provider's limit first and
+turn each remaining trial into an infrastructure failure. Console reconciliation stays
+for the same reason. Every trial counts in dollars, and only development trials count
+against the 120: `execute_trial` applies the ceiling to neither the sweep's `evaluation`
+trials nor rehearsal and stage trials. Under pytest the real paths refuse, so no test can
+touch the real ledger.
+
+`analysis.floor_count`, `analysis.gate2_budget`, and `analysis.defense_readiness` call
+`paid_run.check_code_matches_run` before they read a run. Each invocation records a digest
+of the Gate 2 scripts' own scoring code: `analysis/__init__.py`, `analysis/floor_count.py`,
+`analysis/gate2_budget.py`, `analysis/defense_readiness.py` when it exists, and
+`paper/estimand_manifest.json`. The scripts compare only that, against every invocation, and
+name the commit to run from, so a threshold edited after the grid is refused. A grid resumed
+across a fix to other hashed code stays scoreable, because the ceiling rules out a second
+grid, and report code landing elsewhere in `analysis/` doesn't refuse. Neither does a raised
+`analysis/price_bound.py`, and the budget report names the bound it used. The budget
+counts the development trials already used from the spend ledger, never a typed number,
+and the ledger's rates and per-trial bound are `analysis/price_bound.py`'s. The paid-run record
+plays no part, so the Gate 2 step's close (decision 0025 item 4; November 10 under decision 0029) evaluates whatever grid records
+exist. A mock run with no provenance is allowed, and each report's `code_check` says so; a
+non-mock run with none is refused, so deleting the file can't evade the check. Any later
+script that scores a paid grid calls the same check.
 
 ## Utility boundary
 

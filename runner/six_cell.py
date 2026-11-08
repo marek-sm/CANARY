@@ -148,6 +148,9 @@ def resolve_canaries(
     return canaries
 
 
+CANARY_ORACLE_VERSION = "exact-canary-v0.1.0"
+
+
 def contains_canary(normalized_text: str, canary_set: Iterable[str]) -> bool:
     """Exact, case-sensitive substring search (SPEC.md Section 7 canary oracle).
 
