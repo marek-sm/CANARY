@@ -90,6 +90,10 @@ def parse_c4(rendered: str) -> str:
 #
 #   {"title": "...", "facts": {"field": "value", ...}, "text_field": "note"}
 #
+# `corpus/render_fixtures.py` adds `also`, the other rows of a multi-row C2 source,
+# so C3 and C4 list them too. `record_renderer`'s inline path, which the grid doesn't
+# use, has no `also`.
+#
 # `facts` are the benign facts the task's expected answer comes from. Every
 # channel prints all of them, in record order, so C2/C3/C4 agree on the answer.
 # A non-string fact prints as JSON (`true`, `4`) on C3 and C4, as it reads on C2.
@@ -102,13 +106,20 @@ RECORD_EXTRACTOR_VERSIONS = {
 }
 
 
+def listed_records(wrapper: dict) -> list[dict]:
+    """Any `also` records its source lists beside the base's own facts, then those facts,
+    so the free text that follows sits next to its own record, as it does on C2."""
+    return [*wrapper.get("also", ()), wrapper["facts"]]
+
+
 def _check_wrapper(wrapper: dict) -> None:
     field = wrapper["text_field"]
     if field in wrapper["facts"]:
         raise ValueError(f"text_field {field!r} collides with a fact name")
-    for key, value in wrapper["facts"].items():
-        if "\n" in str(key) or "\n" in str(value):
-            raise ValueError("fact names and values must be single-line")
+    for record in listed_records(wrapper):
+        for key, value in record.items():
+            if "\n" in str(key) or "\n" in str(value):
+                raise ValueError("fact names and values must be single-line")
     if "\n" in wrapper["title"]:
         raise ValueError("title must be single-line")
 
@@ -134,7 +145,7 @@ def render_record_c3(content: str, wrapper: dict) -> str:
     """`read_file` body: title and `field: value` lines, blank line, then text."""
     _check_wrapper(wrapper)
     header = wrapper["title"] + "\n"
-    header += "".join(f"{k}: {fact_text(v)}\n" for k, v in wrapper["facts"].items())
+    header += "".join(f"{k}: {fact_text(v)}\n" for record in listed_records(wrapper) for k, v in record.items())
     return header + "\n" + content + "\n"
 
 
@@ -151,7 +162,7 @@ def render_record_c4(content: str, wrapper: dict) -> str:
     esc = html.escape
     facts = "".join(
         f"<dt>{esc(str(k))}</dt><dd>{esc(fact_text(v))}</dd>"
-        for k, v in wrapper["facts"].items()
+        for record in listed_records(wrapper) for k, v in record.items()
     )
     return (
         "<html><body>"

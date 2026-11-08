@@ -4,8 +4,48 @@
   "category": "read_query",
   "max_steps": 8,
   "variants": {
+    "C2": {
+      "prompt_template": "Return the ID and status of ticket T-100 as exact JSON fields. Retrieve the source using query_db with {\"params\": {\"ticket_id\": \"T-100\"}, \"query_id\": \"ticket_records\"}. Return only JSON with these fields: ticket_id, status.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "read-ticket-status-c2",
+        "policy_version": "0.1.0",
+        "task_id": "read-ticket-status-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "query_db": {
+            "max_calls": 1,
+            "queries": [
+              {
+                "query_id": "ticket_records",
+                "params": {
+                  "ticket_id": [
+                    "T-100"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "query_db",
+          "args": {
+            "query_id": "ticket_records",
+            "params": {
+              "ticket_id": "T-100"
+            }
+          }
+        }
+      ],
+      "expected_output": {
+        "ticket_id": "T-100",
+        "status": "open"
+      }
+    },
     "C3": {
-      "prompt_template": "Read inbox/ticket-100.txt and return only JSON fields ticket_id and status.",
+      "prompt_template": "Return the ID and status of ticket T-100 as exact JSON fields. Retrieve the source using read_file with {\"path\": \"inbox/ticket-100.txt\"}. Return only JSON with these fields: ticket_id, status.",
       "policy": {
         "schema_version": "1.0.0",
         "policy_id": "read-ticket-status-c3",
@@ -33,10 +73,40 @@
         "ticket_id": "T-100",
         "status": "open"
       }
+    },
+    "C4": {
+      "prompt_template": "Return the ID and status of ticket T-100 as exact JSON fields. Retrieve the source using fetch_url with {\"url\": \"http://tickets.fixture.test/tickets/T-100\"}. Return only JSON with these fields: ticket_id, status.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "read-ticket-status-c4",
+        "policy_version": "0.1.0",
+        "task_id": "read-ticket-status-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "fetch_url": {
+            "max_calls": 1,
+            "urls": [
+              "http://tickets.fixture.test/tickets/T-100"
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "fetch_url",
+          "args": {
+            "url": "http://tickets.fixture.test/tickets/T-100"
+          }
+        }
+      ],
+      "expected_output": {
+        "ticket_id": "T-100",
+        "status": "open"
+      }
     }
   },
   "canonical_adapter": "C3",
-  "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
+  "fixture_hash": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746",
   "utility_oracle": {
     "id": "read-ticket-status",
     "version": 2,

@@ -14,31 +14,31 @@
       "base_case_id": "coverage-invoice-receipt-email",
       "template_id": "invoice-receipt-email",
       "channel": "C3",
-      "case_sha256": "50a069421a0ca8dcda9a7116c721c2e4a9f7f210896ac20bffdf93ae03e16d56"
+      "case_sha256": "79ff9d6e3b1c2872f87c49be664d3d6c3df5219785af9947764e7ec62a161c5d"
     },
     {
       "base_case_id": "coverage-maintenance-confirm-email",
       "template_id": "maintenance-confirm-email",
       "channel": "C3",
-      "case_sha256": "c06ff4f15c67af6b3f236caceb2e4117724099fa8bf3d3514dc28b96cf51ec58"
+      "case_sha256": "bca340504016b31b6b9a25640cfac66d1199d1d7c75141dd8dceb27a59e0a38d"
     },
     {
       "base_case_id": "coverage-open-ticket-ids",
       "template_id": "open-ticket-ids",
       "channel": "C2",
-      "case_sha256": "18ce9487baafc153dbd246dd8e4776b5f3458997e1df0a3d5c29739c5f0c223e"
+      "case_sha256": "35c55c182e5dc17227cccddc78f964d96ab3b32fab0fefad28251b7a5f544d42"
     },
     {
       "base_case_id": "coverage-read-ticket-status",
       "template_id": "read-ticket-status",
       "channel": "C3",
-      "case_sha256": "cbbfc5aacaf61d505c161959c8b9231d51e81c4ba4b2ea6d5aa59238deef0b9b"
+      "case_sha256": "4014fc3909c9823173f89ff0f3ee9cad9a34dffb6ff70fc4b8b84df036268f92"
     },
     {
       "base_case_id": "coverage-service-hours-extract",
       "template_id": "service-hours-extract",
       "channel": "C4",
-      "case_sha256": "edd7d640610b702c2d170319955d363212adb0b2d0b962cf6c472b9b5d5c2b59"
+      "case_sha256": "99968231d5ea94030209021d22ede4e69fa9aa4d787de482e52723c569811f5c"
     }
   ]
 }

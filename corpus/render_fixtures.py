@@ -17,6 +17,9 @@ import sys
 import unicodedata
 from pathlib import Path
 
+from tasks import registry
+from tools.query_db import QUERIES
+
 from channels.render import (
     INSERTION_MARKER,
     RECORD_EXTRACTOR_VERSIONS,
@@ -42,11 +45,32 @@ def wrapped_records() -> list[dict]:
     return records
 
 
+def wrapper_with_listed_records(record: dict) -> dict:
+    """SPEC.md Section 5's identical facts for a task whose C2 source returns several
+    rows: the payload sits in the row holding the base's facts, and C3 and C4 list the
+    other rows beside it. Derived from the seed, so the channels can't drift apart."""
+    wrapper = record["fixture"]["wrapper"]
+    template_id = (record.get("task") or {}).get("template_id")
+    if template_id is None:
+        return wrapper
+    call = registry.load(template_id)["variants"]["C2"]["required_calls"][0]
+    lookup_param, resource = QUERIES[call["args"]["query_id"]]
+    seed = json.loads((registry.FIXTURES / "db-seed.json").read_text(encoding="utf-8"))
+    rows = [json.loads(row["content"]) for row in seed
+            if row["resource"] == resource and row["lookup"] == call["args"]["params"][lookup_param]]
+    if len(rows) < 2:
+        return wrapper
+    if wrapper["facts"] not in rows:
+        raise ValueError(f"{record['base_case_id']}: facts aren't a row of {resource}")
+    also = [{key: row[key] for key in wrapper["facts"]} for row in rows if row != wrapper["facts"]]
+    return {**wrapper, "also": also}
+
+
 def expected_files(record: dict) -> dict[Path, str]:
     """Every file this record's fixtures should contain, path -> exact text."""
     base = record["base_case_id"]
     fixture = record["fixture"]
-    wrapper = fixture["wrapper"]
+    wrapper = wrapper_with_listed_records(record)
     payload = record["attack"]["canonical_payload"]
     clean = fixture["clean_replacement"]
 
