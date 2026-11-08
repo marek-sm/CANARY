@@ -117,7 +117,11 @@ def scored_projection(record: Mapping[str, Any]) -> dict[str, Any]:
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     out = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    # Split only on the "\n" record separator we write. Records are written with
+    # ensure_ascii=False, so model text may hold U+2028/U+2029/U+0085, which
+    # str.splitlines() would wrongly split on and corrupt a record
+    # (tests/test_verify_evidence.py::test_no_jsonl_reader_splits_with_splitlines).
+    for line in path.read_text(encoding="utf-8").split("\n"):
         if line.strip():
             out.append(json.loads(line))
     return out
