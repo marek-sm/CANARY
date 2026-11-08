@@ -227,7 +227,9 @@ def plan(rows: Sequence[Mapping], task_order: Mapping) -> dict:
 
 
 def load_rows(path: Path = LEDGER) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    # Only at newlines: str.splitlines also splits at U+2028, U+2029, and U+0085,
+    # which a source's text can hold (LLMail-Inject submissions are free text).
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
 
 
 def main(argv: list[str] | None = None) -> int:
