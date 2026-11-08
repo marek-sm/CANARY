@@ -3,7 +3,7 @@
   "vector_set_id": "w8-task-variants-v0.1.0",
   "interface_version": "defense-interfaces-v1.0.0",
   "authored_by": "marek-sm",
-  "reviewed_by": [],
+  "reviewed_by": ["nkuhanas"],
   "policies": {
     "invoice-receipt-email-c2": {
       "schema_version": "1.0.0",
