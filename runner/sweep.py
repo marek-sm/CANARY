@@ -150,8 +150,12 @@ def verify_sweep(run: Path, corpus_root: Path = DEFAULT_CORPUS_ROOT) -> dict[str
     if len(found) != len(set(found)):
         raise ValueError(f"{run.name}: a trial has more than one stored result")
     execute.check_stored_run(run, pairs, corpus_root=corpus_root)
-    return {"trials_expected": len(schedule), "trials_found": len(found), "missing": len(set(schedule) - set(found)),
-            "status_counts": dict(sorted(statuses.items())), "protocol_versions": sorted({r["protocol_version"] for _, r in pairs})}
+    missing = len(set(schedule) - set(found))
+    return {"trials_expected": len(schedule), "trials_found": len(found), "missing": missing,
+            "status_counts": dict(sorted(statuses.items())), "protocol_versions": sorted({r["protocol_version"] for _, r in pairs}),
+            # A sweep the run-wide stop rule stopped isn't complete until a resume runs it through (decision 0029).
+            "run_wide_stops": grid_dev.run_wide_stops(run),
+            "complete": missing == 0 and not grid_dev.stopped_unresolved(run)}
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -188,6 +192,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     except paid_run.PaidRunRefused as exc:
         print(f"refusing: {exc}", file=sys.stderr)
         return 2
+    except execute.RunWideFailure as exc:
+        print(f"{exc}: rerun this command with --resume", file=sys.stderr)
+        return 3
     except grid_dev.REFUSALS as exc:
         print(f"refusing: {exc}", file=sys.stderr)
         return 1

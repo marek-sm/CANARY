@@ -165,7 +165,8 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
   programs in the mounted system-library folders can't run. `tools/no_exec.py`
   also sets SIGKILL as the tool's death signal again after the exec, because the
   kernel can clear the one bwrap's `--die-with-parent` set, and a tool that
-  outlives a killed bwrap would keep every child it forked.
+  outlives a killed bwrap would keep every child it forked. Its filter then fails
+  `prctl(PR_SET_PDEATHSIG)`, so the tool can't clear that signal itself.
 - `environment(write=())` is the only environment a tool process gets: `PATH`,
   `LANG`, and `TMPDIR` set to its first writable directory. No provider variable
   ever enters it.
@@ -220,6 +221,38 @@ cap to `code_provenance.jsonl` in the run directory as it starts and again as it
 with the OS build, Python build, SQLite version, `uv.lock` hash, and sandbox fingerprint.
 A change in the resolved model or provider fingerprint stops `run_schedule` with
 `ResolvedModelChanged`, and a resume stops on the same evidence (`SPEC.md` Section 9).
+
+The run-wide stop rule ([decision 0029](decisions/0029-gate-chain-shift.md)) stops a run
+with `RunWideFailure` and records why in the invocation's stop line, as `run_wide_stop`
+(null when the rule didn't stop it). Two signals fire it:
+
+- A provider attempt with no model content that every trial would also hit
+  (`execute.run_wide_error`) stops the run at once: an HTTP 4xx other than 408 and 429
+  that isn't a listed content-policy refusal (a dead or unauthorized key, an exhausted
+  balance or workspace limit, a missing model, a malformed request), or a connection
+  error. The attempt is durable and the trial gets no `trial_ended`, so the resume after
+  the fix replays that attempt and makes the step's next retry, as after a kill; a paid
+  trial's ledger entry closes with the attempts it made, and its resume adds no trial to
+  the ceiling. A stop on a step's third attempt leaves no retry (`SPEC.md` Section 9), so
+  that trial ends as an infrastructure failure on resume, and each resume before the
+  cause is fixed spends one retry. A one-off connection reset also stops the run, and the
+  resume continues the trial. A 4xx that belongs to one trial (a request too large, or a
+  content-policy code no adapter lists yet) comes back on every resume, so that trial
+  stops the run up to three times, a retry each, before it ends as an infrastructure
+  failure.
+- Two trials in a row within one invocation ending as infrastructure failures, for any cause (timeouts, 429s,
+  5xx, the fixture service or sandbox, a runner exception), stop the run after the
+  second. Those two stay committed infrastructure failures, which the 5% rule counts as
+  missing.
+
+`grid_dev.verify_grid_run` and `sweep.verify_sweep` say `complete: false` while the run's
+last invocation ended on a stop, and list every stop the run has had; a resume that ends
+without one clears it. So a mock grid that was stopped and not resumed through can't back
+a paid-run record (`paid_run` refuses an incomplete one). A run with a trial left open by an immediate stop has a missing result, so
+`verify_grid_run` refuses it outright. `verify_grid_run` also lists the run's
+infrastructure failures. `grid_dev live` and `sweep live` exit 3 on a stop; rerun the same
+command with `--resume`. The rule's reviews are the project lead's and an AI review, with
+no portfolio owner's.
 
 Paid trials record the checkout's `HEAD` as their `code_commit`. That is the commit adding
 the record, a descendant of the record's `recorded_commit`, so the two differ on every paid

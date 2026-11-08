@@ -255,12 +255,36 @@ def _spec_for_run_verification(run_dir: Path, spec: Mapping[str, Any]) -> dict[s
     return sched_spec
 
 
+def _stop_lines(run_dir: Path) -> list[Mapping[str, Any]]:
+    """Each invocation's stop line from ``code_provenance.jsonl``, oldest first. A line
+    without its newline was cut off by a kill and never became durable."""
+    try:
+        text = (Path(run_dir) / paid_run.PROVENANCE_FILE).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return []
+    lines = [json.loads(line) for line in text.split("\n")[:-1] if line.strip()]
+    return [line for line in lines if isinstance(line, dict) and line.get("phase") == "stop"]
+
+
+def run_wide_stops(run_dir: Path) -> list[dict[str, Any]]:
+    """Every time the run-wide stop rule stopped this run (decision 0029), oldest first."""
+    return [dict(line["run_wide_stop"]) for line in _stop_lines(run_dir) if line.get("run_wide_stop")]
+
+
+def stopped_unresolved(run_dir: Path) -> bool:
+    """The run's last invocation was stopped by the run-wide stop rule, so no invocation
+    has since run the schedule through after the cause was fixed."""
+    lines = _stop_lines(run_dir)
+    return bool(lines) and bool(lines[-1].get("run_wide_stop"))
+
+
 def verify_grid_run(run_dir: Path, spec: Mapping[str, Any], corpus_root: Optional[Path] = None) -> dict[str, Any]:
     """Fail closed if the run is missing trials, duplicates ids, replays tool facts,
     delivered anything but its pinned resource, or holds a result its events don't produce."""
     schedule = validate_grid_spec(_spec_for_run_verification(run_dir, spec))
     expected = {t.logical_trial_id: t for t in schedule}
     found_ids: list[str] = []
+    infrastructure_failures: list[str] = []
     schema_errors: list[str] = []
     checked: Counter[str] = Counter()
 
@@ -273,6 +297,8 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any], corpus_root: Optiona
             except Exception as exc:
                 schema_errors.append(f"{record.get('logical_trial_id')}: {exc}")
             found_ids.append(record["logical_trial_id"])
+            if record.get("status") == "infrastructure_failure":
+                infrastructure_failures.append(record["logical_trial_id"])
             events = read_jsonl(events_path, "event")
             for event in events:
                 validator("event").validate(event)
@@ -309,7 +335,10 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any], corpus_root: Optiona
         "experiment_id": spec["experiment_id"],
         "trials_expected": EXPECTED_TRIALS,
         "trials_found": len(found_ids),
-        "complete": len(missing) == 0 and len(duplicates) == 0,
+        # A run the stop rule stopped isn't complete until a resume runs it through (decision 0029).
+        "complete": len(missing) == 0 and len(duplicates) == 0 and not stopped_unresolved(run_dir),
+        "run_wide_stops": run_wide_stops(run_dir),
+        "infrastructure_failures": sorted(infrastructure_failures),
         # How many cells' delivered resources were hashed; a cell that never retrieved its resource adds none.
         "delivered_resources_checked": {name: checked[name] for name in CONFIGURATIONS},
     }
@@ -622,6 +651,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         except (OSError, ValueError) as exc:
             print(f"refusing: {exc}", file=sys.stderr)
             return 2
+        except execute.RunWideFailure as exc:
+            print(f"{exc}: rerun this command with --resume --out {out}", file=sys.stderr)
+            return 3
         code = _print_report(lambda: summarize_grid_run(out, spec))
         print(f"grid live run directory: {out}")
         return code

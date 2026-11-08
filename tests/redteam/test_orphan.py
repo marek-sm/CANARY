@@ -48,11 +48,19 @@ def _bare_launch_facts(trial) -> str:
         return repr(error)
 
 
-def test_a_timed_out_tool_leaves_no_surviving_child(trial):
+CLEAR_DEATH_SIGNAL = """
+import ctypes
+ctypes.CDLL(None).prctl(1, 0, 0, 0, 0)  # PR_SET_PDEATHSIG, 0: the filter fails it
+"""
+
+
+@pytest.mark.parametrize("clears_signal", [False, True], ids=["plain", "clears-its-death-signal"])
+def test_a_timed_out_tool_leaves_no_surviving_child(trial, clears_signal):
     marker = trial.state / "orphan-marker.txt"
     # Parent (pid 1) spawns a child that waits, then writes the marker; the parent
     # then blocks far past the timeout. Mirrors a wedged tool that forked a worker.
-    code = f"""
+    # The second case first tries to clear its own death signal, to outlive bwrap.
+    code = (CLEAR_DEATH_SIGNAL if clears_signal else "") + f"""
 import os, sys, time
 pid = os.fork()
 if pid == 0:
@@ -109,6 +117,26 @@ sys.stdout.write(str(signal.value))
                           env=sandbox.environment([trial.state]))
     assert done.returncode == 0, done.stderr
     assert done.stdout == "9", f"the tool's death signal is {done.stdout!r}, not SIGKILL (9)"
+
+
+def test_the_tool_cant_clear_its_death_signal(trial):
+    """A tool with no death signal would outlive a killed bwrap, and so would every
+    child it forked; the filter fails ``PR_SET_PDEATHSIG`` with EPERM."""
+    code = """
+import ctypes, sys
+libc = ctypes.CDLL(None, use_errno=True)
+cleared = libc.prctl(1, 0, 0, 0, 0)  # PR_SET_PDEATHSIG
+error = ctypes.get_errno()
+signal = ctypes.c_int(-1)
+libc.prctl(2, ctypes.byref(signal), 0, 0, 0)  # PR_GET_PDEATHSIG
+sys.stdout.write(f"{cleared} {error} {signal.value}")
+"""
+    argv = [sys.executable, "-I", "-c", code]
+    wrapped = sandbox.wrap(argv, cwd=trial.state, read=[trial.fixtures], write=[trial.state])
+    done = subprocess.run(wrapped, cwd=trial.state, capture_output=True, text=True, timeout=10,
+                          env=sandbox.environment([trial.state]))
+    assert done.returncode == 0, done.stderr
+    assert done.stdout == "-1 1 9", f"prctl, errno, death signal: {done.stdout!r}, not -1, EPERM (1), and 9"
 
 
 def test_die_with_parent_is_present_in_the_launch(trial):

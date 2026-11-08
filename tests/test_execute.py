@@ -234,8 +234,12 @@ def test_infrastructure_failure_is_durable_not_half_written(tmp_path):
         def complete(self, *a, **k):
             raise RuntimeError("provider exploded")
 
-    schedule = _run(out, provider_factory=lambda t, c: Boom())
-    for t in schedule:
+    schedule = sched.generate_schedule(_spec())
+    with pytest.raises(execute.RunWideFailure):  # the stop rule ends the run after two (decision 0029)
+        _run(out, provider_factory=lambda t, c: Boom())
+    failed = schedule[:execute.CONSECUTIVE_INFRASTRUCTURE_FAILURES]
+    assert not any((out / execute.trial_slug(t)).exists() for t in schedule[len(failed):])
+    for t in failed:
         (result,) = read_jsonl(out / execute.trial_slug(t) / RESULTS_FILE, "result")
         assert result["status"] == "infrastructure_failure"
         assert result["termination_reason"] == "infrastructure_failure"
@@ -256,15 +260,19 @@ def test_a_failed_trial_can_be_resumed_over(tmp_path):
         def complete(self, *a, **k):
             raise RuntimeError("boom")
 
-    schedule = _run(out, provider_factory=lambda t, c: Boom())
+    schedule = sched.generate_schedule(_spec())
+    with pytest.raises(execute.RunWideFailure):  # the stop rule ends the run after two (decision 0029)
+        _run(out, provider_factory=lambda t, c: Boom())
     # resume with a healthy provider: committed failures are skipped (not redone)
     execute.run_schedule(
         out, schedule, clock=FIXED_CLOCK, canary_factory=lambda: "X",
         code_commit_value=COMMIT, resume=True,
     )
-    for t in schedule:
+    failed = execute.CONSECUTIVE_INFRASTRUCTURE_FAILURES
+    for index, t in enumerate(schedule):
         recs = read_jsonl(out / execute.trial_slug(t) / RESULTS_FILE, "result")
-        assert len(recs) == 1 and recs[0]["status"] == "infrastructure_failure"
+        assert len(recs) == 1
+        assert recs[0]["status"] == ("infrastructure_failure" if index < failed else "completed")
 
 
 def test_events_are_durable_before_the_next_provider_call(tmp_path, monkeypatch):
@@ -302,8 +310,10 @@ def test_fixture_drift_fails_closed_as_infrastructure_failure(tmp_path, monkeypa
         raise ValueError("fixture template drifted mid-run")
 
     monkeypatch.setattr(execute, "reset_trial_environment", drift)
-    schedule = _run(out)
-    for t in schedule:
+    schedule = sched.generate_schedule(_spec())
+    with pytest.raises(execute.RunWideFailure):  # the stop rule ends the run after two (decision 0029)
+        _run(out)
+    for t in schedule[:execute.CONSECUTIVE_INFRASTRUCTURE_FAILURES]:
         (result,) = read_jsonl(out / execute.trial_slug(t) / RESULTS_FILE, "result")
         assert result["status"] == "infrastructure_failure"
 

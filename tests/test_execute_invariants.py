@@ -600,8 +600,10 @@ def test_rendering_failure_leaves_a_durable_record(tmp_path, monkeypatch):
 
     monkeypatch.setattr(execute, "_build_messages", broken)
     out = tmp_path / "run"
-    schedule = _run(out, _spec())
-    for trial in schedule:
+    schedule = sched.generate_schedule(_spec())
+    with pytest.raises(execute.RunWideFailure):  # the stop rule ends the run after two (decision 0029)
+        _run(out, _spec())
+    for trial in schedule[:execute.CONSECUTIVE_INFRASTRUCTURE_FAILURES]:
         result = _result(out, trial)
         assert result["status"] == "infrastructure_failure"
         assert [e["event_type"] for e in _events(out, trial)] == ["trial_started", "trial_ended"]

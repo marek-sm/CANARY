@@ -2,7 +2,7 @@
 
 - Status: Accepted. Approved by the project lead on 2026-10-28; drafted with AI assistance.
 - Date: 2026-10-28
-- Revised: 2026-10-30, before merge, for #64's review: items 1 and 6 now expose only the interpreter's own files, keep the Linux worker to `fixture.sock`, and bind the record to the mock grid's code. Revised 2026-10-31, for the same review: on Linux, every tool runs behind a seccomp filter that fails any attempt to run a program.
+- Revised: 2026-10-30, before merge, for #64's review: items 1 and 6 now expose only the interpreter's own files, keep the Linux worker to `fixture.sock`, and bind the record to the mock grid's code. Revised 2026-10-31, for the same review: on Linux, every tool runs behind a seccomp filter that fails any attempt to run a program. Revised 2026-11-06, after merge: the filter also fails `prctl(PR_SET_PDEATHSIG)`, so a tool can't clear the death signal `tools/no_exec.py` sets, and the test list's "exactly" includes that call ([`docs/INTERFACES.md`](../INTERFACES.md)).
 - Decision scope: Protocol
 - Secondary scopes: Release, Governance
 - Related specification sections: Sections 3, 9, 11, and 13
