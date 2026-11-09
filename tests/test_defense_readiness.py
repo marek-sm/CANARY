@@ -35,7 +35,7 @@ def tool_event(call_id="c1", *, authorized=True, dispatched=True, blocked=False,
         "normalized_args": {"path": "a.txt"}, "normalizer_version": "n", "request_evaluable": True,
         "authorized": authorized, "gate_decision": decision if gate else None, "audit_decision": decision,
         "gate_audit_match": match, "blocked": blocked, "dispatched": dispatched, "disposition_observed": observed,
-        "execution_succeeded": dispatched, "effect_observed": None, "effect_oracle_id": "o", "sink_received": None,
+        "execution_succeeded": True if dispatched else None, "effect_observed": None, "effect_oracle_id": "o", "sink_received": None,
         "evidence_refs": [],
     }
 
@@ -192,9 +192,8 @@ def test_an_incomplete_or_rerun_cell_is_not_ready():
 def test_d2_needs_recorded_input_tokens_and_a_supplied_window():
     trials = grid()
     i, record = find(trials, D2)
-    record = copy.deepcopy(record)
-    record["usage"]["input_tokens"] = None
-    assert "D2-USAGE" in failed(run(replace(trials, i, record)), D2)
+    trials[i] = (record, events(record, usage=False))  # the model_response attempt records no input_tokens
+    assert "D2-USAGE" in failed(run(trials), D2)
     assert "D2-CONTEXT" in failed(run(grid(), context_window=None, output_reserve=None), D2)
 
 
@@ -383,3 +382,324 @@ def test_readiness_refuses_a_run_scored_by_changed_gate2_code(tmp_path, monkeypa
     assert main([str(tmp_path), "--context-window", "200000", "--output-reserve", "40000"]) == 1
     assert called == [tmp_path]
     assert "differs from what ran the grid" in capsys.readouterr().err
+
+
+# --- Lead-side review findings, November 9 (decision 0031 item 8): real-record shapes ---
+
+
+def with_failed_first_attempt(record, log):
+    """Step 1's first attempt timed out and its retry answered, as both adapters record it:
+    the failed attempt has null usage, so the runner's summed trial total is null."""
+    record = copy.deepcopy(record)
+    trial = record["logical_trial_id"]
+    failed_id = f"{trial}:step1:a0"
+    record["attempts"].insert(0, {"attempt_id": failed_id, "model_call_id": f"{trial}:step1", "step": 1,
+                                  "attempt_index": 1, "provider_request_id": None, "outcome": "no_model_content"})
+    record["usage"]["provider_requests"] += 1
+    record["usage"]["input_tokens"] = None
+    RESULT_VALIDATOR.validate(record)
+    first = next(e for e in log if e["event_type"] == "provider_attempt")
+    failed = copy.deepcopy(first)
+    failed.update(event_id=f"{trial}:e-failed", attempt_id=failed_id)
+    failed["payload"].update(outcome="no_model_content", raw_response=None,
+                             usage={"input_tokens": None, "output_tokens": None})
+    EVENT_VALIDATOR.validate(failed)
+    return record, [log[0], failed, *log[1:]]
+
+
+def test_d2_a_retried_attempt_without_usage_is_ready():
+    trials = grid()
+    i, record = find(trials, D2)
+    trials[i] = with_failed_first_attempt(record, events(record))
+    report = run(trials)
+    assert report["defenses"][D2]["decision"] == "ready", failed(report, D2)
+
+
+def test_d1_denied_request_whose_tool_ran_is_not_ready():
+    ran = tool_event(authorized=False, dispatched=False, blocked=True)
+    ran["execution_succeeded"] = True  # a tool_result exists for a call the gate denied
+    assert "D1-NO-BLOCKED-DISPATCH" in failed(run(grid(**{D1: {"tool_events": [ran]}})), D1)
+    sent = tool_event(authorized=False, dispatched=False, blocked=True)
+    sent["sink_received"] = True  # the sink received what the gate denied
+    assert "D1-NO-BLOCKED-DISPATCH" in failed(run(grid(**{D1: {"tool_events": [sent]}})), D1)
+
+
+def filtered_tool_event(step=1):
+    """runner/execute.py's shape for a tool request in a reply the provider's filter stopped."""
+    event = tool_event(gate=False, match=None, observed=False, dispatched=False, blocked=False)
+    event.update(step=step, sink_received=False, effect_observed=False)
+    return event
+
+
+def ended(record, log, termination="provider_content_filter", steps_used=1):
+    record = copy.deepcopy(record)
+    record["termination_reason"] = termination
+    RESULT_VALIDATOR.validate(record)
+    last = log[-1]
+    end = {**{k: last[k] for k in ("schema_version", "experiment_id", "logical_trial_id", "configuration",
+                                   "recorded_at", "component_versions")},
+           "event_id": f"{record['logical_trial_id']}:end", "sequence": last["sequence"] + 1,
+           "event_type": "trial_ended", "model_call_id": None, "attempt_id": None,
+           "raw_evidence": {"sha256": None, "artifact_ref": None},
+           "payload": {"status": "completed", "termination_reason": termination, "steps_used": steps_used}}
+    EVENT_VALIDATOR.validate(end)
+    return record, [*log, end]
+
+
+def test_d1_content_filter_stop_with_a_tool_request_is_ready():
+    """Decision 0008: a filtered reply is a completed outcome whose request was never gated."""
+    trials = grid()
+    i, record = find(trials, D1)
+    record = copy.deepcopy(record)
+    record["tool_events"] = [tool_event(), filtered_tool_event(step=1)]
+    trials[i] = ended(record, events(record))
+    report = run(trials)
+    assert report["defenses"][D1]["decision"] == "ready", failed(report, D1)
+
+
+def test_d1_filter_exemption_needs_the_trial_to_have_ended_filtered_at_that_step():
+    trials = grid()
+    i, record = find(trials, D1)
+    record = copy.deepcopy(record)
+    record["tool_events"] = [tool_event(), filtered_tool_event(step=1)]
+    trials[i] = ended(record, events(record), termination="final_answer")
+    assert {"D1-DECIDED", "D1-OBSERVED"} <= failed(run(trials), D1)
+    trials = grid()
+    i, record = find(trials, D1)
+    record = copy.deepcopy(record)
+    record["tool_events"] = [tool_event(), filtered_tool_event(step=1)]
+    trials[i] = ended(record, events(record), steps_used=2)
+    assert {"D1-DECIDED", "D1-OBSERVED"} <= failed(run(trials), D1)
+
+
+def test_d2_content_policy_refusal_with_no_response_is_ready():
+    trials = grid()
+    i, record = find(trials, D2)
+    record = copy.deepcopy(record)
+    record["attempts"][0]["outcome"] = "provider_content_filter"
+    log = events(record)
+    for e in log:
+        if e["event_type"] == "provider_attempt":
+            e["payload"].update(outcome="provider_content_filter", raw_response=None,
+                                usage={"input_tokens": None, "output_tokens": None})
+    record["usage"]["input_tokens"] = None
+    trials[i] = ended(record, log)
+    report = run(trials)
+    assert report["defenses"][D2]["decision"] == "ready", failed(report, D2)
+
+
+def test_d2_unrecognized_stop_reason_is_not_ready():
+    """An adapter passes an unknown stop reason through; it can't rule truncation out."""
+    trials = grid()
+    i, record = find(trials, D2)
+    trials[i] = (record, events(record, stop="model_context_window_exceeded"))
+    assert "D2-NO-TRUNCATION" in failed(run(trials), D2)
+
+
+def test_code_checks_fail_closed_when_not_bound_to_the_grid_code(monkeypatch):
+    ran = []
+    monkeypatch.setattr(dr, "_run_pytest", lambda files: ran.append(files) or (0, "5 passed in 0.1s\n"))
+    report = defense_readiness(grid(), context_window=200_000, output_reserve=20_000,
+                               code_binding=(False, "the test files differ from the grid's commit"))
+    for defense, check_id in ((D1, "D1-TESTS"), (D2, "D2-TESTS")):
+        check = next(c for c in report["defenses"][defense]["checks"] if c["check"] == check_id)
+        assert not check["passed"] and "grid's commit" in check["detail"]
+    assert ran == []
+    unbound = defense_readiness(grid(), context_window=200_000, output_reserve=20_000)
+    assert unbound["defenses"][D1]["decision"] == unbound["defenses"][D2]["decision"] == "not_ready"
+
+
+def _git(root, *args):
+    import subprocess
+    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=root,
+                          check=True, capture_output=True, text=True).stdout.strip()
+
+
+def bound_repo(tmp_path):
+    from runner import paid_run
+
+    root = tmp_path / "repo"
+    for path in dr.BOUND_FILES:
+        (root / path).parent.mkdir(parents=True, exist_ok=True)
+        (root / path).write_text(f"# {path}\n", encoding="utf-8")
+    (root / "defenses").mkdir()
+    (root / "defenses" / "gate.py").write_text("GATE = 1\n", encoding="utf-8")
+    _git(root.parent, "init", "-q", str(root))
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "grid")
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    line = {"code_commit": _git(root, "rev-parse", "HEAD"),
+            "code_digest": paid_run.code_digest(paid_run.code_hashes(root)), "dirty_paths": []}
+    (run_dir / "code_provenance.jsonl").write_text(json.dumps(line) + "\n", encoding="utf-8")
+    return root, run_dir
+
+
+def test_code_binding_ties_the_suites_to_the_code_that_ran_the_grid(tmp_path):
+    root, run_dir = bound_repo(tmp_path)
+    assert dr.code_binding(run_dir, root=root)[0]
+
+    (root / dr.D1_TEST_FILES[0]).write_text("# edited after the grid\n", encoding="utf-8")
+    assert not dr.code_binding(run_dir, root=root)[0]  # uncommitted test edit
+    _git(root, "commit", "-qam", "edit a golden test")
+    assert not dr.code_binding(run_dir, root=root)[0]  # committed test edit after the grid
+
+    root, run_dir = bound_repo(tmp_path / "second")
+    (root / "defenses" / "gate.py").write_text("GATE = 2\n", encoding="utf-8")
+    _git(root, "commit", "-qam", "fix the gate after the grid")
+    ok, detail = dr.code_binding(run_dir, root=root)
+    assert not ok and "defenses" in detail
+
+    (run_dir / "code_provenance.jsonl").unlink()
+    assert not dr.code_binding(run_dir, root=root)[0]
+
+
+def test_cli_passes_the_code_binding_to_the_report(tmp_path, monkeypatch):
+    from runner import paid_run
+
+    seen = {}
+    monkeypatch.setattr(paid_run, "check_code_matches_run", lambda run_dir: "compared")
+    monkeypatch.setattr(dr, "code_binding", lambda run_dir: (False, "not bound"))
+    monkeypatch.setattr(dr, "load_run", lambda run_dir: grid())
+
+    def fake(trials, **kwargs):
+        seen.update(kwargs)
+        return {"defenses": {}}
+
+    monkeypatch.setattr(dr, "defense_readiness", fake)
+    out = tmp_path / "report.json"
+    assert main([str(tmp_path), "--context-window", "200000", "--output-reserve", "20000", "--out", str(out)]) == 0
+    assert seen["code_binding"] == (False, "not bound")
+    assert json.loads(out.read_text())["code_binding"] == {"bound": False, "detail": "not bound"}
+
+
+@pytest.mark.parametrize("env", ["FORCE_COLOR", "PY_COLORS"])
+def test_code_checks_count_outcomes_whatever_the_terminal_settings(monkeypatch, tmp_path, env):
+    suite = tmp_path / f"test_suite_color_{env.lower()}.py"  # a module name no other in-process run has imported
+    suite.write_text("def test_a():\n    pass\n\n\ndef test_b():\n    pass\n", encoding="utf-8")
+    monkeypatch.setenv(env, "1")
+    check = dr.run_tests("D1-TESTS", (str(suite),))
+    assert check["passed"] and "2 passed" in check["detail"], check
+
+
+def test_code_checks_count_a_real_skip_and_xfail(tmp_path):
+    suite = tmp_path / "test_suite_skip_xfail.py"
+    suite.write_text("import pytest\n\ndef test_a():\n    pass\n\n\n@pytest.mark.skip\ndef test_b():\n    pass\n\n\n"
+                     "@pytest.mark.xfail\ndef test_c():\n    assert False\n", encoding="utf-8")
+    check = dr.run_tests("D1-TESTS", (str(suite),))
+    assert not check["passed"] and "skipped" in check["detail"] and "xfailed" in check["detail"], check
+
+
+def test_code_checks_fail_without_pytest(monkeypatch):
+    import sys
+
+    monkeypatch.setitem(sys.modules, "pytest", None)
+    check = dr.run_tests("D1-TESTS", ("tests/test_policy_gate.py",))
+    assert not check["passed"] and "pytest" in check["detail"]
+
+
+def test_the_predeclared_suites_include_every_gate_audit_and_coverage_test():
+    assert {"tests/test_policy_gate.py", "tests/test_gate_audit_differential.py",
+            "tests/test_gate_audit_typed_params.py", "tests/test_gate_canonicalizer_mutants.py"} <= set(dr.D1_TEST_FILES)
+    assert {"tests/test_datamarking.py", "tests/test_defense_mutants.py"} <= set(dr.D2_TEST_FILES)
+
+
+def test_make_target_omits_an_unset_window_so_the_report_fails_d2_context():
+    import subprocess
+
+    dry = subprocess.run(["make", "-n", "defense-readiness", "RUN=r"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    assert "--context-window" not in dry and "--output-reserve" not in dry
+    dry = subprocess.run(["make", "-n", "defense-readiness", "RUN=r", "CONTEXT=200000", "RESERVE=20000"],
+                         cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    assert '--context-window "200000"' in dry and '--output-reserve "20000"' in dry
+
+
+# --- Fix review of the November 9 lead push ---
+
+
+def test_code_binding_allows_a_runner_fix_across_a_resumed_grid_and_later_report_code(tmp_path):
+    """Decision 0028 item 5: a runner fix made during a resumed grid, or report code landing
+    later in analysis/, isn't refused. Only what the suites exercise is bound."""
+    from runner import paid_run
+
+    root, run_dir = bound_repo(tmp_path)
+    (root / "runner").mkdir()
+    (root / "runner" / "execute.py").write_text("FIXED = True\n", encoding="utf-8")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "runner fix, then resume")
+    line = {"code_commit": _git(root, "rev-parse", "HEAD"),
+            "code_digest": paid_run.code_digest(paid_run.code_hashes(root)), "dirty_paths": []}
+    with (run_dir / "code_provenance.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps(line) + "\n")
+    (root / "analysis").mkdir()
+    (root / "analysis" / "report.py").write_text("REPORT = 1\n", encoding="utf-8")  # untracked report code
+    ok, detail = dr.code_binding(run_dir, root=root)
+    assert ok, detail
+
+
+def test_code_binding_refuses_a_commit_that_is_not_a_full_object_name(tmp_path):
+    root, run_dir = bound_repo(tmp_path)
+    digest = json.loads((run_dir / "code_provenance.jsonl").read_text())["code_digest"]
+    for commit in ("HEAD", "--output=x"):
+        (run_dir / "code_provenance.jsonl").write_text(json.dumps({"code_commit": commit, "code_digest": digest}) + "\n",
+                                                       encoding="utf-8")
+        assert not dr.code_binding(run_dir, root=root)[0], commit
+    assert not [p for p in root.iterdir() if p.name.startswith("x")]
+
+
+def fake_repo(tmp_path, monkeypatch, tests):
+    root = tmp_path / "fake"
+    (root / "tests").mkdir(parents=True)
+    (root / "pyproject.toml").write_text("[tool.pytest.ini_options]\n", encoding="utf-8")
+    for name, text in tests.items():
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text(text, encoding="utf-8")
+    monkeypatch.setattr(dr, "REPO_ROOT", root)
+    return root
+
+
+TWO = "def test_a():\n    pass\n\n\ndef test_b():\n    pass\n"
+
+
+def test_code_checks_ignore_a_root_conftest_or_ini_that_drops_tests(tmp_path, monkeypatch):
+    fake_repo(tmp_path, monkeypatch, {
+        "conftest.py": "def pytest_collection_modifyitems(items):\n    del items[1:]\n",
+        "pytest.ini": "[pytest]\naddopts = -k test_a\n",
+        "tests/test_dropme.py": TWO,
+    })
+    check = dr.run_tests("D1-TESTS", ("tests/test_dropme.py",))
+    assert check["passed"] and "2 passed" in check["detail"], check
+
+
+def test_code_checks_count_a_module_level_skip(tmp_path, monkeypatch):
+    fake_repo(tmp_path, monkeypatch, {
+        "tests/test_kept.py": TWO,
+        "tests/test_gone.py": "import pytest\npytest.importorskip('no_such_module_anywhere')\n\n\ndef test_c():\n    pass\n",
+    })
+    check = dr.run_tests("D1-TESTS", ("tests/test_kept.py", "tests/test_gone.py"))
+    assert not check["passed"] and "skipped" in check["detail"], check
+
+
+def test_code_checks_fail_a_run_that_exits_early(tmp_path, monkeypatch):
+    fake_repo(tmp_path, monkeypatch, {
+        "tests/test_exits.py": "import pytest\n\ndef test_a():\n    pass\n\n\ndef test_b():\n    pytest.exit('stop', returncode=0)\n\n\n"
+                               "def test_c():\n    assert False\n",
+    })
+    check = dr.run_tests("D1-TESTS", ("tests/test_exits.py",))
+    assert not check["passed"] and "not run" in check["detail"], check
+
+
+def test_d1_denied_request_with_an_observed_effect_or_a_tool_result_event_is_not_ready():
+    effect = tool_event(authorized=False, dispatched=False, blocked=True)
+    effect["effect_observed"] = True
+    assert "D1-NO-BLOCKED-DISPATCH" in failed(run(grid(**{D1: {"tool_events": [effect]}})), D1)
+
+    trials = grid(**{D1: {"tool_events": [tool_event(authorized=False, dispatched=False, blocked=True)]}})
+    i, record = find(trials, D1)
+    log = trials[i][1]
+    result_event = copy.deepcopy(log[-1])
+    result_event.update(event_id=f"{record['logical_trial_id']}:tool", sequence=log[-1]["sequence"] + 1,
+                        event_type="tool_result", model_call_id=None, attempt_id=None,
+                        payload={"call_id": "c1", "step": 1, "observation": {}})
+    trials[i] = (record, [*log, result_event])
+    assert "D1-NO-BLOCKED-DISPATCH" in failed(run(trials), D1)

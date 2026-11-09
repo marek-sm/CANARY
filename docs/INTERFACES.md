@@ -335,6 +335,15 @@ exist. A mock run with no provenance is allowed, and each report's `code_check` 
 non-mock run with none is refused, so deleting the file can't evade the check. Any later
 script that scores a paid grid calls the same check.
 
+`analysis.defense_readiness` also binds its code checks to the grid. Its D1 and D2 suites
+count only when the code they test is unchanged from each commit the run's provenance
+recorded, and none of it is dirty in git's view: `defenses/`, `oracles/`, `channels/`,
+`schemas/`, `fixtures/`, the predeclared test files, `tests/conftest.py`, and
+`pyproject.toml`. Otherwise the code checks fail unrun, and the report's `code_binding`
+says why. So a gate fix or a golden-test edit after the grid can't certify code the records
+didn't come from. A runner fix during a resumed grid, or report code landing later, binds as
+before. Run it from the checkout that ran the grid, or from one at the same code.
+
 ## Utility boundary
 
 ```text
