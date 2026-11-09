@@ -319,7 +319,7 @@ against the 120: `execute_trial` applies the ceiling to neither the sweep's `eva
 trials nor rehearsal and stage trials. Under pytest the real paths refuse, so no test can
 touch the real ledger.
 
-`analysis.floor_count` and `analysis.gate2_budget` call
+`analysis.floor_count`, `analysis.gate2_budget`, and `analysis.defense_readiness` call
 `paid_run.check_code_matches_run` before they read a run. Each invocation records a digest
 of the Gate 2 scripts' own scoring code: `analysis/__init__.py`, `analysis/floor_count.py`,
 `analysis/gate2_budget.py`, `analysis/defense_readiness.py` when it exists, and
@@ -334,6 +334,15 @@ plays no part, so the Gate 2 step's close (decision 0025 item 4; November 10 und
 exist. A mock run with no provenance is allowed, and each report's `code_check` says so; a
 non-mock run with none is refused, so deleting the file can't evade the check. Any later
 script that scores a paid grid calls the same check.
+
+`analysis.defense_readiness` also binds its code checks to the grid. Its D1 and D2 suites
+count only when the code they test is unchanged from each commit the run's provenance
+recorded, and none of it is dirty in git's view: `defenses/`, `oracles/`, `channels/`,
+`schemas/`, `fixtures/`, the predeclared test files, `tests/conftest.py`, and
+`pyproject.toml`. Otherwise the code checks fail unrun, and the report's `code_binding`
+says why. So a gate fix or a golden-test edit after the grid can't certify code the records
+didn't come from. A runner fix during a resumed grid, or report code landing later, binds as
+before. Run it from the checkout that ran the grid, or from one at the same code.
 
 ## Utility boundary
 
