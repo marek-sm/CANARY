@@ -17,7 +17,7 @@
 | Field | Current public state |
 |---|---|
 | Lifecycle state | Team implementation. Club week 11 (November 2–8) was the W8 week, but W8 can freeze only after the Gate 2 step and the tier input. `W7-T3` ([#62](https://github.com/marek-sm/CANARY/pull/62)) and `W7-T1` ([#63](https://github.com/marek-sm/CANARY/pull/63)) merged November 3. Their paid steps run Monday, November 9. Three W7 pull requests are open: [#73](https://github.com/marek-sm/CANARY/pull/73) (`W7-T2`, awaiting the project lead's source review), [#54](https://github.com/marek-sm/CANARY/pull/54) (`W7-T4`, the project lead's fallback push under decision 0029), and [#66](https://github.com/marek-sm/CANARY/pull/66) (`W7-T5`, its `main` merge due November 8). Open W8 work: [#74](https://github.com/marek-sm/CANARY/pull/74) (`W8-T1` CI proof notes) and [#77](https://github.com/marek-sm/CANARY/pull/77) (`W8-T3` generator and dormant plan) |
-| Documentation baseline | `v1.0.0` committed in `149a706`; `SPEC.md` is v1.21.0. Decisions merged this week: [0025](docs/decisions/0025-full-study.md) (#68, the `F20` target), [0026](docs/decisions/0026-malformed-calls-and-price-bound.md) (#69, malformed calls and the price bound), [0027](docs/decisions/0027-acceptance-by-work.md) (#72, acceptance by work), [0023](docs/decisions/0023-tool-sandbox.md) (#64, the tool sandbox and the paid-run record), [0028](docs/decisions/0028-restore-strength.md) (#75), [0029](docs/decisions/0029-gate-chain-shift.md) (#81), and [0030](docs/decisions/0030-done-by-november-30.md) (#84) |
+| Documentation baseline | `v1.0.0` committed in `149a706`; `SPEC.md` is v1.22.0 from [decision 0031](docs/decisions/0031-merge-on-green.md) (v1.21.0 at this rollup). Decisions merged this week: [0025](docs/decisions/0025-full-study.md) (#68, the `F20` target), [0026](docs/decisions/0026-malformed-calls-and-price-bound.md) (#69, malformed calls and the price bound), [0027](docs/decisions/0027-acceptance-by-work.md) (#72, acceptance by work), [0023](docs/decisions/0023-tool-sandbox.md) (#64, the tool sandbox and the paid-run record), [0028](docs/decisions/0028-restore-strength.md) (#75), [0029](docs/decisions/0029-gate-chain-shift.md) (#81), and [0030](docs/decisions/0030-done-by-november-30.md) (#84) |
 | Active-contributor count | 6 — five portfolio owners plus the project lead; `F20` is the Section 12 headcount ceiling. Under [decision 0027](docs/decisions/0027-acceptance-by-work.md), read at the Wednesday, November 11 tier input, four owners have authored work on their rows since November 3. One owner has no counted reply or work yet. If that holds on November 11, the count is 5 and the ceiling is `R15`, final for this run (decision 0029 item 3) |
 | Gate 1 result | **Not passed** on September 27. The October 10 recovery check met every [`TASKS.md` Gate 1 item](TASKS.md#gate-1--end-of-week-5) after the deadline, so the result stands. Decision 0025 amends the `SPEC.md` Section 11 Gate 1 response for this run, after it fired, and that check isn't new evidence for doing so |
 | Gate 2 result | **Not passed** on October 11, with the `SPEC.md` Section 11 Gate 2 response. Decision 0025 reopened the Gate 2 step, and decision 0029 moved its close to the end of Tuesday, November 10, with no fifth move. If it hasn't run by then, no `ALL` or `ONE` row is selectable, and `M10-BASE` remains only if the D0_BASELINE summary and readiness record merge by Thursday, November 12. The run-wide stop rule ([#82](https://github.com/marek-sm/CANARY/pull/82)) merged November 6. Its only reviews were the project lead's and an AI review, with no portfolio owner's, and the Gate 2 record states that limitation |
@@ -26,7 +26,7 @@
 | Current protocol or run ID | Not created; required by Gate 3 |
 | Next gate | Gate 3 — protocol freeze — Saturday, November 14, on W8 work merged through Friday, November 13 ([decision 0029](docs/decisions/0029-gate-chain-shift.md)). If it misses, the `SPEC.md` Section 11 Gate 3 response applies |
 | Last green commit/container | `0e26ca5`: CI run [42322124916](https://github.com/marek-sm/CANARY/actions/runs/42322124916), November 7 |
-| Review | Exactly one reviewer per slice. Standing pairs by portfolio: T4 reviews T1, T3 reviews T2, T5 reviews T3, T1 reviews T4, and T2 reviews T5. The project lead reviews `W7-T2`, including the `SPEC.md` Section 5 source review. Every owner answers review comments, merge conflicts, and questions on their own pull requests within 48 hours, and reviewers review their pair's pull requests within 48 hours of opening (decisions 0021 and 0022), through November 29 under decision 0030 |
+| Review | Under [decision 0031](docs/decisions/0031-merge-on-green.md), from November 9: owners merge their own pull requests once `test` passes, with no approval required, and member reviews are optional. A member's change request blocks the merge until the owner answers it. A record or CI change still needs approval from a contributor other than its author (`.github/CODEOWNERS`), and the project lead reviews `W7-T2`'s sources under `SPEC.md` Section 5. Results and release code is reviewed on the lead side, an AI review whose every finding the project lead classifies, before every paid run, freeze, and gate step that uses it; the paper states that results code had no independent human review. Every owner answers review comments, merge conflicts, and questions on their own pull requests within 48 hours, through November 29 under decision 0030 |
 | Demo slot and operator | The slot is unconfirmed; no live duration or rehearsal target has been inferred. Under [decision 0030](docs/decisions/0030-done-by-november-30.md), Demo Day falls November 30–December 11. November 30 is the earliest date, and the release freezes by noon on November 29. The project lead has asked the organizers for the date, slot, time limit, and hardware access by Monday, November 23. Demo operator (`SPEC.md` Section 13): Miles (T5), who accepted on October 11 |
 | Judging rubric | Received September 26, 2026 from CSAI research leadership as the "Research Expectations" document; the project lead is recused from setting its criteria. Mapped in [`TASKS.md`](TASKS.md#judging-rubric-map), corrected October 7 in [#36](https://github.com/marek-sm/CANARY/pull/36), and re-paraphrased October 10 under [decision 0013](docs/decisions/0013-rubric-framing.md) |
 
@@ -49,11 +49,11 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Each W8
 
 | Portfolio | W7 (as of November 8) | W8 slice |
 |---|---|---|
-| T1 — Chace | `W7-T1`: #63 merged November 3. Its paid smokes run on the project lead's Mac on Monday, November 9. Chace approved the project lead's task variants ([#71](https://github.com/marek-sm/CANARY/pull/71)) on November 7 and reviews `W7-T4`'s fallback push | `W8-T1`: [#74](https://github.com/marek-sm/CANARY/pull/74) open; last merge by Friday, November 13 |
+| T1 — Chace | `W7-T1`: #63 merged November 3. Its paid smokes run on the project lead's Mac on Monday, November 9. Chace approved the project lead's task variants ([#71](https://github.com/marek-sm/CANARY/pull/71)) on November 7 | `W8-T1`: [#74](https://github.com/marek-sm/CANARY/pull/74) open; last merge by Friday, November 13 |
 | T2 — Johan | `W7-T2`: [#73](https://github.com/marek-sm/CANARY/pull/73), out of draft November 6, one fix pushed November 8. It waits on the project lead's source review | `W8-T2`: posts `P` the day `W7-T2` merges, then merges first in the November 11–13 freezes |
-| T3 — Samson | `W7-T3`: #62 merged November 3. Its paid grid runs on the project lead's Mac on Monday, November 9 | `W8-T3`: [#77](https://github.com/marek-sm/CANARY/pull/77) open; last push in the November 11–13 freezes, reviewed within 24 hours |
-| T4 — Dhruv | `W7-T4`: [#54](https://github.com/marek-sm/CANARY/pull/54). The slice owner's last push was November 1. The project lead makes decision 0029's fallback push on November 8, a visible scope change recorded in `TASKS.md`. T4 keeps the slice, and T1 reviews within 24 hours | `W8-T4`: opens by the morning of Monday, November 9; its pool steps wait for `W7-T2` |
-| T5 — Miles | `W7-T5`: [#66](https://github.com/marek-sm/CANARY/pull/66), its `main` merge due by the end of November 8 and T2's review by the end of November 9 | `W8-T5`: opens the day `W7-T5` merges |
+| T3 — Samson | `W7-T3`: #62 merged November 3. Its paid grid runs on the project lead's Mac on Monday, November 9 | `W8-T3`: [#77](https://github.com/marek-sm/CANARY/pull/77) open; last push in the November 11–13 freezes, merged on green and reviewed on the lead side within 24 hours |
+| T4 — Dhruv | `W7-T4`: [#54](https://github.com/marek-sm/CANARY/pull/54). The slice owner's last push was November 1. The project lead makes decision 0029's fallback push on November 8, a visible scope change recorded in `TASKS.md`. T4 keeps the slice. Under decision 0031, #54 merges after four tests from T1's October 25 change request and the lead-side review | `W8-T4`: opens by the morning of Monday, November 9; its pool steps wait for `W7-T2` |
+| T5 — Miles | `W7-T5`: [#66](https://github.com/marek-sm/CANARY/pull/66), its `main` merge due by the end of November 8; it merges on green under decision 0031 | `W8-T5`: opens the day `W7-T5` merges |
 | Project lead — Marek | Merged this week: decisions 0025, 0026, 0027, 0023, 0028, 0029, and 0030; the price bound (#70); D2 marking of every text-bearing HTML construct (#76); the stack-audit fixes (#78); the sandbox death-signal fixes (#80, #83); and the run-wide stop rule (#82). Open: the task variants (#71, approved November 7); the `W7-T2` source review; the `W7-T4` fallback push; the paid runs Monday, November 9; the summary and Gate 2 step by November 10 | Tier input November 11. Slipped from November 8, still open: the gap sentence, license choice and author order, and the official C1 records through Section 11 change control. The record superseding decision 0018's pilot example by November 10, then decision 0012's wiring and the demo-rehearsal command by November 13 |
 
 ## Public decisions, risks, and external asks
@@ -70,7 +70,7 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Each W8
 4. **Licensing:** do not accept external contributions or imply reuse rights until code/content licensing is selected. That choice, due November 8, slipped, and `W11-T5`'s `LICENSE` depends on it.
 5. **Process:**
    - On November 8, the team channel and each owner hear decision 0030's dates directly. Owners re-accept their W12 and W13 rows by a reply, read November 15.
-   - Every owner answers review comments, merge conflicts, and questions within 48 hours, and reviewers review within 48 hours of opening.
+   - Every owner answers review comments, merge conflicts, and questions within 48 hours. Reviewer turnaround ended with [decision 0031](docs/decisions/0031-merge-on-green.md).
 6. **Risk — the Gate 2 chain, the largest:**
    - The paid grid on Monday, November 9 needs `W7-T4` (#54) and the task variants (#71) merged first (decision 0025 item 4; decision 0028).
    - Then the paid summary and the Gate 2 step come by the end of November 10. A slip anywhere in the chain ends the defense comparison, and there is no fifth move.
@@ -83,18 +83,18 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Each W8
 ## Next seven days
 
 - **Sunday, November 8:**
-  - `W7-T4`'s fallback push, then T1's review.
+  - `W7-T4`'s fallback push.
   - The task variants (#71) merge once their CI is green.
   - `W7-T5`'s `main` merge.
   - Decision 0030's notices.
 - **Monday, November 9:**
-  - The project lead's `W7-T2` source review and `W7-T4`'s merge.
+  - The project lead's `W7-T2` source review. Decision 0031's lead-side review of `W7-T4` and the code the paid run uses, with #54's four gap tests, then `W7-T4`'s merge.
   - Raw-record storage, then a fresh checkout, the spend ledger and cap, the live smoke, the mock grid, the paid-run record, and the paid grid and smokes.
-  - `W8-T2` and `W8-T4` open, and T2 reviews `W7-T5`.
+  - `W8-T2` and `W8-T4` open, and `W7-T5` may merge on green.
 - **Tuesday, November 10:**
   - `W7-T2` merges, and `W8-T2` posts `P`.
   - The workspace limit and cap are raised.
-  - The paid summary merges, reviewed by Miles and Dhruv.
+  - The paid summary merges on green after its lead-side review.
   - The record superseding decision 0018's pilot example.
   - The Gate 2 step by the end of the day.
 - **Wednesday, November 11:** the tier input and the decision 0027 acceptance read. Then the W8 freezes, `W8-T2` first.

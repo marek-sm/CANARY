@@ -1,6 +1,6 @@
 # 0022: Start on merge: slices and gate steps start when their inputs land, and dates become deadlines
 
-- Status: Accepted. Approved by the project lead on 2026-10-25; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md), and by [decision 0030](0030-done-by-november-30.md).
+- Status: Accepted. Approved by the project lead on 2026-10-25; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md), by [decision 0030](0030-done-by-november-30.md), and, for review sentences, by [decision 0031](0031-merge-on-green.md).
 - Date: 2026-10-25
 - Decision scope: Protocol
 - Secondary scopes: Governance
