@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.21.0**  
+**Public project and experimental specification v1.22.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -1358,7 +1358,7 @@ Gate status is evidence-based and recorded against a commit, manifest, and date.
 |---|---|---|
 | Gate 1 — vertical slice and contract lock | September 27 | One excluded base renders as attack and exact clean twin through C2/C3/C4; all six D0_BASELINE attack/clean cells complete `run → events → score → JSONL → replay`; structural diff, payload round-trip, schemas, deterministic scores, mock CI, and no-key replay pass; the measurement contract is versioned |
 | Gate 2 — development instrument | October 11 | The 90-cell one-repeat development grid and 15 clean task-coverage smokes complete; forced stop/resume creates no gaps, duplicates, or repeated effects; D1_POLICY_GATE/D2_DATAMARKING receive binary readiness decisions; cost and context-window forecasts support the proposed tier; demo/replay succeeds twice |
-| Gate 3 — protocol freeze | November 14 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container (or, for a host run, the host environment [decision 0029](docs/decisions/0029-gate-chain-shift.md) names), fixtures, and hashes reconcile in `protocol/active.json` |
+| Gate 3 — protocol freeze | November 14 | The selected empirical prefix and seeded provenance audit pass, or `ENGINEERING` has a zero-trial manifest and frozen validation plan; model, prompt, tasks, applicable defenses, schedule/validation plan, analysis/report generator, code, container (or, for a host run, the host environment [decision 0029](docs/decisions/0029-gate-chain-shift.md) names), fixtures, and hashes reconcile in `protocol/active.json`; and an attested lead-side review of the frozen commit has no open blocking finding ([decision 0031](docs/decisions/0031-merge-on-green.md)) |
 | Gate 4 — data or validation integrity | November 19 target; November 20 final supported-results decision; November 22 absolute cutoff | Scheduled cells or validation checks, missingness, comparability, IDs, hashes, resets, attempt histories, raw-to-endpoint recomputation, sanitized manifests, and generated outputs pass; all claims match the active tier |
 | Gate 5 — release candidate | November 26 ([decision 0030](docs/decisions/0030-done-by-november-30.md)) | Fresh-clone `make report` and `make replay` pass without a key or network in under five minutes; citations, licenses, accessibility, offline media, replay, and failure-mode rehearsals pass; release hashes agree |
 
@@ -1366,7 +1366,7 @@ Mandatory responses are outcome-blind:
 
 - **Gate 1 fails:** make the next work window integration recovery, cap the empirical ceiling at `R15` or smaller, and stop nonessential corpus and presentation growth. For the fall 2026 run only, decision 0025 lifts the `R15` cap and the corpus-growth stop, after the fact, and only if the record merges before the first paid grid call ([record](docs/decisions/0025-full-study.md)).
 - **Gate 2 fails:** do not freeze evaluation until idempotent resume and D0_BASELINE readiness pass. Choose only a tier supported by the binary defense checks, budget, and capacity; if no comparable D0_BASELINE baseline is ready by Gate 3, choose `ENGINEERING` or `STOP`.
-- **Gate 3 fails:** use only a smaller precomputed and independently verified prefix. Never fill N with unaudited cases. If no empirical prefix or viable funded model is complete, choose `ENGINEERING` or `STOP`.
+- **Gate 3 fails:** use only a smaller precomputed and independently verified prefix. Never fill N with unaudited cases. If no empirical prefix or viable funded model is complete, choose `ENGINEERING` or `STOP`. A blocking finding in the lead-side review of the frozen code holds the Gate 3 step within its date for the fix and its review; if it can't close that day, a smaller prefix doesn't repair code, so choose `ENGINEERING` or `STOP` ([decision 0031](docs/decisions/0031-merge-on-green.md)).
 - **Gate 4 fails:** never publish an asymmetric, incomplete, or cross-version comparison. Permit only the Section 9 symmetric repair rule through November 22, or activate the unchanged `ENGINEERING` fallback plan frozen at Gate 3 under a new validation ID. Otherwise choose `STOP`.
 - **Gate 5 fails:** stop all feature and data-producing work. Repair only reproducibility, replay/video reliability, report correctness, accessibility, citations, attribution, and release packaging; remove any broken optional artifact.
 
@@ -1552,7 +1552,8 @@ State all of these prominently:
 - at empirical tiers, three repeats characterize observed instability but do not create more independent attacks;
 - at empirical tiers, thinking is disabled and the model takes no sampling parameters, so repeats vary in ways the protocol can't fix;
 - at empirical tiers, golden vectors have one independent reviewer, and D2_DATAMARKING uses one static marker;
-- at empirical tiers, the project lead ran the official sweep with technical access to raw records, so blinding was by rule, and unless [decision 0028](docs/decisions/0028-restore-strength.md) item 9's container replaces it, the sweep ran on the host under the tool sandbox with a null `container_digest`; and
+- at empirical tiers, the project lead ran the official sweep with technical access to raw records, so blinding was by rule, and unless [decision 0028](docs/decisions/0028-restore-strength.md) item 9's container replaces it, the sweep ran on the host under the tool sandbox with a null `container_digest`;
+- results and release code had no independent human review: contributors merged their own pull requests once CI passed, the code was reviewed on the lead side by an AI review whose every finding the project lead classified, and code the project lead built had no second human reviewer ([decision 0031](docs/decisions/0031-merge-on-green.md)); and
 - at empirical tiers, the Gate 1 response's `R15` cap was lifted after it fired, with no new evidence, by the project lead's direction ([decision 0025](docs/decisions/0025-full-study.md)).
 
 ### Accessibility
@@ -1614,7 +1615,7 @@ AI assistants may help with boilerplate, schema code, test scaffolding, plotting
 - claims, uncertainty, and limitations; and
 - whether a source supports a sentence.
 
-AI-generated code receives ordinary review and tests. Code an owner cannot explain without notes does not ship.
+AI-generated code receives ordinary review and tests. Code an owner cannot explain without notes does not ship. Ordinary review of results and release code is the lead-side review of [decision 0031](docs/decisions/0031-merge-on-green.md): after the merge, and before the next paid run, freeze, or gate step that uses the code, an AI review whose every finding the project lead reads and classifies. Other code gets the same review before the release freeze. A change to a corpus record, ledger row, golden vector, or CI file still needs approval from a contributor other than its author.
 
 ### Citation rule
 

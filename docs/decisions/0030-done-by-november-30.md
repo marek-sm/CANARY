@@ -1,6 +1,6 @@
 # 0030: Finish by Monday, November 30: move the post-cutoff work seven days into the Thanksgiving break, correct the club-week numbering, and keep `F20`
 
-- Status: Accepted. Approved by the project lead on 2026-11-07; drafted with AI assistance.
+- Status: Accepted. Approved by the project lead on 2026-11-07; drafted with AI assistance. Review sentences amended by [decision 0031](0031-merge-on-green.md).
 - Date: 2026-11-07
 - Decision scope: Protocol
 - Secondary scopes: Governance, Release

@@ -1,0 +1,9 @@
+# Decision 0031 item 3: a pull request that adds, edits, or deletes a record or a CI
+# file needs an approval from a contributor other than its author. The ruleset on
+# `main` requires a code owner's review; GitHub reads this file from the base branch.
+# Every other path merges on green, and results code is reviewed on the lead side.
+/corpus/**/*.json        @marek-sm @nkuhanas @j0hanj @samsonchang2028 @milesshoe @Dhruv235
+/corpus/**/*.jsonl       @marek-sm @nkuhanas @j0hanj @samsonchang2028 @milesshoe @Dhruv235
+/oracles/authorization/**/*.json @marek-sm @nkuhanas @j0hanj @samsonchang2028 @milesshoe @Dhruv235
+/defenses/vectors/       @marek-sm @nkuhanas @j0hanj @samsonchang2028 @milesshoe @Dhruv235
+/.github/                @marek-sm @nkuhanas @j0hanj @samsonchang2028 @milesshoe @Dhruv235

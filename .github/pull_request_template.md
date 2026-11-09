@@ -4,7 +4,8 @@
 
 - Task slice:
 - Accountable owner:
-- Reviewer (consented public identifier):
+- Reviewer (optional; a record or CI change needs one, under decision 0031; consented public identifier):
+- Results or release code touched (lead-side review under decision 0031): No | Yes — which paths:
 - Frozen or claim-bearing artifact touched: No | Yes — `SPEC.md` Section 11 deviation entry:
 
 ## Change
