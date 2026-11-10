@@ -130,6 +130,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0031-merge-on-green.md`](docs/decisions/0031-merge-on-green.md) | Why pull requests merge once CI passes with no member review, how results and release code is reviewed on the lead side before every paid run, freeze, and gate step, why record and CI changes keep a second human through `.github/CODEOWNERS`, and what the paper must state about it (`SPEC.md` v1.22.0) |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
+| [`docs/reviews/2026-11-09-paid-run.md`](docs/reviews/2026-11-09-paid-run.md) | The first lead-side review under decision 0031: #54, the results code merged with no member review, and decision 0028 item 8's scoring files, before the November 9 paid run |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
 ## Reproduction contract
