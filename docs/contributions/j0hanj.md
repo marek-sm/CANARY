@@ -18,7 +18,7 @@
 - Pull request/commit/artifact: W7-T2 pull request, see [the W7-T2 handoff](../W7_T2_HANDOFF.md)
   - Work performed: evaluation intake of 44 considered candidates from InjecAgent, AgentDojo, ASB, and LLMail-Inject (27 eligible, 1 duplicate, 16 rejected with reasons), each with a source record; the deterministic selection script for SPEC.md Section 5 steps 5-8 under decision 0014.
   - Acceptance evidence: `make corpus-check`; `make select`; `tests/test_selection.py`; `tests/test_eval_intake.py`.
-  - Independent reviewer: `marek-sm` (review and Section 5 source review pending).
+  - Independent reviewer: `marek-sm` (Section 5 source review in #73, November 8: all 44 records and four licenses passed).
 - Pull request/commit/artifact: review of [#28](https://github.com/marek-sm/CANARY/pull/28) (W6-T5, standing T2→T5 pair)
   - Work performed: ran the branch's tests and generated-example check; found and reproduced a display-label bug where an errored trial with unknown compromise got no `ERROR` label, and a stored `ERROR` label crashed replay; requested changes.
   - Acceptance evidence: GitHub review on #28.

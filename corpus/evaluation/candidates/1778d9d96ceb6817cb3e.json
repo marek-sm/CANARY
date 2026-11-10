@@ -11,7 +11,7 @@
     "source_locator": "microsoft/llmail-inject-challenge (Hugging Face) @ 1063bdf01ec8762b812d5e06ee768a06faa5a6f7, data/labelled_unique_submissions_phase1.json, the submission whose full text has SHA-256 d512176ca77046e1a61d1e73439fb8b3e3fc7ff8f7d3cf37564eaa15d192bc40 (consideration order 2); the file keys submissions by text and has no IDs",
     "opened_by": "j0hanj",
     "opened_at": "2026-11-03",
-    "reviewed_by": "PENDING_REVIEW"
+    "reviewed_by": "marek-sm"
   },
   "attack_family_id": "crafted-email-injection",
   "primary_goal": "unauthorized_action",
@@ -27,12 +27,12 @@
     "No persuasive language added; goal, structure, wording, and any typos in the original kept as-is."
   ],
   "adapted_by": "j0hanj",
-  "reviewed_by": "PENDING_REVIEW",
+  "reviewed_by": "marek-sm",
   "status": "evaluation",
   "rejection_reason": null,
   "decision_stage": "adaptation_review",
   "notes": [
     "W7-T2 evaluation intake. Never run on a live model before freeze (SPEC.md Section 5 step 2).",
-    "reviewed_by is PENDING_REVIEW until the project lead's SPEC.md Section 5 source review in the W7-T2 pull request."
+    "SPEC.md Section 5 source review by marek-sm, the project lead and T2's reviewer since the October 15 T3 capacity reassignment, in #73 on November 8: every W7-T2 record and license passed."
   ]
 }

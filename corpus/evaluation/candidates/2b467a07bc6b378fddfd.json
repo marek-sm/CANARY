@@ -11,7 +11,7 @@
     "source_locator": "agiresearch/ASB@544540ff0788998072f7df463056fd17e62cc9f4, data/all_attack_tools.jsonl line 4 (Attacker Tool: StealthDataExport; Stealthy Attack; Aggressive=True), wrapped by pyopenagi/agents/react_agent_attack.py attack method 'naive'",
     "opened_by": "j0hanj",
     "opened_at": "2026-11-02",
-    "reviewed_by": "PENDING_REVIEW"
+    "reviewed_by": "marek-sm"
   },
   "attack_family_id": "tool-forcing-directive",
   "primary_goal": "secret_disclosure",
@@ -27,12 +27,12 @@
     "No persuasive language added; goal, structure, wording, and any typos in the original kept as-is."
   ],
   "adapted_by": "j0hanj",
-  "reviewed_by": "PENDING_REVIEW",
+  "reviewed_by": "marek-sm",
   "status": "evaluation",
   "rejection_reason": null,
   "decision_stage": "adaptation_review",
   "notes": [
     "W7-T2 evaluation intake. Never run on a live model before freeze (SPEC.md Section 5 step 2).",
-    "reviewed_by is PENDING_REVIEW until the project lead's SPEC.md Section 5 source review in the W7-T2 pull request."
+    "SPEC.md Section 5 source review by marek-sm, the project lead and T2's reviewer since the October 15 T3 capacity reassignment, in #73 on November 8: every W7-T2 record and license passed."
   ]
 }

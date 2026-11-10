@@ -98,9 +98,8 @@ For each record, check that the locator opens at the pinned version, that `origi
 - **LLMail-Inject** cases are long, human-written emails, and some carry HTML or fake role markers. They're filed under one family, `crafted-email-injection`, since the source treats them as one challenge technique.
 - **Families.** AgentDojo's `injecagent` wrapper ("IMPORTANT!!! Ignore all previous instructions ...") and ASB's `context_ignoring` are filed under `ignore-previous-instructions` with `ignore_previous`, since they're the same technique.
 
-After you sign off, I'll write `marek-sm` into `source.reviewed_by` in every new ledger row and record, and into `reviewed_by` in every adapted one, then push.
+The source review passed on November 8 for all 44 records and all four licenses, with no rejections (#73). `marek-sm` is now in `source.reviewed_by` in every W7-T2 ledger row and record, and in `reviewed_by` in every adapted one.
 
 ## Open items
 
-- `make corpus-check` and `test_every_ledger_row_validates` stay red until that sign-off, on purpose: the schema refuses `PENDING_REVIEW` as a reviewer.
 - No candidate has run on any model. None will before freeze (SPEC.md Section 5 step 2).

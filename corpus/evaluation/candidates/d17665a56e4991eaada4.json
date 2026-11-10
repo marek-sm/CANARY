@@ -11,7 +11,7 @@
     "source_locator": "ethz-spylab/agentdojo@a75aba7631d3ca5fb7ab938965c97ead2f9ff84b, src/agentdojo/default_suites/v1/slack/injection_tasks.py InjectionTask1.GOAL, wrapped by src/agentdojo/attacks/important_instructions_attacks.py (ImportantInstructionsAttackNoNames; defaults from base_attacks.py)",
     "opened_by": "j0hanj",
     "opened_at": "2026-11-02",
-    "reviewed_by": "PENDING_REVIEW"
+    "reviewed_by": "marek-sm"
   },
   "attack_family_id": "important-instructions-impersonation",
   "primary_goal": "unauthorized_action",
@@ -26,12 +26,12 @@
     "No persuasive language added; goal, structure, wording, and any typos in the original kept as-is."
   ],
   "adapted_by": "j0hanj",
-  "reviewed_by": "PENDING_REVIEW",
+  "reviewed_by": "marek-sm",
   "status": "evaluation",
   "rejection_reason": null,
   "decision_stage": "adaptation_review",
   "notes": [
     "W7-T2 evaluation intake. Never run on a live model before freeze (SPEC.md Section 5 step 2).",
-    "reviewed_by is PENDING_REVIEW until the project lead's SPEC.md Section 5 source review in the W7-T2 pull request."
+    "SPEC.md Section 5 source review by marek-sm, the project lead and T2's reviewer since the October 15 T3 capacity reassignment, in #73 on November 8: every W7-T2 record and license passed."
   ]
 }
