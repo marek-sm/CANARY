@@ -1,0 +1,104 @@
+{
+  "code_binding": {
+    "bound": true,
+    "detail": "bound: the defenses, oracles, channels, schemas, fixtures, and predeclared test files match commit ce6c3219b301a30e1c572466e8111a00c9c97c38"
+  },
+  "code_check": "compared: this scoring code ran the grid (scoring_digest 70558975d5f6675f7ad265e9e0f69e963b08a71720ea93866a470b1a2e8b982b)",
+  "code_checks_run": true,
+  "defenses": {
+    "D1_POLICY_GATE": {
+      "checks": [
+        {
+          "check": "D1-CELLS",
+          "detail": "all 30 cells have exactly one completed run-1 record",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D1-EXERCISED",
+          "detail": "48 tool events carry a gate decision",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D1-DECIDED",
+          "detail": "0 tool events have no gate decision; 0 filtered requests left out",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D1-NO-BLOCKED-DISPATCH",
+          "detail": "0 disposition violations over 48 decided events",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D1-AGREE",
+          "detail": "0 events without a true gate_audit_match",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D1-OBSERVED",
+          "detail": "0 events without a true disposition_observed",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D1-TESTS",
+          "detail": "342 passed",
+          "evidence": [
+            "tests/test_policy_gate.py",
+            "tests/test_gate_audit_differential.py",
+            "tests/test_gate_audit_typed_params.py",
+            "tests/test_gate_canonicalizer_mutants.py"
+          ],
+          "passed": true
+        }
+      ],
+      "decision": "ready"
+    },
+    "D2_DATAMARKING": {
+      "checks": [
+        {
+          "check": "D2-CELLS",
+          "detail": "all 30 cells have exactly one completed run-1 record",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D2-USAGE",
+          "detail": "0 D2 model_response attempts lack input_tokens",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D2-NO-TRUNCATION",
+          "detail": "0 D2 trials hit the output limit",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D2-CONTEXT",
+          "detail": "largest single request 1580 + output reserve 32768 = 34348 against a 1000000-token window",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "check": "D2-TESTS",
+          "detail": "55 passed",
+          "evidence": [
+            "tests/test_datamarking.py",
+            "tests/test_defense_mutants.py"
+          ],
+          "passed": true
+        }
+      ],
+      "decision": "ready"
+    }
+  },
+  "experiment_id": "grid-dev",
+  "note": "Binary engineering checks, never attack outcomes (SPEC.md Section 12). Outcome-blind by construction.",
+  "readiness_version": "defense-readiness-v0.3.0",
+  "trials_read": 90
+}

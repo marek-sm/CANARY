@@ -577,10 +577,12 @@ Covers `W5-T1` through `W5-T5` and the lead scaffold. Checked September 30 again
 Covers `W6-T1` through `W7-T5`. Recorded against its `SPEC.md` date of October 11, while the W7 slices run October 12–18; items are ticked when their evidence lands, as with Gate 1. **Changed October 22 by [decision 0021](docs/decisions/0021-two-week-shift.md):** the W7 slices run October 26–November 1, and the Gate 2 step runs Saturday, October 31. Under [decision 0022](docs/decisions/0022-start-on-merge.md) those are latest dates. **Changed November 2 by [decision 0025](docs/decisions/0025-full-study.md):** the step runs by Saturday, November 7, and Gate 2 stays "Not passed". **Changed November 5 by [decision 0029](docs/decisions/0029-gate-chain-shift.md) (noted here November 7):** the step's latest date is the end of Tuesday, November 10.
 
 - [ ] All four intrinsically safe tools and all ten deterministic task templates pass their required validators, including the four authorized high-risk clean templates.
-- [ ] The 90-cell development grid completes, followed by one clean D0_BASELINE/D1_POLICY_GATE/D2_DATAMARKING smoke in one predeclared canonical adapter for each of the five task templates not represented by the development bases: 15 clean task-coverage smokes total, as defined in `SPEC.md` Section 9.
+- [x] The 90-cell development grid completes, followed by one clean D0_BASELINE/D1_POLICY_GATE/D2_DATAMARKING smoke in one predeclared canonical adapter for each of the five task templates not represented by the development bases: 15 clean task-coverage smokes total, as defined in `SPEC.md` Section 9.
 - [ ] Forced stop/resume creates no gaps, duplicates, or repeated tool effects.
-- [ ] D1_POLICY_GATE and D2_DATAMARKING receive binary, outcome-blind readiness decisions.
-- [ ] Context and conservative funded-budget checks support the proposed tier.
+- [x] D1_POLICY_GATE and D2_DATAMARKING receive binary, outcome-blind readiness decisions.
+- [x] Context and conservative funded-budget checks support the proposed tier.
+
+**Gate 2 step, November 10 (10:29 pm).** The project lead ran the step from the paid clone at `ce6c321`, after #89 and #54 merged: [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md). D1_POLICY_GATE is **ready** and D2_DATAMARKING is **ready**. The development floor **applies**: 0 of the 15 D0_BASELINE attack cells count, with 15 false, 0 null, and 0 missing, on `claude-haiku-5-5` through `messages`, with `thinking` disabled and `effort` `medium`. The funded budget passes at `F20`. The grid and smokes item is ticked on the paid summary ([`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md)). The validator and forced stop/resume items aren't re-checked at this step and stay unticked. Gate 2's October 11 result stays "Not passed".
 
 ### Gate 3 — end of week 8
 
