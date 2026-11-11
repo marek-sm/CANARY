@@ -89,7 +89,7 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Each W8
   - Decision 0030's notices.
 - **Monday, November 9:**
   - The project lead's `W7-T2` source review. Decision 0031's lead-side review of `W7-T4` and the code the paid run uses ([`docs/reviews/2026-11-09-paid-run.md`](docs/reviews/2026-11-09-paid-run.md)), the project lead's readiness fixes in #54, then `W7-T4`'s merge (done, `f1907ef`).
-  - Raw-record storage: a private folder outside Git exists, but sharing it slipped past the first paid call. `TASKS.md` records the slip (November 9). The raw run folders are copied in the night of the run.
+  - Raw-record storage: a private folder outside Git, shared with Dhruv, Miles, and Chace before the first paid call on November 9 (corrected November 10: the slip `TASKS.md` recorded that day didn't happen). The four raw run folders were copied in by November 10, and the copies match the paid clone.
   - Then a fresh checkout at the reviewed commit, the spend ledger and cap, the live smoke, the mock grid, the paid-run record, and the paid grid and smokes.
   - `W8-T2` and `W8-T4` open, and `W7-T5` may merge on green once a code owner approves.
 - **Tuesday, November 10:**
