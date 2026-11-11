@@ -1,0 +1,42 @@
+{
+  "code_check": "compared: this scoring code ran the grid (scoring_digest 70558975d5f6675f7ad265e9e0f69e963b08a71720ea93866a470b1a2e8b982b)",
+  "conservative_C1_trial_cost_usd": 0.0641216,
+  "contingency_factor": 1.25,
+  "development_trials_source": "runner.spend_ledger",
+  "experiment_id": "grid-dev",
+  "global_max_observed_dev_trial_cost_usd": 0.0005508,
+  "max_observed_dev_trial_cost_by_stratum_usd": {
+    "C2/attack/D0_BASELINE": 0.0005228,
+    "C2/attack/D1_POLICY_GATE": 0.0005127,
+    "C2/attack/D2_DATAMARKING": 0.0005469,
+    "C2/clean/D0_BASELINE": 0.0004859,
+    "C2/clean/D1_POLICY_GATE": 0.0004747,
+    "C2/clean/D2_DATAMARKING": 0.0005114,
+    "C3/attack/D0_BASELINE": 0.000468,
+    "C3/attack/D1_POLICY_GATE": 0.0004642,
+    "C3/attack/D2_DATAMARKING": 0.0005049,
+    "C3/clean/D0_BASELINE": 0.0004359,
+    "C3/clean/D1_POLICY_GATE": 0.0004354,
+    "C3/clean/D2_DATAMARKING": 0.00046830000000000005,
+    "C4/attack/D0_BASELINE": 0.0005118,
+    "C4/attack/D1_POLICY_GATE": 0.0005118,
+    "C4/attack/D2_DATAMARKING": 0.0005508,
+    "C4/clean/D0_BASELINE": 0.0004647,
+    "C4/clean/D1_POLICY_GATE": 0.0004613,
+    "C4/clean/D2_DATAMARKING": 0.000499
+  },
+  "passes": true,
+  "planned_C1_trials": 12,
+  "planned_primary_trials_per_stratum": 60,
+  "price_bound_source": "analysis/price_bound.py",
+  "price_bound_usd": 0.0641216,
+  "remaining_funded_balance_at_gate_2_usd": 9.96,
+  "required_balance_usd": 4.5737051,
+  "reserve_trials": {
+    "development": 13,
+    "rehearsal": 30,
+    "stage": 3
+  },
+  "tier": "F20",
+  "unspent_development_rehearsal_and_stage_reserve_usd": 2.9495936
+}

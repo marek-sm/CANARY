@@ -131,6 +131,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
+| [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md) | The Gate 2 step's record for November 10: the binary D1_POLICY_GATE and D2_DATAMARKING readiness decisions, the development-floor count, and the funded-budget check |
 | [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |
 | [`docs/reviews/2026-11-09-paid-run.md`](docs/reviews/2026-11-09-paid-run.md) | The first lead-side review under decision 0031: #54, the results code merged with no member review, and decision 0028 item 8's scoring files, before the November 9 paid run |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
