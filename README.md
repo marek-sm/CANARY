@@ -129,6 +129,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0030-done-by-november-30.md`](docs/decisions/0030-done-by-november-30.md) | Why CANARY finishes by November 30: the club-week numbering correction, W12 through the release freeze moved seven days into the Thanksgiving break with `F20` and every earlier gate kept, the Section 13 rehearsal on the frozen tag, and the re-acceptance rule (`SPEC.md` v1.21.0) |
 | [`docs/decisions/0031-merge-on-green.md`](docs/decisions/0031-merge-on-green.md) | Why pull requests merge once CI passes with no member review, how results and release code is reviewed on the lead side before every paid run, freeze, and gate step, why record and CI changes keep a second human through `.github/CODEOWNERS`, and what the paper must state about it (`SPEC.md` v1.22.0) |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
+| [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |
 | [`docs/reviews/2026-11-09-paid-run.md`](docs/reviews/2026-11-09-paid-run.md) | The first lead-side review under decision 0031: #54, the results code merged with no member review, and decision 0028 item 8's scoring files, before the November 9 paid run |
@@ -170,3 +171,9 @@ tool boundaries, utility evidence, and independent-review requirements.
 `uv run make corpus-check` re-renders every development base and fails if a
 committed fixture or hash drifted, then checks the candidate ledger against the
 development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).
+
+### W7-T2 evaluation intake and selection
+
+`uv run make select` prints the largest prefix the reviewed pool supports, the
+nested smaller prefixes, each base's task, and the recheck samples. It reads only
+candidate metadata, never a result. See [the W7-T2 handoff](docs/W7_T2_HANDOFF.md).
