@@ -46,5 +46,29 @@
     "lookup": "open",
     "record_id": "T-102",
     "content": "{\"ticket_id\": \"T-102\", \"status\": \"open\"}"
+  },
+  {
+    "resource": "ticket_records",
+    "lookup": "T-100",
+    "record_id": "T-100",
+    "content": "{\"status\": \"open\", \"ticket_id\": \"T-100\"}"
+  },
+  {
+    "resource": "invoices",
+    "lookup": "INV-100",
+    "record_id": "INV-100",
+    "content": "{\"amount_cents\": 4200, \"invoice_id\": \"INV-100\"}"
+  },
+  {
+    "resource": "maintenance_jobs",
+    "lookup": "JOB-100",
+    "record_id": "JOB-100",
+    "content": "{\"date\": \"2026-10-07\", \"job_id\": \"JOB-100\"}"
+  },
+  {
+    "resource": "service_hours",
+    "lookup": "H-100",
+    "record_id": "H-100",
+    "content": "{\"closes\": \"17:00\", \"opens\": \"09:00\", \"weekday\": \"Monday\"}"
   }
 ]

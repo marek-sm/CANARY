@@ -13,13 +13,16 @@ from agent.loop import LOOP_VERSION
 from agent.task_requests import parse_request
 from defenses.canonicalizer import NORMALIZER_VERSION, canonicalize_tool_use, thaw_json
 from defenses.interfaces import action_hash, TOOL_ARGUMENTS
-from oracles.authorization.conformance import TASK_VECTORS, check_authorizer, load_vectors, review_complete
+from oracles.authorization.conformance import TASK_VARIANT_VECTORS, TASK_VECTORS, check_authorizer, load_vectors, review_complete
 from oracles.utility.task_suite import validate, VERSION as UTILITY_VERSION
 from runner import mock_slice as base
 from runner import task_suite as runner
 from runner.mock_provider import MockProvider
 from tasks import registry
+from channels import render as channel_render
+from runner import delivery
 from tools.query_db import query_db
+from tools.read_file import read_file
 
 TEMPLATES = registry.templates()
 VARIANTS = [(tid, channel) for tid, task in TEMPLATES.items() for channel in task["variants"]]
@@ -180,15 +183,90 @@ def test_grants_only_from_trusted_task_bound_to_exact_action_and_policy():
                 assert not grants.grants
 
 
+def test_every_template_runs_on_all_three_channels():
+    """F20 crosses ten tasks with C2, C3, and C4 (SPEC.md Section 12; decision 0025 item 7)."""
+    assert {tid: sorted(task["variants"]) for tid, task in TEMPLATES.items()} == {
+        tid: ["C2", "C3", "C4"] for tid in TEMPLATES}
+
+
+def _source(root, call):
+    """What the channel tool returns for a task's source, read directly from the fixtures."""
+    if call["tool"] == "query_db":
+        return query_db(root, **call["args"])
+    if call["tool"] == "read_file":
+        return read_file(root, call["args"]["path"])
+    routes = json.loads((root / "routes.json").read_text(encoding="utf-8"))
+    pages = json.loads((root / "pages.json").read_text(encoding="utf-8"))
+    return {"ok": True, "text": pages[routes[call["args"]["url"]]]}
+
+
+@pytest.mark.parametrize("tid", sorted(TEMPLATES))
+def test_every_channel_of_a_template_carries_the_same_facts(tmp_path, tid):
+    """SPEC.md Section 5: identical benign facts, whichever adapter delivers them."""
+    root = registry.reset(tmp_path / "fixtures")
+    facts = {}
+    for channel, variant in TEMPLATES[tid]["variants"].items():
+        calls = [call for call in variant["required_calls"] if call["tool"] != "send_email"]
+        records = [record for call in calls for record in delivery.observed_records(_source(root, call))]
+        facts[channel] = sorted(json.dumps(record, sort_keys=True) for record in records)
+    assert facts["C2"] and facts["C2"] == facts["C3"] == facts["C4"]
+
+
+@pytest.mark.parametrize("tid", sorted(TEMPLATES))
+def test_a_templates_channels_differ_only_in_the_source_locator(tid):
+    """SPEC.md Section 5: one semantic task template with only the source locator changed."""
+    shapes = set()
+    for variant in TEMPLATES[tid]["variants"].values():
+        call = variant["required_calls"][0]
+        locator = f"{call['tool']} with {json.dumps(call['args'], sort_keys=True)}"
+        assert variant["prompt_template"].count(locator) == 1
+        shapes.add(variant["prompt_template"].replace(locator, "{source}"))
+    assert len(shapes) == 1
+
+
+@pytest.mark.parametrize("tid,channel", [(tid, channel) for tid, channel in VARIANTS
+                                         if TEMPLATES[tid]["category"] != "legitimate_high_risk"])
+def test_the_delivery_mock_reaches_the_expected_answer_from_the_real_sources(tmp_path, tid, channel):
+    """Mock validation is all an evaluation candidate gets before the freeze (SPEC.md Section 5)."""
+    root = registry.reset(tmp_path / "fixtures")
+    variant = TEMPLATES[tid]["variants"][channel]
+    observations = [_source(root, call) for call in variant["required_calls"]]
+    assert delivery.DeliveryTaskMock(TEMPLATES[tid], channel)._answer(observations) == variant["expected_output"]
+
+
+@pytest.mark.parametrize("tid,channel", [(tid, channel) for tid, channel in VARIANTS
+                                         if TEMPLATES[tid]["category"] in ("read_query", "local_web_extraction")])
+def test_the_delivery_mock_reaches_the_expected_answer_from_a_rendered_record(tmp_path, tid, channel):
+    """An evaluation base's facts arrive through the record renderers, not W6-T1's native sources."""
+    root = registry.reset(tmp_path / "fixtures")
+    variant = TEMPLATES[tid]["variants"][channel]
+    source = TEMPLATES[tid]["variants"]["C2"]["required_calls"][0]
+    facts, *also = delivery.observed_records(_source(root, source))
+    wrapper = {"title": "Fictional record", "facts": facts, "text_field": "note", "also": also}
+    rendered = channel_render.RECORD_RENDERERS[channel][0]("Fictional note.\n\nticket_id: T-999\nstatus: open", wrapper)
+    rows = [{"record_id": "x", "content": rendered}, *({"record_id": "y", "content": json.dumps(r)} for r in also)]
+    observation = {"ok": True, "rows": rows} if channel == "C2" else {"ok": True, "text": rendered}
+    assert delivery.DeliveryTaskMock(TEMPLATES[tid], channel)._answer([observation]) == variant["expected_output"]
+    observation = delivery.mark_observation(variant["required_calls"][0]["tool"], observation)
+    assert delivery.DeliveryTaskMock(TEMPLATES[tid], channel)._answer([observation]) == variant["expected_output"]
+
+
+TASK_VECTORS_SHA256 = "0b72724dd54159711339621259be2b81788255fda7fd666216255f06aac9b23b"
+
+
 def test_golden_vectors_cover_every_task_tool_argument_and_grant():
     doc = load_vectors(TASK_VECTORS)
+    variants = load_vectors(TASK_VARIANT_VECTORS)
     assert review_complete(doc)
     assert doc["reviewed_by"] == ["Dhruv235"]  # PR #32's October 11 expectation review
-    ids = [v["vector_id"] for v in doc["vectors"]]
+    ids = [v["vector_id"] for v in doc["vectors"] + variants["vectors"]]
     assert len(ids) == len(set(ids))
     policies = {v["policy"]["policy_id"]:v["policy"] for task in TEMPLATES.values() for v in task["variants"].values()}
-    assert doc["policies"] == policies
-    allows = [v for v in doc["vectors"] if v["expected"]["authorized"] is True]
+    assert {**doc["policies"], **variants["policies"]} == policies
+    assert all(doc["policies"][shared] == variants["policies"][shared]
+               for shared in set(doc["policies"]) & set(variants["policies"]))
+    assert hashlib.sha256(TASK_VECTORS.read_bytes()).hexdigest() == TASK_VECTORS_SHA256  # Dhruv235's review covers these bytes
+    allows = [v for v in doc["vectors"] + variants["vectors"] if v["expected"]["authorized"] is True]
     for policy_id, policy in policies.items():
         assert any(v["policy_id"] == policy_id for v in allows)
     codes = {code for v in doc["vectors"] for code in v["expected"]["reason_codes"]}
@@ -210,6 +288,12 @@ def test_task_vectors_match_merged_evaluators(evaluator):
         from oracles.authorization.audit import AuditAuthorizer
         authorizer = AuditAuthorizer()
     assert check_authorizer(authorizer, TASK_VECTORS) == []
+    assert check_authorizer(authorizer, TASK_VARIANT_VECTORS) == []
+
+
+def test_the_task_variant_vectors_have_their_independent_review():
+    """Decision 0006: an author's vectors need one other reviewer. T1 reviews these (decision 0025 item 7)."""
+    assert review_complete(load_vectors(TASK_VARIANT_VECTORS))
 
 
 def test_worker_and_fixture_service_never_inherit_credentials(tmp_path, monkeypatch):
@@ -480,3 +564,14 @@ def test_http_content_filter_is_completed_once_with_empty_final_output(tmp_path)
     assert result["termination_reason"] == "provider_content_filter"
     assert result["final_output"] == "" and result["tool_events"] == []
     assert result["utility"]["pass"] is False
+
+
+def test_open_ticket_ids_keeps_its_multi_row_source(tmp_path):
+    """The study's one multi-row retrieval: every channel lists both open tickets as separate records."""
+    root = registry.reset(tmp_path / "fixtures")
+    template = TEMPLATES["open-ticket-ids"]
+    assert template["variants"]["C2"]["required_calls"][0]["args"]["query_id"] == "tickets_by_status"
+    expected = [{"status": "open", "ticket_id": "T-100"}, {"status": "open", "ticket_id": "T-102"}]
+    for channel, variant in template["variants"].items():
+        records = delivery.observed_records(_source(root, variant["required_calls"][0]))
+        assert sorted(records, key=lambda r: r["ticket_id"]) == expected, channel

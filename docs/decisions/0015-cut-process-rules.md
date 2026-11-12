@@ -1,6 +1,6 @@
 # 0015: Cut process rules that don't protect the research
 
-- Status: Accepted. Approved by the project lead on 2026-10-12; drafted with AI assistance.
+- Status: Accepted. Approved by the project lead on 2026-10-12; drafted with AI assistance. Review sentences amended by [decision 0031](0031-merge-on-green.md).
 - Date: 2026-10-12
 - Decision scope: Governance
 - Secondary scopes: Protocol

@@ -122,18 +122,24 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0018-c1-control-order.md`](docs/decisions/0018-c1-control-order.md) | Why a tier takes its C1 controls in a hash order over the records that pass source review, how a shortfall is counted, and why the set is fixed before any C1 control runs live |
 | [`docs/decisions/0019-audit-doc-reconciliations.md`](docs/decisions/0019-audit-doc-reconciliations.md) | How six of the seven documentation contradictions the October 17 audit found are settled, each by text that already states the rule, with no pinned text changed, and why the `CLAUDE.md` one waits |
 | [`docs/decisions/0020-request-level-formula.md`](docs/decisions/0020-request-level-formula.md) | Why `SPEC.md` Section 7's `unauthorized_action_dispatched` and `unauthorized_action_effect` no longer name `request_evaluable`, so a dispatched request whose audit didn't complete gives null, as the scorer already does |
-| [`docs/decisions/0021-two-week-shift.md`](docs/decisions/0021-two-week-shift.md) | Why every lattice week from W7 on moves two working weeks later, once, with Gate 3 on November 11 (November 14 under decision 0029), the data cutoff November 22, and the release freeze December 6, and the 48-hour turnaround rule it sets for every owner |
-| [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
+| [`docs/decisions/0021-two-week-shift.md`](docs/decisions/0021-two-week-shift.md) | Why every lattice week from W7 on moves two working weeks later, once, with Gate 3 on November 11 (November 14 under decision 0029), the data cutoff November 22, and the release freeze December 6 (noon November 29 under decision 0030), and the 48-hour turnaround rule it sets for every owner |
+| [`docs/decisions/0022-start-on-merge.md`](docs/decisions/0022-start-on-merge.md) | Why each slice and gate step now starts the day its inputs are merged and reviewed (review wording amended by decision 0031) instead of on a fixed Monday or Saturday, why no slice crosses a gate before that gate runs, and why scheduled dates became latest dates while Gate 4 stays a target and the data cutoff stays fixed |
 | [`docs/decisions/0023-tool-sandbox.md`](docs/decisions/0023-tool-sandbox.md) | Why every tool process, mock runs and CI included, runs in a deny-by-default OS sandbox that reaches only its trial's fixture socket and can't write evidence, why no paid call runs without the project lead's paid-run record, and why the paid commands run on the project lead's Mac |
 | [`docs/decisions/0024-engineering-tier-input.md`](docs/decisions/0024-engineering-tier-input.md) | Superseded by decision 0025. Why the Gate 2 step was closed on October 31 and the November 1 tier input was `ENGINEERING` |
 | [`docs/decisions/0025-full-study.md`](docs/decisions/0025-full-study.md) | Why decision 0024 was replaced a day later and the study targets `F20`, why that is a third move with no new evidence, why the Gate 1 cap is lifted after the fact, and the dated tripwires, new work, budget rule, and sweep conditions that follow |
 | [`docs/decisions/0026-malformed-calls-and-price-bound.md`](docs/decisions/0026-malformed-calls-and-price-bound.md) | Why a malformed tool call stays a malformed outcome and an unauthorized request made in one goes uncounted, why replies are limited to one tool call, how the limit is reported, why the Section 7 and Section 9 wording change is protocol deviation DEV-0003, and how the maximum-token price bound is set |
 | [`docs/decisions/0027-acceptance-by-work.md`](docs/decisions/0027-acceptance-by-work.md) | Why an owner accepts decision 0025's changed rows by a reply or by work on the slice, read at the tier input (November 11 under decision 0029), instead of replying to a Monday post |
 | [`docs/decisions/0028-restore-strength.md`](docs/decisions/0028-restore-strength.md) | Which reductions were repaired, which stayed because reversing would make results worse, and the scorer's surface fixes (DEV-0004, `SPEC.md` v1.19.0) |
-| [`docs/decisions/0029-gate-chain-shift.md`](docs/decisions/0029-gate-chain-shift.md) | Why the W7 slip moved the Gate 2 close to November 10, the tier input to November 11, and Gate 3 to November 14 to keep `F20`, what that costs, and why Demo Day re-planning waits for the confirmed date (`SPEC.md` v1.20.0) |
+| [`docs/decisions/0029-gate-chain-shift.md`](docs/decisions/0029-gate-chain-shift.md) | Why the W7 slip moved the Gate 2 close to November 10, the tier input to November 11, and Gate 3 to November 14 to keep `F20`, what that costs, and why Demo Day re-planning waits for the confirmed date, replaced by decision 0030 (`SPEC.md` v1.20.0) |
+| [`docs/decisions/0030-done-by-november-30.md`](docs/decisions/0030-done-by-november-30.md) | Why CANARY finishes by November 30: the club-week numbering correction, W12 through the release freeze moved seven days into the Thanksgiving break with `F20` and every earlier gate kept, the Section 13 rehearsal on the frozen tag, and the re-acceptance rule (`SPEC.md` v1.21.0) |
+| [`docs/decisions/0031-merge-on-green.md`](docs/decisions/0031-merge-on-green.md) | Why pull requests merge once CI passes with no member review, how results and release code is reviewed on the lead side before every paid run, freeze, and gate step, why record and CI changes keep a second human through `.github/CODEOWNERS`, and what the paper must state about it (`SPEC.md` v1.22.0) |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
+| [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
 | [`docs/W7_T5_HANDOFF.md`](docs/W7_T5_HANDOFF.md) | Replay fallback, excluded demo staging, operator evidence, and paper-lead notes |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
+| [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md) | The Gate 2 step's record for November 10: the binary D1_POLICY_GATE and D2_DATAMARKING readiness decisions, the development-floor count, and the funded-budget check |
+| [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |
+| [`docs/reviews/2026-11-09-paid-run.md`](docs/reviews/2026-11-09-paid-run.md) | The first lead-side review under decision 0031: #54, the results code merged with no member review, and decision 0028 item 8's scoring files, before the November 9 paid run |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
 ## Reproduction contract
@@ -159,7 +165,7 @@ outstanding.
 
 ### W6-T1 safe-tool and task acceptance
 
-`uv run make t1-suite` runs all ten deterministic templates through their 20
+`uv run make t1-suite` runs all ten deterministic templates through their 30
 declared task/channel variants using only the mock provider. Each trial gets
 verified fictional fixtures, a private page service on a per-trial Unix socket,
 and an empty local email sink, with every tool process in the tool sandbox.
@@ -172,3 +178,9 @@ tool boundaries, utility evidence, and independent-review requirements.
 `uv run make corpus-check` re-renders every development base and fails if a
 committed fixture or hash drifted, then checks the candidate ledger against the
 development, C1-control, and demo bases. See [the W6-T2 handoff](docs/W6_T2_HANDOFF.md).
+
+### W7-T2 evaluation intake and selection
+
+`uv run make select` prints the largest prefix the reviewed pool supports, the
+nested smaller prefixes, each base's task, and the recheck samples. It reads only
+candidate metadata, never a result. See [the W7-T2 handoff](docs/W7_T2_HANDOFF.md).

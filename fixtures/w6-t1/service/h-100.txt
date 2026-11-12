@@ -1,0 +1,1 @@
+{"closes": "17:00", "opens": "09:00", "weekday": "Monday"}

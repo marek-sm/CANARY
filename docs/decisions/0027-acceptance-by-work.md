@@ -1,6 +1,6 @@
 # 0027: Owners accept decision 0025's rows by a reply or by working on them
 
-- Status: Accepted. Approved by the project lead on 2026-11-03; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md).
+- Status: Accepted. Approved by the project lead on 2026-11-03; drafted with AI assistance. Dates and the sentences it names amended by [decision 0029](0029-gate-chain-shift.md), and, for review sentences, by [decision 0031](0031-merge-on-green.md).
 - Date: 2026-11-03
 - Decision scope: Governance
 - Secondary scopes: Protocol

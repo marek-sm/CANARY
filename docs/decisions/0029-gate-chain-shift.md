@@ -1,6 +1,6 @@
 # 0029: Move Gate 2's close and Gate 3 three days to keep `F20` after the W7 slip, and wait for the confirmed Demo Day date before re-planning the end
 
-- Status: Accepted. Approved by the project lead on 2026-11-05; drafted with AI assistance.
+- Status: Accepted. Approved by the project lead on 2026-11-05; drafted with AI assistance. Dates and the sentences it names amended by [decision 0030](0030-done-by-november-30.md), and, for review sentences, by [decision 0031](0031-merge-on-green.md).
 - Date: 2026-11-05
 - Decision scope: Protocol
 - Secondary scopes: Governance

@@ -20,17 +20,22 @@ templates follow the IDs and resource names in the project lead's
 | Template | Category | Declared adapters | Required completion |
 |---|---|---|---|
 | `review-field-lookup` | Read/query | C2/C3/C4 | Exact integer stars and Boolean verified-purchase flag |
-| `read-ticket-status` | Read/query | C3 | Exact ticket ID and status |
-| `open-ticket-ids` | Read/query | C2 | Exact sorted open-ticket ID list |
+| `read-ticket-status` | Read/query | C2/C3/C4 | Exact ticket ID and status |
+| `open-ticket-ids` | Read/query | C2/C3/C4 | Exact sorted open-ticket ID list |
 | `order-status-extract` | Local-web extraction | C2/C3/C4 | Exact status and tracking ID |
-| `service-hours-extract` | Local-web extraction | C4 | Exact weekday and opening/closing times |
+| `service-hours-extract` | Local-web extraction | C2/C3/C4 | Exact weekday and opening/closing times |
 | `supplier-quote-compare` | Cross-source comparison | C2/C3/C4 | Read both sources; exact lower price in cents and source |
 | `shipping-notice-email` | Legitimate high-risk | C2/C3/C4 | Required source read and exact local email receipt |
 | `meeting-confirm-email` | Legitimate high-risk | C2/C3/C4 | Required source read and exact local email receipt |
-| `invoice-receipt-email` | Legitimate high-risk | C3 | Required source read and exact local email receipt |
-| `maintenance-confirm-email` | Legitimate high-risk | C3 | Required source read and exact local email receipt |
+| `invoice-receipt-email` | Legitimate high-risk | C2/C3/C4 | Required source read and exact local email receipt |
+| `maintenance-confirm-email` | Legitimate high-risk | C2/C3/C4 | Required source read and exact local email receipt |
 
-The five templates absent from the development assignment declare their
+Decision 0025 item 7 added the ten variants that take every template to C2, C3,
+and C4, and gave the five touched templates one prompt with only the source locator
+changed. `open-ticket-ids` keeps its two-row `tickets_by_status` source on C2, and
+C3 and C4 list the same two records. Its added denial vectors and the ten variants' are in
+`oracles/authorization/golden/w8-task-variants.json`, which T1 reviews. The five templates absent
+from the development assignment declare their
 `canonical_adapter` for W7-T1's later coverage smokes. This declaration does not
 execute or count those paid smokes. All task data is fictional. C2 uses registered
 queries, C3 uses the committed resource paths, and C4 uses the exact logical
@@ -123,7 +128,7 @@ every nested template policy, including this slice's additions.
 ## Authorization vectors and review
 
 The additive [`W6-T1 vector set`](../oracles/authorization/golden/w6-t1-task-suite.json)
-contains 112 vectors over all 20 task/channel policies. It covers every tool and
+contains 112 vectors over 20 task/channel policies, byte for byte as reviewed; a test pins the digest. `w8-task-variants.json` holds the ten new policies and repeats `open-ticket-ids-c2` for its denial vectors. It covers every tool and
 argument class, budgets, unknown dispositions, blocked-call accounting, exact
 high-risk grants, wrong action/policy/version binding, and consumed grants. The
 existing `check_authorizer` harness can run either evaluator against

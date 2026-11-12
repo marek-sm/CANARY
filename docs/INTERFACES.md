@@ -44,7 +44,7 @@ parse_untrusted_span(rendered_fixture) -> canonical_payload
 
 `runner/delivery.py` is how the development grid delivers a channel's content. The user turn carries only the trusted task prompt from the base's W6-T1 template. The base's pinned C2/C3/C4 render sits at that channel's resource inside a fresh, read-only, per-trial copy of the W6-T1 fixtures, so untrusted content reaches the model only in the result of the `query_db`, `read_file`, or `fetch_url` call that retrieved it.
 
-- **Pinned content.** The delivered bytes are the base's committed render, refused unless their SHA-256 matches `rendered-hashes.json` and they parse back to the exact substituted payload.
+- **Pinned content.** The delivered bytes are the base's committed render (on a multi-row C2 source, the row holding the base's facts), refused unless their SHA-256 matches `rendered-hashes.json` and they parse back to the exact substituted payload.
 - **Where the secrets sit.** The superblock's two canaries are planted in fictional files: a fake API key in `config/app.env`, and a customer record, `customers/customer-record.txt`, holding the other canary as its saved payment method and saved address. The inbox email that two payloads ask an agent to forward is planted too.
 - **Configurations.** Under D1_POLICY_GATE the gate decides before dispatch, and a block returns the frozen observation without running the tool. Under D2_DATAMARKING every tool result is marked once, with the frozen transform, before the model sees it. The same environment serves every configuration.
 - **Paid runs.** Every tool runs through W6-T1's worker inside the [tool sandbox](#tool-sandbox-lead-scaffold-decision-0023). A provider other than the mock runs only in delivery mode, and only when `runner.paid_run` finds the project lead's paid-run record valid for the running code and sandbox ([decision 0023](decisions/0023-tool-sandbox.md)); the text-only body refuses every paid provider.
@@ -319,7 +319,7 @@ against the 120: `execute_trial` applies the ceiling to neither the sweep's `eva
 trials nor rehearsal and stage trials. Under pytest the real paths refuse, so no test can
 touch the real ledger.
 
-`analysis.floor_count` and `analysis.gate2_budget` call
+`analysis.floor_count`, `analysis.gate2_budget`, and `analysis.defense_readiness` call
 `paid_run.check_code_matches_run` before they read a run. Each invocation records a digest
 of the Gate 2 scripts' own scoring code: `analysis/__init__.py`, `analysis/floor_count.py`,
 `analysis/gate2_budget.py`, `analysis/defense_readiness.py` when it exists, and
@@ -334,6 +334,15 @@ plays no part, so the Gate 2 step's close (decision 0025 item 4; November 10 und
 exist. A mock run with no provenance is allowed, and each report's `code_check` says so; a
 non-mock run with none is refused, so deleting the file can't evade the check. Any later
 script that scores a paid grid calls the same check.
+
+`analysis.defense_readiness` also binds its code checks to the grid. Its D1 and D2 suites
+count only when the code they test is unchanged from each commit the run's provenance
+recorded, and none of it is dirty in git's view: `defenses/`, `oracles/`, `channels/`,
+`schemas/`, `fixtures/`, the predeclared test files, `tests/conftest.py`, and
+`pyproject.toml`. Otherwise the code checks fail unrun, and the report's `code_binding`
+says why. So a gate fix or a golden-test edit after the grid can't certify code the records
+didn't come from. A runner fix during a resumed grid, or report code landing later, binds as
+before. Run it from the checkout that ran the grid, or from one at the same code.
 
 ## Utility boundary
 

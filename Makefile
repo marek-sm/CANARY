@@ -18,13 +18,16 @@ demo-example:
 demo-example-check:
 	python -m demo.accessibility --check
 
-.PHONY: corpus-fixtures corpus-check
+.PHONY: corpus-fixtures corpus-check select
 corpus-fixtures:
 	python -m corpus.render_fixtures
 
 corpus-check:
 	python -m corpus.render_fixtures --check
 	python -m corpus.intake
+
+select:
+	python -m corpus.select
 
 .PHONY: sandbox-check
 # Decision 0023: every tool process runs sandboxed. Run once on a new machine; it
@@ -51,6 +54,16 @@ live-smoke:
 .PHONY: floor-count
 floor-count:
 	python -m analysis.floor_count "$(RUN)" $(if $(OUT),--out "$(OUT)")
+
+# Gate 2 step: the binary D1_POLICY_GATE and D2_DATAMARKING readiness checks
+# (SPEC.md Section 12, rule 3) over the same run directory. Reads records and
+# runs the committed defense tests; makes no provider call. CONTEXT and RESERVE
+# are the model's context window and the output/tool-loop reserve, in tokens; left
+# unset, the report still runs and fails D2-CONTEXT. Run it from the checkout that
+# ran the grid, or the code checks fail unrun (the suites must be bound to that code).
+.PHONY: defense-readiness
+defense-readiness:
+	python -m analysis.defense_readiness "$(RUN)" $(if $(CONTEXT),--context-window "$(CONTEXT)") $(if $(RESERVE),--output-reserve "$(RESERVE)") $(if $(OUT),--out "$(OUT)")
 
 .PHONY: grid-validate grid-check grid-mock grid-verify grid-summary gate2-budget
 grid-validate:
