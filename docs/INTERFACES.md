@@ -262,9 +262,11 @@ trial. `W9-T3`'s integrity checks compare the hashes and ancestry, not the two c
 and ledger line. The sweep passes `split="evaluation"`, which is refused before anything is
 written without a `protocol_version` and trial ids from a spec's `protocol_sentinel`, because
 the locked schema's evaluation branch would otherwise reject the result after its paid call.
-The locked schema's `split` is only `development` or `evaluation`, so rehearsal and stage
-trials stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a
-free string there. A run can't be resumed under another split.
+The result schema's `split` is `development`, `evaluation`, or, from 1.1.0, `c1_control`
+([decision 0034](decisions/0034-c1-result-records.md)). `W8-T3`'s C1 executor is to write
+`c1_control`; until it exists, `run_schedule` refuses that split. Rehearsal and stage trials
+stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a free string
+there. A run can't be resumed under another split.
 
 [`runner/sweep.py`](../runner/sweep.py) is that sweep's entry point: `python -m runner.sweep
 live --spec SPEC.json --protocol-version V` runs a committed schedule spec through

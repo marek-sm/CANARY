@@ -20,9 +20,10 @@ ledger, refuses; nothing here reads as zero. The check is per trial, because the
 whole-run bound far exceeds any cap it would really reach.
 
 Every trial counts in dollars. Only development trials count against the ceiling. Section 9
-gives the sweep's and the demo's trials their own lines, and the locked result schema's
-``split`` is only ``development`` or ``evaluation``, so rehearsal and stage trials keep
-``split: development`` and say what they are in ``analysis_role``, a free string there.
+gives the sweep's and the demo's trials their own lines. The result schema's ``split`` is
+``development``, ``evaluation``, or, from 1.1.0, ``c1_control`` (decision 0034), so rehearsal
+and stage trials keep ``split: development`` and say what they are in ``analysis_role``, a
+free string there. C1 control trials count in dollars only.
 
 Reconciling with the provider's console stays necessary: this prices only what the
 provider reported, and a billed attempt that timed out reports nothing, so the console
@@ -53,6 +54,7 @@ from analysis import price_bound
 from runner.mock_slice import append_jsonl, utc_now, validator
 
 SCHEMA = "spend_ledger"
+LEDGER_SCHEMA_VERSION = "1.1.0"  # decision 0034; a ledger keeps its earlier 1.0.0 lines
 DEVELOPMENT_CEILING = 120  # SPEC.md Section 9, including the October 10 check
 OCTOBER_10_CHECK = {"cost_usd": 0.00014, "development_trials": 1}  # STATUS.md, the evidence snapshot
 DEMO_ROLES = ("demo_rehearsal", "demo_stage")  # analysis_role values outside the development ceiling
@@ -104,7 +106,7 @@ def init(path: Optional[Path] = None) -> Path:
     if path.exists():
         raise LedgerError(f"{path} already exists")
     path.touch()
-    append_jsonl(path, {"schema_version": "1.0.0", "phase": "seed", "recorded_at": utc_now(), **OCTOBER_10_CHECK}, SCHEMA)
+    append_jsonl(path, {"schema_version": LEDGER_SCHEMA_VERSION, "phase": "seed", "recorded_at": utc_now(), **OCTOBER_10_CHECK}, SCHEMA)
     return path
 
 
@@ -215,7 +217,7 @@ def start(provider: Any, logical_trial_id: str, *, new_trial: bool = True, split
     read(path)  # a missing or corrupt ledger stops the trial here
     invocation_id = uuid.uuid4().hex
     append_jsonl(ledger_path(path), {
-        "schema_version": "1.0.0", "phase": "started", "recorded_at": utc_now(), "invocation_id": invocation_id,
+        "schema_version": LEDGER_SCHEMA_VERSION, "phase": "started", "recorded_at": utc_now(), "invocation_id": invocation_id,
         "logical_trial_id": logical_trial_id, "provider_adapter": str(getattr(provider, "adapter_version", type(provider).__name__)),
         "split": split, "analysis_role": analysis_role, "new_trial": new_trial, "bound_usd": TRIAL_BOUND_USD,
         "cap_usd": cap_or_none(),
@@ -242,7 +244,7 @@ def finish(invocation_id: str, events: Iterable[Mapping[str, Any]], *, path: Opt
     attempts = [event["payload"].get("usage") for event in events if event["event_type"] == "provider_attempt"]
     known = [usage for usage in attempts if _recorded(usage)]
     append_jsonl(ledger_path(path), {
-        "schema_version": "1.0.0", "phase": "finished", "recorded_at": utc_now(), "invocation_id": invocation_id,
+        "schema_version": LEDGER_SCHEMA_VERSION, "phase": "finished", "recorded_at": utc_now(), "invocation_id": invocation_id,
         "attempts": len(attempts), "input_tokens": sum(usage["input_tokens"] for usage in known),
         "output_tokens": sum(usage["output_tokens"] for usage in known),
         "unknown_usage_attempts": len(attempts) - len(known), "cost_usd": sum(map(attempt_usd, attempts)),
