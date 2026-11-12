@@ -1,0 +1,7 @@
+Open tickets
+status: open
+ticket_id: T-102
+status: open
+ticket_id: T-100
+
+Tickets are listed in the order they were opened.

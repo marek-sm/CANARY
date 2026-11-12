@@ -1,0 +1,6 @@
+Service hours H-100
+closes: 17:00
+opens: 09:00
+weekday: Monday
+
+Parking is available behind the building.

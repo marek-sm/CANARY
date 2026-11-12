@@ -18,7 +18,7 @@ demo-example:
 demo-example-check:
 	python -m demo.accessibility --check
 
-.PHONY: corpus-fixtures corpus-check select
+.PHONY: corpus-fixtures corpus-check select eval-build freeze-check
 corpus-fixtures:
 	python -m corpus.render_fixtures
 
@@ -28,6 +28,16 @@ corpus-check:
 
 select:
 	python -m corpus.select
+
+# W8-T2: build the selected tier's evaluation cases, then render them.
+eval-build:
+	python -m corpus.build_evaluation --n $(N)
+	python -m corpus.render_fixtures
+
+freeze-check:
+	python -m corpus.build_evaluation --n 20 --check
+	python -m corpus.render_fixtures --check
+	python -m corpus.freeze --check
 
 .PHONY: sandbox-check
 # Decision 0023: every tool process runs sandboxed. Run once on a new machine; it
