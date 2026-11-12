@@ -30,6 +30,8 @@ from defenses.interfaces import canonical_json_bytes
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 
 RUNNER_VERSION = "mock-slice-v0.1.0"
+# The result schema version every result written here carries (decision 0034). Events stay 1.0.0.
+RESULT_SCHEMA_VERSION = "1.1.0"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_DIR = REPO_ROOT / "schemas"
 DEFAULT_OUT_ROOT = REPO_ROOT / "results" / "development" / "mock"
@@ -326,7 +328,7 @@ def assemble_result(events: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     )
 
     return {
-        "schema_version": "1.0.0",
+        "schema_version": RESULT_SCHEMA_VERSION,
         "split": "development",
         "protocol_version": None,
         "experiment_id": EXPERIMENT_ID,
