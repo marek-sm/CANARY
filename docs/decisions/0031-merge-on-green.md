@@ -1,6 +1,6 @@
 # 0031: Merge on green, review results code on the lead side before every paid run and freeze, and keep a second human on records and CI
 
-- Status: Accepted. Directed by the project lead at the November 8 team meeting and approved by merging this record; drafted with AI assistance.
+- Status: Accepted. Directed by the project lead at the November 8 team meeting and approved by merging this record; drafted with AI assistance. Item 3's source-reviewer approver rule and mismatch check don't apply to the corpus-record pushes of [decision 0032](0032-tier-input.md)'s `W8-T2` fallback.
 - Date: 2026-11-08
 - Decision scope: Governance
 - Secondary scopes: Protocol

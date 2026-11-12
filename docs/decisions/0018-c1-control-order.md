@@ -1,6 +1,6 @@
 # 0018: Fix the order in which tiers take C1 controls
 
-- Status: Accepted. Approved by the project lead on 2026-10-16; drafted with AI assistance.
+- Status: Accepted. Approved by the project lead on 2026-10-16; drafted with AI assistance. Item 3's C1-cost pilot example superseded by [decision 0033](0033-c1-pilot-example.md).
 - Date: 2026-10-16
 - Decision scope: Protocol
 - Secondary scopes: None
