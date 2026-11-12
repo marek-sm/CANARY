@@ -20,11 +20,16 @@ cd CANARY
 uv sync --locked                     # installs the exact uv.lock versions into .venv, including the dev group
 uv run make test                     # no make: uv run pytest -q
 uv run make trace                    # no make: uv run python -m runner.mock_slice
+uv run make replay                   # no make: uv run python -m demo.replay
 ```
 
 `uv sync --locked` stops with an error instead of re-resolving when `uv.lock` no longer matches `pyproject.toml`. After changing a dependency, run `uv lock` and commit `uv.lock` in the same pull request.
 
 `make trace` runs one no-credit mock trial and writes it under `results/development/mock/`, which Git ignores.
+
+`make replay` is the immediate read-only fallback. It schema-validates and
+renders the staged W6-T3 mock development record without a key, network access,
+or writes. The trace is explicitly labeled excluded and illustrative.
 
 Every tool process runs in a sandbox ([decision 0023](docs/decisions/0023-tool-sandbox.md)); run `uv run make sandbox-check` once on a new machine and report a failure the same day. macOS needs nothing extra. Linux (x86_64 or aarch64) needs `bubblewrap` and, on Ubuntu 23.10 and later, `kernel.apparmor_restrict_unprivileged_userns=0` in a file under `/etc/sysctl.d`; on Windows, use WSL2 Ubuntu.
 
@@ -130,6 +135,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0031-merge-on-green.md`](docs/decisions/0031-merge-on-green.md) | Why pull requests merge once CI passes with no member review, how results and release code is reviewed on the lead side before every paid run, freeze, and gate step, why record and CI changes keep a second human through `.github/CODEOWNERS`, and what the paper must state about it (`SPEC.md` v1.22.0) |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
+| [`docs/W7_T5_HANDOFF.md`](docs/W7_T5_HANDOFF.md) | Replay fallback, excluded demo staging, operator evidence, and paper-lead notes |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md) | The Gate 2 step's record for November 10: the binary D1_POLICY_GATE and D2_DATAMARKING readiness decisions, the development-floor count, and the funded-budget check |
 | [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |

@@ -56,6 +56,14 @@ The accepted owner and exact slice state live in [`TASKS.md`](TASKS.md). Each W8
 | T5 — Miles | `W7-T5`: [#66](https://github.com/marek-sm/CANARY/pull/66), its `main` merge due by the end of November 8; it changes `corpus/demo/demo-001.json`, a record file, so it merges on green once a code owner approves (decision 0031) | `W8-T5`: opens the day `W7-T5` merges |
 | Project lead — Marek | Merged this week: decisions 0025, 0026, 0027, 0023, 0028, 0029, and 0030; the price bound (#70); D2 marking of every text-bearing HTML construct (#76); the stack-audit fixes (#78); the sandbox death-signal fixes (#80, #83); and the run-wide stop rule (#82). Done November 8 (corrected November 9): the task variants (#71, merged), the `W7-T2` source review (posted on #73), the `W7-T4` fallback push, and decision 0031 (#86). Done: the paid runs on November 9, the paid summary (#89), and the Gate 2 step on November 10 | Tier input November 11. Slipped from November 8, still open: the gap sentence, license choice and author order, and the official C1 records through Section 11 change control. The record superseding decision 0018's pilot example by November 10, then decision 0012's wiring and the demo-rehearsal command by November 13 |
 
+**October 29 W7-T5 progress note.** The W6-T2 demo source and lead-owned
+tool-result-delivery inputs are now on `main`, so the October 25 T5 blocker above
+is resolved. Miles confirmed two separate no-notes starts of the read-only mock
+replay without provider access. The W7-T5 branch stages the excluded demo case,
+adds a current-schema fallback and plain-language presentation summary, and
+keeps all output explicitly illustrative. The slice awaits pull-request review;
+this note records no empirical result or defense claim.
+
 ## Public decisions, risks, and external asks
 
 1. **Project presentation:** use `CANARY` in all caps and make no uniqueness or novelty claim. Under decisions [0016](docs/decisions/0016-practitioner-relevance.md) and [0017](docs/decisions/0017-applied-purpose.md), CANARY is applied research for teams choosing prompt-injection safeguards. It claims a gap in published work only in a sentence scoped to sources the project lead has opened, and never a market gap. That sentence, due November 8, slipped. If it isn't in `SPEC.md` before the November 14 Gate 3 freeze, no gap sentence enters.

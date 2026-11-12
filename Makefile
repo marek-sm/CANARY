@@ -85,11 +85,12 @@ grid-verify:
 grid-summary:
 	python3 -m runner.grid_dev summary "$(RUN)"
 
-# Renders recorded traces: an events file, a trial, or every trial of a run (default:
-# make grid-mock's output). Reads records only: no key, no provider, no network.
+# Renders recorded traces: an events file, a trial, or every trial of a run.
+# With no RUN, replays the staged W7-T5 fallback. Reads records only: no key,
+# provider, network, or writes.
 .PHONY: replay
 replay:
-	python3 -m demo.trace "$(or $(RUN),results/development/grid-mock)"
+	python3 -m demo.trace "$(or $(RUN),demo/recorded/w7-t5)"
 
 # The Gate 3 step runs this (TASKS.md). It generates what main has, the estimand shells,
 # then runs W8-T3's analysis and report code, and fails in words until that code exists.
