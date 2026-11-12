@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:result:1.0.0",
+  "$id": "urn:CANARY:schema:result:1.1.0",
   "title": "CANARY logical-trial result",
-  "description": "One logical trial and its derived Boolean-or-null endpoints. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Unknown evidence is null, never false. Locked at 1.0.0 by decision 0009; after the lock, a change on the docs/DATA_CONTRACTS.md evolution-rules list follows SPEC.md Section 11.",
+  "description": "One logical trial and its derived Boolean-or-null endpoints. Field meaning is owned by SPEC.md Sections 7-8; see docs/DATA_CONTRACTS.md. Unknown evidence is null, never false. Locked at 1.0.0 by decision 0009; after the lock, a change on the docs/DATA_CONTRACTS.md evolution-rules list follows SPEC.md Section 11. Version 1.1.0 (decision 0034, DEV-0005) adds the official C1 direct-injection control record; a 1.0.0 record keeps exactly the 1.0.0 shape.",
   "type": "object",
   "required": [
     "schema_version",
@@ -39,10 +39,10 @@
       "type": "string",
       "minLength": 1
     },
-    "schema_version": {"const": "1.0.0"},
+    "schema_version": {"enum": ["1.0.0", "1.1.0"]},
     "split": {
-      "description": "Which split this trial belongs to. Evaluation trials must carry a protocol, channel, condition, and comparison superblock (see allOf below); development trials may leave those null.",
-      "enum": ["development", "evaluation"]
+      "description": "Which split this trial belongs to. Evaluation trials must carry a protocol, channel, condition, and comparison superblock, and C1-control trials are fixed to the C1 control form (see allOf below); development trials may leave those null.",
+      "enum": ["development", "evaluation", "c1_control"]
     },
     "protocol_version": {
       "description": "Null only when no protocol exists for the producing run.",
@@ -55,7 +55,7 @@
     "attack_family_id": {"type": ["string", "null"]},
     "case_id": {"type": "string", "minLength": 1},
     "analysis_role": {"type": ["string", "null"]},
-    "channel": {"enum": ["C2", "C3", "C4", null]},
+    "channel": {"enum": ["C1", "C2", "C3", "C4", null]},
     "condition": {"enum": ["attack", "clean", null]},
     "configuration": {"$ref": "#/$defs/configuration"},
     "run_index": {"type": "integer", "minimum": 1},
@@ -222,6 +222,38 @@
           "channel": {"enum": ["C2", "C3", "C4"]},
           "condition": {"enum": ["attack", "clean"]},
           "comparison_superblock_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    {
+      "$comment": "Decision 0034: an official C1 direct-injection control (SPEC.md Sections 3, 9, 10, and 12) runs on a c1- base under D0_BASELINE, attack only, with its own superblock and canary pair per repeat, and never carries the primary_indirect role. The form exists only from 1.1.0.",
+      "if": {
+        "required": ["split"],
+        "properties": {"split": {"const": "c1_control"}}
+      },
+      "then": {
+        "properties": {
+          "schema_version": {"const": "1.1.0"},
+          "protocol_version": {"type": "string", "minLength": 1},
+          "base_case_id": {"type": "string", "pattern": "^c1-[0-9]{3}$"},
+          "analysis_role": {"const": "c1_control"},
+          "channel": {"const": "C1"},
+          "condition": {"const": "attack"},
+          "configuration": {"const": "D0_BASELINE"},
+          "comparison_superblock_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    {
+      "$comment": "Decision 0034: a 1.0.0 record has exactly the 1.0.0 shape, so preserved records still validate and none can claim 1.0.0 with a 1.1.0 value.",
+      "if": {
+        "required": ["schema_version"],
+        "properties": {"schema_version": {"const": "1.0.0"}}
+      },
+      "then": {
+        "properties": {
+          "split": {"enum": ["development", "evaluation"]},
+          "channel": {"enum": ["C2", "C3", "C4", null]}
         }
       }
     }

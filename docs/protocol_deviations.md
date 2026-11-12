@@ -1,6 +1,6 @@
 # Protocol Deviations
 
-Three protocol deviations are recorded, DEV-0001, DEV-0002, and DEV-0003, below the entry template.
+Five protocol deviations are recorded, DEV-0001 through DEV-0005, below the entry template.
 
 This append-only log is used only after a scientific or claim-bearing artifact has frozen. Open each entry in a pull request before any fix merges or any rerun starts, and merge it complete with the repair (`SPEC.md` Section 11). Pre-freeze design decisions belong in `docs/decisions/`; current slice state belongs in `TASKS.md`, and the dated weekly rollup belongs in `STATUS.md`.
 
@@ -190,3 +190,38 @@ None. No table, figure, README value, demo aggregate, or report sentence exists 
 ### Verification
 
 `tests/test_scoring_surfaces.py` runs each surface through real tool-result delivery under each configuration. `tests/test_contract_lock.py` passes with only the Section 7 and Failure and retry policy values updated, and `tests/test_tool_event_scoring.py`, `tests/test_corpus_rules_freeze.py`, and `tests/test_request_effect.py` pass unchanged.
+
+## DEV-0005 — The locked result schema had no official C1 control record
+
+- Date detected: 2026-11-02
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.22.0 (result schema 1.0.0, locked under decision 0009)
+- New protocol version: `SPEC.md` v1.23.0
+- Prior experiment/validation ID: None. No experiment or validation ID exists before Gate 3.
+- Replacement experiment/validation ID: Not applicable (Section 11 step 3): no experiment or validation ID exists to replace.
+- Affected cells/checks/artifacts: `schemas/result.schema.json` (1.0.0 → 1.1.0), `schemas/spend_ledger.schema.json` (1.0.0 → 1.1.0), `runner/mock_slice.py`'s `RESULT_SCHEMA_VERSION`, `runner/spend_ledger.py`'s `LEDGER_SCHEMA_VERSION`, the `runner/c1_mock.py` docstring, the result pin and version check in `tests/test_contract_lock.py`, the result fixtures in `tests/fixtures/result/`, the new `tests/test_result_schema_c1.py`, the `SPEC.md` version header, `docs/DATA_CONTRACTS.md`, `docs/INTERFACES.md`, and a superseding note in `docs/W7_T1_HANDOFF.md`. Every planned C1 control trial at every empirical Section 12 row.
+- Outcome visibility at decision time: Outcomes visible (development only). No evaluation or C1 outcome exists, and the change was required on November 2, before any paid grid call (decision 0025 item 8).
+
+### Defect
+
+Every empirical Section 12 row runs C1 controls under D0_BASELINE, but the locked result schema allows only the `development` and `evaluation` splits and the `C2`, `C3`, and `C4` channels, so no official C1 record could validate. The spend-ledger schema likewise refused a C1 trial's start line. Found by the November 2 review behind decision 0025, which required this change as its own record.
+
+### Scope determination
+
+The change is additive. It adds the `c1_control` split and the `C1` channel, fixes a C1 record's condition, configuration, role, base, and superblock, and requires version 1.1.0 for that form. A 1.0.0 record must keep exactly the 1.0.0 shape, so every preserved record validates unchanged. No field is removed or reinterpreted, no nullability changes for an existing split, and no estimand, oracle, scorer, gate, audit, or `SPEC.md` text changes.
+
+### Required response
+
+Decision 0034 moves both schemas to 1.1.0, moves the writers with them, re-pins the result schema, and moves `SPEC.md` to v1.23.0. No symmetric rerun or validation rerun is required (Section 11 step 5), because no evaluation, validation, or C1 run exists.
+
+### Preserved evidence
+
+The superseded result schema is version 1.0.0 in Git history, pinned at SHA-256 `5b41c8039690c232cd02adce4a617b1b93aedec816029ca7595c41867292eb16` (canonical JSON) by decision 0009.
+
+### Verification
+
+`tests/test_result_schema_c1.py` checks the C1 form, each rejected variant, the 1.0.0 shape, the writers' versions, and a C1 ledger line; it failed before the change. `tests/test_contract_lock.py` passes with only the result version and hash changed. Every stored November 9 result line (195) and every spend-ledger line (213) validates under the new schemas. CI runs the full no-credit suite on the pull request.
+
+### Claim impact
+
+None. No table, figure, README value, demo aggregate, or report sentence exists that depends on a C1 record.

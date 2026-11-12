@@ -83,7 +83,10 @@ manifest, and must never be mixed into official indirect estimates.
   [`evidence/w7-t1/c1-summary.json`](evidence/w7-t1/c1-summary.json). Each control
   ran once, not the official three repeats. Authorization is explicitly null;
   no indirect policy verdict or model positive-control success is claimed.
-- The locked result schema and indirect scheduler accept C2–C4, not C1. C1
+- The locked result schema and indirect scheduler accept C2–C4, not C1.
+  (*Superseded November 12:* result schema 1.1.0 has the official C1 record,
+  [decision 0034](decisions/0034-c1-result-records.md); the indirect scheduler
+  still accepts only C2–C4.) C1
   mock evidence therefore uses separate versioned descriptive JSON, never
   indirect ResultRecords. An eventual official C1 executor/report remains
   separate gated work. Completed mock resume verifies evidence without

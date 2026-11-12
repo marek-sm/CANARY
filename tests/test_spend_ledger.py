@@ -503,7 +503,7 @@ def test_an_evaluation_split_needs_trial_ids_from_its_protocol(gate, tmp_path):
 
 @pytest.mark.parametrize("role", ["demo_rehearsal", "demo_stage"])
 def test_rehearsal_and_stage_trials_stay_outside_the_ceiling(gate, tmp_path, role):
-    """The locked result schema's ``split`` is development or evaluation, so these keep the
+    """The result schema has no rehearsal or stage split (decision 0034 adds only c1_control), so these keep the
     development split, and ``analysis_role``, a free string there, says what they are."""
     gate.open()
     _at_ceiling()
