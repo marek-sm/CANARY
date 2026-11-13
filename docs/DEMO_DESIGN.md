@@ -20,13 +20,13 @@ Do not infer the live slot from the separate two-to-three-minute edited-video re
 |---:|---|
 | 1 | State the trusted task and forbidden external action |
 | 2 | Show the fresh synthetic canary and fictional/local safety boundary |
-| 3 | Show or run the identical D0_BASELINE case and label request, dispatch, and sink receipt |
-| 4 | Show or run D1_POLICY_GATE and distinguish unsafe model proposal from contained tool effect |
+| 3 | Show or run the identical D0_BASELINE case and label request, dispatch, and sink receipt as the trace shows them; if D0_BASELINE resists, say one run is not evidence and show the representative replay, labelled with its real provider and run |
+| 4 | Show or run D1_POLICY_GATE and distinguish unsafe model proposal from contained tool effect; if the trace has no unsafe proposal, describe only what it shows |
 | 5 | Show or replay D2_DATAMARKING and describe only what the trace establishes |
 | 6 | Label the single case illustrative and show the generated aggregate or `ENGINEERING` validation summary |
-| 7 | State one limitation, deliver the scope-matched conclusion, and close |
+| 7 | State one limitation, deliver the scope-matched conclusion, optionally say once that a separately versioned follow-up is registered, and close |
 
-The order is fixed; timing allocations are not. A lower tier omits absent configurations and gives the recovered space to its actual evidence and limitations.
+The branches in steps 3, 4, and 7 follow [decision 0035](decisions/0035-s1-registered-followup.md), and `SPEC.md` Section 13 owns their wording. The order is fixed; timing allocations are not. A lower tier omits absent configurations and gives the recovered space to its actual evidence and limitations.
 
 The Week-13 judge-readiness questions live in `TASKS.md` and point to their canonical answers in `SPEC.md`. They are intentionally not duplicated here because this guide does not own result, metric, or claim semantics.
 
