@@ -84,6 +84,7 @@ Input checklist:
 
 - [ ] Take every number and figure only from generated artifacts in the frozen sanitized bundle.
 - [ ] At an empirical tier, cover model violations, system compromises, clean utility, background violations, uncertainty, failures, and disagreement.
+- [ ] Use [the Decision 0028 review guide](decision-0028-review.md) to check component missingness, pairing-key completeness, ranges, eligibility, and the separate exposure and utility outputs.
 - [ ] At `ENGINEERING`, show validation evidence and the explicit absence of empirical estimates.
 - [ ] Keep every chart paired with meaningful alt text and a table equivalent.
 - [ ] At every tier, close with what the evidence does and doesn't let a team choosing safeguards conclude, then the `SPEC.md` Section 14 measurement checklist, from the project lead's approved close.

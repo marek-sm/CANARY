@@ -35,9 +35,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Configuration | Adapter | Observed true / observed endpoint | Rate | 95% conditional cluster-resampling interval | Boundary warning |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Configuration | Adapter | Observed true / observed endpoint | Rate | 95% conditional cluster-resampling interval | Boundary warning | Scheduled / observed / unresolved endpoint counts by component arm | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ### System compromise rate
 
@@ -49,9 +49,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Configuration | Adapter | Observed true / observed endpoint | Rate | 95% conditional cluster-resampling interval | Boundary warning |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Configuration | Adapter | Observed true / observed endpoint | Rate | 95% conditional cluster-resampling interval | Boundary warning | Scheduled / observed / unresolved endpoint counts by component arm | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ### Clean utility
 
@@ -63,9 +63,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Configuration | Task template | Adapter | Passed / observed | Rate or macro-average | 95% conditional cluster-resampling interval |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Configuration | Task template | Adapter | Passed / observed | Rate or macro-average | 95% conditional cluster-resampling interval | Scheduled / observed / unresolved endpoint counts by component arm | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ## Primary paired effects
 
@@ -79,9 +79,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Adapter | Complete pairs | Missing pairs | Risk difference | 95% conditional cluster-resampling interval |
-| --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — |
+| Adapter | Complete pairs | Missing pairs | Risk difference | 95% conditional cluster-resampling interval | Scheduled / observed / unresolved endpoint counts by component arm | Planned pairing keys | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ### D2_DATAMARKING clean-adjusted difference
 
@@ -93,9 +93,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Adapter | Complete four-cell pairs | Missing pairs | Difference-in-differences | 95% conditional cluster-resampling interval |
-| --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — |
+| Adapter | Complete four-cell pairs | Missing pairs | Difference-in-differences | 95% conditional cluster-resampling interval | Scheduled / observed / unresolved endpoint counts by component arm | Planned pairing keys | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ### Clean utility cost
 
@@ -107,9 +107,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Configuration | Task template | Adapter | Complete pairs | Missing pairs | Utility cost percentage points | 95% conditional cluster-resampling interval |
-| --- | --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — | — |
+| Configuration | Task template | Adapter | Complete pairs | Missing pairs | Utility cost percentage points | 95% conditional cluster-resampling interval | Scheduled / observed / unresolved endpoint counts by component arm | Planned pairing keys | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — | — | — |
 
 ### D1_POLICY_GATE residual system-risk difference
 
@@ -121,9 +121,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Adapter | Complete pairs | Missing pairs | Risk difference | 95% conditional cluster-resampling interval |
-| --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — |
+| Adapter | Complete pairs | Missing pairs | Risk difference | 95% conditional cluster-resampling interval | Scheduled / observed / unresolved endpoint counts by component arm | Planned pairing keys | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ### Authorized high-risk clean utility
 
@@ -135,9 +135,9 @@ counts, interval labeling where required, and the table equivalent below.
 
 #### Table equivalent
 
-| Configuration | High-risk task template | Adapter | Passed / observed | Macro-average | 95% conditional cluster-resampling interval |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Configuration | High-risk task template | Adapter | Passed / observed | Macro-average | 95% conditional cluster-resampling interval | Scheduled / observed / unresolved endpoint counts by component arm | Section 9 missingness range | Headline eligibility under Section 9 / Section 10 interpretation rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — |
 
 ## D1_POLICY_GATE conformance
 
@@ -303,15 +303,15 @@ counts, interval labeling where required, and the table equivalent below.
 
 - **Estimand/output ID:** `ReliabilityAndResourceDiagnostics`
 - **Status:** PRE-RESULTS — NO DATA
-- **Caption scaffold:** Model refusals, malformed calls, step-limit outcomes, infrastructure failures, latency, and token use by configuration.
-- **Alt-text scaffold:** Placeholder for reliability, latency, and token-use diagnostics; no values are available.
+- **Caption scaffold:** Model refusals, malformed calls, step-limit outcomes, infrastructure failures, latency, and token use by configuration. Decision 0028 item 4 also requires count-only diagnostics from raw events: tool blocks in malformed replies (including multi-call replies), filtered pairs by exposure timing and unrecorded tool blocks, no-request trials by ending, canaries in tool arguments and raw versus normalized recipients, and required calls satisfied only by unauthorized requests. Preserve each diagnostic's specified strata and true/false/null values. These counts change no endpoint, range, or threshold and stay hidden during the sweep.
+- **Alt-text scaffold:** Placeholder for reliability and resource diagnostics, including malformed-call and filtered-pair exposure counts; no values are available. Counts do not correct missingness.
 - **Figure shell:** Intentionally empty until generated from frozen evidence.
 
 #### Table equivalent
 
-| Configuration | Diagnostic | Count | Observed denominator | Summary value | Unknown count |
-| --- | --- | --- | --- | --- | --- |
-| PRE-RESULTS — NO DATA | — | — | — | — | — |
+| Configuration or configuration pair | Condition (where specified) | Delivery channel / adapter | Diagnostic | Ending or exposure timing (where specified) | Unrecorded tool block (where specified) | Count | Observed denominator | Summary value | Unknown count |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PRE-RESULTS — NO DATA | — | — | — | — | — | — | — | — | — |
 
 ### Mixed-repeat rates
 
@@ -375,6 +375,9 @@ counts, interval labeling where required, and the table equivalent below.
 - [ ] Every chart has a table equivalent with repeated headers.
 - [ ] Color is not the sole carrier of meaning and contrast is checked.
 - [ ] Exact numerators/denominators or complete/missing pair counts are shown.
+- [ ] Section 9 endpoint and pairing-key missingness checks are shown for every required component arm.
+- [ ] Missingness ranges and headline eligibility are shown; diagnostic counts do not repair missingness.
+- [ ] Exposure diagnostics and utility are reported separately from security outcomes.
 - [ ] Required intervals use the approved conditional cluster-resampling label.
 - [ ] Boundary warnings appear when an interval collapses.
 - [ ] All values came from the frozen sanitized bundle; none were hand-entered.

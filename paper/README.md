@@ -11,6 +11,9 @@ results.
   Section 10.
 - [`generated/estimand_shells.md`](generated/estimand_shells.md) is generated
   from that manifest and intentionally contains no data.
+- [`decision-0028-review.md`](decision-0028-review.md) routes the existing
+  missingness, human-review, and sweep-environment evidence into report review;
+  it records no completed gate or new analysis rule.
 - [`venue-checklists.md`](venue-checklists.md) maps the NeurIPS paper
   checklist and the IEEE conference-paper structure to the `SPEC.md` sections
   and artifacts that answer them, and marks what is still open. It makes no
