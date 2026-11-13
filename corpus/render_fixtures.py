@@ -29,7 +29,7 @@ from channels.render import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORD_DIRS = (ROOT / "corpus" / "development", ROOT / "corpus" / "demo")
+RECORD_DIRS = (ROOT / "corpus" / "development", ROOT / "corpus" / "demo", ROOT / "corpus" / "evaluation")
 EXTENSIONS = {"C2": "json", "C3": "txt", "C4": "html"}
 
 
