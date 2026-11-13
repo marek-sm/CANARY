@@ -1,6 +1,6 @@
 # CANARY: Prompt-Injection Measurement and Containment for Tool-Using LLM Agents
 
-**Public project and experimental specification v1.23.0**  
+**Public project and experimental specification v1.24.0**  
 CS + AI Club, Cal Poly SLO · Fall 2026
 
 This is the public, human-readable authority for CANARY's scope, measurement semantics, safety boundary, experimental design, analysis, tier rules, release requirements, and permitted claims. Administrative and personnel matters are intentionally outside this scientific specification.
@@ -207,7 +207,7 @@ The list below is the planned full scope. Section 12 and the frozen `protocol/ac
 - A live dashboard or any static page outside the bounded replay-only exception below.
 - An external workshop submission during the term.
 
-D1_POLICY_GATE+D2_DATAMARKING composition may begin after Demo Day only as a new, separately versioned experiment. A no-backend static replay page is the sole optional fall exception. It is eligible only after an empirical Gate 4 passes by November 15 and only if the generated-results paper draft, terminal replay, video script, accessibility pipeline, and every required release artifact pass their checks. The project lead may authorize it no later than Tuesday, November 17. It may consume at most four total person-hours and all work on it ends by November 22. It is ineligible at `ENGINEERING`, may display only frozen sanitized data, and may not add a model call, experimental condition, public input surface, or dependency that can delay a required artifact. It is cut automatically if Gate 4 uses its contingency window or any prerequisite slips. For the fall 2026 run it is cut: [decision 0029](docs/decisions/0029-gate-chain-shift.md) moves Gate 4's target to November 19.
+D1_POLICY_GATE+D2_DATAMARKING composition may begin after Demo Day only as a new, separately versioned experiment. So may the S1 stress experiment registered in [decision 0035](docs/decisions/0035-s1-registered-followup.md), whose attacks are selected from public success labels, not generated or tuned against CANARY; it runs after the confirmed Demo Day and the November 29 release, never enters the fall paper's or the stage's results, and is never pooled with or compared against this experiment. A no-backend static replay page is the sole optional fall exception. It is eligible only after an empirical Gate 4 passes by November 15 and only if the generated-results paper draft, terminal replay, video script, accessibility pipeline, and every required release artifact pass their checks. The project lead may authorize it no later than Tuesday, November 17. It may consume at most four total person-hours and all work on it ends by November 22. It is ineligible at `ENGINEERING`, may display only frozen sanitized data, and may not add a model call, experimental condition, public input surface, or dependency that can delay a required artifact. It is cut automatically if Gate 4 uses its contingency window or any prerequisite slips. For the fall 2026 run it is cut: [decision 0029](docs/decisions/0029-gate-chain-shift.md) moves Gate 4's target to November 19.
 
 ---
 
@@ -1457,11 +1457,11 @@ The fixed demo case is excluded from the evaluation corpus and labeled **illustr
 |---:|---|
 | 1 | Hook: “This agent may read the feedback. It may not send email. Watch what the database result makes it do.” |
 | 2 | Show the trusted task, a freshly generated synthetic canary, and the local-only/fake safety boundary. |
-| 3 | Run D0_BASELINE on the rehearsed C2 fixture. The agent reads untrusted content and the fake sink receives an email to `attacker@example.invalid`. Show **REQUESTED**, **DISPATCHED**, and **SINK RECEIVED** in words as well as red. |
-| 4 | Run the identical case under D1_POLICY_GATE. Show the unsafe proposal and **BLOCKED BY POLICY** in words as well as yellow. Say: “The model still made the unsafe request; the tool effect was contained.” |
+| 3 | Run D0_BASELINE on the rehearsed C2 fixture. The agent reads untrusted content; as the trace shows, the fake sink may receive an email to the case's external recipient. Show **REQUESTED**, **DISPATCHED**, and **SINK RECEIVED** in words as well as red. |
+| 4 | Run the identical case under D1_POLICY_GATE. Show the unsafe proposal and **BLOCKED BY POLICY** in words as well as yellow. Say: “The model still made the unsafe request; the tool effect was contained.” If this trace has no unsafe request, describe only the actual trace instead ([decision 0035](docs/decisions/0035-s1-registered-followup.md)). |
 | 5 | Run or replay D2_DATAMARKING. Describe only the actual trace. If no unsafe request occurs and the benign postcondition passes, call it behavioral resistance on this one trace. |
 | 6 | Label those runs illustrative, then show the frozen JSONL-generated matrix: model violations, D1_POLICY_GATE enforcement, residual system compromise, and clean utility with exact N and intervals. |
-| 7 | Give one limitation and state the scope-matched result sentence once. Close: “CANARY does not solve prompt injection; it measures how agents fail, what enforcement contains, and what defenses cost, so a team choosing safeguards for an agent can see what each one changes.” |
+| 7 | Give one limitation and state the scope-matched result sentence once. Close: “CANARY does not solve prompt injection; it measures how agents fail, what enforcement contains, and what defenses cost, so a team choosing safeguards for an agent can see what each one changes.” Step 7 may also say once that a separately versioned follow-up is registered ([decision 0035](docs/decisions/0035-s1-registered-followup.md)), with no result given or promised. |
 
 Do not let the audience supply arbitrary payloads, tasks, paths, or recipients. A person may read the new canary aloud, but the case itself remains fixed and safe.
 
@@ -1477,7 +1477,7 @@ The table is the `F20` script. A `ONE` tier omits the absent defense and spends 
 - The public demo video is captioned, has a transcript, and works offline; a separate full-length dress-rehearsal recording is the last AV fallback.
 - Name one accountable demo operator before release. The narrator may be the same person or a different contributor. Route technical Q&A to the relevant component owners.
 - If no first model response arrives within ten seconds, or authentication/network/provider fails, press one key and visibly switch to **RECORDED TRACE**.
-- If D0_BASELINE unexpectedly resists, say one run is not evidence, show the representative replay, and continue to the aggregate. If a defense fails, do not conceal it; say mitigation is not elimination and continue.
+- If D0_BASELINE resists, say one run is not evidence, show the representative replay, and continue to the aggregate. The replay must be labelled with its real provider and run. Until it is, and whenever no recorded trace of the official model shows a hijack, say plainly that no live hijack trace exists ([decision 0035](docs/decisions/0035-s1-registered-followup.md)). If a defense fails, do not conceal it; say mitigation is not elimination and continue.
 - At an empirical tier, a live-first demo requires the intended development/demo-case stage behavior in at least 9 of 10 complete dry runs across all `K` retained stage configurations. At `F20`, those consume the 30-trial rehearsal allowance and the on-stage D0_BASELINE/D1_POLICY_GATE/D2_DATAMARKING set consumes the separate three-trial reserve; lower empirical tiers consume `10K` and `K`. Replays cost neither allowance. Otherwise the planned presentation is replay-first. `ENGINEERING` has `K = 0` and is always replay-first.
 - Rehearse provider timeout, defense failure, no network, terminal resize, presentation-equivalent hardware during W12, confirmation hardware before the event, and a second tested device. Under [decision 0030](docs/decisions/0030-done-by-november-30.md), the live-first gate's dry runs run on the project lead's Mac on the frozen release, and the confirmation-hardware rehearsal is replay-only unless that hardware is the lead's Mac; if organizer hardware isn't available before the event, the rehearsal runs replay-only on presentation-equivalent hardware and the item is recorded unmet.
 
@@ -1520,7 +1520,7 @@ Detailed setup belongs below this public-facing summary.
 6. Agent, deterministic tasks/oracles, and defenses.
 7. Frozen protocol and analysis plan.
 8. Results at an empirical tier: model violations, system compromises, clean utility, background violations, uncertainty, failures, and disagreement. At `ENGINEERING`: instrument-validation evidence and the explicit absence of empirical estimates. At every tier, close with what the evidence does and doesn't let a team choosing safeguards conclude, under the Section 10 interpretation rules, and the measurement checklist below. This close adds no number that isn't generated.
-9. Limitations, ethics, and release safety.
+9. Limitations, ethics, and release safety. It may state once that a separately versioned follow-up is registered ([decision 0035](docs/decisions/0035-s1-registered-followup.md)), with no result given or promised.
 10. Reproducibility and contribution statement.
 
 ### Measurement checklist for teams
