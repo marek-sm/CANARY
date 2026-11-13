@@ -739,7 +739,7 @@ def _head(gate):
 
 
 def test_the_scripts_run_from_the_code_that_ran_the_grid_with_no_record(gate, live_grid, capsys):
-    """Decision 0025 item 4's November 7 close evaluates whatever records exist, record or not."""
+    """The Gate 2 close (decision 0025 item 4; November 10 under decision 0029) evaluates whatever records exist, record or not."""
     assert not paid_run.RECORD.exists()
     assert _floor(live_grid) == 0
     assert json.loads(capsys.readouterr().out)["code_check"].startswith("compared")

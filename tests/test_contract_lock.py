@@ -17,6 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = ROOT / "SPEC.md"
 LOCKED = "1.0.0"
 CONTRACT_SCHEMAS = ("event", "result", "policy", "authorization_vectors")
+# Each contract schema's current version. The result schema moved to 1.1.0 under
+# decision 0034 (DEV-0005), adding the official C1 control record; a 1.0.0 result
+# record still validates with exactly the 1.0.0 shape.
+SCHEMA_VERSIONS = {"event": LOCKED, "result": "1.1.0", "policy": LOCKED, "authorization_vectors": LOCKED}
 
 # The SPEC.md v1.4.0 text that Section 11 freezes at this lock. Changing any of
 # it needs Section 11 change control, then a deliberate update of its value.
@@ -61,17 +65,21 @@ def test_locked_spec_sections_match_the_lock(heading):
 def test_contract_schemas_are_versioned_at_the_lock():
     for name in CONTRACT_SCHEMAS:
         schema = load(f"schemas/{name}.schema.json")
-        assert schema["$id"] == f"urn:CANARY:schema:{name}:{LOCKED}"
-        assert schema["properties"]["schema_version"] == {"const": LOCKED}
+        version = SCHEMA_VERSIONS[name]
+        assert schema["$id"] == f"urn:CANARY:schema:{name}:{version}"
+        expected = {"const": LOCKED} if version == LOCKED else {"enum": [LOCKED, version]}
+        assert schema["properties"]["schema_version"] == expected
 
 
 # SHA-256 of each locked schema's canonical JSON (audit C-01). A version number
 # doesn't stop a quiet edit (decision 0009), so any edit fails here and updates
 # this value deliberately; an evolution-list change also needs SPEC.md Section 11
-# change control first (decision 0009 item 9).
+# change control first (decision 0009 item 9). The result value was re-pinned by
+# decision 0034 (DEV-0005); its 1.0.0 value was
+# 5b41c8039690c232cd02adce4a617b1b93aedec816029ca7595c41867292eb16.
 SCHEMA_SHA256 = {
     "event": "ee2b66c2dd35659dd4562375046718da2113f2b47d38431a4ada4b86d1cef3a8",
-    "result": "5b41c8039690c232cd02adce4a617b1b93aedec816029ca7595c41867292eb16",
+    "result": "cfd8d29489688f4334096d545f134ce8e7cff943cc1ccfb38041c198d712f84e",
     "policy": "741ed96f111d572bced45ed1aeadc61517670ae95ea0c7b66f6ae63ff7031e70",
     "authorization_vectors": "2439f12583f2d828e7bc20e5ba16fd4eb712940809e56fb3c8c1f46203cb37e7",
 }
@@ -103,7 +111,7 @@ def test_committed_records_carry_the_locked_versions():
         task = load(path.relative_to(ROOT))
         assert {variant["policy"]["schema_version"] for variant in task["variants"].values()} == {LOCKED}, path.name
     for fixture in sorted((ROOT / "tests" / "fixtures" / "result").glob("*.json")):
-        assert load(fixture.relative_to(ROOT))["schema_version"] == LOCKED, fixture.name
+        assert load(fixture.relative_to(ROOT))["schema_version"] == SCHEMA_VERSIONS["result"], fixture.name
 
 
 def test_runner_hashes_use_the_canonical_json_rule():

@@ -173,6 +173,23 @@ def test_a_development_base_names_its_prompt_and_v2_renders():
     _refused("base_case", v1)
 
 
+def test_demo_case_is_staged_but_excluded_from_estimates():
+    record = load(ROOT / "corpus" / "demo" / "demo-001.json")
+    development_reference = dev("dev-001")
+    validator("base_case").validate(record)
+    assert record["split"] == "demo"
+    assert record["task"] == development_reference["task"]
+    assert record["channels"] == development_reference["channels"]
+    assert record["fixture"]["wrapper"] == development_reference["fixture"]["wrapper"]
+    assert record["fixture"]["clean_replacement"] == development_reference["fixture"]["clean_replacement"]
+    assert any("excluded from every estimate" in note for note in record["notes"])
+    manifest = load(ROOT / record["fixture"]["rendered_hash_manifest"])
+    assert manifest["canonical_payload_sha256"] == record["attack"]["canonical_payload_sha256"]
+    for channel in ("c2", "c3", "c4"):
+        for condition in ("attack", "clean"):
+            assert (ROOT / manifest[f"{channel}_{condition}"]["path"]).is_file()
+
+
 # --- task references and answer facts ---------------------------------------
 
 

@@ -47,6 +47,11 @@ make corpus-check t1-suite
 `make w7-t1-check` checks drift; `make w7-t1-smoke` uses a fresh temporary run.
 Never regenerate fixtures merely to conceal an unexpected drift.
 
+On November 3, the ten task variants changed these tasks' prompts and added the
+open-ticket C3 and C4 sources, so both evidence summaries were regenerated from a
+fresh mock run. The open-ticket C2 source stays two rows. All 15 clean utility checks and all four C1 wiring checks still pass.
+The test count below is from the original run.
+
 Validation: the final full suite passed **1784 tests** (including seven new
 W7-T1 tests); `corpus-check` reported zero problems and `t1-suite` passed every
 listed template/adapter utility check. `git diff --check` passed.
@@ -78,7 +83,10 @@ manifest, and must never be mixed into official indirect estimates.
   [`evidence/w7-t1/c1-summary.json`](evidence/w7-t1/c1-summary.json). Each control
   ran once, not the official three repeats. Authorization is explicitly null;
   no indirect policy verdict or model positive-control success is claimed.
-- The locked result schema and indirect scheduler accept C2–C4, not C1. C1
+- The locked result schema and indirect scheduler accept C2–C4, not C1.
+  (*Superseded November 12:* result schema 1.1.0 has the official C1 record,
+  [decision 0034](decisions/0034-c1-result-records.md); the indirect scheduler
+  still accepts only C2–C4.) C1
   mock evidence therefore uses separate versioned descriptive JSON, never
   indirect ResultRecords. An eventual official C1 executor/report remains
   separate gated work. Completed mock resume verifies evidence without
@@ -117,3 +125,15 @@ Audit follow-up, mock-only and with no provider call:
   `make raw-manifest RUNS="<dir> ..." OUT=<file>` is the SHA-256 manifest decision
   0025 item 5 names. Neither has run on a real provider, and both still make no
   claim about model resistance or defense efficacy.
+
+## November 5, 2026 note
+
+`main` (decisions 0028 and 0029, the stack-gap fixes, and the sandbox death-signal
+fix) is merged into the task variants, mock-only and with no provider call.
+`DELIVERY_VERSION` moves to v0.6.0, past both sides' versions (v0.3.0 here, v0.5.0
+on `main`). `make w7-t1-build` re-pinned the C1 controls and coverage files to the
+merged code, and `make w7-t1-evidence` regenerated
+[`evidence/w7-t1/*.json`](evidence/w7-t1): coverage 15 of 15, C1 4 of 4. As on
+November 3, they were regenerated before the merge was committed, so their
+`dirty_paths` list the merged files; rerun the target after the commit to record a
+clean tree.

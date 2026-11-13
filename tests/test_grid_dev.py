@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from runner import grid_dev
+from runner import grid_dev, paid_run
 from runner.mock_provider import MOCK_MODEL_ID
 from runner.schedule import generate_schedule
 
@@ -44,6 +44,14 @@ def test_verify_matches_mock_run_model_when_spec_lists_live_model(tmp_path):
     report = grid_dev.verify_grid_run(out, spec)
     assert report["trials_found"] == 90
     assert report["complete"] is True
+    assert report["run_wide_stops"] == [] and report["infrastructure_failures"] == []
+    # A last invocation the stop rule ended leaves the run incomplete (decision 0029),
+    # even with every trial's result in place.
+    stop = {"rule": "consecutive_infrastructure_failures", "reason": "test", "logical_trial_ids": []}
+    with (out / paid_run.PROVENANCE_FILE).open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"phase": "stop", "run_wide_stop": stop}) + "\n")
+    report = grid_dev.verify_grid_run(out, spec)
+    assert report["complete"] is False and report["run_wide_stops"] == [stop]
 
 
 def test_spec_for_verification_prefers_model_requested(tmp_path):

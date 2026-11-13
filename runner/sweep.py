@@ -31,7 +31,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
-from runner import execute, grid_dev, paid_run
+from jsonschema import ValidationError
+
+from runner import delivery, execute, grid_dev, paid_run
 from runner.mock_slice import RESULTS_FILE, REPO_ROOT, read_jsonl, validator
 from runner.provider_config import load_api_key
 from runner.schedule import PROTOCOL_SENTINEL, generate_schedule
@@ -52,6 +54,26 @@ def _bases_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
     return None
 
 
+def _renders_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
+    """Every scheduled cell's pinned render exists, matches its pin, and round-trips, so
+    a missing render refuses the sweep here instead of failing each of its cells."""
+    cache: dict[str, Any] = {}
+    for base_case_id in spec["base_case_ids"]:
+        try:
+            base, template = execute._load_base(cache, Path(corpus_root), base_case_id)
+        except ValidationError as exc:  # its full text would print the record's payload
+            return f"{base_case_id} can't be loaded for the render preflight: {exc.message}"
+        except (OSError, ValueError, KeyError) as exc:
+            return f"{base_case_id} can't be loaded for the render preflight: {exc}"
+        for channel in spec["channels"]:
+            for condition in spec["conditions"]:
+                try:
+                    delivery.pinned_render(base, channel, condition, template)
+                except (OSError, ValueError, KeyError) as exc:
+                    return f"{base_case_id} has no usable {channel} {condition} render: {exc}"
+    return None
+
+
 def live_refusal(spec: Mapping[str, Any], protocol_version: Optional[str], corpus_root: Path, out: Path) -> Optional[str]:
     """Fail closed before any key is read or any paid call is made."""
     if os.environ.get("CANARY_PAID_RUN_ACK") != "1":
@@ -59,11 +81,14 @@ def live_refusal(spec: Mapping[str, Any], protocol_version: Optional[str], corpu
     reason = grid_dev._provider_env_refusal()
     if reason:
         return reason
+    problem = next(validator("schedule_spec").iter_errors(dict(spec)), None)
+    if problem is not None:
+        return f"the sweep spec isn't a valid schedule spec: {problem.message}"
     if not protocol_version:
         return "the sweep needs the frozen protocol_version (protocol/active.json)"
     if spec.get("protocol_sentinel", PROTOCOL_SENTINEL) == PROTOCOL_SENTINEL:
         return f"the sweep spec's protocol_sentinel must name the frozen protocol, not {PROTOCOL_SENTINEL!r}"
-    reason = _bases_refusal(corpus_root, spec) or execute.raw_evidence_refusal(out)
+    reason = _bases_refusal(corpus_root, spec) or _renders_refusal(corpus_root, spec) or execute.raw_evidence_refusal(out)
     if reason:
         return reason
     return paid_run.paid_run_refusal(new_trials=0)  # evaluation trials don't count against the ceiling
@@ -80,7 +105,7 @@ def run_sweep(
     analysis_role: Optional[str] = None,
     resume: bool = False,
 ) -> Path:
-    reason = live_refusal(spec, protocol_version, corpus_root, out)
+    reason = grid_dev.fallback_refusal(provider_name) or live_refusal(spec, protocol_version, corpus_root, out)
     if reason:
         raise paid_run.PaidRunRefused(reason)
 
@@ -125,8 +150,12 @@ def verify_sweep(run: Path, corpus_root: Path = DEFAULT_CORPUS_ROOT) -> dict[str
     if len(found) != len(set(found)):
         raise ValueError(f"{run.name}: a trial has more than one stored result")
     execute.check_stored_run(run, pairs, corpus_root=corpus_root)
-    return {"trials_expected": len(schedule), "trials_found": len(found), "missing": len(set(schedule) - set(found)),
-            "status_counts": dict(sorted(statuses.items())), "protocol_versions": sorted({r["protocol_version"] for _, r in pairs})}
+    missing = len(set(schedule) - set(found))
+    return {"trials_expected": len(schedule), "trials_found": len(found), "missing": missing,
+            "status_counts": dict(sorted(statuses.items())), "protocol_versions": sorted({r["protocol_version"] for _, r in pairs}),
+            # A sweep the run-wide stop rule stopped isn't complete until a resume runs it through (decision 0029).
+            "run_wide_stops": grid_dev.run_wide_stops(run),
+            "complete": missing == 0 and not grid_dev.stopped_unresolved(run)}
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -163,6 +192,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     except paid_run.PaidRunRefused as exc:
         print(f"refusing: {exc}", file=sys.stderr)
         return 2
+    except execute.RunWideFailure as exc:
+        print(f"{exc}: rerun this command with --resume", file=sys.stderr)
+        return 3
     except grid_dev.REFUSALS as exc:
         print(f"refusing: {exc}", file=sys.stderr)
         return 1

@@ -24,7 +24,7 @@ Before a retained slice enters `IN PROGRESS`, it has exactly one accountable own
 3. Add or update tests with the implementation.
 4. Record whether the change touches a frozen or claim-bearing artifact.
 5. Open a pull request describing scope, safety impact, evidence, and documentation impact.
-6. Obtain review from someone other than the primary implementer for oracle, corpus, defense, sanitizer, and release changes.
+6. Merge your own pull request once the required `test` check passes ([decision 0031](docs/decisions/0031-merge-on-green.md)). Answer any change request in its thread before merging. A change to a JSON or JSONL record under `corpus/` or `oracles/authorization/`, to a file under `defenses/vectors/`, or to a file under `.github/` needs approval from a contributor other than you (`.github/CODEOWNERS`). Oracle, corpus, defense, sanitizer, and release code also gets the lead-side review that `SPEC.md` Section 15 sets, after it merges and before the next paid run, freeze, or gate step that uses it.
 
 ## Branch and pull-request mechanics
 
@@ -55,7 +55,7 @@ Project participants are collaborators on `marek-sm/CANARY` and push branches di
    git push -u origin type/short-description
    ```
 
-4. On GitHub, use the **Compare & pull request** banner, keep the base as `main`, fill in the template, and add your reviewer in the **Reviewers** field.
+4. On GitHub, use the **Compare & pull request** banner, keep the base as `main`, fill in the template, and add a reviewer in the **Reviewers** field if you want one. A record or CI change gets one automatically from `.github/CODEOWNERS`.
 5. Address review comments by committing to the same branch and pushing again; the pull request updates automatically.
 6. If `main` moves ahead of your branch, you usually need to do nothing: GitHub merges non-overlapping changes. If the pull request reports conflicts, or you need the newer work, bring `main` into your branch:
 

@@ -170,7 +170,8 @@ def test_tier_has_four_c1_controls_and_one_demo_case():
 def test_ledger_is_consistent_and_lists_every_development_base():
     rows = ledger()
     # Pending sign-off is checked (and kept red) by the intake check itself.
-    assert [p for p in check_ledger(rows) if "PENDING_REVIEW" not in p] == []
+    reserved_ids = {r["base_case_id"] for r in reserved_records()}
+    assert [p for p in check_ledger(rows, reserved_ids) if "PENDING_REVIEW" not in p] == []
     dev_ids = set()
     for base in ASSIGNMENT["bases"]:
         rec = record(base["base_case_id"])

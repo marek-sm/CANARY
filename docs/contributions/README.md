@@ -19,7 +19,7 @@ Create one file per contributor identifier. Use a person's public name only afte
 - Pull request/commit/artifact: [link or identifier]
   - Work performed: [specific action]
   - Acceptance evidence: [test, review, source audit, generated output]
-  - Independent reviewer: [consented name or contributor ID]
+  - Independent reviewer: [consented name or contributor ID, or "lead-side review" under decision 0031]
 
 ## Approved public description
 

@@ -1,9 +1,10 @@
-"""Render dev bases that carry a `fixture.wrapper` into C2/C3/C4 fixtures.
+"""Render staged bases that carry a `fixture.wrapper` into C2/C3/C4 fixtures.
 
     python -m corpus.render_fixtures          # write fixtures + hash manifests
     python -m corpus.render_fixtures --check  # fail if anything on disk drifted
 
 Every development base carries a wrapper since dev-001's re-render on 2026-10-21.
+The excluded demo base joins this path only after W7-T5 adds its case parts.
 Every render is parsed back before it's written; a base whose parser doesn't
 recover the exact substituted content fails loudly instead of being written.
 """
@@ -17,6 +18,9 @@ import sys
 import unicodedata
 from pathlib import Path
 
+from tasks import registry
+from tools.query_db import QUERIES
+
 from channels.render import (
     INSERTION_MARKER,
     RECORD_EXTRACTOR_VERSIONS,
@@ -25,7 +29,7 @@ from channels.render import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-DEV_DIR = ROOT / "corpus" / "development"
+RECORD_DIRS = (ROOT / "corpus" / "development", ROOT / "corpus" / "demo", ROOT / "corpus" / "evaluation")
 EXTENSIONS = {"C2": "json", "C3": "txt", "C4": "html"}
 
 
@@ -35,18 +39,40 @@ def sha256_text(text: str) -> str:
 
 def wrapped_records() -> list[dict]:
     records = []
-    for path in sorted(DEV_DIR.glob("dev-*.json")):
-        record = json.loads(path.read_text(encoding="utf-8"))
-        if "wrapper" in record["fixture"]:
-            records.append(record)
+    for directory in RECORD_DIRS:
+        for path in sorted(directory.glob("*.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            if "wrapper" in record.get("fixture", {}):
+                records.append(record)
     return records
+
+
+def wrapper_with_listed_records(record: dict) -> dict:
+    """SPEC.md Section 5's identical facts for a task whose C2 source returns several
+    rows: the payload sits in the row holding the base's facts, and C3 and C4 list the
+    other rows beside it. Derived from the seed, so the channels can't drift apart."""
+    wrapper = record["fixture"]["wrapper"]
+    template_id = (record.get("task") or {}).get("template_id")
+    if template_id is None:
+        return wrapper
+    call = registry.load(template_id)["variants"]["C2"]["required_calls"][0]
+    lookup_param, resource = QUERIES[call["args"]["query_id"]]
+    seed = json.loads((registry.FIXTURES / "db-seed.json").read_text(encoding="utf-8"))
+    rows = [json.loads(row["content"]) for row in seed
+            if row["resource"] == resource and row["lookup"] == call["args"]["params"][lookup_param]]
+    if len(rows) < 2:
+        return wrapper
+    if wrapper["facts"] not in rows:
+        raise ValueError(f"{record['base_case_id']}: facts aren't a row of {resource}")
+    also = [{key: row[key] for key in wrapper["facts"]} for row in rows if row != wrapper["facts"]]
+    return {**wrapper, "also": also}
 
 
 def expected_files(record: dict) -> dict[Path, str]:
     """Every file this record's fixtures should contain, path -> exact text."""
     base = record["base_case_id"]
     fixture = record["fixture"]
-    wrapper = fixture["wrapper"]
+    wrapper = wrapper_with_listed_records(record)
     payload = record["attack"]["canonical_payload"]
     clean = fixture["clean_replacement"]
 
