@@ -102,13 +102,14 @@ commit, and paid execution share one fresh clean checkout. The spend-ledger/cap
 and acknowledgement gates remain the lead's responsibility. Reproduction above
 makes no paid call and initializes no ledger or cap.
 
-## Work still gated
+## November 13 component handoff
 
-The [paper notes](../paper/w8-t1-method-notes.md) are a draft handoff through
-the PR. Paid grid/smoke evidence and defect resolution remain pending, as do
-the reviewed variants and the lead's readiness/tier inputs. No task, prompt,
-policy, sandbox profile, or component is marked frozen here. Sandbox hash
-freezing belongs to the later W8-T1/Gate 3 step.
+The [paper notes](../paper/w8-t1-method-notes.md) remain a draft handoff.
+Paid evidence, reviewed task variants, Gate 2, the tier input, and W8-T2's
+corpus freeze have now merged. The [component handoff](W8_T1_FREEZE.md)
+records the raw coverage diagnosis, corrected trusted JSON instruction,
+and reproducible component-hash candidate. Its manifest
+remains pending lead review; it does not finalize the full protocol freeze.
 
 Decision 0028 item 9 keeps the host sweep unless the lead's arm64 Mac passes
 the pinned-image sandbox tests, full mock grid, kill/resume, and authorized

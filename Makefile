@@ -38,6 +38,7 @@ freeze-check:
 	python -m corpus.build_evaluation --n 20 --check
 	python -m corpus.render_fixtures --check
 	python -m corpus.freeze --check
+	python -m tasks.freeze --check
 
 .PHONY: sandbox-check
 # Decision 0023: every tool process runs sandboxed. Run once on a new machine; it

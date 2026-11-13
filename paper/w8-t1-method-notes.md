@@ -1,8 +1,8 @@
 # W8-T1 draft agent, tool, task, and utility notes
 
 Draft input for paper Sections 6, 9, and 10, based on the merged W7-T1 and
-W7-T3 implementations, decision 0023's sandbox, and decision 0028 on main
-`103e173` (including #76). These are implementation
+W7-T3 implementations, decision 0023's sandbox, and main `ae30c6f`, with
+the November 13 [W8-T1 component handoff](../docs/W8_T1_FREEZE.md). These are implementation
 notes for the designated paper leads, supplied through this pull request.
 They are not frozen methods or empirical results. The project lead and paper
 leads retain scientific wording and manuscript ownership.
@@ -65,9 +65,10 @@ extraction, cross-source comparison, and legitimate high-risk actions. Each
 declares its channel adapters, required source calls, exact output, policy,
 and fixture identity. The [fixture registry](../tasks/registry.py) verifies the
 manifest, resets a per-trial copy, and checks the SQLite snapshot against its
-seed. The new channels and prompt refresh in
-[#71](https://github.com/marek-sm/CANARY/pull/71) remain pending; the draft does
-not describe them as merged or retained at a selected tier.
+seed. The channels and prompt refresh in
+[#71](https://github.com/marek-sm/CANARY/pull/71) have merged, including the
+two-row native open-ticket query. Decision 0032 records F20 as the tier input;
+the full protocol selection remains the lead's Gate 3 step.
 
 The [task utility oracle](../oracles/utility/task_suite.py) requires exact typed
 JSON, the declared source reads and observed effects, and, for email tasks, an
@@ -85,9 +86,9 @@ The [development grid](../runner/grid_dev.py) crosses the five development
 bases, three indirect channels, attack/clean, and all three configurations.
 Its mock provider validates plumbing and evidence, not model behavior.
 The merged coverage executor also has a gated live path and a read-only
-`--verify` path. No live path was exercised for these notes. W7-T1 and W7-T3
-remain incomplete until their paid evidence merges, even though their code
-unlocked this tier-independent W8 work.
+`--verify` path. No live path was exercised for these notes. The November 9
+paid evidence has merged; the component handoff records the remaining
+coverage-smoke defect resolution and its validation limits.
 
 The four [C1 control definitions](../corpus/c1_controls) place source-faithful
 hostile text in a trusted user prompt, in decision 0018 order. Their
@@ -145,12 +146,15 @@ The sandbox proof concerns the supported host configurations under decision
 0023; it is not a proof about arbitrary operating systems or a public service.
 Decision 0028 also preserves a measurement limit: malformed endings can leave
 security endpoints unknown, and the one-tool-call-per-reply restriction
-remains. The lead's forthcoming count-only diagnostics quantify those gaps;
+remains. Count-only diagnostics belong to the lead's readiness evidence;
 these notes neither supply them nor change endpoint definitions.
 
-Before the whole W8-T1 slice is complete: inspect the merged paid grid/smoke
-summary and authorized raw evidence, resolve any task/oracle defects, incorporate
-the reviewed variants, and apply the selected tier after the lead inputs. Only
-then freeze the retained tasks, fixtures, policies, validators, system prompt,
-tool descriptions, and sandbox launcher/profile identities through the Gate 3
-process. This early draft computes no freeze hash and selects no tier.
+The November 13 handoff inspects the merged coverage evidence and its matching
+access-controlled raw files. All seven failed coverage cells contained the
+correct JSON inside Markdown fences. The trusted system instruction now
+explicitly requests bare JSON; the oracle remains strict and the original
+8/15 paid result is preserved. No paid revalidation of that prompt change has
+occurred. The handoff provides candidate identities for tasks, fixtures, policies, validators,
+prompt/tool definitions, scorers and sandbox code. Lead-side review and human
+disposition, record approval, merge, and full Gate 3 protocol/environment
+selection remain required. These notes do not attest a completed freeze.
