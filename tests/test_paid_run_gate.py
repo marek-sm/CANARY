@@ -638,6 +638,9 @@ def test_the_command_writes_a_record_that_validates_and_refuses_in_words(gate, m
     assert paid_run.main(arguments) == 1
     assert "commit or discard" in capsys.readouterr().err
     gate.git("checkout", "--", "runner/code.py")
+    assert paid_run.main(arguments) == 1
+    assert "lead-side review" in capsys.readouterr().err  # decision 0031 item 6
+    gate.attest()
     assert paid_run.main(arguments) == 0
     paid_run.validator(paid_run.RECORD_SCHEMA).validate(json.loads(paid_run.RECORD.read_text(encoding="utf-8")))
 
