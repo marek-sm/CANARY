@@ -47,7 +47,7 @@ None of the 1,092 planned official trials has run. No evaluation, official, or C
    Section 11's date and pass evidence don't change. The November 13 whole-tree review stays as attested, and the file isn't edited; the corrections a documentation audit found in it on November 14 go into the new review file as errata. Until the Gate 3 step finishes, nothing else merges to `main` that changes a path in `runner/paid_run.py`'s `HASHED_DIRS`. The step runs from a fresh checkout of a commit whose `paid_run.code_digest` is the attested digest.
 
 2. **Stage 1: the fallback base.** It comes first, in two pull requests.
-   - **PR G (lead scaffold).**
+   - **The G3-2 fix PR (lead scaffold).**
      - `analysis/lead_outputs.load_run` refuses a trial unless its results file sits in that trial's `trial_slug` directory, with a failing-first test in a new test file.
      - `python -m analysis.gate3_hashes` prints `analysis_hash` (item 4) and the four fallback hashes (item 5). With `--check protocol/active.json`, it fails on any mismatch and on any null fallback hash. The step therefore runs only committed commands and builds nothing new.
      - Cheap fixes from the same review of decision 0036's code:
@@ -55,13 +55,13 @@ None of the 1,092 planned official trials has run. No evaluation, official, or C
        - a test reads the canaries from the released record;
        - the binding comment no longer says the sanitizer keeps every bound field unchanged;
        - the docstring states that only the command-line path binds.
-   - **PR M.** `d3b1910`, unchanged except that its `Makefile` conflict with #104 is resolved. It is a visible scope change of the merge step only, recorded in `TASKS.md`'s `W8-T5` row before PR M opens, as on #66 (recorded November 11).
-     - The project lead tells `W8-T5`'s owner before opening PR M, in an informative notice that asks nothing.
-     - If the owner says, before `D_G` is attested, that `d3b1910` isn't the finished `W8-T5` deliverable (decision 0027 item 1), PR M doesn't merge, Stage 1 is PR G alone, and the Gate 3 record states `W8-T5` as missed.
+   - **the `W8-T5` PR.** `d3b1910`, unchanged except that its `Makefile` conflict with #104 is resolved. It is a visible scope change of the merge step only, recorded in `TASKS.md`'s `W8-T5` row before the `W8-T5` PR opens, as on #66 (recorded November 11).
+     - The project lead tells `W8-T5`'s owner before opening the `W8-T5` PR, in an informative notice that asks nothing.
+     - If the owner says, before `D_G` is attested, that `d3b1910` isn't the finished `W8-T5` deliverable (decision 0027 item 1), the `W8-T5` PR doesn't merge, Stage 1 is the G3-2 fix PR alone, and the Gate 3 record states `W8-T5` as missed.
      - `W8-T5`'s owner keeps the slice, and the Gate 3 record states that it merged one day late.
    - **Review.** Both pull requests get decision 0031 items 4 and 5's lead-side review in `docs/reviews/2026-11-14-gate3-inputs.md`. The project lead then attests the resulting digest, `D_G`.
-     - If that review finds a blocking problem in PR M, PR M is left out and Stage 1 is PR G alone.
-     - If it finds one in PR G that can't close by 9:00 pm, item 6's last branch applies.
+     - If that review finds a blocking problem in the `W8-T5` PR, the `W8-T5` PR is left out and Stage 1 is the G3-2 fix PR alone.
+     - If it finds one in the G3-2 fix PR that can't close by 9:00 pm, item 6's last branch applies.
 
 3. **Stage 2: the module.**
    - **Reassignment.** The estimand report module moves from `W8-T3` to the project lead as lead scaffold.
@@ -69,7 +69,7 @@ None of the 1,092 planned official trials has run. No evaluation, official, or C
      - The move is recorded one day after the slice's last merge date.
      - It is the visible reassignment that decision 0036 Option 2 lacked, and it follows the `W8-T3` row's November 13 evening note.
      - `W8-T3`'s 5.0-hour estimate stays as the planning record, and no member's hours change.
-   - **What it is.** PR B adds `analysis/report.py`, the module `make report` already names. It adds no dependency: it uses the standard library only, with `random.Random(20261114)`.
+   - **What it is.** The report module PR adds `analysis/report.py`, the module `make report` already names. It adds no dependency: it uses the standard library only, with `random.Random(20261114)`.
      - Its estimands read only `primary_indirect` records from decision 0036 item 5's final set, through `lead_outputs`' readers. Its C1 section comes from `analysis/c1_table.py` over `c1_control` records.
      - It generates every manifest estimand that `lead_outputs` doesn't, exactly as Sections 9 and 10 define them:
        - adapter-first rates and macro-averages, with `x/n` or pair counts and complete and missing pairs;
@@ -87,7 +87,7 @@ None of the 1,092 planned official trials has run. No evaluation, official, or C
        - Section 10's development-floor form, which applies.
      - **Geometry.** It reads the geometry from the run's `protocol/active.json`; the empty output doesn't depend on it.
      - **Output.** It writes `paper/generated/report.md`. With no records, that file holds the shells marked `PRE-RESULTS — NO DATA`. Missingness ranges and threshold flags render there. No manifest shell, column, or pin changes.
-     - **Frozen files it doesn't edit.** PR B doesn't edit `paper/generated/estimand_shells.md`, the manifest, `analysis/report_shells.py`, `tests/test_make_report.py`, or `tests/test_paper_scaffold.py`, which `W8-T5`'s record pins, or the `Makefile`; its own `make report` tests go in a new file. The `Makefile`'s message and comments naming `W8-T3` therefore stay out of date.
+     - **Frozen files it doesn't edit.** The report module PR doesn't edit `paper/generated/estimand_shells.md`, the manifest, `analysis/report_shells.py`, `tests/test_make_report.py`, or `tests/test_paper_scaffold.py`, which `W8-T5`'s record pins, or the `Makefile`; its own `make report` tests go in a new file. The `Makefile`'s message and comments naming `W8-T3` therefore stay out of date.
      - Decision 0012's first table stays first, because `make report` runs `lead_outputs` before this module.
      - A module missing any manifest estimand or any rule in this item isn't done under item 6.
 
@@ -111,21 +111,21 @@ None of the 1,092 planned official trials has run. No evaluation, official, or C
    At `ENGINEERING`, `generate(...)` receives one null reason for each null field.
 
 6. **Fallback, fixed now and outcome-blind.**
-   - **What "done" means.** By 9:00 pm on November 14, PR B has merged and meets item 3, and its review is attested with 0 open blocking findings.
-   - **If PR B isn't done,** the Gate 3 step runs at `ENGINEERING` before midnight, with no further decision.
-     - It runs from a fresh checkout of `D_G`'s commit plus this record's unhashed pull request. If PR B merged, the checkout is `main` after reverting it, and its digest must equal `D_G`.
+   - **What "done" means.** By 9:00 pm on November 14, the report module PR has merged and meets item 3, and its review is attested with 0 open blocking findings.
+   - **If the report module PR isn't done,** the Gate 3 step runs at `ENGINEERING` before midnight, with no further decision.
+     - It runs from a fresh checkout of `D_G`'s commit plus this record's unhashed pull request. If the report module PR merged, the checkout is `main` after reverting it, and its digest must equal `D_G`.
      - If `D_G` isn't attested by 9:00 pm either, the step runs on the commit where this record merged. That record changes no `HASHED_DIRS` path, so the commit's digest is `226b161c…1937`. Then:
        - if the project lead classed G3-2 as blocking, it is an open blocking finding on the frozen code. The Gate 3 pass evidence requires 0 open blocking at every tier (`SPEC.md` Section 11, Gate 3 row), so the response is `STOP`;
        - otherwise `07e28ed`'s attested review governs, and the step runs at `ENGINEERING`.
-     - **The `ENGINEERING` checks** are `make freeze-check`, `defense-freeze-check`, `recheck`, `python -m tasks.freeze --check`, `python -m analysis.active_protocol --check`, `make paper-shells-check`, `output-freeze-check` (when PR M merged), `lead-outputs-check`, `engineering-report-check`, and, on `D_G`, `python -m analysis.gate3_hashes --check protocol/active.json`. The Gate 3 record keeps each one's output.
+     - **The `ENGINEERING` checks** are `make freeze-check`, `defense-freeze-check`, `recheck`, `python -m tasks.freeze --check`, `python -m analysis.active_protocol --check`, `make paper-shells-check`, `output-freeze-check` (when the `W8-T5` PR merged), `lead-outputs-check`, `engineering-report-check`, and, on `D_G`, `python -m analysis.gate3_hashes --check protocol/active.json`. The Gate 3 record keeps each one's output.
      - `analysis_hash` is null, with its reason. `make report` isn't a pass item at `ENGINEERING`; its exit-2 message is recorded.
      - "The step has run" means `protocol/active.json` and the Gate 3 record are committed on a pushed branch by 11:59 pm.
-   - **If PR B is done but another pass item fails,** the ordinary Section 11 Gate 3 response applies.
+   - **If the report module PR is done but another pass item fails,** the ordinary Section 11 Gate 3 response applies.
 
-7. **Review of PR B.**
+7. **Review of the report module PR.**
    - Decision 0031 items 4 and 5's lead-side review: up to two `fix-reviewer` rounds and `docs/reviews/2026-11-14-report-module.md`, then the project lead's attestation, then a new mock grid and paid-run record.
    - The project lead can explain each estimand's code path before attesting.
-   - PR B is due by 6:00 pm. A blocking finding in the lead's review that can't close by 9:00 pm triggers item 6.
+   - The report module PR is due by 6:00 pm. A blocking finding in the lead's review that can't close by 9:00 pm triggers item 6.
 
 8. **Blinding.**
    - No evaluation, official, or C1 outcome exists. Development outcomes are visible (the November 9 grid; the development floor applies at 0 of 15), and the module is written after them.
@@ -154,7 +154,7 @@ None of the 1,092 planned official trials has run. No evaluation, official, or C
 
 - **Lead time.** The project lead's added time on November 14 is about six hours:
   - Stage 1's review and attestation, 0.5 hours;
-  - PR B's review and attestation, 2.5 hours;
+  - The report module PR's review and attestation, 2.5 hours;
   - classifications and this record, 0.5 hours;
   - the mock grid, paid-run record, `active.json`, and checks, 1 hour;
   - the Gate 3 record, 0.5 hours;
