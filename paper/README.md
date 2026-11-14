@@ -11,6 +11,8 @@ results.
   Section 10.
 - [`generated/estimand_shells.md`](generated/estimand_shells.md) is generated
   from that manifest and intentionally contains no data.
+- [`output_pipeline_freeze.json`](output_pipeline_freeze.json) is W8-T5's
+  reproducible hash record for the accessible pre-results shell pipeline.
 - [`venue-checklists.md`](venue-checklists.md) maps the NeurIPS paper
   checklist and the IEEE conference-paper structure to the `SPEC.md` sections
   and artifacts that answer them, and marks what is still open. It makes no
@@ -26,6 +28,7 @@ Check that the committed artifact is current with:
 
 ```bash
 python -m analysis.report_shells --check
+python -m analysis.output_pipeline_freeze --check
 ```
 
 The project lead owns the thesis, protocol/metric wording, numerical claims,

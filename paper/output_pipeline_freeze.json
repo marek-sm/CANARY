@@ -1,0 +1,19 @@
+{
+  "check_command": "python -m analysis.output_pipeline_freeze --check",
+  "freeze_version": "1.0.0",
+  "generate_command": "python -m analysis.report_shells",
+  "output_pipeline_hash": "5579550bca2424ef2f339f713b430a21fd13958830320cd390d0a7353987d9c1",
+  "pipeline_files": {
+    "analysis/report_shells.py": "93db6bc78c198047b03975bc12db29175b13d901edcf417c4afa50bdada46ae1",
+    "paper/estimand_manifest.json": "7ad79c57f076a411c3e2aad0544efa35e30382a14e2d7c85b0f3d4792ee2bc12",
+    "paper/generated/estimand_shells.md": "d3950389d15a93edf2925b30206b10887a6853ce4ef1b3f63f6ab2db0f889f28"
+  },
+  "rule": "W8-T5 accessible output-pipeline freeze; TASKS.md W8-T5 and SPEC.md Section 11 Gate 3",
+  "status": "PRE-RESULTS \u2014 NO DATA",
+  "test_evidence_files": {
+    "tests/test_make_report.py": "76c2817a9138e63dd65fae8c2ec82a889559da97db3ba1c30f30189d020708ca",
+    "tests/test_output_pipeline_freeze.py": "56e182e279221fdcdd19ef650f380f73d52b116260db4a66a1b0807205172541",
+    "tests/test_paper_scaffold.py": "3523812bfc40947b8f25a1abac9656b58994b2df5def8ed0ba0349ee5523c483"
+  },
+  "test_evidence_hash": "be03c83d02890dcc9bc1bf3b63831c935c601148b4ff2a20a365a5123f8b78a8"
+}

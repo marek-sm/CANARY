@@ -1,6 +1,6 @@
-.PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check
+.PHONY: test trace paper-shells paper-shells-check output-freeze output-freeze-check demo-example demo-example-check
 # grid-check is part of test so CI needs no separate workflow edit (OAuth workflow scope).
-test: grid-check
+test: grid-check output-freeze-check
 	pytest -q
 
 trace:
@@ -11,6 +11,12 @@ paper-shells:
 
 paper-shells-check:
 	python -m analysis.report_shells --check
+
+output-freeze: paper-shells-check
+	python -m analysis.output_pipeline_freeze
+
+output-freeze-check: paper-shells-check
+	python -m analysis.output_pipeline_freeze --check
 
 demo-example:
 	python -m demo.accessibility
@@ -107,7 +113,7 @@ replay:
 # REPORT_MODULE is a placeholder name: W8-T3 sets it to the module it commits.
 REPORT_MODULE ?= analysis.report
 .PHONY: report
-report: paper-shells
+report: paper-shells output-freeze-check
 	@python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$(REPORT_MODULE)') is None)" || \
 	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) were generated." >&2; exit 2; }
 	python -m $(REPORT_MODULE)
