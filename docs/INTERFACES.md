@@ -280,7 +280,7 @@ live --spec SPEC.json --protocol-version V` runs a committed schedule spec throu
 `corpus/evaluation` unless `--corpus-root` names another, writing under the ignored
 `results/raw/sweep/`. It refuses, before any key is read, without `CANARY_PAID_RUN_ACK=1`,
 a protocol version, or a frozen `protocol_sentinel`, on any base whose `split` isn't
-`evaluation`, on an output path Git could take, and wherever `paid_run_refusal` does.
+`evaluation`, on an output path Git could take, and wherever `paid_run_refusal` does. It also refuses unless `protocol/active.json` is committed and names this protocol version, these bases, both freeze hashes, and this schedule: the spec's seed, experiment ID, and model are its `empirical.schedule_seed`, `empirical.experiment_id`, and `empirical.model_requested`, its bases, channels, and configurations are its own in its exact order (the schedule generator iterates them in order), its repeats give `run_indices`, and its conditions are attack then clean. Every record it writes has `analysis_role` `primary_indirect`.
 `python -m runner.sweep verify RUN` checks completeness, schema, and that every stored
 result recomputes from its events, and prints counts only, never an outcome aggregate.
 `execute.check_stored_run` reads a run's split from its mode file and recomputes each

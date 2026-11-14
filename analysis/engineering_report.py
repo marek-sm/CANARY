@@ -51,8 +51,14 @@ def render(plan: dict[str, Any], records: Optional[list[dict[str, Any]]] = None)
     """Deterministic Markdown. With no records (dormant) it is a plan-only shell;
     with frozen records it summarizes pass/fail/indeterminate counts, never an estimate."""
     by_id: dict[str, Optional[bool]] = {}
+    planned = [check["check_id"] for check in plan["checks"]]
     if records:
         for r in records:
+            # N-77-5 (whole-tree review): one record per planned check, and none outside the plan.
+            if r["check_id"] not in planned:
+                raise ValueError(f"check {r['check_id']!r} is not in the validation plan")
+            if r["check_id"] in by_id:
+                raise ValueError(f"check {r['check_id']!r} has more than one record")
             by_id[r["check_id"]] = r.get("passed")
 
     dormant = not records
@@ -71,9 +77,11 @@ def render(plan: dict[str, Any], records: Optional[list[dict[str, Any]]] = None)
     ]
 
     if not dormant:
-        passed = sum(1 for v in by_id.values() if v is True)
-        failed = sum(1 for v in by_id.values() if v is False)
-        indeterminate = sum(1 for v in by_id.values() if v is None)
+        # Over the plan's checks: a check with no record is indeterminate, never omitted.
+        outcomes = [by_id.get(cid) for cid in planned]
+        passed = sum(1 for v in outcomes if v is True)
+        failed = sum(1 for v in outcomes if v is False)
+        indeterminate = sum(1 for v in outcomes if v is None)
         lines += [
             "## Check outcome counts",
             "",

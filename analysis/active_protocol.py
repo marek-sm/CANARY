@@ -295,10 +295,46 @@ def generate(
     return manifest
 
 
+def _lists_refusal(manifest: Mapping[str, Any]) -> Optional[str]:
+    """N-77-4 (whole-tree review): every list the manifest carries is the one its Section 12
+    row gives, so run generation from it can't disagree with the official count it states."""
+    tier = manifest["tier"]
+    row = TIERS[tier]
+    empty = row["tier_class"] in ("ENGINEERING", "STOP")
+    bases = list(manifest.get("base_case_ids") or [])
+    configurations = list(manifest.get("configurations") or [])
+    if empty:
+        expected = {"base_case_ids": [], "channels": [], "c1_controls": [], "configurations": [], "run_indices": []}
+        for field, value in expected.items():
+            if list(manifest.get(field) or []) != value:
+                return f"{tier}: {field} must be empty at a {row['tier_class']} tier"
+    else:
+        if len(bases) != row["bases"] or len(set(bases)) != len(bases):
+            return f"{tier}: base_case_ids must be {row['bases']} distinct bases, not {len(bases)} ({len(set(bases))} distinct)"
+        if list(manifest.get("channels") or []) != CHANNELS_BY_COUNT[: row["channels"]]:
+            return f"{tier}: channels must be {CHANNELS_BY_COUNT[: row['channels']]}, in that order"
+        defenses = [c for c in configurations if c != "D0_BASELINE"]
+        retained = retained_configurations(tier, defenses[0] if row["tier_class"] == "ONE" and defenses else None)
+        if configurations != retained:
+            return f"{tier}: configurations must be {retained}, in that order"
+        if list(manifest.get("run_indices") or []) != list(range(1, row["repeats"] + 1)):
+            return f"{tier}: run_indices must be 1 to {row['repeats']}"
+        if list(manifest.get("c1_controls") or []) != c1_control_ids_for(tier):
+            return f"{tier}: c1_controls must be corpus/c1_controls/manifest.json's {tier} prefix, in its order"
+    if manifest.get("base_case_count") != len(bases):
+        return f"{tier}: base_case_count {manifest.get('base_case_count')} isn't the {len(bases)} base_case_ids"
+    if list(manifest.get("stage_configurations") or []) != configurations or manifest.get("stage_configuration_count") != len(configurations):
+        return f"{tier}: stage_configurations must be the configurations"
+    return None
+
+
 def validate(manifest: Mapping[str, Any]) -> None:
-    """Schema-validate and cross-check the Section 12 arithmetic agrees."""
+    """Schema-validate and cross-check the Section 12 arithmetic and lists agree."""
     _validator("active_protocol").validate(manifest)
     tier = manifest["tier"]
+    reason = _lists_refusal(manifest)
+    if reason:
+        raise ArithmeticError_(reason)
     recomputed = compute_arithmetic(tier)  # raises if the row itself is inconsistent
     if manifest["tier_arithmetic"] != recomputed:
         raise ArithmeticError_(f"{tier}: stored tier_arithmetic does not match the recomputed Section 12 row")
