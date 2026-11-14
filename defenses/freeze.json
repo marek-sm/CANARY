@@ -5,7 +5,7 @@
     "D2_DATAMARKING"
   ],
   "defense_hash": "519d6ced40ac12646be1353577e8cc171838a7b442d02dbfe6c458c3381ce5a9",
-  "test_evidence_hash": "8e434a9749d6bee043e3bad28a9616044e12505a2e32cb2c81c047634fe97ffd",
+  "test_evidence_hash": "287f797d63704d29f94f3dd102ec87a607defd12e6aeda48c1fa7328aa5f3f1f",
   "configuration_hashes": {
     "D1_POLICY_GATE": "0c4b90b47d8716e109ca7a06e0848d6da684aed66a2766cbbe19e3e0d4911943",
     "D2_DATAMARKING": "f59c436527f4b3eef90744ad4a09ce70440e85cba47ce8db957f39a506ae0454"
@@ -28,7 +28,7 @@
     "oracles/authorization/golden/w6-t1-task-suite.json": "0b72724dd54159711339621259be2b81788255fda7fd666216255f06aac9b23b",
     "oracles/authorization/golden/w8-task-variants.json": "d88250e80fe02e38cf812a65d920a98c86db115574aa721b8750f1efa9eff906",
     "schemas/authorization_vectors.schema.json": "5606aef6fa80dda2df6e44ec50c26095462446547e6d65b4b05286c78998a9ad",
-    "tests/test_contract_lock.py": "7e84551b77f8ef25c9c08acc300c3c4c344f92a006804d17beda7d6f42491921",
+    "tests/test_contract_lock.py": "59d5e0a943389720c3362ba21ad120dc658bc81a25eb72fc0ed3c6330d2d6555",
     "tests/test_datamarking.py": "7cebadc54a28d178cf0595f6d29b0bab2096674c765f76cd43cb880f95de2ea4",
     "tests/test_defense_contracts.py": "f29671dd83e3dc5a91d37eed2765ce2ff1e2a333dfde73f35a1b8de050cab98b",
     "tests/test_defense_mutants.py": "17144fcdba70cc458a9a2bcabb7c23dd4daa5c677dc9cccc9ad9056d7fbb7399",

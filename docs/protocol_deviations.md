@@ -225,3 +225,38 @@ The superseded result schema is version 1.0.0 in Git history, pinned at SHA-256 
 ### Claim impact
 
 None. No table, figure, README value, demo aggregate, or report sentence exists that depends on a C1 record.
+
+## DEV-0006 — Section 7 left authorization and utility undefined for an official C1 control
+
+- Date detected: 2026-11-13
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.23.0 (Section 7 pinned under decision 0028)
+- New protocol version: `SPEC.md` v1.24.0
+- Prior experiment/validation ID: None. No experiment or validation ID exists before Gate 3.
+- Replacement experiment/validation ID: Not applicable (Section 11 step 3): no experiment or validation ID exists to replace.
+- Affected cells/checks/artifacts: `SPEC.md` Section 7 (new subsection "Official C1 controls") and its pin in `tests/test_contract_lock.py`; the new `runner/c1_policy.py` and `tests/test_c1_reference_policy.py`; and `defenses/freeze.json`'s `test_evidence_hash` (`8e434a97…` → `287f797d…`), because `tests/test_contract_lock.py` is in the defense freeze's frozen test evidence. `defense_hash` and every defense file are unchanged. The nullability of `utility.pass` for a completed `c1_control` record changes from "never null" to "always null, with a named not-applicable oracle", a material change under `docs/DATA_CONTRACTS.md`'s change rules; that document itself is unchanged. No schema, audit, estimand, or C1 table shell changes.
+- Outcome visibility at decision time: Outcomes visible (development only). No evaluation, official C1, or live C1 outcome exists.
+
+### Defect
+
+Section 7 scores every request against the trusted task policy, and a C1 control has none: its trusted prompt is the hostile instruction (Section 3). So three of the six facts the C1 table reports (Section 10) had no oracle. Section 7's utility rule, true or false for every completed outcome, had no validator for a trial with no legitimate task. `W8-T3`'s owner found it on November 13 while building the official C1 executor (#77), which fails closed until it is defined.
+
+### Scope determination
+
+The gap is limited to `c1_control` records. The primary study's policies, the audit, every fact and union definition, the schemas, and the C1 table shell are unchanged. No official C1 record exists.
+
+### Required response
+
+[Decision 0037](decisions/0037-c1-authorization.md) defines one read-only reference policy generated from the frozen fixture (no `send_email`, no secret reads, no grant) and a named not-applicable utility oracle, states both in Section 7, re-pins it, and moves `SPEC.md` to v1.24.0. No symmetric rerun or validation rerun is required (Section 11 step 5), because no evaluation, validation, or official C1 run exists.
+
+### Preserved evidence
+
+The superseded text is `SPEC.md` v1.23.0 in Git history, with Section 7 pinned at SHA-256 `1c276368b606a64ad9e9848df0edd1132b7a18d210ed05db4e120b4298be54be`.
+
+### Verification
+
+`tests/test_c1_reference_policy.py` failed before the change (19 failed) and passes after it. `tests/test_contract_lock.py` passes with only Section 7's pin changed.
+
+### Claim impact
+
+None. No table, figure, README value, demo aggregate, or report sentence depends on a C1 record.
