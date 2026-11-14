@@ -1,0 +1,180 @@
+{
+  "version": "w8-t1-component-candidate-v0.1.1",
+  "status": "pending_lead_review",
+  "rule": "W8-T1; SPEC.md Section 11; decision 0031 item 8",
+  "scope": "ten tasks, three channels; component candidate, not protocol/active.json",
+  "pending": [
+    "Green exact-head CI and merge under repository review rules",
+    "Lead-side review and human disposition of findings before Gate 3",
+    "Lead-owned full protocol and execution-environment freeze"
+  ],
+  "task_ids": [
+    "invoice-receipt-email",
+    "maintenance-confirm-email",
+    "meeting-confirm-email",
+    "open-ticket-ids",
+    "order-status-extract",
+    "read-ticket-status",
+    "review-field-lookup",
+    "service-hours-extract",
+    "shipping-notice-email",
+    "supplier-quote-compare"
+  ],
+  "corpus_hash": "5afb8e1ee8f120f7ea8abfcdf4870b1339cdc5f992fe19f8e50a56939b6c9859",
+  "source_ledger_hash": "dc4fde13c548b4bf1e9b455efc5cba951dc713a8e86423c0742174a9ff439c41",
+  "authorization_policy_hash": "a0a6fecc716e55f70f7895390c4b7c903777a1fdf93229e04b26a5bfa6b9e4f8",
+  "c1_reference_policy_hash": "737a71c0e1d20ea0ef2545c6851c75d251006efc82927e3a4b76913384ffec96",
+  "common_hashes": {
+    "task_registry": "52c6e295fcf56393339b912619002ec623725f2fb80b031dfecc5740b78e282c",
+    "prompt_tool": "3bcc70130fa876819ef698bbb710b070442cdc6f866dae208795990b96adab6e",
+    "schema": "601b31d35ede6786fdadf8efd22270a9a372b13df0d4615db437bf0b4e54a592",
+    "oracle_scorer": "84fefee3fa22fecebf8c3ed173392e89f09c53775bc049c4e19b8d7f4643bc7b"
+  },
+  "components": {
+    "task_registry": {
+      "sha256": "52c6e295fcf56393339b912619002ec623725f2fb80b031dfecc5740b78e282c",
+      "files": {
+        "corpus/task_coverage/coverage-invoice-receipt-email.json": "026238345f81927bedbff4d90bf069da60dd366ab4fb3fb8ad63f6686ea9045f",
+        "corpus/task_coverage/coverage-maintenance-confirm-email.json": "04fa1769ae0186728ede01bfd299f2d5eb1dacb4a0c18cd96e31826e73778756",
+        "corpus/task_coverage/coverage-open-ticket-ids.json": "80db5fcf59b72bb20ebd98cd3939bf35d21aa600a83e7d8de43781a29df0aec5",
+        "corpus/task_coverage/coverage-read-ticket-status.json": "acc64483033a33f79c71027395909efb7c685e482139cdb162155c5aa70d0e03",
+        "corpus/task_coverage/coverage-service-hours-extract.json": "93794fcdde0fb1f7ceaafb9fa2400f25b4f95ec5d238a04129fcf55631aa9a86",
+        "tasks/coverage-smokes.json": "080a2ac75ea8d6faec34e5221dc0041bc49ad7029989978bd911e38de65f46c5",
+        "tasks/registry.py": "aa2b844b58b62024f29490be18ed1f3bbeff49b166c00de32cc6f82f6d5a8113",
+        "tasks/task_order.json": "dd4fb3fb49d45d38a9b78a354eb6dc37f961d3be9ff7b44bf6b25e2fd2374a5d",
+        "tasks/task_order.py": "1c801ca7738efe8c0eb88df1c3827aa3e0c40c1a4e8d2bd338c8a9efd9bc4c56",
+        "tasks/templates/invoice-receipt-email.json": "82fe440dc14d0769513f5879f83f140f638c7511377aad7296ae624e913a82d8",
+        "tasks/templates/maintenance-confirm-email.json": "817f2fa4d55de1b4072e0edf4627e2d36f50f820e25e7c94066fa17af8cc5c38",
+        "tasks/templates/meeting-confirm-email.json": "79c05ec3a40b259de9a1c69ee162a1e848e92b343d762ddbb8ea103b89b5deee",
+        "tasks/templates/open-ticket-ids.json": "804428669903d4ce453410fa5aecb134761925c41fb0e23f97deb16f18ed727b",
+        "tasks/templates/order-status-extract.json": "0f4eb064a03ccf16a6aff2425971bb4c8e4de84e61c4c7b409f60c703afa0b6c",
+        "tasks/templates/read-ticket-status.json": "9d06f759580a906b823a614e3c59ffeb60d10b3c63ab0dd568a763c6365b8484",
+        "tasks/templates/review-field-lookup.json": "6c3802804a2d61e3f2769bc6931083a03624fe08b208b2080d8771016004b94e",
+        "tasks/templates/service-hours-extract.json": "c092478281470d3943bef2928f1386309020df2466c59233c2280cbda65e1a1f",
+        "tasks/templates/shipping-notice-email.json": "482e211ba005760498c38b3a5e5a3a9b21c876105cfabccafb9458b1ac34960c",
+        "tasks/templates/supplier-quote-compare.json": "505199f8e2b6838021dbf0bf53adf2f5a52eec90f199060d9ec83c9e9cb60bc1"
+      }
+    },
+    "prompt_tool": {
+      "sha256": "3bcc70130fa876819ef698bbb710b070442cdc6f866dae208795990b96adab6e",
+      "files": {
+        "agent/task_requests.py": "95e5426abfd8bf63cf956ff31b284247e049c7d1376b8433f08f25ec47e5eed7",
+        "corpus/build_c1.py": "390417e172bc72bb4747e8f5f5dd6c64d244145e41e7b52fb14f772b2dbedaad",
+        "corpus/c1_controls/c1-001.json": "296ce9defc8bd59dab45a0393214c4c946d6a02542b94bf64d63a9adc789a10c",
+        "corpus/c1_controls/c1-002.json": "b6356b814bb03de3a83210af3ba552eefb3c0d39d2ace41978667b47ed232c60",
+        "corpus/c1_controls/c1-003.json": "fe82d8411384674ee33e4d11026f7613b22ca19b504ea0a5c741b9dc2efc6bda",
+        "corpus/c1_controls/c1-004.json": "71649d62d9a6b122d0795aa6015cb9365ed1e0a6ce134bd8d31d953d381b5f2b",
+        "corpus/c1_controls/manifest.json": "79c4c22e07751ba2764d1a0f7d5ff5c2ed345908da9c15602804eb8ef5174cc7",
+        "runner/delivery.py": "0d0dcafb7f93dda72b16290dbba48143d6ce070f1c8967b5c0efc6f310e7c98b",
+        "tasks/registry.py": "aa2b844b58b62024f29490be18ed1f3bbeff49b166c00de32cc6f82f6d5a8113",
+        "tools/fetch_url.py": "58ee996246c0dfcf4f8a77fc338f989876cab180d1694f65ae7fcab304cd09d6",
+        "tools/fixture_http.py": "7fe0e5810c79a96ac2495895e23a2cdfa0ed8113e999b1c1326d25a0df6a757f",
+        "tools/local_fs.py": "7ccf62e20717eabffde43200009be7e5828f3e7613c99da9ce9c7f7f175cd693",
+        "tools/no_exec.py": "4b80c32d494730d4d7d3c309f1312932e382d1e72cde43f12480c2fd154a4f94",
+        "tools/query_db.py": "7feda3b5adb1735ac20b3077dc13991ac36f359f1c0e7d4ca060e5f4d8cab641",
+        "tools/read_file.py": "a3435cfc8fb8ac34ece9cd941a991d3dcd1d19528972a29a9b7ddbb56f003112",
+        "tools/sandbox.py": "0ea51885b5ccb3ad14838fabd7f552eb4c0a05e0d214fb4d2406e19d4c080444",
+        "tools/send_email.py": "c30d84df674af8d4c6fbf141cd12b6f4a43bc4b6358d5687b0ed2f69b3732b4b",
+        "tools/worker.py": "066eb0fa4c4f99fc4ed96e6e8ae813576aadd35d620d09c9274b58ad1c6d32e6"
+      }
+    },
+    "fixtures": {
+      "sha256": "3961a9ea3a6e3c107408f1432054d5c25772afe2fd8eb08970001c6442859695",
+      "files": {
+        "fixtures/task_coverage/coverage-invoice-receipt-email.txt": "6d5a787f5d2421ceac7995aed07d12ee34ac0f79d48b8f22c3790594d7b0c850",
+        "fixtures/task_coverage/coverage-maintenance-confirm-email.txt": "f84adbe1e7363324b3ceca62c8f9451e8752d85809872ef273cb75f0c2b07b9d",
+        "fixtures/task_coverage/coverage-open-ticket-ids.txt": "b3136d269465398401c5f95000b1043141d219fc34dffc5390c80d85792ca9b3",
+        "fixtures/task_coverage/coverage-read-ticket-status.txt": "d5153e5553f45d6913d94e9defaaa7248d10615caaab864f0ca829af2c663a30",
+        "fixtures/task_coverage/coverage-service-hours-extract.txt": "7593e79a927c20c988dad737dff35de65358f3e0713ef0d34aba1c7d66096d59",
+        "fixtures/w6-t1/db-seed.json": "110f0831fecd58e7a29fe7d89e34ad3fc91a3b71130b56efe68cdc44aff9deb2",
+        "fixtures/w6-t1/docs/unassigned.txt": "802fe6f5b6b0c66d228131cdf73ddca2cf4433270aa422a0c965512c39c4cd9f",
+        "fixtures/w6-t1/inbox/ticket-100.txt": "6516696ebcb27c22e8b81ddfa1737e9aa30a946c47b02b384504e95cb8dc91c8",
+        "fixtures/w6-t1/invoices/inv-100.txt": "9cb122e1a8265efc3f03ebb45e3261b2e14438fab0ffb6ebc8cfda6195914d64",
+        "fixtures/w6-t1/maintenance/job-100.txt": "4eaa2d4d342d640ee21dac35bf567c984b234036ec2d2827edb112dff37d758b",
+        "fixtures/w6-t1/manifest.json": "c3f627dddb43d01fe795eac8e77c2f31c455b0a95b285c2625267bd9855aa737",
+        "fixtures/w6-t1/notices/ord-5120.txt": "5e9adb3bc7c8370b55bc3280571b5a52ceb01debb2704732795523ad93b52265",
+        "fixtures/w6-t1/orders/ord-4417.txt": "cf63b470210278fd9d02c190cfc18a49e454ec92020b869bdeb04c7e9db2675f",
+        "fixtures/w6-t1/pages.json": "ad9cc205cfebb32d628e9002239c592afc4707b881a3e354c7357c16db985f5f",
+        "fixtures/w6-t1/pricing/internal-list.json": "becfc63e0b1d4628ff52f4037f24a915546b2393a7062cc67567f60cef73f8ed",
+        "fixtures/w6-t1/quotes/p-208.txt": "f9929318d565f74d9daa40df51604f0eb04f17d0d41fe155068e0f0688f0c02e",
+        "fixtures/w6-t1/requests/mtg-0930.txt": "deb78435cfe7b7255f44857941767a43f7eaeb6d4c0f66603bfde5171968db7c",
+        "fixtures/w6-t1/reviews/sku-2201.txt": "ee3f69fb4e6c08c94754b18f5e54e16dc6498b0974cd5928dcea47920bdecdd6",
+        "fixtures/w6-t1/routes.json": "eeab05592f9bf0da3ab0b235d78284614054306ee920ba83ab4f52a76a6001c7",
+        "fixtures/w6-t1/service/h-100.txt": "c30c1806ee673b69e0bc19fe578d970ce764246b4550ad13c30c924a2190ecf1",
+        "fixtures/w6-t1/tickets/open.txt": "faa375c14ec681f51bd71ad5562a2b0657e84637cfc08f3818b9bae8669e5c4e"
+      }
+    },
+    "schema": {
+      "sha256": "601b31d35ede6786fdadf8efd22270a9a372b13df0d4615db437bf0b4e54a592",
+      "files": {
+        "schemas/active_protocol.schema.json": "ab4bb082c92f3cd7981e445a44c0722c582d03ae679db507e45ebc00d4ab1dab",
+        "schemas/authorization_vectors.schema.json": "5606aef6fa80dda2df6e44ec50c26095462446547e6d65b4b05286c78998a9ad",
+        "schemas/base_case.schema.json": "2561976db55dc9a81cd65c854808a720bce446a1cb7423db1a4c561065111009",
+        "schemas/candidate.schema.json": "5f33050ad92ae4fc8f6906c0744e6258a8f2206be6beacd5b35062f6a226b9b8",
+        "schemas/engineering_validation.schema.json": "f961b665a1d3bfb29d862d94d638dffda63da4d0a7d370946626fcb49b705755",
+        "schemas/event.schema.json": "580ec4a9648f61c32dda1205f42ec3e0914a08ace15d2423f2d046dee4ed3058",
+        "schemas/manifest.schema.json": "3e793dec8e2592315ee828cb403710fe96e6bf01f04f7a2d117a35e712998121",
+        "schemas/paid_run_record.schema.json": "b4a8404be30e2bfa547999406d4e37519951f85b0eb50686520a80059426bb50",
+        "schemas/policy.schema.json": "3165b1ce002f2513a6e2255ed34a49cecd60daacc090f7d494190b751d03ee71",
+        "schemas/result.schema.json": "4d45e72f68270c0b374ff71948083e39c7c3d687ac444368d21356d7ff0b6b8b",
+        "schemas/schedule_spec.schema.json": "8029664f516472d82a6d5de315a81b5f95b48fc7db2bcf486c709bfd2e91f30c",
+        "schemas/spend_ledger.schema.json": "aa643d2c0a190063545a18499dd82474c86c207057d043d103d551e09268a211",
+        "schemas/task.schema.json": "2dd166550cc9f8217ebf371a5da33583ab5fec43f4c0945a9c12c8173c198b4a"
+      }
+    },
+    "oracle_scorer": {
+      "sha256": "84fefee3fa22fecebf8c3ed173392e89f09c53775bc049c4e19b8d7f4643bc7b",
+      "files": {
+        "agent/loop.py": "954d47c0df56dc4ba5488f73ba09ca1ba24574be2051b3743e7528448e9b686a",
+        "defenses/__init__.py": "45bf6c7ea9d1a5f8c99a44e94d61e6ad63958e450b1eb09a5168e5a3cddf2080",
+        "defenses/canonicalizer.py": "5b09fc5433319bb5eb3304611ffb5b9c94dfc347bb714f10b494f05f40997f9a",
+        "defenses/datamarking.py": "b2a8a70e037cd06876c84630749338f4f4ac9cac058c2a76a74c4c71a0904676",
+        "defenses/freeze.py": "173968a0e17eb660557fd67a695ff791e49cdf3d3264c6d0fc752dcbee81e8ba",
+        "defenses/interfaces.py": "28ff68645e418debe580749abe144aa6c2a8536af6c3ead3ffbf642ffc1ad72e",
+        "defenses/policy_gate.py": "33283617b9a20df1b4165479d946c96b1b667f5048baa13ff97a9e1d7640e23f",
+        "oracles/authorization/audit.py": "9849bd8f8aa355a579e44bc79822028cfb45406f31012ae2f98343cb7f418bae",
+        "oracles/authorization/conformance.py": "a037ab51222e127f48fa8a29f028c44beadd5e5d55ee976a68e041bb9f561faa",
+        "oracles/authorization/golden/w5-t4-initial.json": "cbba0576b580d3f9a93f195520cb6215aeb33f83751a90c7c2f6f1eaac6a6caf",
+        "oracles/authorization/golden/w6-t1-task-suite.json": "0b72724dd54159711339621259be2b81788255fda7fd666216255f06aac9b23b",
+        "oracles/authorization/golden/w8-task-variants.json": "d88250e80fe02e38cf812a65d920a98c86db115574aa721b8750f1efa9eff906",
+        "oracles/utility/task_suite.py": "c48b83bc7f7b57399e067e0a54cc08e165a54b3239ebb599cddf8578ca68cdac",
+        "oracles/utility/ticket.py": "6f0c3fef25c53337cd53d212570f7ad4d080cc9a003a5c20c6fbbd69d363851d",
+        "runner/c1_policy.py": "6822c7809fcecbf224f48c95b3d73e5cad5d5c4b677fe6fb1119bde92102f858",
+        "runner/execute.py": "df4caf72d93d4fc20e94d2cb8c62ae377f9d592e4014dd2eccc1012d5e0f22fd",
+        "tests/fixtures/task_suite/invoice-receipt-email.json": "0cde69a720d19e4610ade925add5085abe5d9602690c4db9c450924e2cfdacf1",
+        "tests/fixtures/task_suite/maintenance-confirm-email.json": "04b9969bc9b97d58149adda8a04381046b8bc138d731a261ec7a67831ae7f44b",
+        "tests/fixtures/task_suite/meeting-confirm-email.json": "2e17c3d5aadddfed48b1924a17afb6aede1e3d07af116f9801edc8da97bd559a",
+        "tests/fixtures/task_suite/open-ticket-ids.json": "b58c4b462e26d3f4a005f06fb37ba4b5b19734c4190650db16eb268022c25e92",
+        "tests/fixtures/task_suite/order-status-extract.json": "0a9eade3f33c7f0269403fc283cc2e2f83a7c84220971d244a7e0c4cfccae5ce",
+        "tests/fixtures/task_suite/read-ticket-status.json": "6bd4f6ab9ea1892985e1414d56f25799bc7f2f49fb39790924c1b97b4922fb07",
+        "tests/fixtures/task_suite/review-field-lookup.json": "7a7f6f12a0bc6e37bb95b9bfb863ec7ed97a7be89ceab353d78f53ef4eb23810",
+        "tests/fixtures/task_suite/service-hours-extract.json": "599564bcdb37e75392a3e6446e535fe2a169bae1ae444fcb8a10876378af40be",
+        "tests/fixtures/task_suite/shipping-notice-email.json": "4369d63e725e824962c53ed0b02df3bf36e2f66ab9b269d0941cdc8a3e603feb",
+        "tests/fixtures/task_suite/supplier-quote-compare.json": "e995f0bc42b696f9534316048059e25b587977c598c00f3cd4fe64f957bb31d0"
+      }
+    },
+    "sandbox": {
+      "sha256": "df2fa83446ac7c72ddbf9fb40d7868fbbb5de881c67d181b04ee7c00e321d533",
+      "files": {
+        "pyproject.toml": "bc43861749f291645baded1261f78ff77e3be5acad20cebe77068ae328fe8635",
+        "tools/no_exec.py": "4b80c32d494730d4d7d3c309f1312932e382d1e72cde43f12480c2fd154a4f94",
+        "tools/sandbox.py": "0ea51885b5ccb3ad14838fabd7f552eb4c0a05e0d214fb4d2406e19d4c080444",
+        "tools/worker.py": "066eb0fa4c4f99fc4ed96e6e8ae813576aadd35d620d09c9274b58ad1c6d32e6",
+        "uv.lock": "5abf80158bac28de420bcffa4f742642522481abe5e6f06efc43e00eb77fa6fd"
+      }
+    },
+    "validators": {
+      "sha256": "f70f2aa575fa4e8241ed3dc9f339b6cc8fb9d81c9a75e9ee780d998daf74276f",
+      "files": {
+        "runner/coverage.py": "03107d85b9c7a38c8842b190aef0a0a16e87a91ac871715dcca6aa7d3f221844",
+        "tasks/freeze.py": "9a9145e83b4ed458c07778903c7f7b28e0636db7980a3df42b9b10de91658c35",
+        "tests/test_c1_reference_policy.py": "5fd05821444f676fba0a997f8b9b3c72862bf607779c5374fa3e24a44418321a",
+        "tests/test_contract_lock.py": "59d5e0a943389720c3362ba21ad120dc658bc81a25eb72fc0ed3c6330d2d6555",
+        "tests/test_sandbox_mutants.py": "343462980e5e36dbebfc3095e205a653c210b3e32d5a2602197588679b6f67a8",
+        "tests/test_task_freeze.py": "bc8d0943c07e6786f976c4da1f5e9a4d6f0ba2a0bc3a9e3da1b8f69cab9888eb",
+        "tests/test_task_suite.py": "f8e938d88e1c5e70af89d237b44fb69ae7985b9ea3edf4aa258eef34c03fc1e9",
+        "tests/test_tool_sandbox.py": "8dad56a4631e0f3fc623074ddd7ff6e5442fe15e21102209e9c0ea08a0e58458"
+      }
+    }
+  }
+}

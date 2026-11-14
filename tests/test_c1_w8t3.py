@@ -1,8 +1,6 @@
 """W8-T3's C1 part (decision 0034 item 8): schedule rows, split guard, C1 table, active.json C1 list.
 
-The official C1 executor is not built: a C1 control has no task template, so what is
-authorized in a C1 trial needs a project-lead decision first. These tests pin that the runner
-fails closed on a C1 run rather than scoring every C1 trial as an infrastructure failure.
+The official C1 executor is built under decision 0037 and tested in tests/test_c1_executor.py.
 """
 from __future__ import annotations
 
@@ -101,9 +99,9 @@ def test_c1_is_never_an_evaluation_channel(tmp_path):
         _run(tmp_path, schedule.generate_schedule(_c1_spec()), split="evaluation", protocol_version="1.23.0")
 
 
-def test_a_well_formed_c1_run_fails_closed_before_writing_anything(tmp_path):
-    """No official C1 trial body exists, so the runner refuses rather than scoring infrastructure failures."""
-    with pytest.raises(execute.C1ExecutorUnavailable):
+def test_a_c1_run_without_tool_result_delivery_is_refused_before_writing_anything(tmp_path):
+    """The official C1 trial body (decision 0037; tests/test_c1_executor.py) runs only through delivery."""
+    with pytest.raises(ValueError, match="delivery"):
         _run(tmp_path, schedule.generate_schedule(_c1_spec()), split="c1_control",
              protocol_version="1.23.0", analysis_role="c1_control")
     assert not (tmp_path / "run").exists()
