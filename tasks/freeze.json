@@ -27,8 +27,8 @@
   "common_hashes": {
     "task_registry": "52c6e295fcf56393339b912619002ec623725f2fb80b031dfecc5740b78e282c",
     "prompt_tool": "3bcc70130fa876819ef698bbb710b070442cdc6f866dae208795990b96adab6e",
-    "schema": "3de84dcf74ffb3057add9f36e47ec1c37a37de43ee077fbc8c5e72c3bf52e43f",
-    "oracle_scorer": "81fb203d2877120e62cf2bb91d8900b46627e0ab2160141a9e60f24bfbeb8f88"
+    "schema": "601b31d35ede6786fdadf8efd22270a9a372b13df0d4615db437bf0b4e54a592",
+    "oracle_scorer": "84fefee3fa22fecebf8c3ed173392e89f09c53775bc049c4e19b8d7f4643bc7b"
   },
   "components": {
     "task_registry": {
@@ -105,12 +105,15 @@
       }
     },
     "schema": {
-      "sha256": "3de84dcf74ffb3057add9f36e47ec1c37a37de43ee077fbc8c5e72c3bf52e43f",
+      "sha256": "601b31d35ede6786fdadf8efd22270a9a372b13df0d4615db437bf0b4e54a592",
       "files": {
+        "schemas/active_protocol.schema.json": "ab4bb082c92f3cd7981e445a44c0722c582d03ae679db507e45ebc00d4ab1dab",
         "schemas/authorization_vectors.schema.json": "5606aef6fa80dda2df6e44ec50c26095462446547e6d65b4b05286c78998a9ad",
         "schemas/base_case.schema.json": "2561976db55dc9a81cd65c854808a720bce446a1cb7423db1a4c561065111009",
         "schemas/candidate.schema.json": "5f33050ad92ae4fc8f6906c0744e6258a8f2206be6beacd5b35062f6a226b9b8",
+        "schemas/engineering_validation.schema.json": "f961b665a1d3bfb29d862d94d638dffda63da4d0a7d370946626fcb49b705755",
         "schemas/event.schema.json": "580ec4a9648f61c32dda1205f42ec3e0914a08ace15d2423f2d046dee4ed3058",
+        "schemas/manifest.schema.json": "3e793dec8e2592315ee828cb403710fe96e6bf01f04f7a2d117a35e712998121",
         "schemas/paid_run_record.schema.json": "b4a8404be30e2bfa547999406d4e37519951f85b0eb50686520a80059426bb50",
         "schemas/policy.schema.json": "3165b1ce002f2513a6e2255ed34a49cecd60daacc090f7d494190b751d03ee71",
         "schemas/result.schema.json": "4d45e72f68270c0b374ff71948083e39c7c3d687ac444368d21356d7ff0b6b8b",
@@ -120,7 +123,7 @@
       }
     },
     "oracle_scorer": {
-      "sha256": "81fb203d2877120e62cf2bb91d8900b46627e0ab2160141a9e60f24bfbeb8f88",
+      "sha256": "84fefee3fa22fecebf8c3ed173392e89f09c53775bc049c4e19b8d7f4643bc7b",
       "files": {
         "agent/loop.py": "954d47c0df56dc4ba5488f73ba09ca1ba24574be2051b3743e7528448e9b686a",
         "defenses/__init__.py": "45bf6c7ea9d1a5f8c99a44e94d61e6ad63958e450b1eb09a5168e5a3cddf2080",
@@ -137,7 +140,7 @@
         "oracles/utility/task_suite.py": "c48b83bc7f7b57399e067e0a54cc08e165a54b3239ebb599cddf8578ca68cdac",
         "oracles/utility/ticket.py": "6f0c3fef25c53337cd53d212570f7ad4d080cc9a003a5c20c6fbbd69d363851d",
         "runner/c1_policy.py": "6822c7809fcecbf224f48c95b3d73e5cad5d5c4b677fe6fb1119bde92102f858",
-        "runner/execute.py": "b3fad135d33f13aaef350bbbb5f0539c9a5d33c06a5c31140ab876729d186d30",
+        "runner/execute.py": "df4caf72d93d4fc20e94d2cb8c62ae377f9d592e4014dd2eccc1012d5e0f22fd",
         "tests/fixtures/task_suite/invoice-receipt-email.json": "0cde69a720d19e4610ade925add5085abe5d9602690c4db9c450924e2cfdacf1",
         "tests/fixtures/task_suite/maintenance-confirm-email.json": "04b9969bc9b97d58149adda8a04381046b8bc138d731a261ec7a67831ae7f44b",
         "tests/fixtures/task_suite/meeting-confirm-email.json": "2e17c3d5aadddfed48b1924a17afb6aede1e3d07af116f9801edc8da97bd559a",
