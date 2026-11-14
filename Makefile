@@ -1,6 +1,6 @@
-.PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check
+.PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check engineering-report engineering-report-check
 # grid-check is part of test so CI needs no separate workflow edit (OAuth workflow scope).
-test: grid-check
+test: grid-check engineering-report-check
 	pytest -q
 
 trace:
@@ -11,6 +11,12 @@ paper-shells:
 
 paper-shells-check:
 	python -m analysis.report_shells --check
+
+engineering-report:
+	python -m analysis.engineering_report
+
+engineering-report-check:
+	python -m analysis.engineering_report --check
 
 demo-example:
 	python -m demo.accessibility

@@ -85,12 +85,20 @@ from runner import delivery as tool_delivery
 from tasks import registry
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 from runner.schedule import (
+    C1_CHANNEL,
     PROTOCOL_SENTINEL,
     ScheduledTrial,
     generate_schedule,
     superblock_groups,
     validate_trial,
 )
+
+# The result schema's splits (schemas/result.schema.json 1.1.0; decision 0034 adds c1_control).
+SPLITS = ("development", "evaluation", "c1_control")
+
+
+class C1ExecutorUnavailable(ValueError):
+    """A C1 control run was asked for before an official C1 trial body exists (decision 0034 item 8)."""
 
 # Reuse the frozen serialization/validation/evidence/result machinery and the
 # dev-001 text-only cell body from the prototype instead of copying them.
@@ -1857,9 +1865,38 @@ def run_schedule(
     so it's refused here before anything is written, not after a paid call. Only development
     trials count against SPEC.md Section 9's ceiling; every trial counts in dollars.
     """
-    if split not in ("development", "evaluation"):
-        raise ValueError(f"split {split!r} isn't one the result schema allows; rehearsal and stage trials stay "
-                         f"development and set analysis_role to one of {spend_ledger.DEMO_ROLES}")
+    if split not in SPLITS:
+        raise ValueError(f"split {split!r} isn't one the result schema allows ({list(SPLITS)}); rehearsal and stage "
+                         f"trials stay development and set analysis_role to one of {spend_ledger.DEMO_ROLES}")
+    c1_trials = [t for t in schedule if t.channel == C1_CHANNEL]
+    if split == "c1_control":
+        # Decision 0034 item 2: an official C1 record carries a protocol version, its own superblock,
+        # role c1_control, channel C1, attack, D0_BASELINE, and a c1-NNN base. Checked here, before
+        # anything is written, so a malformed C1 run never reaches a paid call.
+        if not protocol_version:
+            raise ValueError("a c1_control split needs its protocol_version (decision 0034)")
+        if analysis_role != "c1_control":
+            raise ValueError(f"a c1_control split's analysis_role must be 'c1_control', not {analysis_role!r} "
+                             f"(decision 0034), so a C1 record can never carry primary_indirect")
+        if any(t.protocol_sentinel == PROTOCOL_SENTINEL for t in schedule):
+            raise ValueError(f"a c1_control split's trial ids can't say {PROTOCOL_SENTINEL!r}; set the spec's protocol_sentinel")
+        if len(c1_trials) != len(schedule):
+            raise ValueError("a c1_control run holds only C1 trials: one run directory holds one split (decision 0034)")
+    elif c1_trials and split == "evaluation":
+        raise ValueError("C1 is never an evaluation channel (decision 0034 item 3); run it as split='c1_control'")
+    if c1_trials:
+        for trial in c1_trials:
+            validate_trial(trial)  # C1 shape: c1-NNN, attack, D0_BASELINE
+        # Fail closed: no trial body runs a C1 control yet. The delivery body takes its task policy
+        # and trusted grants from a base case's task template, which a C1 control doesn't have, and
+        # what counts as authorized in a C1 trial (where the trusted prompt is itself hostile) isn't
+        # defined by any decision. Running here would score every C1 trial as an infrastructure
+        # failure, which looks like a result and isn't one. runner.c1_mock stays the local check.
+        raise C1ExecutorUnavailable(
+            "the official C1 executor isn't wired: a C1 trial has no task template, so its authorization "
+            "policy and grants (and so unauthorized_action_requested/dispatched/effect) need a project-lead "
+            "decision first (decision 0034 item 8). runner.c1_mock remains the local, mock-only C1 check."
+        )
     if split == "evaluation":
         if not protocol_version:
             raise ValueError("an evaluation split needs its protocol_version")

@@ -1,0 +1,57 @@
+{
+  "plan_version": "0.1.0",
+  "validation_id": "PENDING-validation-id",
+  "description": "Dormant ENGINEERING fallback validation plan (SPEC.md Section 11, required for every non-STOP tier; Section 12 ENGINEERING row). It lists the deterministic instrument-validation checks that run on mocks and excluded development/demo cases when no official model experiment runs. It is frozen at Gate 3 and stays dormant while an empirical tier is active. It declares NO official model schedule, estimate, or defense claim.",
+  "official_empirical_experiment": false,
+  "checks": [
+    {
+      "check_id": "safe-tools-containment",
+      "category": "containment",
+      "name": "Safe tools fail closed on traversal, absolute paths, symlink escape, DB mutation, unapproved URLs, and wrong email arguments",
+      "input": "tests/test_* containment fixtures and mock scenarios",
+      "expected": "every escape attempt is denied; no real-world effect is possible"
+    },
+    {
+      "check_id": "no-arbitrary-endpoint",
+      "category": "containment",
+      "name": "CI proof that no tool can reach an arbitrary external endpoint",
+      "input": "tool sandbox CI check (make sandbox-check)",
+      "expected": "every tool reaches only its trial fixture socket; no provider variable is visible"
+    },
+    {
+      "check_id": "schema-three-valued",
+      "category": "data-contract",
+      "name": "Schemas validate; unknown stays null and is never coerced to false; duplicate IDs rejected",
+      "input": "positive and negative schema fixtures",
+      "expected": "valid records pass, invalid records fail, null-vs-false distinction preserved"
+    },
+    {
+      "check_id": "deterministic-scoring",
+      "category": "scoring",
+      "name": "Canary, authorization-audit, utility, and effect oracles recompute identical Boolean-or-null values from stored evidence",
+      "input": "mock and excluded development-case traces",
+      "expected": "raw-to-endpoint recomputation is identical"
+    },
+    {
+      "check_id": "resumable-runner",
+      "category": "runner",
+      "name": "Forced stop and resume produce no gap, duplicate, or repeated tool effect",
+      "input": "mock grid over excluded development cases",
+      "expected": "resume is idempotent"
+    },
+    {
+      "check_id": "no-key-replay",
+      "category": "reproducibility",
+      "name": "A captured mock/excluded trace replays without a model key or network",
+      "input": "a frozen schema-valid mock/excluded replay",
+      "expected": "replay renders from stored evidence, labeled mock/excluded, not empirical"
+    },
+    {
+      "check_id": "report-regenerates",
+      "category": "reproducibility",
+      "name": "The ENGINEERING report regenerates from the frozen validation evidence with no empirical estimate",
+      "input": "frozen validation records",
+      "expected": "a no-estimate report is produced; it claims no official model experiment ran"
+    }
+  ]
+}
