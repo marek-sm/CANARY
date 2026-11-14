@@ -406,8 +406,26 @@ def test_development_records_are_refused(output):
 
 @pytest.mark.parametrize("output", [request_to_effect_counts, tool_name_only_ablation])
 def test_non_primary_records_are_excluded(output):
-    c1 = record(events=[event(1)], role="c1_control", base="c1-001")
-    with_c1 = output([record(events=[event(1)]), c1, GATE_PRESENT])
+    other = record(events=[event(1)], role="secondary_sensitivity", base="base-002")
+    with_other = output([record(events=[event(1)]), other, GATE_PRESENT])
+    without = output([record(events=[event(1)]), GATE_PRESENT])
+    assert with_other == without
+
+
+def c1_control_record():
+    """An official C1 control record in result schema 1.1.0's own form (decision 0034):
+    split and role `c1_control`, a `c1-` base, C1, attack, D0_BASELINE."""
+    rec = record(events=[event(1)], base="c1-001", split="c1_control", role="c1_control")
+    rec.update(channel="C1", case_id="c1-001:C1:attack", logical_trial_id="x:c1-001:C1:attack:D0_BASELINE:r1")
+    assert list(VALIDATOR.iter_errors(rec)) == []
+    return rec
+
+
+@pytest.mark.parametrize("output", [request_to_effect_counts, tool_name_only_ablation])
+def test_c1_control_records_are_skipped_not_refused(output):
+    """Decision 0034 item 8: the official C1 records sit beside the evaluation records,
+    and neither output reads them."""
+    with_c1 = output([record(events=[event(1)]), c1_control_record(), GATE_PRESENT])
     without = output([record(events=[event(1)]), GATE_PRESENT])
     assert with_c1 == without
 
@@ -432,3 +450,11 @@ def test_stored_true_without_an_unauthorized_request_is_rejected(output):
     inconsistent = record(events=[event(1, authorized=True, codes=())], requested=True)
     with pytest.raises(ValueError, match="unauthorized_action_requested"):
         output([inconsistent, GATE_PRESENT])
+
+
+@pytest.mark.parametrize("output", [request_to_effect_counts, tool_name_only_ablation])
+def test_a_repeated_logical_trial_is_refused_not_counted_twice(output):
+    """The outputs read one final record per trial; a trial loaded twice would double every column."""
+    twice = record(events=[event(1)])
+    with pytest.raises(ValueError, match="more than once"):
+        output([twice, copy.deepcopy(twice), GATE_PRESENT])
