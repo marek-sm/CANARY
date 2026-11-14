@@ -141,11 +141,15 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/W7_T5_HANDOFF.md`](docs/W7_T5_HANDOFF.md) | Replay fallback, excluded demo staging, operator evidence, and paper-lead notes |
 | [`docs/W8_T2_HANDOFF.md`](docs/W8_T2_HANDOFF.md) | W8-T2 corpus freeze: the 20 evaluation cases, the freeze manifest, the release-safe payload list, and draft corpus notes for the paper leads |
 | [`docs/audits/2026-11-11-w8-t2-citation-audit.md`](docs/audits/2026-11-11-w8-t2-citation-audit.md) | The SPEC.md Section 15 corpus-freeze citation audit for the 20 frozen cases |
+| [`docs/W8_T4_HANDOFF.md`](docs/W8_T4_HANDOFF.md) | W8-T4 defense freeze: the defense freeze manifest, the recheck, and draft threat-model, defense, event-semantics, and security-test notes for the paper leads |
+| [`docs/audits/2026-11-13-w8-t4-recheck.md`](docs/audits/2026-11-13-w8-t4-recheck.md) | The SPEC.md Section 5 step 8 provenance and fixture-hash recheck of 4 sampled cases |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md) | The Gate 2 step's record for November 10: the binary D1_POLICY_GATE and D2_DATAMARKING readiness decisions, the development-floor count, and the funded-budget check |
 | [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |
 | [`docs/reviews/2026-11-09-paid-run.md`](docs/reviews/2026-11-09-paid-run.md) | The first lead-side review under decision 0031: #54, the results code merged with no member review, and decision 0028 item 8's scoring files, before the November 9 paid run |
 | [`docs/reviews/2026-11-11-w7-t2-t5.md`](docs/reviews/2026-11-11-w7-t2-t5.md) | The second lead-side review under decision 0031: `W7-T2`'s selection code (#73) and `W7-T5`'s replay and demo staging (#66), before the tier input |
+| [`docs/reviews/2026-11-13-w8-t2.md`](docs/reviews/2026-11-13-w8-t2.md) | The third lead-side review under decision 0031: `W8-T2`'s evaluation build, freeze, and release-list code (#93), before Gate 3 |
+| [`docs/reviews/2026-11-13-c1-record.md`](docs/reviews/2026-11-13-c1-record.md) | The fourth lead-side review under decision 0031: the C1 result-schema record's results code (#92) |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
 ## Reproduction contract

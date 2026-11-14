@@ -18,7 +18,7 @@ demo-example:
 demo-example-check:
 	python -m demo.accessibility --check
 
-.PHONY: corpus-fixtures corpus-check select eval-build freeze-check
+.PHONY: corpus-fixtures corpus-check select eval-build freeze-check defense-freeze-check recheck
 corpus-fixtures:
 	python -m corpus.render_fixtures
 
@@ -39,6 +39,13 @@ freeze-check:
 	python -m corpus.render_fixtures --check
 	python -m corpus.freeze --check
 	python -m tasks.freeze --check
+
+# W8-T4: the defense freeze manifest and the Section 5 step 8 recheck.
+defense-freeze-check:
+	python -m defenses.freeze --check
+
+recheck:
+	python -m corpus.recheck
 
 .PHONY: sandbox-check
 # Decision 0023: every tool process runs sandboxed. Run once on a new machine; it
