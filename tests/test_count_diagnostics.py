@@ -455,10 +455,38 @@ def records_and_events(trials):
     return [rec for rec, _ in trials], {rec["logical_trial_id"]: (rec, events) for rec, events in trials}
 
 
+# Each synthetic run's stored schedule, by run directory. A run here has no persisted spec,
+# so `runner.execute.stored_schedule` is answered from this map (see `stored_schedules`);
+# tests/test_gate3_inputs.py checks the binding on a real sweep run (G3-2).
+SCHEDULES: dict = {}
+
+
+def scheduled(rec, index):
+    from types import SimpleNamespace
+    return SimpleNamespace(logical_trial_id=rec["logical_trial_id"], schedule_index=index,
+                           base_case_id=rec["base_case_id"], channel=rec["channel"], condition=rec["condition"],
+                           configuration=rec["configuration"], run_index=rec["run_index"])
+
+
+@pytest.fixture(autouse=True)
+def stored_schedules(monkeypatch):
+    from runner import execute
+    real = execute.stored_schedule
+    SCHEDULES.clear()
+    monkeypatch.setattr(execute, "stored_schedule",
+                        lambda run: SCHEDULES[Path(run)] if Path(run) in SCHEDULES else real(run))
+
+
 def write_run(directory, trials):
+    """A run directory as the sweep writes it: one scheduled directory per trial
+    (`execute.trial_slug`), holding its committed result and raw events."""
+    from runner import execute
     directory.mkdir(parents=True, exist_ok=True)
+    schedule = SCHEDULES.setdefault(Path(directory), {})
     for rec, events in trials:
-        trial_dir = directory / rec["logical_trial_id"].replace(":", "_")
+        entry = scheduled(rec, len(schedule))
+        schedule[rec["logical_trial_id"]] = entry
+        trial_dir = directory / execute.trial_slug(entry)
         trial_dir.mkdir()
         (trial_dir / "results.jsonl").write_text(json.dumps(rec) + "\n", encoding="utf-8")
         (trial_dir / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8")
@@ -518,11 +546,7 @@ def test_report_on_a_run_is_refused_until_the_sweep_verifies_complete(tmp_path, 
 
 def test_report_on_a_verified_run_reads_each_trials_committed_result_and_events(tmp_path, monkeypatch):
     module = lead_outputs()
-    for rec, events in [trial("D0_BASELINE"), trial("D1_POLICY_GATE")]:
-        directory = tmp_path / rec["logical_trial_id"].replace(":", "_")
-        directory.mkdir()
-        (directory / "results.jsonl").write_text(json.dumps(rec) + "\n", encoding="utf-8")
-        (directory / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8")
+    write_run(tmp_path, [trial("D0_BASELINE"), trial("D1_POLICY_GATE")])
     monkeypatch.setattr(module.sweep, "verify_sweep", lambda run, *a, **k: {"complete": True})
     out = tmp_path / "out.md"
     assert module.main([str(tmp_path), "--out", str(out)]) == 0
@@ -794,7 +818,7 @@ def test_load_run_refuses_a_trial_directory_with_two_committed_results(tmp_path)
     results = next(run.glob("*/results.jsonl"))
     results.write_text(json.dumps(rec) + "\n" + json.dumps(rec) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="expected one committed result"):
-        module.load_run(run)
+        module.load_run(run, SCHEDULES[run])
 
 
 # --------------------------------------------------------------------------
@@ -867,3 +891,55 @@ def test_only_a_run_verified_complete_is_read(tmp_path, monkeypatch, verdict):
     monkeypatch.setattr(module.sweep, "verify_sweep", lambda run, *a, **k: verdict)
     with pytest.raises(SystemExit, match="hidden"):
         module.main([str(write_run(tmp_path / "run", [trial()])), "--out", str(tmp_path / "o.md")])
+
+
+# --------------------------------------------------------------------------
+# fix-reviewer's M2 and M3 on PR 1's last fixes (decision 0038, Stage 1)
+# --------------------------------------------------------------------------
+
+
+def test_the_canary_counts_read_the_raw_runs_canaries_not_the_released_records():
+    module = lead_outputs()
+
+    def build(t):
+        t.request(1, "query_db", {"query_id": "q", "params": {"k": CANARIES[0]}})
+        t.end("final_answer", 1)
+
+    raw = [trial(build=build)]
+    released = copy.deepcopy(raw[0][0])
+    released["canaries"] = ["CANARY-zzzzzzzz"]  # a released record whose canary set isn't the run's
+    tables = module.generate([released], {raw[0][0]["logical_trial_id"]: raw[0]})
+    expected = module.generate(*records_and_events(raw))
+    assert tables["Canaries in tool arguments"][0]["Requests with a canary in their arguments"] == "1"
+    for title in COUNT_ONLY:
+        assert tables[title] == expected[title], title
+
+
+def test_the_binding_is_type_strict_so_true_is_not_1(tmp_path, monkeypatch):
+    module = lead_outputs()
+    monkeypatch.setattr(module.sweep, "verify_sweep", lambda run, *a, **k: {"complete": True})
+    stored = trial(tool_events=[tool_event(1, "query_db", {"query_id": "invoices", "params": {"n": True}}, authorized=False)])
+    run = write_run(tmp_path / "run", [stored])
+    changed = copy.deepcopy(stored[0])
+    changed["tool_events"][0]["normalized_args"]["params"]["n"] = 1
+    released = write_jsonl(tmp_path / "results.jsonl", [changed])
+    with pytest.raises(ValueError, match="disagrees"):
+        module.main([str(released), "--events", str(run), "--out", str(tmp_path / "o.md")])
+    assert not (tmp_path / "o.md").exists()
+
+
+def test_load_run_refuses_a_result_outside_the_stored_schedule(tmp_path):
+    module = lead_outputs()
+    run = write_run(tmp_path / "run", [trial("D0_BASELINE")])
+    with pytest.raises(ValueError, match="stored schedule"):
+        module.load_run(run, {})
+
+
+def test_load_run_refuses_a_result_in_another_trials_scheduled_directory(tmp_path):
+    module = lead_outputs()
+    first, second = trial("D0_BASELINE"), trial("D1_POLICY_GATE")
+    run = write_run(tmp_path / "run", [first, second])
+    by_name = sorted(run.glob("*/results.jsonl"))
+    by_name[0].write_text(by_name[1].read_text(encoding="utf-8"), encoding="utf-8")  # the second's result, twice
+    with pytest.raises(ValueError, match="not the directory the verifier checked"):
+        module.load_run(run, SCHEDULES[run])
