@@ -1,0 +1,45 @@
+{
+  "rule": "W8-T4 defense freeze; SPEC.md Section 11 Gate 3",
+  "configurations": [
+    "D1_POLICY_GATE",
+    "D2_DATAMARKING"
+  ],
+  "defense_hash": "519d6ced40ac12646be1353577e8cc171838a7b442d02dbfe6c458c3381ce5a9",
+  "test_evidence_hash": "8e434a9749d6bee043e3bad28a9616044e12505a2e32cb2c81c047634fe97ffd",
+  "configuration_hashes": {
+    "D1_POLICY_GATE": "0c4b90b47d8716e109ca7a06e0848d6da684aed66a2766cbbe19e3e0d4911943",
+    "D2_DATAMARKING": "f59c436527f4b3eef90744ad4a09ce70440e85cba47ce8db957f39a506ae0454"
+  },
+  "defense_files": {
+    "defenses/__init__.py": "45bf6c7ea9d1a5f8c99a44e94d61e6ad63958e450b1eb09a5168e5a3cddf2080",
+    "defenses/canonicalizer.py": "5b09fc5433319bb5eb3304611ffb5b9c94dfc347bb714f10b494f05f40997f9a",
+    "defenses/datamarking.py": "b2a8a70e037cd06876c84630749338f4f4ac9cac058c2a76a74c4c71a0904676",
+    "defenses/interfaces.py": "28ff68645e418debe580749abe144aa6c2a8536af6c3ead3ffbf642ffc1ad72e",
+    "defenses/policy_gate.py": "33283617b9a20df1b4165479d946c96b1b667f5048baa13ff97a9e1d7640e23f",
+    "defenses/vectors/datamarking-w5-t4.json": "b96770728257728a651e536e33189762f5be4f8129f29b79efe6921bf02d808b",
+    "docs/DEFENSES_AND_POLICY.md": "f50592530fb364e411c66cf00b98722d662ad6d9b7226b85a3a35de9e585ba6a",
+    "schemas/event.schema.json": "580ec4a9648f61c32dda1205f42ec3e0914a08ace15d2423f2d046dee4ed3058",
+    "schemas/policy.schema.json": "3165b1ce002f2513a6e2255ed34a49cecd60daacc090f7d494190b751d03ee71"
+  },
+  "test_evidence_files": {
+    "oracles/authorization/audit.py": "9849bd8f8aa355a579e44bc79822028cfb45406f31012ae2f98343cb7f418bae",
+    "oracles/authorization/conformance.py": "a037ab51222e127f48fa8a29f028c44beadd5e5d55ee976a68e041bb9f561faa",
+    "oracles/authorization/golden/w5-t4-initial.json": "cbba0576b580d3f9a93f195520cb6215aeb33f83751a90c7c2f6f1eaac6a6caf",
+    "oracles/authorization/golden/w6-t1-task-suite.json": "0b72724dd54159711339621259be2b81788255fda7fd666216255f06aac9b23b",
+    "oracles/authorization/golden/w8-task-variants.json": "d88250e80fe02e38cf812a65d920a98c86db115574aa721b8750f1efa9eff906",
+    "schemas/authorization_vectors.schema.json": "5606aef6fa80dda2df6e44ec50c26095462446547e6d65b4b05286c78998a9ad",
+    "tests/test_contract_lock.py": "7e84551b77f8ef25c9c08acc300c3c4c344f92a006804d17beda7d6f42491921",
+    "tests/test_datamarking.py": "7cebadc54a28d178cf0595f6d29b0bab2096674c765f76cd43cb880f95de2ea4",
+    "tests/test_defense_contracts.py": "f29671dd83e3dc5a91d37eed2765ce2ff1e2a333dfde73f35a1b8de050cab98b",
+    "tests/test_defense_mutants.py": "17144fcdba70cc458a9a2bcabb7c23dd4daa5c677dc9cccc9ad9056d7fbb7399",
+    "tests/test_defense_readiness.py": "1d7dac83beff02e792984b5bc2a264f6950fb36e9358cd22c27577ccb385bf45",
+    "tests/test_delivery.py": "171e42dc7f916dfbbd7fae4eaf73ebce1beec8033cf82974d86ffb8b2ca307ef",
+    "tests/test_delivery_mutants.py": "b33ae7c8091cf18e6703c4da752a8d0c72a7c067070af01c8a7757f7379fb505",
+    "tests/test_gate_audit_differential.py": "73bb19fa071ef9af6d8a3a040f52e71d3dd3f7b232c73af649cdd4f09031baf2",
+    "tests/test_gate_audit_typed_params.py": "178b7c49952d779b72131c5d08afdcdba8586f48b9ef8eb5d3a945025fb9cf67",
+    "tests/test_gate_canonicalizer_mutants.py": "82140d1ae8a57969bf290d2bcea4f3f7d63cf3aa265bdfc42cde7d08d9f44c1d",
+    "tests/test_grid_dev_defenses.py": "24cf95cd1548bf9de54e6103737a8812304c5830c0d294b4d0b6c12bc5f90ef3",
+    "tests/test_policy_gate.py": "b3cc2a89b0659339aab80a9862a7019982d1812b46742b8ff70b2615cf6cc877",
+    "tests/test_tool_event_scoring.py": "813d2650342f1dbe61041583908348d5e3e3bd88f3adf0b0e29f9a446cee55ee"
+  }
+}
