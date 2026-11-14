@@ -146,6 +146,8 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |
 | [`docs/reviews/2026-11-09-paid-run.md`](docs/reviews/2026-11-09-paid-run.md) | The first lead-side review under decision 0031: #54, the results code merged with no member review, and decision 0028 item 8's scoring files, before the November 9 paid run |
 | [`docs/reviews/2026-11-11-w7-t2-t5.md`](docs/reviews/2026-11-11-w7-t2-t5.md) | The second lead-side review under decision 0031: `W7-T2`'s selection code (#73) and `W7-T5`'s replay and demo staging (#66), before the tier input |
+| [`docs/reviews/2026-11-13-w8-t2.md`](docs/reviews/2026-11-13-w8-t2.md) | The third lead-side review under decision 0031: `W8-T2`'s evaluation build, freeze, and release-list code (#93), before Gate 3 |
+| [`docs/reviews/2026-11-13-c1-record.md`](docs/reviews/2026-11-13-c1-record.md) | The fourth lead-side review under decision 0031: the C1 result-schema record's results code (#92) |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
 ## Reproduction contract
