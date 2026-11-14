@@ -69,6 +69,29 @@ TIERS: dict[str, dict[str, Any]] = {
 }
 
 CHANNELS_BY_COUNT = ["C2", "C3", "C4"]
+C1_MANIFEST = ROOT / "corpus" / "c1_controls" / "manifest.json"
+
+
+def c1_control_ids_for(tier: str, manifest_path: Path = C1_MANIFEST) -> list[str]:
+    """The tier's ordered C1 controls, from the committed C1 prefix (decisions 0018 and 0034).
+
+    ``corpus/c1_controls/manifest.json`` keys its prefixes by geometry family (``M10`` for
+    ``M10-ALL``/``M10-ONE``/``M10-BASE``). Fails closed when the prefix length disagrees with the
+    Section 12 row's C1 count, so the manifest and the tier arithmetic can't drift apart.
+    """
+    row = TIERS[tier]
+    if row["tier_class"] in ("ENGINEERING", "STOP"):
+        return []
+    prefixes = json.loads(Path(manifest_path).read_text(encoding="utf-8"))["tier_prefixes"]
+    family = tier.split("-")[0]
+    if family not in prefixes:
+        raise ValueError(f"{tier}: no C1 prefix for {family!r} in {manifest_path}")
+    ids = list(prefixes[family])
+    if len(ids) != row["c1_controls"]:
+        raise ArithmeticError_(
+            f"{tier}: the C1 prefix has {len(ids)} controls, the Section 12 row has {row['c1_controls']}"
+        )
+    return ids
 # Configuration retention by tier class (SPEC Section 12): ALL keeps both
 # defenses, ONE keeps D1_POLICY_GATE plus baseline (the retained defense is a
 # lead input; D1 is the documented default-ready ONE defense), BASE keeps only
@@ -187,7 +210,9 @@ def generate(
         runs = []
     else:
         bases = list(base_case_ids) if base_case_ids is not None else [f"PENDING-base-{i + 1:02d}" for i in range(row["bases"])]
-        c1s = list(c1_control_ids) if c1_control_ids is not None else [f"PENDING-c1-{i + 1:02d}" for i in range(row["c1_controls"])]
+        c1s = list(c1_control_ids) if c1_control_ids is not None else c1_control_ids_for(tier)
+        if len(c1s) != row["c1_controls"]:
+            raise ArithmeticError_(f"{tier}: {len(c1s)} C1 controls given, the Section 12 row has {row['c1_controls']}")
 
     ch = dict(common_hashes or {})
     common = {
