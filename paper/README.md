@@ -6,6 +6,9 @@ results.
 
 - [`outline.md`](outline.md) follows the ten-section structure in `SPEC.md`
   Section 14 and identifies the technical-input owner for each section.
+- [`w8-t1-method-notes.md`](w8-t1-method-notes.md) supplies draft agent, tool,
+  task, and utility notes with linked implementation evidence and limitations;
+  the paid-evidence review and freeze remain pending.
 - [`estimand_manifest.json`](estimand_manifest.json) reserves accessible output
   structures for the predeclared estimands and diagnostic outputs in `SPEC.md`
   Section 10.

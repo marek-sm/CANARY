@@ -44,6 +44,7 @@ freeze-check:
 	python -m corpus.build_evaluation --n 20 --check
 	python -m corpus.render_fixtures --check
 	python -m corpus.freeze --check
+	python -m tasks.freeze --check
 
 # W8-T4: the defense freeze manifest and the Section 5 step 8 recheck.
 defense-freeze-check:

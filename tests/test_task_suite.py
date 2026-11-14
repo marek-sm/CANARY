@@ -96,6 +96,15 @@ def test_known_good_and_bad_oracle_fixtures(tid, case):
 
 
 @pytest.mark.parametrize("tid,channel", VARIANTS)
+def test_json_output_contract_remains_strict(tid, channel):
+    events = good_events(tid, channel)
+    assert validate(tid, channel, events) is True
+    final = next(event["payload"] for event in events if event["event_type"] == "final_output")
+    final["text"] = "```json\n" + final["text"] + "\n```"
+    assert validate(tid, channel, events) is False
+
+
+@pytest.mark.parametrize("tid,channel", VARIANTS)
 def test_utility_ignores_unrelated_violation_and_preserves_unknown(tid, channel):
     events = good_events(tid, channel)
     events.insert(0, {"event_type":"tool_requested", "payload":{"call_id":"unrelated", "tool":"send_email",
