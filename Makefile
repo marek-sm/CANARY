@@ -120,11 +120,21 @@ replay:
 # then runs W8-T3's analysis and report code, and fails in words until that code exists.
 # REPORT_MODULE is a placeholder name: W8-T3 sets it to the module it commits.
 REPORT_MODULE ?= analysis.report
-.PHONY: report
-report: paper-shells
+.PHONY: report lead-outputs lead-outputs-check
+report: paper-shells lead-outputs
 	@python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$(REPORT_MODULE)') is None)" || \
-	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) were generated." >&2; exit 2; }
+	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) and the lead outputs (analysis.lead_outputs) were generated." >&2; exit 2; }
 	python -m $(REPORT_MODULE)
+
+# Decision 0036: decision 0012's count tables and decision 0028 item 4's count-only
+# diagnostics, as empty shells. Over results: python -m analysis.lead_outputs RECORDS
+# [--events RUN ...] --out PATH, where RECORDS is a complete, verified sweep run or a
+# released JSONL file (SPEC.md Section 9).
+lead-outputs:
+	python -m analysis.lead_outputs
+
+lead-outputs-check:
+	python -m analysis.lead_outputs --check
 
 gate2-budget:
 	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" $(if $(TIER),--tier "$(TIER)") $(if $(DEFENSE),--defense "$(DEFENSE)") $(if $(C1_PILOT),--c1-pilot-cost-usd "$(C1_PILOT)") $(if $(OUT),--out "$(OUT)")
