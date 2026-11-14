@@ -280,6 +280,22 @@ result recomputes from its events, and prints counts only, never an outcome aggr
 `execute.check_stored_run` reads a run's split from its mode file and recomputes each
 result under it.
 
+[`runner/rehearsal.py`](../runner/rehearsal.py) is the `SPEC.md` Section 13 live-first
+rehearsal ([decision 0030](decisions/0030-done-by-november-30.md) item 8): `python -m
+runner.rehearsal live --protocol-version V --env-file PATH` runs the excluded demo case,
+`corpus/demo/demo-001.json`, on C2 under attack as ten dry runs across the `K` stage
+configurations of a committed `protocol/active.json`, through `run_schedule` with
+`split="development"` and `analysis_role="demo_rehearsal"`, writing under the ignored
+`results/raw/rehearsal/`. That is the whole `10 × K` rehearsal allowance. Besides the
+sweep's refusals, it refuses before any key is read at `K` = 0 or an `ENGINEERING` or
+`STOP` tier, on a stage configuration the tier doesn't retain or a model other than
+`active.json`'s, and wherever a dry run would be redone (a fresh run of started trials, a resume of a
+started trial with no durable events, or a trial started twice) or the ledger's rehearsal
+trials would pass `10 × K`. `python -m runner.rehearsal verify RUN` recomputes every stored result
+against the stored schedule and prints completeness, the missing trials, any trial the
+ledger started twice (its dry run doesn't count), and each dry run's recorded outcome flags; whether 9 of 10 showed the intended stage behavior is a
+human read of Section 13's script.
+
 `build_record` refuses unless every invocation of the mock grid ran this checkout's
 hashed code, clean, under this environment, through tool-result delivery, on
 `corpus/development` and the committed spec, with each start matched by a stop, and
