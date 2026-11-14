@@ -72,7 +72,15 @@ def tabulate(records: Iterable[Mapping[str, Any]], control_ids: list[str]) -> di
         cid: {"repeats": 0, "infrastructure_failures": 0, "outcomes": {o: Counter() for o in OUTCOMES}}
         for cid in control_ids
     }
-    for record in c1_records(records):
+    selected = c1_records(records)
+    # N-77-6 (whole-tree review): each logical trial counts once, and one table holds one
+    # experiment under one protocol version, so a resumed copy or superseded run can't inflate it.
+    trial_ids = [record["logical_trial_id"] for record in selected]
+    if len(trial_ids) != len(set(trial_ids)):
+        raise ValueError("a C1 logical trial appears more than once")
+    if len({(record["experiment_id"], record.get("protocol_version")) for record in selected}) > 1:
+        raise ValueError("a C1 table holds one experiment under one protocol version")
+    for record in selected:
         cid = record["base_case_id"]
         if cid not in rows:
             raise ValueError(f"C1 record for {cid!r} is outside this tier's controls {control_ids}")

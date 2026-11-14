@@ -28,8 +28,10 @@ CORPUS_HASH, DEFENSE_HASH = "c" * 64, "d" * 64
 def frozen(monkeypatch, tmp_path):
     """N-93-1: a stand-in Gate 3 state for the temporary corpus. protocol/active.json and
     both freeze manifests agree with SPEC, and neither freeze has drifted."""
-    active = {"protocol_version": "1.19.0", "base_case_ids": [EVAL_ID],
-              "empirical": {"corpus_hash": CORPUS_HASH, "defense_hash": DEFENSE_HASH}}
+    active = {"protocol_version": "1.19.0", "base_case_ids": [EVAL_ID], "channels": ["C2", "C3", "C4"],
+              "configurations": ["D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING"], "run_indices": [1],
+              "empirical": {"corpus_hash": CORPUS_HASH, "defense_hash": DEFENSE_HASH, "experiment_id": "sweep-test",
+                            "model_requested": "fake-model", "schedule_seed": "sweep-seed"}}
     path = tmp_path / "active.json"
     path.write_text(json.dumps(active), encoding="utf-8")
     state = SimpleNamespace(path=path, active=active,
@@ -215,6 +217,74 @@ def test_the_sweep_refuses_anything_but_the_frozen_protocol(gate, provider, corp
     with pytest.raises(paid_run.PaidRunRefused, match=reason):
         _run(provider, corpus, tmp_path / "sweep")
     assert provider.built == [] and not (tmp_path / "sweep").exists()
+
+
+# Whole-tree review F-A: the sweep runs only the schedule protocol/active.json names
+# (SPEC.md Sections 9, 11, and 12: its seed, model, channels, configurations, and run indices).
+@pytest.mark.parametrize("change, reason", [
+    (lambda f: _write_active(f, empirical={**f.active["empirical"], "schedule_seed": "other-seed"}), "seed"),
+    (lambda f: _write_active(f, empirical={**f.active["empirical"], "experiment_id": "other-experiment"}), "experiment_id"),
+    (lambda f: _write_active(f, empirical={**f.active["empirical"], "model_requested": "other-model"}), "model"),
+    (lambda f: _write_active(f, empirical={k: v for k, v in f.active["empirical"].items() if k != "schedule_seed"}), "seed"),
+    (lambda f: _write_active(f, channels=["C2"]), "channels"),
+    (lambda f: _write_active(f, configurations=["D0_BASELINE", "D1_POLICY_GATE"]), "configurations"),
+    (lambda f: _write_active(f, run_indices=[1, 2, 3]), "run_indices"),
+])
+def test_the_sweep_refuses_a_schedule_active_json_does_not_name(gate, provider, corpus, tmp_path, frozen, change, reason):
+    gate.open()
+    change(frozen)
+    with pytest.raises(paid_run.PaidRunRefused, match=reason):
+        _run(provider, corpus, tmp_path / "sweep")
+    assert provider.built == [] and not (tmp_path / "sweep").exists()
+
+
+def test_the_sweep_refuses_conditions_other_than_attack_and_clean(gate, provider, corpus, tmp_path):
+    gate.open()
+    with pytest.raises(paid_run.PaidRunRefused, match="conditions"):
+        _run(provider, corpus, tmp_path / "sweep", spec={**SPEC, "conditions": ["attack"]})
+    assert provider.built == []
+
+
+# The schedule generator iterates its lists in order (runner/schedule.py), so the same
+# members in another order give another schedule: active.json's lists match in exact order.
+@pytest.mark.parametrize("change, spec_change, reason", [
+    (lambda f: _write_active(f, channels=["C3", "C2", "C4"]), {}, "channels"),
+    (lambda f: _write_active(f, configurations=["D0_BASELINE", "D2_DATAMARKING", "D1_POLICY_GATE"]), {}, "configurations"),
+    (lambda f: (setattr(f, "corpus", {**f.corpus, "base_case_ids": [EVAL_ID, "eval-902"]}),
+                _write_active(f, base_case_ids=["eval-902", EVAL_ID])),
+     {"base_case_ids": [EVAL_ID, "eval-902"]}, "base_case_ids aren't protocol/active.json's"),
+    (lambda f: None, {"conditions": ["clean", "attack"]}, "conditions"),
+])
+def test_the_sweep_refuses_active_json_lists_in_another_order(gate, provider, corpus, tmp_path, frozen,
+                                                              change, spec_change, reason):
+    gate.open()
+    change(frozen)
+    with pytest.raises(paid_run.PaidRunRefused, match=reason):
+        _run(provider, corpus, tmp_path / "sweep", spec={**SPEC, **spec_change})
+    assert provider.built == [] and not (tmp_path / "sweep").exists()
+
+
+# Whole-tree review F-B: every official sweep record is primary_indirect, with no flag to forget.
+def test_the_sweep_writes_primary_indirect_without_a_flag(gate, provider, corpus, tmp_path):
+    gate.open()
+    out = tmp_path / "sweep"
+    sweep.run_sweep(out, spec=SPEC, protocol_version="1.19.0", corpus_root=corpus, env_file=provider.env_file)
+    roles = {json.loads(line)["analysis_role"] for results in out.glob("*/results.jsonl")
+             for line in results.read_text(encoding="utf-8").split("\n") if line}
+    assert roles == {"primary_indirect"}
+
+
+@pytest.mark.parametrize("role", [None, "excluded_mock", "c1_control", "demo_rehearsal"])
+def test_the_sweep_refuses_any_other_analysis_role(gate, provider, corpus, tmp_path, role):
+    gate.open()
+    with pytest.raises(paid_run.PaidRunRefused, match="primary_indirect"):
+        _run(provider, corpus, tmp_path / "sweep", analysis_role=role)
+    assert provider.built == [] and not (tmp_path / "sweep").exists()
+
+
+def test_the_sweep_cli_has_no_analysis_role_default_but_primary_indirect():
+    parser_text = (sweep.REPO_ROOT / "runner" / "sweep.py").read_text(encoding="utf-8")
+    assert 'live.add_argument("--analysis-role", default=None)' not in parser_text
 
 
 def test_the_sweep_refuses_a_corpus_root_the_freeze_doesnt_cover(gate, provider, corpus, tmp_path, monkeypatch):

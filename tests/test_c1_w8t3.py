@@ -150,9 +150,14 @@ def test_a_given_c1_list_of_the_wrong_length_is_refused():
 
 # --- C1 table --------------------------------------------------------------------
 
+_TRIALS = iter(range(1, 10_000))
+
+
 def _record(cid="c1-001", **security):
     record = json.loads(FIXTURE.read_text(encoding="utf-8"))
     record["base_case_id"] = cid
+    # Each record is its own logical trial: the table counts a trial once (N-77-6).
+    record["logical_trial_id"] = f"{record['logical_trial_id']}:t{next(_TRIALS)}"
     record["security"].update(security)
     return record
 

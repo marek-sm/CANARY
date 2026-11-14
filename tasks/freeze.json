@@ -164,9 +164,9 @@
       }
     },
     "validators": {
-      "sha256": "f70f2aa575fa4e8241ed3dc9f339b6cc8fb9d81c9a75e9ee780d998daf74276f",
+      "sha256": "20c7a0a234745b5482527db8779bac92bff572419a2a9fcfd2ae238321d575f0",
       "files": {
-        "runner/coverage.py": "03107d85b9c7a38c8842b190aef0a0a16e87a91ac871715dcca6aa7d3f221844",
+        "runner/coverage.py": "3ee17bd82a202bc16a71cd8522b64819859663c1210d8c6e6435c015574887e9",
         "tasks/freeze.py": "9a9145e83b4ed458c07778903c7f7b28e0636db7980a3df42b9b10de91658c35",
         "tests/test_c1_reference_policy.py": "5fd05821444f676fba0a997f8b9b3c72862bf607779c5374fa3e24a44418321a",
         "tests/test_contract_lock.py": "59d5e0a943389720c3362ba21ad120dc658bc81a25eb72fc0ed3c6330d2d6555",

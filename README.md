@@ -151,6 +151,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/reviews/2026-11-11-w7-t2-t5.md`](docs/reviews/2026-11-11-w7-t2-t5.md) | The second lead-side review under decision 0031: `W7-T2`'s selection code (#73) and `W7-T5`'s replay and demo staging (#66), before the tier input |
 | [`docs/reviews/2026-11-13-w8-t2.md`](docs/reviews/2026-11-13-w8-t2.md) | The third lead-side review under decision 0031: `W8-T2`'s evaluation build, freeze, and release-list code (#93), before Gate 3 |
 | [`docs/reviews/2026-11-13-c1-record.md`](docs/reviews/2026-11-13-c1-record.md) | The fourth lead-side review under decision 0031: the C1 result-schema record's results code (#92) |
+| [`docs/reviews/2026-11-13-whole-tree.md`](docs/reviews/2026-11-13-whole-tree.md) | The fifth lead-side review and decision 0031 item 7's whole-tree pass before Gate 3: every results-code path on `main` after the November 13 merges, its findings and the project lead's classes, the blocking fixes it makes, and the attested `paid_run.code_digest` |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
 ## Reproduction contract
