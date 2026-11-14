@@ -24,6 +24,14 @@ outside the final set is ignored. Without the raw evidence of every primary reco
 final set, the count-only tables are rendered as needing it, never computed from part of it;
 which records form the final set is the caller's.
 
+A raw run's results and events are read only from each trial's scheduled directory
+(`runner.execute.trial_slug` of its stored schedule), the directory the verifier recomputed;
+a result anywhere else is refused (G3-2, decision 0038).
+
+The binding of an `--events` run's stored result to its final record is enforced in
+`main()` only: `generate()` takes `raw` as given and binds nothing, so a caller of
+`generate()` supplies verified, bound raw evidence itself.
+
 Over evaluation records, the tables stay hidden during the sweep (`SPEC.md` Section 9).
 The project lead runs this after Gate 4's integrity checks pass; the code enforces the raw
 run's completeness, and the rest holds by rule.
@@ -40,7 +48,8 @@ from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 from analysis import diagnostics
 from analysis.report_shells import STATUS, load_manifest
 from analysis.request_effect import request_to_effect_counts, tool_name_only_ablation
-from runner import sweep
+from oracles.utility.task_suite import same_json
+from runner import execute, sweep
 from runner.mock_slice import validator
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -182,22 +191,36 @@ def render(tables: Optional[Mapping[str, Optional[list[dict[str, str]]]]]) -> st
     return "\n".join(lines)
 
 
-def load_run(run: Path) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
-    """Each trial directory's committed result and its raw events, in directory order."""
+def load_run(run: Path, schedule: Mapping[str, Any]) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
+    """Each trial directory's committed result and its raw events, in directory order.
+
+    `schedule` is the run's stored schedule by logical trial ID. A result is read only from
+    its trial's scheduled directory, the one `runner.execute.check_stored_run` recomputed,
+    so the events beside it are the verified ones (G3-2): a result in any other directory,
+    or for a trial outside the schedule, is refused."""
     trials = []
     for results in sorted(Path(run).glob(f"*/{sweep.RESULTS_FILE}")):
         lines = results.read_text(encoding="utf-8").split("\n")
         records = [json.loads(line) for line in lines if line]
         if len(records) != 1:
             raise ValueError(f"{results.parent.name}: expected one committed result, found {len(records)}")
-        events_text = (results.parent / "events.jsonl").read_text(encoding="utf-8").split("\n")
+        trial_id = records[0].get("logical_trial_id")
+        trial = schedule.get(trial_id) if isinstance(trial_id, str) else None
+        if trial is None:
+            raise ValueError(f"{results.parent.name}: its result isn't a trial in the run's stored schedule")
+        if results.parent.name != execute.trial_slug(trial):
+            raise ValueError(f"{results.parent.name}: not the directory the verifier checked for {trial_id} "
+                             f"({execute.trial_slug(trial)})")
+        events_text = (results.parent / execute.EVENTS_FILE).read_text(encoding="utf-8").split("\n")
         trials.append((records[0], [json.loads(line) for line in events_text if line]))
     return trials
 
 
 # The fields that tie a raw run's stored result to the final record it stands for: the cell,
 # the ending, every scored fact, and each tool event's scored dispositions and normalized
-# arguments. The sanitizer's scored projection keeps all of them unchanged.
+# arguments. `_bound` compares them type-strictly (`same_json`: true is not 1). The sanitizer
+# may redact a nested key, and `normalized_args` isn't in its scored projection, so a released
+# record can disagree with its raw run here; such a record is refused, never matched loosely.
 BOUND_FIELDS = ("split", "analysis_role", "configuration", "condition", "channel", "base_case_id",
                 "case_id", "run_index", "termination_reason", "status", "security", "utility")
 TOOL_EVENT_FIELDS = ("call_id", "step", "tool", "normalized_args", "request_evaluable", "authorized",
@@ -205,11 +228,15 @@ TOOL_EVENT_FIELDS = ("call_id", "step", "tool", "normalized_args", "request_eval
                      "effect_observed", "sink_received", "gate_audit_match", "effect_oracle_id")
 
 
-def _bound(record: Mapping[str, Any]) -> tuple:
+def _bound(record: Mapping[str, Any]) -> list:
     events = record.get("tool_events")
     tool_events = ([{key: event.get(key) for key in TOOL_EVENT_FIELDS} for event in events]
                    if isinstance(events, list) else events)
-    return tuple(record.get(key) for key in BOUND_FIELDS), tool_events
+    return [[record.get(key) for key in BOUND_FIELDS], tool_events]
+
+
+def _same_bound(final: Mapping[str, Any], stored: Mapping[str, Any]) -> bool:
+    return same_json(_bound(final), _bound(stored))
 
 
 def read_released(path: Path) -> list[dict[str, Any]]:
@@ -235,7 +262,7 @@ def _verified_run(run: Path, corpus: list) -> list[tuple[dict[str, Any], list[di
     if verified.get("complete") is not True:
         raise SystemExit("these tables stay hidden during the sweep (SPEC.md Section 9): "
                          f"{run} isn't a complete, verified sweep run")
-    return load_run(run)
+    return load_run(run, execute.stored_schedule(run))
 
 
 def _add_events(raw: dict, trials: list, run: Path) -> None:
@@ -284,7 +311,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         trials = _verified_run(run, corpus)
         for record, _ in trials:
             final = by_id.get(record.get("logical_trial_id"))
-            if final is not None and _bound(final) != _bound(record):
+            if final is not None and not _same_bound(final, record):
                 raise ValueError(f"{record.get('logical_trial_id')}: {run}'s stored result disagrees with "
                                  "the final record it stands for")
         _add_events(events, trials, run)
