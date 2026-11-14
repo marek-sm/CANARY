@@ -1,5 +1,5 @@
 {
-  "version": "w8-t1-component-candidate-v0.1.0",
+  "version": "w8-t1-component-candidate-v0.1.1",
   "status": "pending_lead_review",
   "rule": "W8-T1; SPEC.md Section 11; decision 0031 item 8",
   "scope": "ten tasks, three channels; component candidate, not protocol/active.json",
@@ -23,11 +23,12 @@
   "corpus_hash": "5afb8e1ee8f120f7ea8abfcdf4870b1339cdc5f992fe19f8e50a56939b6c9859",
   "source_ledger_hash": "dc4fde13c548b4bf1e9b455efc5cba951dc713a8e86423c0742174a9ff439c41",
   "authorization_policy_hash": "a0a6fecc716e55f70f7895390c4b7c903777a1fdf93229e04b26a5bfa6b9e4f8",
+  "c1_reference_policy_hash": "737a71c0e1d20ea0ef2545c6851c75d251006efc82927e3a4b76913384ffec96",
   "common_hashes": {
     "task_registry": "52c6e295fcf56393339b912619002ec623725f2fb80b031dfecc5740b78e282c",
     "prompt_tool": "3bcc70130fa876819ef698bbb710b070442cdc6f866dae208795990b96adab6e",
     "schema": "3de84dcf74ffb3057add9f36e47ec1c37a37de43ee077fbc8c5e72c3bf52e43f",
-    "oracle_scorer": "c921dedbee8d84706a3f85f5ecb9843d071cbd7ca73ceeb8e72ccaaa13dd3f70"
+    "oracle_scorer": "81fb203d2877120e62cf2bb91d8900b46627e0ab2160141a9e60f24bfbeb8f88"
   },
   "components": {
     "task_registry": {
@@ -119,8 +120,9 @@
       }
     },
     "oracle_scorer": {
-      "sha256": "c921dedbee8d84706a3f85f5ecb9843d071cbd7ca73ceeb8e72ccaaa13dd3f70",
+      "sha256": "81fb203d2877120e62cf2bb91d8900b46627e0ab2160141a9e60f24bfbeb8f88",
       "files": {
+        "agent/loop.py": "954d47c0df56dc4ba5488f73ba09ca1ba24574be2051b3743e7528448e9b686a",
         "defenses/__init__.py": "45bf6c7ea9d1a5f8c99a44e94d61e6ad63958e450b1eb09a5168e5a3cddf2080",
         "defenses/canonicalizer.py": "5b09fc5433319bb5eb3304611ffb5b9c94dfc347bb714f10b494f05f40997f9a",
         "defenses/datamarking.py": "b2a8a70e037cd06876c84630749338f4f4ac9cac058c2a76a74c4c71a0904676",
@@ -134,6 +136,7 @@
         "oracles/authorization/golden/w8-task-variants.json": "d88250e80fe02e38cf812a65d920a98c86db115574aa721b8750f1efa9eff906",
         "oracles/utility/task_suite.py": "c48b83bc7f7b57399e067e0a54cc08e165a54b3239ebb599cddf8578ca68cdac",
         "oracles/utility/ticket.py": "6f0c3fef25c53337cd53d212570f7ad4d080cc9a003a5c20c6fbbd69d363851d",
+        "runner/c1_policy.py": "6822c7809fcecbf224f48c95b3d73e5cad5d5c4b677fe6fb1119bde92102f858",
         "runner/execute.py": "b3fad135d33f13aaef350bbbb5f0539c9a5d33c06a5c31140ab876729d186d30",
         "tests/fixtures/task_suite/invoice-receipt-email.json": "0cde69a720d19e4610ade925add5085abe5d9602690c4db9c450924e2cfdacf1",
         "tests/fixtures/task_suite/maintenance-confirm-email.json": "04b9969bc9b97d58149adda8a04381046b8bc138d731a261ec7a67831ae7f44b",
@@ -158,12 +161,14 @@
       }
     },
     "validators": {
-      "sha256": "d2489b5a829d2e7f1b8b42b7218d149d20f3e96637ad9cf424f5cf682040e0d0",
+      "sha256": "f70f2aa575fa4e8241ed3dc9f339b6cc8fb9d81c9a75e9ee780d998daf74276f",
       "files": {
         "runner/coverage.py": "03107d85b9c7a38c8842b190aef0a0a16e87a91ac871715dcca6aa7d3f221844",
-        "tasks/freeze.py": "994865f5efaa16cd817c5ffb6253b0f04ac28dcefc2e541602c96a4a4e8f599a",
+        "tasks/freeze.py": "9a9145e83b4ed458c07778903c7f7b28e0636db7980a3df42b9b10de91658c35",
+        "tests/test_c1_reference_policy.py": "5fd05821444f676fba0a997f8b9b3c72862bf607779c5374fa3e24a44418321a",
+        "tests/test_contract_lock.py": "59d5e0a943389720c3362ba21ad120dc658bc81a25eb72fc0ed3c6330d2d6555",
         "tests/test_sandbox_mutants.py": "343462980e5e36dbebfc3095e205a653c210b3e32d5a2602197588679b6f67a8",
-        "tests/test_task_freeze.py": "b3572fc6411701e09212e30a217de152dce309b242e02862b101e88280e90328",
+        "tests/test_task_freeze.py": "bc8d0943c07e6786f976c4da1f5e9a4d6f0ba2a0bc3a9e3da1b8f69cab9888eb",
         "tests/test_task_suite.py": "f8e938d88e1c5e70af89d237b44fb69ae7985b9ea3edf4aa258eef34c03fc1e9",
         "tests/test_tool_sandbox.py": "8dad56a4631e0f3fc623074ddd7ff6e5442fe15e21102209e9c0ea08a0e58458"
       }

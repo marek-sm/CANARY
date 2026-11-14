@@ -29,11 +29,12 @@ GROUPS = {
     "schema": ("schemas/*.json",),
     "oracle_scorer": ("oracles/utility/*.py", "tests/fixtures/task_suite/*.json",
                       "oracles/authorization/*.py", "oracles/authorization/golden/*.json",
-                      "runner/execute.py", "defenses/*.py"),
+                      "runner/execute.py", "runner/c1_policy.py", "agent/loop.py", "defenses/*.py"),
     "sandbox": ("tools/sandbox.py", "tools/no_exec.py", "tools/worker.py", "uv.lock",
                 "pyproject.toml"),
     "validators": ("tasks/freeze.py", "runner/coverage.py",
                    "tests/test_task_freeze.py", "tests/test_task_suite.py",
+                   "tests/test_c1_reference_policy.py", "tests/test_contract_lock.py",
                    "tests/test_tool_sandbox.py",
                    "tests/test_sandbox_mutants.py"),
 }
@@ -86,8 +87,13 @@ def build(root=ROOT):
                        not in {"manifest.json", "fixture.sqlite"}}
     if actual_fixtures != fixture_manifest["files"]:
         raise ValueError("task fixture manifest drift")
+    # Decision 0037 supplies this policy; preserve the primary-task map's hash
+    # meaning and bind the shared C1 policy separately, as official records do.
+    from runner.c1_policy import c1_reference_policy
+    from tasks.registry import digest
+
     return {
-        "version": "w8-t1-component-candidate-v0.1.0",
+        "version": "w8-t1-component-candidate-v0.1.1",
         "status": "pending_lead_review",
         "rule": "W8-T1; SPEC.md Section 11; decision 0031 item 8",
         "scope": "ten tasks, three channels; component candidate, not protocol/active.json",
@@ -98,6 +104,7 @@ def build(root=ROOT):
         "corpus_hash": corpus["corpus_hash"],
         "source_ledger_hash": corpus["source_ledger_hash"],
         "authorization_policy_hash": hashlib.sha256(policy_bytes).hexdigest(),
+        "c1_reference_policy_hash": digest(c1_reference_policy(root / "fixtures/w6-t1")),
         "common_hashes": {name: components[name]["sha256"]
                           for name in ("task_registry", "prompt_tool", "schema", "oracle_scorer")},
         "components": components,

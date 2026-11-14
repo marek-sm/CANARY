@@ -64,6 +64,17 @@ Each component SHA-256 uses the same set-hash rule as W8-T2: sorted
 identity separately hashes UTF-8 JSON of the map `template/channel -> policy`,
 with sorted keys, compact separators, and `ensure_ascii=False`.
 
+Decision [0037](decisions/0037-c1-authorization.md), merged as #101, adds the
+official C1 read-only reference policy. Candidate version `0.1.1` also binds
+`runner/c1_policy.py`, its shared step-bound source `agent/loop.py`, and the
+accepted policy/contract tests. `c1_reference_policy_hash` is the canonical
+digest of the accepted generator's policy over the frozen fixture, matching
+the policy digest official C1 records will carry. The primary-task
+`authorization_policy_hash` retains its existing meaning. This adds no
+executor or new authorization rule; C1 utility remains the named
+not-applicable value, with null pass and utility-oracle hash, under decision
+0037. The accepted Section 7 pin and defense test-evidence freeze are preserved.
+
 The manifest covers all ten retained task templates and three channels,
 fixture bytes and seeds, coverage cases, trusted prompt/tool definitions,
 derived C1 instructions, schemas, utility/authorization scorers and golden

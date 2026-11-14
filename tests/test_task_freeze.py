@@ -18,6 +18,17 @@ def test_committed_component_candidate_is_current():
     assert manifest["corpus_hash"] == json.loads((freeze.ROOT / "corpus/freeze.json").read_text())["corpus_hash"]
 
 
+def test_accepted_c1_reference_policy_and_its_validation_are_frozen():
+    from runner.c1_policy import c1_reference_policy
+
+    manifest = freeze.build()
+    assert {"runner/c1_policy.py", "agent/loop.py"} <= set(
+        manifest["components"]["oracle_scorer"]["files"])
+    assert {"tests/test_c1_reference_policy.py", "tests/test_contract_lock.py"} <= set(
+        manifest["components"]["validators"]["files"])
+    assert manifest["c1_reference_policy_hash"] == registry.digest(c1_reference_policy())
+
+
 @pytest.fixture
 def snapshot(tmp_path):
     manifest = freeze.build()
@@ -37,6 +48,9 @@ def snapshot(tmp_path):
     ("tasks/registry.py", "prompt_tool"), ("tools/no_exec.py", "sandbox"),
     ("schemas/policy.schema.json", "schema"),
     ("oracles/utility/task_suite.py", "oracle_scorer"),
+    ("runner/c1_policy.py", "oracle_scorer"), ("agent/loop.py", "oracle_scorer"),
+    ("tests/test_c1_reference_policy.py", "validators"),
+    ("tests/test_contract_lock.py", "validators"),
     ("runner/coverage.py", "validators"),
 ])
 def test_source_drift_changes_its_component(snapshot, name, component):
@@ -52,6 +66,12 @@ def test_added_input_and_missing_required_input_cannot_escape(snapshot):
     assert freeze.build(snapshot) != before
     (snapshot / "tools/no_exec.py").unlink()
     with pytest.raises(ValueError, match="missing freeze input"):
+        freeze.build(snapshot)
+
+
+def test_missing_c1_policy_input_fails_closed(snapshot):
+    (snapshot / "runner/c1_policy.py").unlink()
+    with pytest.raises(ValueError, match="missing freeze input: runner/c1_policy.py"):
         freeze.build(snapshot)
 
 
