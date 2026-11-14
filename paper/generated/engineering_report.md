@@ -5,7 +5,7 @@
 > development/demo cases only. No official model experiment ran, and it makes
 > no empirical estimate or defense-efficacy claim (SPEC.md Sections 1, 11, 12).
 
-- **Validation ID:** `PENDING-validation-id`
+- **Validation ID:** `CANARY-2026-ENG-V1`
 - **Plan version:** 0.1.0
 - **Official empirical experiment:** False
 

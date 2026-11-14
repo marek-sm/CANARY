@@ -1,6 +1,6 @@
 # 0037: What is authorized in an official C1 control trial, and its utility
 
-- Status: Proposed. Drafted with AI assistance; approved by the project lead by merging this record, which must happen by about 9:15 pm on Friday, November 13, so `W8-T3`'s executor can still merge that day.
+- Status: Accepted. Approved by the project lead on 2026-11-13 by merging this record; drafted with AI assistance.
 - Date: 2026-11-13
 - Decision scope: Protocol
 - Secondary scopes: None
@@ -67,7 +67,7 @@ Section 7 also rules out the shortcut of leaving the action facts null by defini
    - Decision 0035, open as #94 and planned to merge after the Gate 3 step, also moves `SPEC.md` to v1.24.0, so it takes the next version when it rebases.
 6. **Ownership.**
    - This record, the `SPEC.md` text, DEV-0006, and `runner/c1_policy.py` with its tests are a lead input, recorded in `TASKS.md`'s lead-inputs table as due Friday, November 13 and used by `W8-T3`.
-   - `W8-T3` keeps the executor under decision 0034 item 8, with no reassignment. It wires `c1_reference_policy()`, `GrantState()`, and `C1_UTILITY` into the trial body in place of the `C1ExecutorUnavailable` refusal, with mock-provider tests.
+   - `W8-T3` keeps the executor under decision 0034 item 8, with no reassignment. **Superseded in part, November 13 evening:** the executor moved to the project lead as lead scaffold (`TASKS.md`, `W8-T3` row), and merged as #102. It wires `c1_reference_policy()`, `GrantState()`, and `C1_UTILITY` into the trial body in place of the `C1ExecutorUnavailable` refusal, with mock-provider tests.
    - It is results code, so the lead-side review (decision 0031) covers it before the Gate 3 step.
 7. **If the executor isn't on `main` by the end of November 13.**
    - A new feature after the freeze is rejected (`AGENTS.md`), so the executor can't land later.
