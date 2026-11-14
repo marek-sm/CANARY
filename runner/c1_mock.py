@@ -1,7 +1,7 @@
 """Separate descriptive C1 plumbing checks, never indirect ResultRecords.
 
 Result schema 1.1.0 (decision 0034) has the official C1 control record form;
-W8-T3's C1 executor writes those. This mock-only harness predates it and still
+the official C1 executor, `runner/c1_trial.py` (decision 0037), writes those. This mock-only harness predates it and still
 writes its own versioned engineering evidence, reusing the agent loop and local
 fixture tools without admitting paid providers. Every
 event carries its time and component versions, and each control and the summary

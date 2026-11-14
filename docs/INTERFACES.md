@@ -263,8 +263,14 @@ and ledger line. The sweep passes `split="evaluation"`, which is refused before 
 written without a `protocol_version` and trial ids from a spec's `protocol_sentinel`, because
 the locked schema's evaluation branch would otherwise reject the result after its paid call.
 The result schema's `split` is `development`, `evaluation`, or, from 1.1.0, `c1_control`
-([decision 0034](decisions/0034-c1-result-records.md)). `W8-T3`'s C1 executor is to write
-`c1_control`; until it exists, `run_schedule` refuses that split. Rehearsal and stage trials
+([decision 0034](decisions/0034-c1-result-records.md)). The official C1 executor
+(`runner/c1_trial.py`, [decision 0037](decisions/0037-c1-authorization.md)) writes `c1_control`:
+`run_schedule` runs a C1-only schedule through tool-result delivery from `corpus/c1_controls/`,
+with the control's own messages, the C1 reference policy, no grant, and only the C1 audit, and
+refuses a C1 run without delivery, with another audit, or from another corpus root.
+`python -m runner.c1_trial live` is the paid C1 run, refused like the sweep until the Gate 3
+record and the paid-run record hold and unless its spec is `protocol/active.json`'s C1 list in
+exact order; `python -m runner.c1_trial verify RUN` recomputes every stored C1 result. Rehearsal and stage trials
 stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a free string
 there. A run can't be resumed under another split.
 
