@@ -15,7 +15,9 @@ What this stage owns:
   Every event is durably appended before the next step (the frozen ``EventLog``
   fsyncs each line). A runner exception, including one while rendering or
   auditing, leaves a durable ``trial_ended(status=infrastructure_failure)`` plus
-  result record (ticket_slice pattern), never a half-written trial. A hard
+  result record (ticket_slice pattern), never a half-written trial. The one
+  exception is ``RunWideFailure`` (decision 0029's stop rule), which leaves its
+  trial open on purpose so the resume after the fix continues it. A hard
   process kill mid-trial is resumed from the last durable event (SPEC.md Section
   9): stored model responses and tool results are replayed into the loop
   instead of being requested or dispatched again, so the trial is never
@@ -269,13 +271,17 @@ def _paid_run_record_commit() -> Optional[str]:
         return None  # no valid record here, and a mock run needs none
 
 
-def _record_provenance(run_dir: Path, phase: str, corpus_root: Path) -> None:
+def _record_provenance(run_dir: Path, phase: str, corpus_root: Path,
+                       run_wide_stop: Optional[Mapping[str, Any]] = None) -> None:
     """Append the code this invocation runs as it starts or stops (decision 0023):
     the paid-run record refuses a mock grid that didn't run the code it records. The
     paid-run record's commit is kept here because a manifest may be written later,
     from a checkout whose record is another one."""
     line = {"phase": phase, **paid_run.code_provenance(), "corpus_root": str(corpus_root.resolve()),
             "paid_run_record_commit": _paid_run_record_commit()}
+    if phase == "stop":
+        # Why the invocation stopped early, or null when it wasn't the stop rule (decision 0029).
+        line["run_wide_stop"] = dict(run_wide_stop) if run_wide_stop is not None else None
     with (run_dir / paid_run.PROVENANCE_FILE).open("a", encoding="utf-8") as f:
         f.write(json.dumps(line, sort_keys=True) + "\n")
         f.flush()
@@ -345,6 +351,10 @@ def _load_base(
         return cache[base_case_id]
     path = _inside(corpus_root, corpus_root / f"{base_case_id}.json")
     base = json.loads(path.read_text(encoding="utf-8"))
+    # A bad record is refused before any trial uses it. runner.coverage's generated
+    # coverage-* records aren't corpus base cases (no candidate or source), so only they skip.
+    if not (base.get("fixture_mode") == "native-task-coverage-v1" and base_case_id.startswith("coverage-")):
+        validator("base_case").validate(base)
     if "CANARY-" in base["attack"]["canonical_payload"]:
         raise ValueError("canonical payload must not contain a literal canary (SPEC.md Section 5)")
     template = load_template(
@@ -434,6 +444,47 @@ def _check_result_identity(
 
 class DispatchOutcomeUnknown(RuntimeError):
     """A tool request was durable but its dispatch outcome never was."""
+
+
+# --------------------------------------------------------------------------
+# The run-wide stop rule (decision 0029).
+# --------------------------------------------------------------------------
+
+# This many trials in a row ending as infrastructure failures stop the run.
+CONSECUTIVE_INFRASTRUCTURE_FAILURES = 2
+# HTTP statuses a later attempt can clear: the loop's retries and the streak above handle them.
+TRANSIENT_HTTP_STATUSES = frozenset({408, 429})
+
+
+class RunWideFailure(RuntimeError):
+    """A failure every later trial would also hit, so the run stops (decision 0029).
+
+    ``stop`` is what the invocation's last ``code_provenance.jsonl`` line records:
+    the ``rule`` that fired, a ``reason``, and the trial or trials it fired on."""
+
+    def __init__(self, stop: Mapping[str, Any]) -> None:
+        super().__init__(f"run stopped: {stop['reason']}; fix the cause, then resume this run")
+        self.stop = dict(stop)
+
+
+def run_wide_error(response: Mapping[str, Any]) -> Optional[str]:
+    """Why this provider attempt's failure would recur on every trial, or ``None``.
+
+    An HTTP 4xx other than 408 and 429 doesn't depend on the trial: a dead or
+    unauthorized key, an exhausted balance or workspace limit, a model that isn't
+    there, or a request the adapter builds wrong. A listed content-policy refusal is
+    a completed outcome (decision 0008) and never reaches here. A connection error
+    means no network. Timeouts, 408, 429, and 5xx can clear on a retry, so they stop
+    the run only through the consecutive-failure rule."""
+    if response.get("outcome") != "no_model_content":
+        return None
+    error = response.get("error") or {}
+    status = error.get("status")
+    if isinstance(status, int) and 400 <= status < 500 and status not in TRANSIENT_HTTP_STATUSES:
+        return f"the provider returned HTTP {status} ({error.get('provider_type') or error.get('type')})"
+    if status is None and error.get("type") == "APIConnectionError":
+        return "the provider couldn't be reached (connection error)"
+    return None
 
 
 def _durable_events(path: Path, *, truncate: bool = True) -> list[dict[str, Any]]:
@@ -753,6 +804,14 @@ def _run_trial_body(
             attempt_id=f"{model_call_id}:a{attempt_index}",
             raw_sha256=sha256_json(raw),
         )
+        reason = run_wide_error(response)
+        if reason is not None:
+            # The attempt is durable and the trial stays open: a resume after the fix
+            # replays this attempt and makes the step's next retry. A stop on the step's
+            # last attempt leaves none, so that trial then ends as an infrastructure failure.
+            raise RunWideFailure({"rule": "run_wide_provider_error", "reason": reason,
+                                  "logical_trial_id": trial.logical_trial_id, "step": step,
+                                  "attempt_index": attempt_index})
 
     termination, steps = "infrastructure_failure", None
     cut_off_text: Optional[str] = None
@@ -793,6 +852,8 @@ def _run_trial_body(
                 )
             termination, steps = outcome.termination_reason, outcome.steps_used
             cut_off_text, unrecorded_tool_call = outcome.cut_off_text, outcome.unrecorded_tool_call
+        except RunWideFailure:
+            raise  # no trial_ended: the trial resumes after the fix
         except Exception:
             # Keep prior durable evidence. Never persist exception strings, host
             # paths, or credentials.
@@ -963,21 +1024,28 @@ def execute_trial(
         if paid_run.is_paid(provider):
             ledger_entry = spend_ledger.start(provider, trial.logical_trial_id, new_trial=not stored, split=split,
                                               analysis_role=analysis_role)
-        _run_trial_body(
-            log,
-            stored,
-            trial_dir,
-            trial,
-            base,
-            template,
-            provider,
-            code_commit_value=code_commit_value,
-            dispatch_factory=dispatch_factory,
-            tool_schemas=tool_schemas,
-            delivery=delivery,
-            canaries=canaries,
-            decoding=decoding,
-        )
+        try:
+            _run_trial_body(
+                log,
+                stored,
+                trial_dir,
+                trial,
+                base,
+                template,
+                provider,
+                code_commit_value=code_commit_value,
+                dispatch_factory=dispatch_factory,
+                tool_schemas=tool_schemas,
+                delivery=delivery,
+                canaries=canaries,
+                decoding=decoding,
+            )
+        except RunWideFailure:
+            if ledger_entry is not None:
+                # Price the attempts this invocation made; the resume opens a new entry
+                # that adds no trial to the ceiling.
+                spend_ledger.finish(ledger_entry, read_jsonl(events_path, "event")[len(stored):])
+            raise
 
     events = read_jsonl(events_path, "event")
     if ledger_entry is not None:
@@ -1776,6 +1844,14 @@ def run_schedule(
     it runs to ``code_provenance.jsonl`` as it starts and again as it stops. A
     change in the resolved model stops the run (``ResolvedModelChanged``).
 
+    The run-wide stop rule (decision 0029) raises ``RunWideFailure``, and the stop
+    line records why. A provider attempt failing in a way every trial would
+    (``run_wide_error``) stops the run at once, with that trial left open so the
+    resume after the fix continues it. ``CONSECUTIVE_INFRASTRUCTURE_FAILURES``
+    trials in a row ending as infrastructure failures stop it after the last of
+    them, and those trials stay committed. ``grid_dev.verify_grid_run`` doesn't
+    call a run complete while its last invocation ended that way.
+
     ``split``, ``protocol_version``, and ``analysis_role`` go on every result and ledger line.
     The sweep sets ``split="evaluation"``, whose locked schema branch needs a protocol version,
     so it's refused here before anything is written, not after a paid call. Only development
@@ -1828,6 +1904,8 @@ def run_schedule(
 
     _record_provenance(run_dir, "start", corpus_root)
     resolved: dict[str, str] = {}
+    stop: Optional[dict[str, Any]] = None
+    failed_in_a_row: list[str] = []
     try:
         if resume:
             for trial in schedule:
@@ -1845,27 +1923,43 @@ def run_schedule(
                     # On a fresh run a leftover is an unexpected collision. On
                     # resume, execute_trial continues it from its durable events.
                     raise FileExistsError(trial_dir)
-                execute_trial(
-                    trial_dir,
-                    trial,
-                    base,
-                    template,
-                    canaries,
-                    clock,
-                    provider_factory=provider_factory,
-                    code_commit_value=commit,
-                    audit=audit,
-                    dispatch_factory=dispatch_factory,
-                    tool_schemas=tool_schemas,
-                    delivery=delivery,
-                    decoding=decoding,
-                    split=split,
-                    protocol_version=protocol_version,
-                    analysis_role=analysis_role,
-                )
+                try:
+                    execute_trial(
+                        trial_dir,
+                        trial,
+                        base,
+                        template,
+                        canaries,
+                        clock,
+                        provider_factory=provider_factory,
+                        code_commit_value=commit,
+                        audit=audit,
+                        dispatch_factory=dispatch_factory,
+                        tool_schemas=tool_schemas,
+                        delivery=delivery,
+                        decoding=decoding,
+                        split=split,
+                        protocol_version=protocol_version,
+                        analysis_role=analysis_role,
+                    )
+                except RunWideFailure as exc:
+                    stop = exc.stop
+                    raise
                 _check_resolved_model(resolved, trial_dir)
+                (result,) = read_jsonl(trial_dir / RESULTS_FILE, "result")
+                if result["status"] != "infrastructure_failure":
+                    failed_in_a_row = []
+                    continue
+                failed_in_a_row.append(trial.logical_trial_id)
+                if len(failed_in_a_row) >= CONSECUTIVE_INFRASTRUCTURE_FAILURES:
+                    # These trials stay committed as infrastructure failures; the stop keeps
+                    # the rest of the schedule from following them.
+                    stop = {"rule": "consecutive_infrastructure_failures",
+                            "reason": f"{len(failed_in_a_row)} trials in a row ended as infrastructure failures",
+                            "logical_trial_ids": list(failed_in_a_row)}
+                    raise RunWideFailure(stop)
     finally:
-        _record_provenance(run_dir, "stop", corpus_root)
+        _record_provenance(run_dir, "stop", corpus_root, run_wide_stop=stop)
     return run_dir
 
 

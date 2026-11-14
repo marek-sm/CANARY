@@ -15,6 +15,14 @@
   - Work performed: development bases `dev-002` to `dev-005` from InjecAgent and AgentDojo, rendered through C2/C3/C4; C1 control and demo source records; candidate ID derivation, exact-hash and near-duplicate detection, and ledger checks.
   - Acceptance evidence: `make corpus-check`; `tests/test_dev_corpus.py`; `tests/test_intake.py`.
   - Independent reviewer: `marek-sm` (review and Section 5 source review in #34, October 22; T3 capacity reassignment, October 15).
+- Pull request/commit/artifact: W7-T2 pull request, see [the W7-T2 handoff](../W7_T2_HANDOFF.md)
+  - Work performed: evaluation intake of 44 considered candidates from InjecAgent, AgentDojo, ASB, and LLMail-Inject (27 eligible, 1 duplicate, 16 rejected with reasons), each with a source record; the deterministic selection script for SPEC.md Section 5 steps 5-8 under decision 0014.
+  - Acceptance evidence: `make corpus-check`; `make select`; `tests/test_selection.py`; `tests/test_eval_intake.py`.
+  - Independent reviewer: `marek-sm` (Section 5 source review in #73, November 8: all 44 records and four licenses passed).
+- Pull request/commit/artifact: W8-T2 pull request, see [the W8-T2 handoff](../W8_T2_HANDOFF.md)
+  - Work performed: ran the selection script over the reviewed pool (P = 20); built the 20 `F20` evaluation base cases with C2/C3/C4 fixtures and clean twins; script-verified every frozen case against its pinned source for the Section 15 audit; wrote the corpus freeze manifest; the release-safe payload list; draft corpus notes for the paper leads.
+  - Acceptance evidence: `make freeze-check`; `tests/test_evaluation_corpus.py`; `tests/test_release_payloads.py`; `docs/audits/2026-11-11-w8-t2-citation-audit.md`.
+  - Independent reviewer: `marek-sm` (pending).
 - Pull request/commit/artifact: review of [#28](https://github.com/marek-sm/CANARY/pull/28) (W6-T5, standing T2→T5 pair)
   - Work performed: ran the branch's tests and generated-example check; found and reproduced a display-label bug where an errored trial with unknown compromise got no `ERROR` label, and a stored `ERROR` label crashed replay; requested changes.
   - Acceptance evidence: GitHub review on #28.

@@ -1,0 +1,93 @@
+{
+  "complete": true,
+  "delivered_resources_checked": {
+    "D0_BASELINE": 30,
+    "D1_POLICY_GATE": 30,
+    "D2_DATAMARKING": 30
+  },
+  "experiment_id": "grid-dev",
+  "gate_audit_disagreements": {
+    "gate_audit_mismatch": 0,
+    "logical_trial_ids": [],
+    "trials": 0,
+    "unauthorized_dispatched": 0
+  },
+  "infrastructure_failures": [],
+  "run_wide_stops": [],
+  "trials_expected": 90,
+  "trials_found": 90,
+  "usage_by_channel_configuration": {
+    "C2/D0_BASELINE": {
+      "input_tokens": 28157,
+      "output_tokens": 2268,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C2/D1_POLICY_GATE": {
+      "input_tokens": 28086,
+      "output_tokens": 2276,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C2/D2_DATAMARKING": {
+      "input_tokens": 31320,
+      "output_tokens": 2178,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C3/D0_BASELINE": {
+      "input_tokens": 26444,
+      "output_tokens": 1751,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C3/D1_POLICY_GATE": {
+      "input_tokens": 26436,
+      "output_tokens": 1722,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C3/D2_DATAMARKING": {
+      "input_tokens": 29586,
+      "output_tokens": 1744,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C4/D0_BASELINE": {
+      "input_tokens": 28062,
+      "output_tokens": 1905,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C4/D1_POLICY_GATE": {
+      "input_tokens": 28033,
+      "output_tokens": 1968,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    },
+    "C4/D2_DATAMARKING": {
+      "input_tokens": 31262,
+      "output_tokens": 1962,
+      "provider_requests": 26,
+      "steps_used": 26,
+      "trials": 10,
+      "usage_unknown_trials": 0
+    }
+  }
+}

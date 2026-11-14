@@ -16,6 +16,7 @@ Usage:
   python -m runner.grid_dev verify RUN [--spec PATH] [--corpus-root PATH]
   python -m runner.grid_dev summary RUN [--spec PATH] [--corpus-root PATH]
   python -m runner.grid_dev live [--out DIR] [--env-file PATH] [--provider anthropic|openai]
+      (openai runs protocol/development_grid_spec_fallback.json unless --spec names another)
 """
 
 from __future__ import annotations
@@ -40,6 +41,13 @@ from runner.schedule import CONFIGURATIONS, ScheduledTrial, generate_schedule
 from tasks import registry
 
 DEFAULT_SPEC = REPO_ROOT / "protocol" / "development_grid_spec.json"
+# The declared fallback's grid (decision 0010 item 3): the same spec on gpt-6-luna, so
+# the one mock preflight the paid-run record checks covers both, and the record hashes both.
+FALLBACK_SPEC = REPO_ROOT / "protocol" / "development_grid_spec_fallback.json"
+PROVIDER_SPECS = {"anthropic": DEFAULT_SPEC, "openai": FALLBACK_SPEC}
+# Decision 0010 item 3: only the record activating the fallback opens a paid grid or sweep on it,
+# and a paid-run record names no provider. Activating means committing that record's path here.
+FALLBACK_DECISION: Optional[str] = None
 EXPECTED_TRIALS = 90
 DEFAULT_MOCK_OUT = REPO_ROOT / "results" / "development" / "grid-mock"
 DEFAULT_LIVE_OUT = REPO_ROOT / "results" / "development" / "grid-live"
@@ -56,7 +64,13 @@ def load_spec(path: Path | None = None) -> dict[str, Any]:
     return spec
 
 
+def committed_spec(provider_name: str) -> dict[str, Any]:
+    """The committed grid spec a live grid on ``provider_name`` runs."""
+    return load_spec(PROVIDER_SPECS[provider_name])
+
+
 def validate_grid_spec(spec: Mapping[str, Any]) -> list[ScheduledTrial]:
+    validator("schedule_spec").validate(dict(spec))
     schedule = generate_schedule(spec)
     if len(schedule) != EXPECTED_TRIALS:
         raise ValueError(
@@ -122,7 +136,15 @@ def new_trials(out_dir: Optional[Path], spec: Mapping[str, Any]) -> int:
     return sum(not (Path(out_dir) / execute.trial_slug(trial) / EVENTS_FILE).exists() for trial in schedule)
 
 
-def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Optional[Path] = None) -> Optional[str]:
+def fallback_refusal(provider_name: str) -> Optional[str]:
+    if provider_name == "anthropic" or FALLBACK_DECISION:
+        return None
+    return (f"a paid {provider_name} run needs its own decision record (decision 0010 item 3); "
+            "none is named in runner/grid_dev.py's FALLBACK_DECISION")
+
+
+def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Optional[Path] = None, *,
+                     provider_name: str = "anthropic") -> Optional[str]:
     """Fail closed before any paid call. The specific reasons come first so an
     operator sees what else is wrong; the path opens only when ``runner.paid_run``
     finds the project lead's record valid for this code and sandbox, and every
@@ -133,7 +155,7 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Option
             "tool-result delivery on main and request-to-effect ablation on main, and "
             "after a full mock 90-cell preflight (TASKS.md W7-T3)"
         )
-    reason = _provider_env_refusal()
+    reason = _provider_env_refusal() or fallback_refusal(provider_name)
     if reason:
         return reason
     absent = missing_bases(corpus_root, spec)
@@ -144,8 +166,10 @@ def live_run_refusal(corpus_root: Path, spec: Mapping[str, Any], out_dir: Option
         )
     if Path(corpus_root).resolve() != execute.DEFAULT_CORPUS_ROOT.resolve():
         return "a live grid runs only on corpus/development, the corpus its paid-run record hashed"
-    if dict(spec) != load_spec():
-        return "a live grid runs only protocol/development_grid_spec.json, the spec its paid-run record hashed"
+    committed = PROVIDER_SPECS[provider_name]
+    if dict(spec) != load_spec(committed):
+        return (f"a {provider_name} live grid runs only {committed.relative_to(REPO_ROOT)}, "
+                "the spec its paid-run record hashed")
     return paid_run.paid_run_refusal(new_trials=new_trials(out_dir, spec))
 
 
@@ -173,7 +197,7 @@ def run_live_grid(
     corpus_root: Optional[Path] = None,
 ) -> Path:
     root = corpus_root or execute.DEFAULT_CORPUS_ROOT
-    reason = live_run_refusal(root, spec, out_dir) or execute.raw_evidence_refusal(out_dir)
+    reason = live_run_refusal(root, spec, out_dir, provider_name=provider_name) or execute.raw_evidence_refusal(out_dir)
     if reason:
         raise ValueError(reason)
 
@@ -181,7 +205,7 @@ def run_live_grid(
 
     provider_cfg = live_smoke.PROVIDERS[provider_name]
     # Every trial sends the spec's model, so the provider, the spec, and --model must all name one.
-    # A fallback grid needs its own committed spec, record, and decision (decision 0010 item 3).
+    # The fallback runs its own committed spec (FALLBACK_SPEC), once FALLBACK_DECISION names its record.
     expected = provider_cfg["model"]
     if spec.get("model_id") != expected or model not in (None, expected):
         raise ValueError(
@@ -231,12 +255,36 @@ def _spec_for_run_verification(run_dir: Path, spec: Mapping[str, Any]) -> dict[s
     return sched_spec
 
 
+def _stop_lines(run_dir: Path) -> list[Mapping[str, Any]]:
+    """Each invocation's stop line from ``code_provenance.jsonl``, oldest first. A line
+    without its newline was cut off by a kill and never became durable."""
+    try:
+        text = (Path(run_dir) / paid_run.PROVENANCE_FILE).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return []
+    lines = [json.loads(line) for line in text.split("\n")[:-1] if line.strip()]
+    return [line for line in lines if isinstance(line, dict) and line.get("phase") == "stop"]
+
+
+def run_wide_stops(run_dir: Path) -> list[dict[str, Any]]:
+    """Every time the run-wide stop rule stopped this run (decision 0029), oldest first."""
+    return [dict(line["run_wide_stop"]) for line in _stop_lines(run_dir) if line.get("run_wide_stop")]
+
+
+def stopped_unresolved(run_dir: Path) -> bool:
+    """The run's last invocation was stopped by the run-wide stop rule, so no invocation
+    has since run the schedule through after the cause was fixed."""
+    lines = _stop_lines(run_dir)
+    return bool(lines) and bool(lines[-1].get("run_wide_stop"))
+
+
 def verify_grid_run(run_dir: Path, spec: Mapping[str, Any], corpus_root: Optional[Path] = None) -> dict[str, Any]:
     """Fail closed if the run is missing trials, duplicates ids, replays tool facts,
     delivered anything but its pinned resource, or holds a result its events don't produce."""
     schedule = validate_grid_spec(_spec_for_run_verification(run_dir, spec))
     expected = {t.logical_trial_id: t for t in schedule}
     found_ids: list[str] = []
+    infrastructure_failures: list[str] = []
     schema_errors: list[str] = []
     checked: Counter[str] = Counter()
 
@@ -249,6 +297,8 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any], corpus_root: Optiona
             except Exception as exc:
                 schema_errors.append(f"{record.get('logical_trial_id')}: {exc}")
             found_ids.append(record["logical_trial_id"])
+            if record.get("status") == "infrastructure_failure":
+                infrastructure_failures.append(record["logical_trial_id"])
             events = read_jsonl(events_path, "event")
             for event in events:
                 validator("event").validate(event)
@@ -285,7 +335,10 @@ def verify_grid_run(run_dir: Path, spec: Mapping[str, Any], corpus_root: Optiona
         "experiment_id": spec["experiment_id"],
         "trials_expected": EXPECTED_TRIALS,
         "trials_found": len(found_ids),
-        "complete": len(missing) == 0 and len(duplicates) == 0,
+        # A run the stop rule stopped isn't complete until a resume runs it through (decision 0029).
+        "complete": len(missing) == 0 and len(duplicates) == 0 and not stopped_unresolved(run_dir),
+        "run_wide_stops": run_wide_stops(run_dir),
+        "infrastructure_failures": sorted(infrastructure_failures),
         # How many cells' delivered resources were hashed; a cell that never retrieved its resource adds none.
         "delivered_resources_checked": {name: checked[name] for name in CONFIGURATIONS},
     }
@@ -579,9 +632,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "live":
-        spec = load_spec(args.spec)
+        spec = load_spec(args.spec or PROVIDER_SPECS[args.provider])
         out = args.out or DEFAULT_LIVE_OUT
-        reason = _existing_run_refusal(out, args.resume) or live_run_refusal(execute.DEFAULT_CORPUS_ROOT, spec, out)
+        reason = _existing_run_refusal(out, args.resume) or live_run_refusal(
+            execute.DEFAULT_CORPUS_ROOT, spec, out, provider_name=args.provider)
         if reason:
             print(f"refusing: {reason}", file=sys.stderr)
             return 2
@@ -597,6 +651,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         except (OSError, ValueError) as exc:
             print(f"refusing: {exc}", file=sys.stderr)
             return 2
+        except execute.RunWideFailure as exc:
+            print(f"{exc}: rerun this command with --resume --out {out}", file=sys.stderr)
+            return 3
         code = _print_report(lambda: summarize_grid_run(out, spec))
         print(f"grid live run directory: {out}")
         return code
@@ -604,7 +661,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     spec = load_spec(getattr(args, "spec", None))
 
     if args.command == "validate":
-        validate_grid_spec(spec)
+        try:
+            validate_grid_spec(spec)
+        except REFUSALS as exc:
+            print(f"refusing: {exc}", file=sys.stderr)
+            return 1
         print(f"ok: {EXPECTED_TRIALS} trials for experiment_id={spec['experiment_id']!r}")
         return 0
 

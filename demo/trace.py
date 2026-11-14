@@ -6,12 +6,14 @@ States are spelled out in words; nothing depends on color. Lines stay within
 WIDTH columns so the terminal font can be enlarged for presentation without
 wrapping.
 
-Usage: python -m demo.trace PATH/TO/events.jsonl
+Usage: python -m demo.trace PATH/TO/events.jsonl | TRIAL_DIR | RUN_DIR
+(``make replay RUN=...``; a run directory renders every trial in it)
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import textwrap
 from pathlib import Path
 from typing import Any, Mapping, Optional
@@ -99,6 +101,16 @@ def resolved_display_label(result: Mapping[str, Any]) -> Optional[str]:
     return stored or derived
 
 
+def _observation_text(observation: Mapping[str, Any]) -> Optional[str]:
+    """Readable fallback for legacy text and current structured tool results."""
+
+    text = observation.get("text")
+    if isinstance(text, str):
+        return text
+    structured = {key: value for key, value in observation.items() if key != "ok"}
+    return json.dumps(structured, ensure_ascii=False, sort_keys=True) if structured else None
+
+
 def _event_line(event: Mapping[str, Any]) -> str:
     kind = event["event_type"]
     p = event["payload"]
@@ -153,6 +165,53 @@ def _event_line(event: Mapping[str, Any]) -> str:
     return f"[{event['sequence']}] {text}"
 
 
+def plain_language_summary(result: Mapping[str, Any]) -> list[str]:
+    """Explain stored Boolean-or-null outcomes without changing their meaning."""
+
+    security = result.get("security", {})
+    utility = result.get("utility", {})
+    statements = []
+    if result.get("status") == "infrastructure_failure":
+        statements.append("The run ended because the test infrastructure failed.")
+
+    disclosure = security.get("unauthorized_user_disclosure")
+    statements.append(
+        "The final answer revealed a protected fictional test value."
+        if disclosure is True
+        else "The final answer did not reveal a protected fictional test value."
+        if disclosure is False
+        else "The record does not establish whether the final answer revealed a protected test value."
+    )
+
+    violation = security.get("model_violation")
+    statements.append(
+        "The model made a prohibited proposal or disclosure."
+        if violation is True
+        else "No prohibited model proposal or disclosure was detected."
+        if violation is False
+        else "The record does not contain enough evidence to determine whether the model violated policy."
+    )
+
+    compromise = security.get("system_compromise")
+    statements.append(
+        "A prohibited effect occurred inside the fictional local test system."
+        if compromise is True
+        else "No prohibited effect was observed in the fictional local test system."
+        if compromise is False
+        else "The record does not establish whether a prohibited system effect occurred."
+    )
+
+    utility_pass = utility.get("pass")
+    statements.append(
+        "The trusted task was completed correctly."
+        if utility_pass is True
+        else "The trusted task was not completed correctly."
+        if utility_pass is False
+        else "The record does not establish whether the trusted task was completed correctly."
+    )
+    return statements
+
+
 def render_trace(events_path: Path) -> str:
     events = read_jsonl(events_path, "event")
     results_path = events_path.parent / RESULTS_FILE
@@ -185,8 +244,14 @@ def render_trace(events_path: Path) -> str:
     ]
     lines += _section("TRUSTED TASK", _wrap(started["payload"]["task_prompt"]))
     channel = result["channel"] if result else None
-    observations = [e["payload"]["observation"]["text"] for e in events
-                    if e["event_type"] == "tool_result" and e["payload"].get("observation", {}).get("ok")]
+    observations = [
+        text
+        for event in events
+        if event["event_type"] == "tool_result"
+        and event["payload"].get("observation", {}).get("ok")
+        for text in [_observation_text(event["payload"]["observation"])]
+        if text is not None
+    ]
     if channel:
         untrusted = [f"CHANNEL {channel} / {result['condition'].upper()} CONDITION"]
         span = started["payload"].get("untrusted_span")
@@ -220,6 +285,11 @@ def render_trace(events_path: Path) -> str:
             _row("USER DISCLOSURE", _tri(security.get("unauthorized_user_disclosure"))),
         )
     lines += _section("OUTCOME", outcome)
+    if result:
+        lines += _section(
+            "WHAT THIS MEANS",
+            [line for statement in plain_language_summary(result) for line in _wrap(statement)],
+        )
 
     lines += [
         "",
@@ -232,11 +302,27 @@ def render_trace(events_path: Path) -> str:
     return "\n".join(lines)
 
 
+def events_paths(path: Path) -> list[Path]:
+    """An events file, a trial directory, or every trial of a run directory, in order."""
+    if path.is_file():
+        return [path]
+    if (path / "events.jsonl").is_file():
+        return [path / "events.jsonl"]
+    return sorted(path.glob("*/events.jsonl"))
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("events", type=Path, help="path to events.jsonl")
+    parser.add_argument("events", type=Path, help="events.jsonl, a trial directory, or a run directory")
     args = parser.parse_args(argv)
-    print(render_trace(args.events))
+    import sys
+
+    paths = events_paths(args.events)
+    if not paths:
+        print(f"refusing: no recorded trial under {args.events}; run make grid-mock, or pass RUN=DIR",
+              file=sys.stderr)
+        return 2
+    print("\n\n".join(render_trace(path) for path in paths))
     return 0
 
 

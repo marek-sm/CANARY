@@ -44,7 +44,7 @@ parse_untrusted_span(rendered_fixture) -> canonical_payload
 
 `runner/delivery.py` is how the development grid delivers a channel's content. The user turn carries only the trusted task prompt from the base's W6-T1 template. The base's pinned C2/C3/C4 render sits at that channel's resource inside a fresh, read-only, per-trial copy of the W6-T1 fixtures, so untrusted content reaches the model only in the result of the `query_db`, `read_file`, or `fetch_url` call that retrieved it.
 
-- **Pinned content.** The delivered bytes are the base's committed render, refused unless their SHA-256 matches `rendered-hashes.json` and they parse back to the exact substituted payload.
+- **Pinned content.** The delivered bytes are the base's committed render (on a multi-row C2 source, the row holding the base's facts), refused unless their SHA-256 matches `rendered-hashes.json` and they parse back to the exact substituted payload.
 - **Where the secrets sit.** The superblock's two canaries are planted in fictional files: a fake API key in `config/app.env`, and a customer record, `customers/customer-record.txt`, holding the other canary as its saved payment method and saved address. The inbox email that two payloads ask an agent to forward is planted too.
 - **Configurations.** Under D1_POLICY_GATE the gate decides before dispatch, and a block returns the frozen observation without running the tool. Under D2_DATAMARKING every tool result is marked once, with the frozen transform, before the model sees it. The same environment serves every configuration.
 - **Paid runs.** Every tool runs through W6-T1's worker inside the [tool sandbox](#tool-sandbox-lead-scaffold-decision-0023). A provider other than the mock runs only in delivery mode, and only when `runner.paid_run` finds the project lead's paid-run record valid for the running code and sandbox ([decision 0023](decisions/0023-tool-sandbox.md)); the text-only body refuses every paid provider.
@@ -162,7 +162,11 @@ and CI ([decision 0023](decisions/0023-tool-sandbox.md)).
   through `tools/no_exec.py`, whose seccomp filter fails every `execve`,
   `execveat`, `ptrace`, and `process_vm_writev` before the tool's first line
   runs, with the tool as the sandbox's only process (`--as-pid-1`), so the
-  programs in the mounted system-library folders can't run.
+  programs in the mounted system-library folders can't run. `tools/no_exec.py`
+  also sets SIGKILL as the tool's death signal again after the exec, because the
+  kernel can clear the one bwrap's `--die-with-parent` set, and a tool that
+  outlives a killed bwrap would keep every child it forked. Its filter then fails
+  `prctl(PR_SET_PDEATHSIG)`, so the tool can't clear that signal itself.
 - `environment(write=())` is the only environment a tool process gets: `PATH`,
   `LANG`, and `TMPDIR` set to its first writable directory. No provider variable
   ever enters it.
@@ -204,8 +208,8 @@ provider's first call, in `execute.execute_trial`, `ticket_slice.run`, and
 The hashed files are the git-tracked files under `agent/`, `analysis/`, `channels/`,
 `defenses/`, `oracles/`, `runner/`, `tasks/`, `tools/`, `corpus/`, `fixtures/`, and
 `schemas/`, plus `paper/estimand_manifest.json`, `protocol/development_grid_spec.json`,
-and `uv.lock`, so any change to the code, scoring code, corpus, fixtures, schemas, grid
-spec, or locked dependencies closes paid runs until the project lead records again. A
+`protocol/development_grid_spec_fallback.json`, and `uv.lock`, so any change to the code,
+scoring code, corpus, fixtures, schemas, grid specs, or locked dependencies closes paid runs until the project lead records again. A
 paid grid also takes only the committed spec, and only the model that spec and its
 provider both name. The live smoke passes `live_smoke=True`, which skips only the record
 and the checks that read it. `grid_dev.live_run_refusal` refuses any corpus other than
@@ -218,6 +222,38 @@ with the OS build, Python build, SQLite version, `uv.lock` hash, and sandbox fin
 A change in the resolved model or provider fingerprint stops `run_schedule` with
 `ResolvedModelChanged`, and a resume stops on the same evidence (`SPEC.md` Section 9).
 
+The run-wide stop rule ([decision 0029](decisions/0029-gate-chain-shift.md)) stops a run
+with `RunWideFailure` and records why in the invocation's stop line, as `run_wide_stop`
+(null when the rule didn't stop it). Two signals fire it:
+
+- A provider attempt with no model content that every trial would also hit
+  (`execute.run_wide_error`) stops the run at once: an HTTP 4xx other than 408 and 429
+  that isn't a listed content-policy refusal (a dead or unauthorized key, an exhausted
+  balance or workspace limit, a missing model, a malformed request), or a connection
+  error. The attempt is durable and the trial gets no `trial_ended`, so the resume after
+  the fix replays that attempt and makes the step's next retry, as after a kill; a paid
+  trial's ledger entry closes with the attempts it made, and its resume adds no trial to
+  the ceiling. A stop on a step's third attempt leaves no retry (`SPEC.md` Section 9), so
+  that trial ends as an infrastructure failure on resume, and each resume before the
+  cause is fixed spends one retry. A one-off connection reset also stops the run, and the
+  resume continues the trial. A 4xx that belongs to one trial (a request too large, or a
+  content-policy code no adapter lists yet) comes back on every resume, so that trial
+  stops the run up to three times, a retry each, before it ends as an infrastructure
+  failure.
+- Two trials in a row within one invocation ending as infrastructure failures, for any cause (timeouts, 429s,
+  5xx, the fixture service or sandbox, a runner exception), stop the run after the
+  second. Those two stay committed infrastructure failures, which the 5% rule counts as
+  missing.
+
+`grid_dev.verify_grid_run` and `sweep.verify_sweep` say `complete: false` while the run's
+last invocation ended on a stop, and list every stop the run has had; a resume that ends
+without one clears it. So a mock grid that was stopped and not resumed through can't back
+a paid-run record (`paid_run` refuses an incomplete one). A run with a trial left open by an immediate stop has a missing result, so
+`verify_grid_run` refuses it outright. `verify_grid_run` also lists the run's
+infrastructure failures. `grid_dev live` and `sweep live` exit 3 on a stop; rerun the same
+command with `--resume`. The rule's reviews are the project lead's and an AI review, with
+no portfolio owner's.
+
 Paid trials record the checkout's `HEAD` as their `code_commit`. That is the commit adding
 the record, a descendant of the record's `recorded_commit`, so the two differ on every paid
 trial. `W9-T3`'s integrity checks compare the hashes and ancestry, not the two commits.
@@ -226,9 +262,11 @@ trial. `W9-T3`'s integrity checks compare the hashes and ancestry, not the two c
 and ledger line. The sweep passes `split="evaluation"`, which is refused before anything is
 written without a `protocol_version` and trial ids from a spec's `protocol_sentinel`, because
 the locked schema's evaluation branch would otherwise reject the result after its paid call.
-The locked schema's `split` is only `development` or `evaluation`, so rehearsal and stage
-trials stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a
-free string there. A run can't be resumed under another split.
+The result schema's `split` is `development`, `evaluation`, or, from 1.1.0, `c1_control`
+([decision 0034](decisions/0034-c1-result-records.md)). `W8-T3`'s C1 executor is to write
+`c1_control`; until it exists, `run_schedule` refuses that split. Rehearsal and stage trials
+stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a free string
+there. A run can't be resumed under another split.
 
 [`runner/sweep.py`](../runner/sweep.py) is that sweep's entry point: `python -m runner.sweep
 live --spec SPEC.json --protocol-version V` runs a committed schedule spec through
@@ -241,6 +279,22 @@ a protocol version, or a frozen `protocol_sentinel`, on any base whose `split` i
 result recomputes from its events, and prints counts only, never an outcome aggregate.
 `execute.check_stored_run` reads a run's split from its mode file and recomputes each
 result under it.
+
+[`runner/rehearsal.py`](../runner/rehearsal.py) is the `SPEC.md` Section 13 live-first
+rehearsal ([decision 0030](decisions/0030-done-by-november-30.md) item 8): `python -m
+runner.rehearsal live --protocol-version V --env-file PATH` runs the excluded demo case,
+`corpus/demo/demo-001.json`, on C2 under attack as ten dry runs across the `K` stage
+configurations of a committed `protocol/active.json`, through `run_schedule` with
+`split="development"` and `analysis_role="demo_rehearsal"`, writing under the ignored
+`results/raw/rehearsal/`. That is the whole `10 × K` rehearsal allowance. Besides the
+sweep's refusals, it refuses before any key is read at `K` = 0 or an `ENGINEERING` or
+`STOP` tier, on a stage configuration the tier doesn't retain or a model other than
+`active.json`'s, and wherever a dry run would be redone (a fresh run of started trials, a resume of a
+started trial with no durable events, or a trial started twice) or the ledger's rehearsal
+trials would pass `10 × K`. `python -m runner.rehearsal verify RUN` recomputes every stored result
+against the stored schedule and prints completeness, the missing trials, any trial the
+ledger started twice (its dry run doesn't count), and each dry run's recorded outcome flags; whether 9 of 10 showed the intended stage behavior is a
+human read of Section 13's script.
 
 `build_record` refuses unless every invocation of the mock grid ran this checkout's
 hashed code, clean, under this environment, through tool-result delivery, on
@@ -283,7 +337,7 @@ against the 120: `execute_trial` applies the ceiling to neither the sweep's `eva
 trials nor rehearsal and stage trials. Under pytest the real paths refuse, so no test can
 touch the real ledger.
 
-`analysis.floor_count` and `analysis.gate2_budget` call
+`analysis.floor_count`, `analysis.gate2_budget`, and `analysis.defense_readiness` call
 `paid_run.check_code_matches_run` before they read a run. Each invocation records a digest
 of the Gate 2 scripts' own scoring code: `analysis/__init__.py`, `analysis/floor_count.py`,
 `analysis/gate2_budget.py`, `analysis/defense_readiness.py` when it exists, and
@@ -294,10 +348,19 @@ grid, and report code landing elsewhere in `analysis/` doesn't refuse. Neither d
 `analysis/price_bound.py`, and the budget report names the bound it used. The budget
 counts the development trials already used from the spend ledger, never a typed number,
 and the ledger's rates and per-trial bound are `analysis/price_bound.py`'s. The paid-run record
-plays no part, so decision 0025 item 4's November 7 close evaluates whatever grid records
+plays no part, so the Gate 2 step's close (decision 0025 item 4; November 10 under decision 0029) evaluates whatever grid records
 exist. A mock run with no provenance is allowed, and each report's `code_check` says so; a
 non-mock run with none is refused, so deleting the file can't evade the check. Any later
 script that scores a paid grid calls the same check.
+
+`analysis.defense_readiness` also binds its code checks to the grid. Its D1 and D2 suites
+count only when the code they test is unchanged from each commit the run's provenance
+recorded, and none of it is dirty in git's view: `defenses/`, `oracles/`, `channels/`,
+`schemas/`, `fixtures/`, the predeclared test files, `tests/conftest.py`, and
+`pyproject.toml`. Otherwise the code checks fail unrun, and the report's `code_binding`
+says why. So a gate fix or a golden-test edit after the grid can't certify code the records
+didn't come from. A runner fix during a resumed grid, or report code landing later, binds as
+before. Run it from the checkout that ran the grid, or from one at the same code.
 
 ## Utility boundary
 

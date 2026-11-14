@@ -1,8 +1,9 @@
 """Separate descriptive C1 plumbing checks, never indirect ResultRecords.
 
-The locked result schema has no C1 channel. This mock-only harness therefore
+Result schema 1.1.0 (decision 0034) has the official C1 control record form;
+W8-T3's C1 executor writes those. This mock-only harness predates it and still
 writes its own versioned engineering evidence, reusing the agent loop and local
-fixture tools without changing that schema or admitting paid providers. Every
+fixture tools without admitting paid providers. Every
 event carries its time and component versions, and each control and the summary
 name the tool sandbox and the code that ran.
 """

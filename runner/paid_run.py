@@ -79,7 +79,8 @@ RECORD = REPO_ROOT / "protocol" / "paid_run_record.json"
 # (decision 0025 item 4).
 HASHED_DIRS = (
     "agent", "analysis", "channels", "defenses", "oracles", "runner", "tasks", "tools",
-    "corpus", "fixtures", "schemas", "paper/estimand_manifest.json", "protocol/development_grid_spec.json", "uv.lock",
+    "corpus", "fixtures", "schemas", "paper/estimand_manifest.json", "protocol/development_grid_spec.json",
+    "protocol/development_grid_spec_fallback.json", "uv.lock",
 )
 RECORD_SCHEMA = "paid_run_record"
 PROVENANCE_FILE = "code_provenance.jsonl"
@@ -271,7 +272,7 @@ def check_code_matches_run(run_dir: Path, *, root: Optional[Path] = None) -> str
     scoreable, which matters because the ceiling rules out a second grid, and later report
     code elsewhere in ``analysis/`` doesn't refuse.
 
-    The record plays no part, so decision 0025 item 4's November 7 close evaluates whatever
+    The record plays no part, so the Gate 2 step's close (decision 0025 item 4; November 10 under decision 0029) evaluates whatever
     grid records exist, and a new record can't evade this. A mock run without provenance
     stays allowed, and the returned note, which goes in the report, says so; a non-mock run
     without it is refused, or deleting the file would evade the check.
@@ -454,7 +455,17 @@ def _refusal(live_smoke: bool, record_path: Optional[Path], root: Path, new_tria
         return reason
     if _pinned(environment) != _pinned(record["environment"]):
         return f"this environment isn't the record's (python {environment['python']}); record again under it"
-    return _mock_run_refusal(record, root) or spend_ledger.refusal(new_trials=new_trials)
+    return _mock_run_refusal(record, root) or _lead_review_refusal(root) or spend_ledger.refusal(new_trials=new_trials)
+
+
+def _lead_review_refusal(root: Path) -> Optional[str]:
+    """Decision 0031 item 6: an attested lead-side review of this checkout's code_digest."""
+    try:
+        from runner import lead_review  # it imports this module
+
+        return lead_review.refusal(root)
+    except Exception as exc:  # a check that can't run is a refusal
+        return f"can't check the lead-side review: {type(exc).__name__}: {exc}"
 
 
 def require_paid_run(provider: Any, *, live_smoke: bool = False, record_path: Optional[Path] = None,
@@ -601,7 +612,7 @@ def build_record(mock_run: Path, *, delivery: str, sandbox_pr: str, request_to_e
     if dirty:
         raise PaidRunRefused("commit or discard these changes before recording: " + ", ".join(dirty[:5]))
     environment = python_environment()
-    reason = _lock_refusal(environment, root)
+    reason = _lock_refusal(environment, root) or _lead_review_refusal(root)
     if reason:
         raise PaidRunRefused(reason)
     grid = _check_mock_run(mock_run, root=root)

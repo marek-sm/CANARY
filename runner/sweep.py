@@ -26,17 +26,110 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
-from runner import execute, grid_dev, paid_run
+from jsonschema import ValidationError
+
+from runner import delivery, execute, grid_dev, paid_run
 from runner.mock_slice import RESULTS_FILE, REPO_ROOT, read_jsonl, validator
 from runner.provider_config import load_api_key
 from runner.schedule import PROTOCOL_SENTINEL, generate_schedule
 
 DEFAULT_CORPUS_ROOT = REPO_ROOT / "corpus" / "evaluation"
+# N-93-1: a live sweep runs only the protocol the Gate 3 step froze. These name what it froze.
+FROZEN_CORPUS_ROOT = DEFAULT_CORPUS_ROOT
+ACTIVE = REPO_ROOT / "protocol" / "active.json"
+CORPUS_FREEZE = REPO_ROOT / "corpus" / "freeze.json"
+DEFENSE_FREEZE = REPO_ROOT / "defenses" / "freeze.json"
+
+
+class FreezeMissing(ValueError):
+    """A freeze manifest the live sweep needs isn't in this checkout."""
+
+
+def _manifests() -> tuple[dict[str, Any], dict[str, Any]]:
+    out = []
+    for path, slice_id in ((CORPUS_FREEZE, "W8-T2"), (DEFENSE_FREEZE, "W8-T4")):
+        try:
+            out.append(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError) as exc:
+            raise FreezeMissing(f"{path.relative_to(REPO_ROOT).as_posix()} ({slice_id}) isn't readable: {exc}") from None
+    return out[0], out[1]
+
+
+def _drift() -> Optional[str]:
+    """Each freeze manifest still matches the files it hashes (make freeze-check and
+    make defense-freeze-check), with their messages kept out of the sweep's output."""
+    import contextlib
+    import io
+
+    from corpus import freeze as corpus_freeze
+    try:
+        from defenses import freeze as defense_freeze
+    except ImportError:
+        return "defenses/freeze.json (W8-T4) and its checker aren't in this checkout"
+    for name, check in (("corpus/freeze.json", corpus_freeze.main), ("defenses/freeze.json", defense_freeze.main)):
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                failed = check(["--check"])
+        except (Exception, SystemExit) as exc:  # a check that can't run refuses
+            return f"{name}'s check couldn't run: {type(exc).__name__}: {exc}"
+        if failed:
+            return f"{name} doesn't match the files it freezes; a change after Gate 3 follows SPEC.md Section 11"
+    return None
+
+
+def _active_committed_refusal() -> Optional[str]:
+    """protocol/active.json counts only as a committed, unchanged file of this checkout,
+    since no hashed path covers it."""
+    try:
+        relative = ACTIVE.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+        paid_run._git("ls-files", "--error-unmatch", "--", relative, root=REPO_ROOT)
+        if paid_run._git("status", "--porcelain", "--", relative, root=REPO_ROOT).strip():
+            return "protocol/active.json has uncommitted changes"
+    except ValueError:
+        return f"protocol/active.json must be a file in this checkout, not {ACTIVE}"
+    except (OSError, subprocess.CalledProcessError):
+        return "protocol/active.json isn't committed; the Gate 3 step commits it"
+    return None
+
+
+def _freeze_refusal(spec: Mapping[str, Any], protocol_version: str, corpus_root: Path) -> Optional[str]:
+    """N-93-1: refuse unless protocol/active.json names this protocol_version and these
+    bases, its corpus and defense hashes are the freeze manifests', and neither freeze drifted."""
+    if Path(corpus_root).resolve() != Path(FROZEN_CORPUS_ROOT).resolve():
+        return f"the sweep reads only the frozen corpus root {FROZEN_CORPUS_ROOT}, not {corpus_root}"
+    try:
+        active = json.loads(ACTIVE.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return "no protocol/active.json: the Gate 3 step writes it, and no live sweep runs before it"
+    except (OSError, ValueError):
+        return "protocol/active.json isn't readable JSON"
+    if not isinstance(active, dict):
+        return "protocol/active.json isn't a JSON object"
+    reason = _active_committed_refusal()
+    if reason:
+        return reason
+    if active.get("protocol_version") != protocol_version:
+        return f"--protocol-version {protocol_version!r} isn't protocol/active.json's protocol_version {active.get('protocol_version')!r}"
+    if sorted(active.get("base_case_ids") or []) != sorted(spec["base_case_ids"]):
+        return "the sweep spec's base_case_ids aren't protocol/active.json's"
+    try:
+        corpus, defense = _manifests()
+    except FreezeMissing as exc:
+        return str(exc)
+    if not set(spec["base_case_ids"]) <= set(corpus.get("base_case_ids") or []):
+        return "a sweep base isn't among corpus/freeze.json's base_case_ids"
+    empirical = active.get("empirical") if isinstance(active.get("empirical"), dict) else {}
+    for field, manifest, source in (("corpus_hash", corpus, "corpus/freeze.json"),
+                                    ("defense_hash", defense, "defenses/freeze.json")):
+        if not empirical.get(field) or empirical.get(field) != manifest.get(field):
+            return f"protocol/active.json's empirical.{field} isn't {source}'s {field}"
+    return _drift()
 DEFAULT_OUT_ROOT = REPO_ROOT / "results" / "raw" / "sweep"
 
 
@@ -52,6 +145,26 @@ def _bases_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
     return None
 
 
+def _renders_refusal(corpus_root: Path, spec: Mapping[str, Any]) -> Optional[str]:
+    """Every scheduled cell's pinned render exists, matches its pin, and round-trips, so
+    a missing render refuses the sweep here instead of failing each of its cells."""
+    cache: dict[str, Any] = {}
+    for base_case_id in spec["base_case_ids"]:
+        try:
+            base, template = execute._load_base(cache, Path(corpus_root), base_case_id)
+        except ValidationError as exc:  # its full text would print the record's payload
+            return f"{base_case_id} can't be loaded for the render preflight: {exc.message}"
+        except (OSError, ValueError, KeyError) as exc:
+            return f"{base_case_id} can't be loaded for the render preflight: {exc}"
+        for channel in spec["channels"]:
+            for condition in spec["conditions"]:
+                try:
+                    delivery.pinned_render(base, channel, condition, template)
+                except (OSError, ValueError, KeyError) as exc:
+                    return f"{base_case_id} has no usable {channel} {condition} render: {exc}"
+    return None
+
+
 def live_refusal(spec: Mapping[str, Any], protocol_version: Optional[str], corpus_root: Path, out: Path) -> Optional[str]:
     """Fail closed before any key is read or any paid call is made."""
     if os.environ.get("CANARY_PAID_RUN_ACK") != "1":
@@ -59,11 +172,14 @@ def live_refusal(spec: Mapping[str, Any], protocol_version: Optional[str], corpu
     reason = grid_dev._provider_env_refusal()
     if reason:
         return reason
+    problem = next(validator("schedule_spec").iter_errors(dict(spec)), None)
+    if problem is not None:
+        return f"the sweep spec isn't a valid schedule spec: {problem.message}"
     if not protocol_version:
         return "the sweep needs the frozen protocol_version (protocol/active.json)"
     if spec.get("protocol_sentinel", PROTOCOL_SENTINEL) == PROTOCOL_SENTINEL:
         return f"the sweep spec's protocol_sentinel must name the frozen protocol, not {PROTOCOL_SENTINEL!r}"
-    reason = _bases_refusal(corpus_root, spec) or execute.raw_evidence_refusal(out)
+    reason = _freeze_refusal(spec, protocol_version, corpus_root) or _bases_refusal(corpus_root, spec) or _renders_refusal(corpus_root, spec) or execute.raw_evidence_refusal(out)
     if reason:
         return reason
     return paid_run.paid_run_refusal(new_trials=0)  # evaluation trials don't count against the ceiling
@@ -80,7 +196,7 @@ def run_sweep(
     analysis_role: Optional[str] = None,
     resume: bool = False,
 ) -> Path:
-    reason = live_refusal(spec, protocol_version, corpus_root, out)
+    reason = grid_dev.fallback_refusal(provider_name) or live_refusal(spec, protocol_version, corpus_root, out)
     if reason:
         raise paid_run.PaidRunRefused(reason)
 
@@ -125,8 +241,12 @@ def verify_sweep(run: Path, corpus_root: Path = DEFAULT_CORPUS_ROOT) -> dict[str
     if len(found) != len(set(found)):
         raise ValueError(f"{run.name}: a trial has more than one stored result")
     execute.check_stored_run(run, pairs, corpus_root=corpus_root)
-    return {"trials_expected": len(schedule), "trials_found": len(found), "missing": len(set(schedule) - set(found)),
-            "status_counts": dict(sorted(statuses.items())), "protocol_versions": sorted({r["protocol_version"] for _, r in pairs})}
+    missing = len(set(schedule) - set(found))
+    return {"trials_expected": len(schedule), "trials_found": len(found), "missing": missing,
+            "status_counts": dict(sorted(statuses.items())), "protocol_versions": sorted({r["protocol_version"] for _, r in pairs}),
+            # A sweep the run-wide stop rule stopped isn't complete until a resume runs it through (decision 0029).
+            "run_wide_stops": grid_dev.run_wide_stops(run),
+            "complete": missing == 0 and not grid_dev.stopped_unresolved(run)}
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -163,6 +283,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     except paid_run.PaidRunRefused as exc:
         print(f"refusing: {exc}", file=sys.stderr)
         return 2
+    except execute.RunWideFailure as exc:
+        print(f"{exc}: rerun this command with --resume", file=sys.stderr)
+        return 3
     except grid_dev.REFUSALS as exc:
         print(f"refusing: {exc}", file=sys.stderr)
         return 1

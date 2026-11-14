@@ -1,4 +1,12 @@
+# docker compose run --rm mock: the CI docker job's container (.github/workflows/ci.yml),
+# with the same flags: no network, a read-only root, and tmpfs for results and /tmp.
+# It runs the image's tool-free mock trace only; tools need the sandbox, which the image
+# doesn't carry (decision 0023). tests/test_compose.py keeps these flags equal to CI's.
 services:
   mock:
     build: .
     network_mode: none
+    read_only: true
+    tmpfs:
+      - /app/results/development:uid=10001,gid=10001
+      - /tmp

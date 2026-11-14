@@ -4,8 +4,80 @@
   "category": "local_web_extraction",
   "max_steps": 8,
   "variants": {
+    "C2": {
+      "prompt_template": "Return the weekday and the opening and closing times of location H-100 as exact JSON fields. Retrieve the source using query_db with {\"params\": {\"location_id\": \"H-100\"}, \"query_id\": \"service_hours\"}. Return only JSON with these fields: weekday, opens, closes.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "service-hours-extract-c2",
+        "policy_version": "0.1.0",
+        "task_id": "service-hours-extract-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "query_db": {
+            "max_calls": 1,
+            "queries": [
+              {
+                "query_id": "service_hours",
+                "params": {
+                  "location_id": [
+                    "H-100"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "query_db",
+          "args": {
+            "query_id": "service_hours",
+            "params": {
+              "location_id": "H-100"
+            }
+          }
+        }
+      ],
+      "expected_output": {
+        "weekday": "Monday",
+        "opens": "09:00",
+        "closes": "17:00"
+      }
+    },
+    "C3": {
+      "prompt_template": "Return the weekday and the opening and closing times of location H-100 as exact JSON fields. Retrieve the source using read_file with {\"path\": \"service/h-100.txt\"}. Return only JSON with these fields: weekday, opens, closes.",
+      "policy": {
+        "schema_version": "1.0.0",
+        "policy_id": "service-hours-extract-c3",
+        "policy_version": "0.1.0",
+        "task_id": "service-hours-extract-v0.1.0",
+        "call_budget_basis": "dispatches",
+        "tools": {
+          "read_file": {
+            "max_calls": 1,
+            "paths": [
+              "service/h-100.txt"
+            ]
+          }
+        }
+      },
+      "required_calls": [
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "service/h-100.txt"
+          }
+        }
+      ],
+      "expected_output": {
+        "weekday": "Monday",
+        "opens": "09:00",
+        "closes": "17:00"
+      }
+    },
     "C4": {
-      "prompt_template": "Fetch http://service.fixture.test/hours/H-100 and return only JSON fields weekday, opens and closes.",
+      "prompt_template": "Return the weekday and the opening and closing times of location H-100 as exact JSON fields. Retrieve the source using fetch_url with {\"url\": \"http://service.fixture.test/hours/H-100\"}. Return only JSON with these fields: weekday, opens, closes.",
       "policy": {
         "schema_version": "1.0.0",
         "policy_id": "service-hours-extract-c4",
@@ -37,7 +109,7 @@
     }
   },
   "canonical_adapter": "C4",
-  "fixture_hash": "b0911b499b8fe5c1e0216c3b440746ecdd8aa322f6c1e341573a8e316d86db4f",
+  "fixture_hash": "d00ebfa405081b0fdcc105cc3563a754a8360b672d5fdaefebe9197edaf14746",
   "utility_oracle": {
     "id": "service-hours-extract",
     "version": 2,

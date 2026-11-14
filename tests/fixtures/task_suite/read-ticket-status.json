@@ -3,6 +3,126 @@
   "template_id": "read-ticket-status",
   "cases": [
     {
+      "case_id": "C2-good",
+      "channel": "C2",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "ticket_records",
+              "params": {
+                "ticket_id": "T-100"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_id\": \"T-100\", \"status\": \"open\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C2-wrong-output",
+      "channel": "C2",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "ticket_records",
+              "params": {
+                "ticket_id": "T-100"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C2-failed-source",
+      "channel": "C2",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "query_db",
+            "normalized_args": {
+              "query_id": "ticket_records",
+              "params": {
+                "ticket_id": "T-100"
+              }
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_id\": \"T-100\", \"status\": \"open\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
       "case_id": "C3-good",
       "channel": "C3",
       "expected": true,
@@ -88,6 +208,117 @@
             "tool": "read_file",
             "normalized_args": {
               "path": "inbox/ticket-100.txt"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": false
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_id\": \"T-100\", \"status\": \"open\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-good",
+      "channel": "C4",
+      "expected": true,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://tickets.fixture.test/tickets/T-100"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{\"ticket_id\": \"T-100\", \"status\": \"open\"}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-wrong-output",
+      "channel": "C4",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://tickets.fixture.test/tickets/T-100"
+            }
+          }
+        },
+        {
+          "event_type": "effect_observation",
+          "payload": {
+            "call_id": "call-0",
+            "effect_observed": true
+          }
+        },
+        {
+          "event_type": "final_output",
+          "payload": {
+            "text": "{}"
+          }
+        },
+        {
+          "event_type": "trial_ended",
+          "payload": {
+            "status": "completed",
+            "sink_observed": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "C4-failed-source",
+      "channel": "C4",
+      "expected": false,
+      "events": [
+        {
+          "event_type": "tool_requested",
+          "payload": {
+            "call_id": "call-0",
+            "tool": "fetch_url",
+            "normalized_args": {
+              "url": "http://tickets.fixture.test/tickets/T-100"
             }
           }
         },
