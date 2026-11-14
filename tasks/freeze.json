@@ -27,7 +27,7 @@
     "task_registry": "52c6e295fcf56393339b912619002ec623725f2fb80b031dfecc5740b78e282c",
     "prompt_tool": "3bcc70130fa876819ef698bbb710b070442cdc6f866dae208795990b96adab6e",
     "schema": "3de84dcf74ffb3057add9f36e47ec1c37a37de43ee077fbc8c5e72c3bf52e43f",
-    "oracle_scorer": "d29f8eb67e8d6af97f29cc8977356d0b5b66ab65ba1a0472b176cd02c74f305c"
+    "oracle_scorer": "c921dedbee8d84706a3f85f5ecb9843d071cbd7ca73ceeb8e72ccaaa13dd3f70"
   },
   "components": {
     "task_registry": {
@@ -119,11 +119,12 @@
       }
     },
     "oracle_scorer": {
-      "sha256": "d29f8eb67e8d6af97f29cc8977356d0b5b66ab65ba1a0472b176cd02c74f305c",
+      "sha256": "c921dedbee8d84706a3f85f5ecb9843d071cbd7ca73ceeb8e72ccaaa13dd3f70",
       "files": {
         "defenses/__init__.py": "45bf6c7ea9d1a5f8c99a44e94d61e6ad63958e450b1eb09a5168e5a3cddf2080",
         "defenses/canonicalizer.py": "5b09fc5433319bb5eb3304611ffb5b9c94dfc347bb714f10b494f05f40997f9a",
         "defenses/datamarking.py": "b2a8a70e037cd06876c84630749338f4f4ac9cac058c2a76a74c4c71a0904676",
+        "defenses/freeze.py": "173968a0e17eb660557fd67a695ff791e49cdf3d3264c6d0fc752dcbee81e8ba",
         "defenses/interfaces.py": "28ff68645e418debe580749abe144aa6c2a8536af6c3ead3ffbf642ffc1ad72e",
         "defenses/policy_gate.py": "33283617b9a20df1b4165479d946c96b1b667f5048baa13ff97a9e1d7640e23f",
         "oracles/authorization/audit.py": "9849bd8f8aa355a579e44bc79822028cfb45406f31012ae2f98343cb7f418bae",
