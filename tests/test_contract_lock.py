@@ -26,11 +26,12 @@ SCHEMA_VERSIONS = {"event": LOCKED, "result": "1.1.0", "policy": LOCKED, "author
 # it needs Section 11 change control, then a deliberate update of its value.
 # Section 7 was re-pinned at v1.14.0 by decision 0020 (DEV-0002), and Section 7 and
 # the failure and retry policy at v1.18.0 by decision 0026 (DEV-0003), and Section 7
-# and the failure and retry policy at v1.19.0 by decision 0028 (DEV-0004).
+# and the failure and retry policy at v1.19.0 by decision 0028 (DEV-0004), and Section 7
+# at v1.24.0 by decision 0037 (DEV-0006).
 FROZEN_SECTIONS = {
     "### Predeclared result sentence": "e68400d435e3765c0c0174fdafe79c4edb3b78395b9e7230703f59ec42f23f07",
     "## 3. Threat model and safety boundary": "8b1e24d3a171101efa71bb9d1e5fd078f1c43d544e7b25df1f6f407461e967e3",
-    "## 7. Deterministic oracles and event model": "1c276368b606a64ad9e9848df0edd1132b7a18d210ed05db4e120b4298be54be",
+    "## 7. Deterministic oracles and event model": "81af9d2fa0717d883554ebdef580fc7a22716b0a2941a47165d67592bc5c9e6c",
     "## 8. Data contracts": "f5f662783b51312dca18bcf602dc0fc5acd6a7e2a256915b5d2824f8e2e18e37",
     "### Model selection and pinning": "1f76713f72586c3f004a8d15d28e04a587ee493c3e61a4684efdebec88fb21af",
     "### Trial generation": "08741e828df688a468229a7e02ed9fb697b2f47b947c5a9c68e6297b605e4b4a",
