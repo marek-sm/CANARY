@@ -1,6 +1,6 @@
 # 0036: Generate decision 0012's outputs from the lead's own report module
 
-- Status: Proposed. Drafted with AI assistance; approved by the project lead by merging this record, which must happen by the end of Friday, November 13.
+- Status: Accepted. Approved by the project lead on 2026-11-13 by merging this record; drafted with AI assistance. Superseded in part on 2026-11-14 by [decision 0038](0038-gate3-report-module.md), for the words it names.
 - Date: 2026-11-13
 - Decision scope: Protocol
 - Secondary scopes: Governance

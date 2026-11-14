@@ -1,6 +1,6 @@
 {
   "plan_version": "0.1.0",
-  "validation_id": "PENDING-validation-id",
+  "validation_id": "CANARY-2026-ENG-V1",
   "description": "Dormant ENGINEERING fallback validation plan (SPEC.md Section 11, required for every non-STOP tier; Section 12 ENGINEERING row). It lists the deterministic instrument-validation checks that run on mocks and excluded development/demo cases when no official model experiment runs. It is frozen at Gate 3 and stays dormant while an empirical tier is active. It declares NO official model schedule, estimate, or defense claim.",
   "official_empirical_experiment": false,
   "checks": [
