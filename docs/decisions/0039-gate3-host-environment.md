@@ -58,16 +58,18 @@ None of the 1,092 planned official trials has run. No evaluation, official, or C
    - **Check.** `python -m analysis.gate3_hashes` prints `host_environment` read on the machine it runs on. `--check protocol/active.json` fails at every tier but `STOP` if any of the five fields is null or differs from that machine's value. It is run on the step machine.
    - **Gate 4 comparison.** `python -m analysis.gate3_hashes --check-run RUN --active protocol/active.json` fails unless every invocation line in `RUN`'s `code_provenance.jsonl` carries the same five values. Decision 0028 item 9's Gate 4 step runs it on every sweep and C1 run directory. It is built now so that it freezes with the analysis code.
    - **Tests.** They are failing-first, and the host values are injected, not read from the CI runner.
-   - **Review.** `docs/reviews/2026-11-14-host-environment.md` (decision 0031 items 4 and 5) is committed in the host-environment PR. It names the digest of `main` once that PR merges, `D_H`, which is computed beforehand from the merged content. After the merge, the project lead prints the digest on `main`, confirms it equals `D_H`, and attests it.
+   - **Review.** `docs/reviews/2026-11-14-host-environment.md` (decision 0031 items 4 and 5) is committed in the host-environment PR. It names `D_H`, the digest of `main` with that PR merged and only #108 reverted (item 3), computed beforehand from the merged content. The project lead prints the digest on that checkout, confirms it equals `D_H`, and attests it.
 3. **Order and fallback base.**
-   - The merges go in this order:
-     1. `D_G` is attested (decision 0038 item 2).
-     2. The host-environment PR merges, and `D_H` is attested.
-     3. The report module PR merges, and its review is attested.
+   - **What happened.** The report module PR (#108) merged at 7:21 pm, before the `W8-T5` PR and before `D_G` was attested. Decision 0038 had planned it to merge last. No commit on `main` therefore holds exactly `D_G` or `D_H`.
+   - **Where each digest is attested.** Each is attested on a checkout of `main` with only #108 reverted (`git revert -m 1` of its merge commit), the form decision 0038 item 6 already names for its fallback checkout:
+     1. `D_G` on that checkout once the `W8-T5` PR and this record have merged;
+     2. `D_H` on that checkout once the host-environment PR has merged;
+     3. the final digest on `main` itself, with all four inputs, from the report module's review file.
+   - Each review file states the checkout it was attested on.
    - Decision 0038 item 6's `ENGINEERING` checkout becomes `D_H`'s commit: `main` with only the report module PR reverted, whose digest must equal `D_H`. At `ENGINEERING`, `active.json` therefore also names the host environment, and `--check` on that checkout covers it.
    - At an empirical tier, decision 0038 item 1's "attested digest" is the final digest: `main` with all four inputs merged, attested after the report module's review.
    - A finding in the host-environment PR's review doesn't change whether the report module is done under decision 0038 item 6.
-4. **If the host-environment PR misses.** Suppose it isn't merged by 9:00 pm, with `D_H` attested and 0 open blocking findings. That includes the case where `D_G` itself isn't attested, since the PR merges only after `D_G`. Then nothing is relaxed:
+4. **If the host-environment PR misses.** Suppose it isn't merged by 9:00 pm, with `D_H` attested and 0 open blocking findings. That includes the case where `D_G` itself isn't attested, since `D_H` is attested only after `D_G`. Then nothing is relaxed:
    - No commit without it can name the host environment in `active.json`. The host-environment pass item is therefore unmet at every tier, `ENGINEERING` included.
    - A smaller prefix doesn't repair code (Section 11, "Gate 3 fails"). So the Gate 3 response is `STOP`, committed as `protocol/active.json` at `STOP` and the Gate 3 record by 11:59 pm.
    - This outcome takes the place of decision 0038 item 6's `ENGINEERING` outcomes whenever the host-environment PR has missed, whether or not the report module is done.

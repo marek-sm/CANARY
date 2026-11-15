@@ -1,7 +1,7 @@
 # Lead-side review of the Gate 3 step's Stage 1 inputs
 
 - **Decision:** [0031](../decisions/0031-merge-on-green.md) items 4 and 5, for the two Stage 1 inputs that [decision 0038](../decisions/0038-gate3-report-module.md) item 2 lets the Gate 3 step use: the G3-2 fix PR (#107) and Miles's `W8-T5` PR (branch `lead/w8-t5-merge`). This file also holds the errata to the attested whole-tree review [`2026-11-13-whole-tree.md`](2026-11-13-whole-tree.md), which can't be edited once attested.
-- **Commit reviewed:** `main` after #106 (decision 0038, no hashed path), #107, Miles's `W8-T5` PR, and decision 0039's PR (docs only, no hashed path) have merged. This is decision 0038's fallback base, `D_G`. The project lead prints the digest on that `main` and attests only if it equals the one below.
+- **Commit reviewed:** `main` after #106 (decision 0038, no hashed path), #107, Miles's `W8-T5` PR, and decision 0039's PR (docs only, no hashed path) have merged, with only #108 (the report module, which merged first at 7:21 pm) reverted ([decision 0039](../decisions/0039-gate3-host-environment.md) item 3). This is decision 0038's fallback base, `D_G`. The project lead prints the digest on that checkout and attests only if it equals the one below.
 - **`paid_run.code_digest`:** `fdbc1c38d6bf334eb40bb00d5799dc9eaa7faacb4d2672f700eb0ece6bceccf3` (`D_G`)
 - **Open blocking findings:** 0. The project lead classified every finding on November 14, accepting each class as written below.
 - **Safety findings:** none.
