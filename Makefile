@@ -127,7 +127,7 @@ replay:
 # REPORT_MODULE is a placeholder name: W8-T3 sets it to the module it commits.
 REPORT_MODULE ?= analysis.report
 .PHONY: report lead-outputs lead-outputs-check
-report: paper-shells output-freeze-check lead-outputs
+report: paper-shells lead-outputs output-freeze-check
 	@python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$(REPORT_MODULE)') is None)" || \
 	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) and the lead outputs (analysis.lead_outputs) were generated." >&2; exit 2; }
 	python -m $(REPORT_MODULE)
