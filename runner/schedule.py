@@ -36,10 +36,20 @@ from typing import Any, Mapping
 # carries the same sentinel the prototype uses (runner/six_cell.py).
 PROTOCOL_SENTINEL = "unfrozen"
 
-# The result schema's closed sets (schemas/result.schema.json).
-CHANNELS = ("C2", "C3", "C4")
+# The result schema's closed sets (schemas/result.schema.json, 1.1.0).
+# C1 is decision 0034's direct-injection control channel. It only ever runs as
+# the attack condition under D0_BASELINE (SPEC.md Sections 3, 9, and 12), and a
+# schedule holds either C1 or the indirect channels, never both: one run
+# directory holds one split and one analysis role (decision 0034 item 8).
+INDIRECT_CHANNELS = ("C2", "C3", "C4")
+C1_CHANNEL = "C1"
+CHANNELS = (*INDIRECT_CHANNELS, C1_CHANNEL)
 CONDITIONS = ("attack", "clean")
 CONFIGURATIONS = ("D0_BASELINE", "D1_POLICY_GATE", "D2_DATAMARKING")
+C1_CONDITION = "attack"
+C1_CONFIGURATION = "D0_BASELINE"
+# A C1 control's base id (decision 0034 item 2): c1-NNN, never a development base.
+C1_BASE_CASE_ID = re.compile(r"c1-[0-9]{3}")
 
 # Identifiers become file names and ':'-separated id parts, so they carry no
 # path separator, no ':' and can't be '.' or '..'.
@@ -140,6 +150,32 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
         _check_member("condition", condition, CONDITIONS)
     for configuration in spec["configurations"]:
         _check_member("configuration", configuration, CONFIGURATIONS)
+    _check_c1_spec(spec)
+
+
+def is_c1_spec(spec: Mapping[str, Any]) -> bool:
+    """True when the spec schedules C1 direct-injection controls (decision 0034)."""
+    return C1_CHANNEL in spec["channels"]
+
+
+def _check_c1_spec(spec: Mapping[str, Any]) -> None:
+    """A C1 spec runs only C1, only the attack condition, only D0_BASELINE, and only c1-NNN bases.
+
+    Fails closed on a spec that would mix C1 with indirect channels: one run directory holds one
+    split and one analysis role, so C1 runs as its own run directory (decision 0034 item 8).
+    """
+    if not is_c1_spec(spec):
+        return
+    if list(spec["channels"]) != [C1_CHANNEL]:
+        raise ValueError(f"a C1 schedule runs only channel {C1_CHANNEL}, never beside {list(INDIRECT_CHANNELS)}; "
+                         f"C1 runs as its own run directory (decision 0034)")
+    if list(spec["conditions"]) != [C1_CONDITION]:
+        raise ValueError(f"a C1 schedule runs only the {C1_CONDITION!r} condition (SPEC.md Section 3)")
+    if list(spec["configurations"]) != [C1_CONFIGURATION]:
+        raise ValueError(f"a C1 schedule runs only {C1_CONFIGURATION} (SPEC.md Sections 3 and 12)")
+    for base in spec["base_case_ids"]:
+        if not C1_BASE_CASE_ID.fullmatch(base):
+            raise ValueError(f"C1 base_case_id {base!r} isn't a c1-NNN control (decision 0034 item 2)")
 
 
 def validate_trial(trial: "ScheduledTrial") -> None:
@@ -149,6 +185,13 @@ def validate_trial(trial: "ScheduledTrial") -> None:
     _check_member("channel", trial.channel, CHANNELS)
     _check_member("condition", trial.condition, CONDITIONS)
     _check_member("configuration", trial.configuration, CONFIGURATIONS)
+    if trial.channel == C1_CHANNEL and (
+        trial.condition != C1_CONDITION
+        or trial.configuration != C1_CONFIGURATION
+        or not C1_BASE_CASE_ID.fullmatch(trial.base_case_id)
+    ):
+        raise ValueError(f"C1 trial {trial.logical_trial_id!r} must be a c1-NNN control, "
+                         f"{C1_CONDITION}, {C1_CONFIGURATION} (decision 0034)")
     if not isinstance(trial.run_index, int) or isinstance(trial.run_index, bool) or trial.run_index < 1:
         raise ValueError(f"schedule run_index {trial.run_index!r} must be a positive integer")
     if not isinstance(trial.schedule_index, int) or isinstance(trial.schedule_index, bool) or trial.schedule_index < 0:
@@ -219,6 +262,37 @@ def generate_schedule(spec: Mapping[str, Any]) -> list[ScheduledTrial]:
             )
             index += 1
     return trials
+
+
+def c1_schedule_spec(
+    control_ids: list[str],
+    *,
+    experiment_id: str,
+    model_id: str,
+    seed: str,
+    protocol_sentinel: str = PROTOCOL_SENTINEL,
+    repeats: int = 3,
+) -> dict[str, Any]:
+    """The schedule spec for one C1 run directory (decision 0034 item 8; SPEC.md Sections 9 and 12).
+
+    ``control_ids`` is the tier's ordered C1 prefix (``corpus/c1_controls/manifest.json``). Every
+    empirical row runs its controls at three repeats under D0_BASELINE, attack only. Each
+    ``(control, repeat)`` is its own comparison superblock, so each repeat mints its own canary
+    pair (SPEC.md Section 9). The result passes ``_validate_spec``.
+    """
+    spec = {
+        "experiment_id": experiment_id,
+        "model_id": model_id,
+        "seed": seed,
+        "protocol_sentinel": protocol_sentinel,
+        "base_case_ids": list(control_ids),
+        "channels": [C1_CHANNEL],
+        "conditions": [C1_CONDITION],
+        "configurations": [C1_CONFIGURATION],
+        "repeats": repeats,
+    }
+    _validate_spec(spec)
+    return spec
 
 
 def superblock_groups(schedule: list[ScheduledTrial]) -> dict[str, list[ScheduledTrial]]:

@@ -117,9 +117,35 @@ class GateCheckout:
     def git(self, *args):
         _git(self.root, self.env, *args)
 
-    def record(self, mock=None, **kwargs):
+    def attest(self):
+        """Decision 0031 item 6's healthy path: a committed review of this checkout's
+        code_digest with 0 open blocking findings, attested in the stand-in home."""
+        from runner import lead_review
+
+        digest = paid_run.code_digest(paid_run.code_hashes(self.root))
+        relative = f"docs/reviews/gate-{digest[:12]}.md"
+        path = self.root / relative
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f"# Gate test review\n\n- **`paid_run.code_digest`:** `{digest}`\n"
+                            "- **Open blocking findings:** 0\n", encoding="utf-8")
+            self.git("add", relative)
+            self.git("commit", "-qm", "review", "--", relative)
+        return lead_review.attest(path, root=self.root)
+
+    def record_unattested(self, mock=None, **kwargs):
         return paid_run.build_record(mock or self.mock, delivery="#61", sandbox_pr="#64",
                                      request_to_effect="#39", root=self.root, **kwargs)
+
+    def record(self, mock=None, **kwargs):
+        from runner import lead_review
+
+        if paid_run._lead_review_refusal(self.root):
+            try:
+                self.attest()
+            except lead_review.AttestRefused:
+                pass  # a dirty tree: build_record names its own refusal
+        return self.record_unattested(mock, **kwargs)
 
     def write_record(self, record):
         path = self.root / "protocol" / "paid_run_record.json"

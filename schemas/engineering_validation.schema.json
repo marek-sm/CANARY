@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:CANARY:schema:engineering_validation:0.1.0",
+  "title": "CANARY ENGINEERING validation record",
+  "description": "One frozen ENGINEERING deterministic validation check (SPEC.md Section 8 'ENGINEERING validation record'). It never carries an official model estimate, experiment_id, empirical analysis role, or official denominator. passed is Boolean or null only when evidence is incomplete. Pre-lock version: additive changes land with fixtures and tests.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "validation_id",
+    "validation_record_id",
+    "check_id",
+    "check_category",
+    "check_name",
+    "input",
+    "expected_result",
+    "actual_result",
+    "passed",
+    "hashes",
+    "started_at",
+    "ended_at",
+    "evidence_refs",
+    "reason_codes",
+    "official_empirical_record"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "validation_id": {"type": "string", "minLength": 1},
+    "validation_record_id": {
+      "description": "Deterministic: validation_id plus the unique check_id. Globally unique within the bundle.",
+      "type": "string",
+      "minLength": 1
+    },
+    "check_id": {"type": "string", "minLength": 1},
+    "check_category": {"type": "string", "minLength": 1},
+    "check_name": {"type": "string", "minLength": 1},
+    "input": {
+      "description": "The input fixture or mock scenario the check ran on.",
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_result": {"type": ["string", "number", "boolean", "object", "array", "null"]},
+    "actual_result": {"type": ["string", "number", "boolean", "object", "array", "null"]},
+    "passed": {
+      "description": "Boolean, or null only when evidence is incomplete. Never coerce unknown to false.",
+      "type": ["boolean", "null"]
+    },
+    "hashes": {
+      "description": "Code/container, validation-plan, fixture, schema, oracle/scorer, prompt, defense/prototype, and report-generator hashes applicable to the check.",
+      "type": "object",
+      "required": ["code_commit", "container_digest", "validation_plan", "fixture", "schema", "oracle_scorer", "prompt", "defense_prototype", "report_generator"],
+      "properties": {
+        "code_commit": {"type": ["string", "null"]},
+        "container_digest": {"type": ["string", "null"]},
+        "validation_plan": {"$ref": "#/$defs/nullable_hash"},
+        "fixture": {"$ref": "#/$defs/nullable_hash"},
+        "schema": {"$ref": "#/$defs/nullable_hash"},
+        "oracle_scorer": {"$ref": "#/$defs/nullable_hash"},
+        "prompt": {"$ref": "#/$defs/nullable_hash"},
+        "defense_prototype": {"$ref": "#/$defs/nullable_hash"},
+        "report_generator": {"$ref": "#/$defs/nullable_hash"}
+      },
+      "additionalProperties": false
+    },
+    "started_at": {"type": "string", "format": "date-time"},
+    "ended_at": {"type": "string", "format": "date-time"},
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "reason_codes": {
+      "description": "Failure or indeterminate reason codes; empty when passed is true.",
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "official_empirical_record": {
+      "description": "Always false: an ENGINEERING record is never an official empirical record.",
+      "const": false
+    }
+  },
+  "not": {
+    "description": "An ENGINEERING validation record must not carry empirical identifiers or official analysis roles.",
+    "anyOf": [
+      {"required": ["experiment_id"]},
+      {"required": ["logical_trial_id"]},
+      {"required": ["analysis_role"]},
+      {"required": ["official_trial_count"]}
+    ]
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "nullable_hash": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+  }
+}

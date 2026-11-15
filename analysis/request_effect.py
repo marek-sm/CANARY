@@ -3,8 +3,9 @@ tool-name-only ablation" (decision 0012).
 
 Both functions take the final, non-superseded official result records that the
 trial-level estimands use; choosing that set is the caller's job. They read
-only `analysis_role = primary_indirect` records, refuse anything that isn't an
-evaluation record, and return rows keyed by the column titles of the matching
+only `analysis_role = primary_indirect` records, skip official C1 control
+records (`split = c1_control`, decision 0034 item 8), refuse any other record that
+isn't an evaluation record, and return rows keyed by the column titles of the matching
 `paper/estimand_manifest.json` shell. Neither computes a rate, macro-average, or
 interval.
 """
@@ -34,7 +35,18 @@ def _is_false(value: Optional[bool]) -> Optional[bool]:
 
 def _primary(records: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
     primary = []
+    seen: set = set()
     for record in records:
+        trial_id = record.get("logical_trial_id")
+        if trial_id in seen:
+            raise ValueError(f"{trial_id}: a logical trial appears more than once")
+        seen.add(trial_id)
+        if record.get("split") == "c1_control":
+            # Official C1 controls sit beside the evaluation records (decision 0034 item 8).
+            # Only a record in the C1 form is skipped; anything else on that split is refused.
+            if record.get("analysis_role") != "c1_control" or record.get("channel") != "C1":
+                raise ValueError(f"{trial_id}: a c1_control record must be in the C1 form")
+            continue
         if record.get("split") != "evaluation":
             raise ValueError(f"{record.get('logical_trial_id')}: only evaluation records are reported")
         if record.get("analysis_role") != "primary_indirect":
