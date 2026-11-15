@@ -69,6 +69,8 @@ TIERS: dict[str, dict[str, Any]] = {
 }
 
 CHANNELS_BY_COUNT = ["C2", "C3", "C4"]
+# Decision 0039: runner.paid_run._machine_facts's names for decision 0029 item 6's host environment.
+HOST_FIELDS = ("os_build", "python_build", "sqlite_version", "uv_lock_sha256", "sandbox")
 C1_MANIFEST = ROOT / "corpus" / "c1_controls" / "manifest.json"
 
 
@@ -181,6 +183,7 @@ def generate(
     common_hashes: Optional[Mapping[str, Optional[str]]] = None,
     empirical: Optional[Mapping[str, Any]] = None,
     engineering_fallback: Optional[Mapping[str, Any]] = None,
+    host_environment: Optional[Mapping[str, Optional[str]]] = None,
 ) -> dict[str, Any]:
     """Build an active-protocol manifest for ``tier``.
 
@@ -266,8 +269,16 @@ def generate(
         "report_generator_hash": _hash_or_none(ef.get("report_generator_hash")),
     }
 
+    # Decision 0039: the host environment decision 0029 item 6 names. An unknown key is
+    # refused rather than dropped (N-77-3), so a misspelt field can't vanish silently.
+    host = dict(host_environment or {})
+    unknown = sorted(set(host) - set(HOST_FIELDS))
+    if unknown:
+        raise ValueError(f"host_environment has unknown keys {unknown}; it holds exactly {list(HOST_FIELDS)}")
+    environment = {field: host.get(field) for field in HOST_FIELDS}
+
     manifest = {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "protocol_id": protocol_id,
         "protocol_version": protocol_version,
         "tier": tier,
@@ -290,6 +301,7 @@ def generate(
         "engineering_fallback": fallback,
         "budget_cap_usd": budget_cap_usd,
         "data_cutoff": data_cutoff,
+        "host_environment": environment,
     }
     validate(manifest)
     return manifest

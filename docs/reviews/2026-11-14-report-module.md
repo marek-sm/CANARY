@@ -1,7 +1,7 @@
 # Lead-side review of the estimand report module
 
 - **Decision:** [0031](../decisions/0031-merge-on-green.md) items 4 and 5, and [decision 0038](../decisions/0038-gate3-report-module.md) item 7, for the report module PR (#108), which adds `analysis/report.py` under decision 0038 item 3.
-- **Commit reviewed:** `main` after #108 merges on `D_H` (decision 0039 item 3), so it holds every Gate 3 input: #107, Miles's `W8-T5` PR, the host-environment PR, and #108. The digest below was computed beforehand from that merged content. The project lead prints the digest on `main` after the merge and attests only if it matches. This is the final digest that the Gate 3 step runs at `F20`.
+- **Commit reviewed:** `main` once it holds every Gate 3 input: #107, #108, Miles's `W8-T5` PR, decision 0039's PR, and the host-environment PR. #108 merged first, at 7:21 pm, not last as planned ([decision 0039](../decisions/0039-gate3-host-environment.md) item 3), and this line was corrected in the host-environment PR before attestation. The digest below was computed beforehand from that content. The project lead prints the digest on `main` after the last merge and attests only if it matches. This is the final digest that the Gate 3 step runs at `F20`.
 - **`paid_run.code_digest`:** `e36bd5ba3cf0ea8be80c3c3ca4a8cf43d36e154e26f4d7838d9c799df03a23a8`
 - **Open blocking findings:** 0. The project lead classified every finding on November 14, accepting each class as written below.
 - **Safety findings:** none.

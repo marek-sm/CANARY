@@ -2,6 +2,7 @@
 
     python -m analysis.gate3_hashes                                 # print the values the step passes to generate(...)
     python -m analysis.gate3_hashes --check protocol/active.json    # fail on any mismatch or null fallback hash
+    python -m analysis.gate3_hashes --check-run RUN --active protocol/active.json   # Gate 4: every invocation's host
 
 `analysis_hash` is the SHA-256 of a UTF-8 text with one line `<path> <lowercase sha256>`
 for every git-tracked file under `analysis/` except `analysis/sanitizer.py`, plus
@@ -18,11 +19,24 @@ Every value is computed from a clean checkout's working-tree bytes: a covered fi
 differs from the commit, or an untracked file under `analysis/`, is refused, because a
 clean checkout has neither.
 
+`host_environment` (decision 0039) is the host environment decision 0029 item 6 names, read
+by `runner.paid_run._machine_facts` on the machine running this command: `os_build`,
+`python_build`, `sqlite_version`, `uv_lock_sha256`, and `sandbox` (`tools.sandbox.describe()`,
+the launcher mode, sandbox version, and profile-rules hash; the launcher's code is pinned by
+the commit). It is a fact about this machine, not about the commit, so `--check` is run on
+the step machine.
+
+`--check-run RUN --active ACTIVE_JSON` is decision 0028 item 9's Gate 4 comparison: it fails
+unless every invocation line in RUN's `code_provenance.jsonl` carries `active.json`'s five
+host values, none of them null, compared as exact strings. A torn last line fails too,
+unlike `runner.paid_run.check_code_matches_run`, which skips one: here nothing unread passes.
+
 `--check` recomputes every value and compares it with `protocol/active.json`. Every
 fallback field must be non-null and equal at every tier but `STOP`, which carries no
 fallback and isn't checked here. `analysis_hash` must equal the recomputed value at an
 empirical tier; at `ENGINEERING` it must be null with its own reason in
-`empirical.null_reasons`.
+`empirical.null_reasons`. Every `host_environment` field must be non-null and equal to this
+machine's value at every tier but `STOP`.
 """
 
 from __future__ import annotations
@@ -34,6 +48,9 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Mapping, Optional
+
+from analysis.active_protocol import HOST_FIELDS
+from runner.paid_run import PROVENANCE_FILE, _machine_facts
 
 ROOT = Path(__file__).resolve().parents[1]
 SANITIZER = "analysis/sanitizer.py"
@@ -95,11 +112,15 @@ def fallback(root: Path = ROOT) -> dict[str, str]:
 def compute(root: Path = ROOT) -> dict[str, Any]:
     """Every value the step passes to `analysis.active_protocol.generate(...)`."""
     root = Path(root)
-    covered = [*analysis_paths(root), CORPUS_FREEZE, VALIDATION_PLAN, VALIDATION_SCHEMA]
+    # uv.lock and the sandbox launcher feed host_environment's uv_lock_sha256 and sandbox
+    # (decision 0039), so they too must be the commit's bytes.
+    covered = [*analysis_paths(root), CORPUS_FREEZE, VALIDATION_PLAN, VALIDATION_SCHEMA, "uv.lock", "tools/sandbox.py"]
     refusal = _clean_refusal(root, covered)
     if refusal:
         raise ValueError(refusal)
-    return {"analysis_hash": analysis_hash(root), "engineering_fallback": fallback(root)}
+    facts = _machine_facts(root)
+    return {"analysis_hash": analysis_hash(root), "engineering_fallback": fallback(root),
+            "host_environment": {field: facts.get(field) for field in HOST_FIELDS}}
 
 
 def check(active: Mapping[str, Any], computed: Mapping[str, Any]) -> list[str]:
@@ -125,14 +146,77 @@ def check(active: Mapping[str, Any], computed: Mapping[str, Any]) -> list[str]:
             problems.append("empirical.analysis_hash is null without its own reason in empirical.null_reasons")
     elif value != computed["analysis_hash"]:
         problems.append(f"empirical.analysis_hash is {value}, recomputed {computed['analysis_hash']}")
+    problems.extend(_host_problems(active, computed["host_environment"], "this machine reads"))
+    return problems
+
+
+def _host_problems(active: Mapping[str, Any], observed: Mapping[str, Any], where: str) -> list[str]:
+    """Decision 0039: each of the five host fields is non-null in `active` and equals `observed`."""
+    stored = active.get("host_environment")
+    if not isinstance(stored, Mapping):
+        return ["host_environment is missing from protocol/active.json (decision 0039)"]
+    problems = []
+    for field in HOST_FIELDS:
+        value, expected = stored.get(field), observed.get(field)
+        if value is not None and not isinstance(value, str):
+            problems.append(f"host_environment.{field} is {value!r}, not a string")
+        elif expected is not None and not isinstance(expected, str):
+            problems.append(f"host_environment.{field}: {where} {expected!r}, not a string")
+        elif value is None:
+            problems.append(f"host_environment.{field} is null")
+        elif expected is None:
+            problems.append(f"host_environment.{field}: {where} no value")
+        elif value != expected:
+            problems.append(f"host_environment.{field} is {value!r}, {where} {expected!r}")
+    return problems
+
+
+def check_run(run: Path, active: Mapping[str, Any]) -> list[str]:
+    """Decision 0028 item 9's Gate 4 comparison (decision 0039): every invocation line in the
+    run's provenance file ran in the host environment `active.json` froze."""
+    try:
+        text = (Path(run) / PROVENANCE_FILE).read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"{PROVENANCE_FILE} can't be read: {exc}"]
+    lines = [line for line in text.split("\n") if line.strip()]
+    if not lines:
+        return [f"{PROVENANCE_FILE} holds no invocation"]
+    problems = []
+    for number, line in enumerate(lines, start=1):
+        try:
+            invocation = json.loads(line)
+        except json.JSONDecodeError:
+            problems.append(f"{PROVENANCE_FILE} line {number} isn't JSON")
+            continue
+        if not isinstance(invocation, dict):
+            problems.append(f"{PROVENANCE_FILE} line {number} isn't a provenance record")
+            continue
+        problems.extend(f"line {number}: {problem}"
+                        for problem in _host_problems(active, invocation, "the invocation recorded"))
     return problems
 
 
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--check", type=Path, default=None, metavar="ACTIVE_JSON")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--check", type=Path, default=None, metavar="ACTIVE_JSON")
+    mode.add_argument("--check-run", type=Path, default=None, metavar="RUN")
+    parser.add_argument("--active", type=Path, default=ROOT / "protocol" / "active.json", metavar="ACTIVE_JSON")
     parser.add_argument("--root", type=Path, default=ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if args.check_run is not None:
+        try:
+            active = json.loads(args.active.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"gate3_hashes: {args.active} can't be read: {exc}", file=sys.stderr)
+            return 1
+        problems = check_run(args.check_run, active if isinstance(active, dict) else {})
+        for problem in problems:
+            print(f"gate3_hashes: {problem}", file=sys.stderr)
+        if problems:
+            return 1
+        print(f"gate3_hashes: every invocation in {args.check_run} ran in {args.active}'s host environment")
+        return 0
     try:
         computed = compute(args.root)
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:

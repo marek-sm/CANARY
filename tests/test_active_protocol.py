@@ -113,3 +113,43 @@ def test_round_trip_through_disk(tmp_path):
 def test_unknown_tier_rejected():
     with pytest.raises(ValueError):
         generate("NOT-A-TIER", **_COMMON)
+
+
+# Decision 0039: the host environment decision 0029 item 6 names, in active.json.
+_HOST = {"os_build": "macOS-26.1-arm64", "python_build": "3.11.9", "sqlite_version": "3.45.1",
+         "uv_lock_sha256": "a" * 64, "sandbox": "macos-sandbox-exec:tool-sandbox-v0.3.0:10ee91ae313186fa"}
+
+
+@pytest.mark.parametrize("tier", ["F20", "ENGINEERING"])
+def test_generate_writes_the_host_environment(tier):
+    fallback = {"validation_id": "CANARY-TEST-ENG-V1", "source_ledger_hash": "e" * 64} if tier == "ENGINEERING" else None
+    manifest = generate(tier, host_environment=_HOST, engineering_fallback=fallback, **_COMMON)
+    assert manifest["host_environment"] == _HOST
+    assert manifest["schema_version"] == "0.2.0"
+    validate(manifest)
+
+
+def test_a_draft_without_a_host_environment_has_null_fields():
+    manifest = generate("F20", **_COMMON)
+    assert manifest["host_environment"] == {key: None for key in _HOST}
+
+
+def test_generate_refuses_an_unknown_host_key():
+    with pytest.raises(ValueError, match="host_environment"):
+        generate("F20", host_environment={**_HOST, "kernel": "x"}, **_COMMON)
+
+
+def test_the_schema_requires_the_host_environment_and_refuses_extra_keys():
+    manifest = generate("F20", host_environment=_HOST, **_COMMON)
+    missing = copy.deepcopy(manifest)
+    del missing["host_environment"]
+    with pytest.raises(Exception):
+        validate(missing)
+    extra = copy.deepcopy(manifest)
+    extra["host_environment"]["kernel"] = "x"
+    with pytest.raises(Exception):
+        validate(extra)
+    partial = copy.deepcopy(manifest)
+    del partial["host_environment"]["sandbox"]
+    with pytest.raises(Exception):
+        validate(partial)
