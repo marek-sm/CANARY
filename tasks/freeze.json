@@ -27,7 +27,7 @@
   "common_hashes": {
     "task_registry": "52c6e295fcf56393339b912619002ec623725f2fb80b031dfecc5740b78e282c",
     "prompt_tool": "3bcc70130fa876819ef698bbb710b070442cdc6f866dae208795990b96adab6e",
-    "schema": "601b31d35ede6786fdadf8efd22270a9a372b13df0d4615db437bf0b4e54a592",
+    "schema": "8fa9e3843c5b67240aff6019487fd690b353aa255a27a2dd04131a9c28e88e0c",
     "oracle_scorer": "84fefee3fa22fecebf8c3ed173392e89f09c53775bc049c4e19b8d7f4643bc7b"
   },
   "components": {
@@ -105,9 +105,9 @@
       }
     },
     "schema": {
-      "sha256": "601b31d35ede6786fdadf8efd22270a9a372b13df0d4615db437bf0b4e54a592",
+      "sha256": "8fa9e3843c5b67240aff6019487fd690b353aa255a27a2dd04131a9c28e88e0c",
       "files": {
-        "schemas/active_protocol.schema.json": "ab4bb082c92f3cd7981e445a44c0722c582d03ae679db507e45ebc00d4ab1dab",
+        "schemas/active_protocol.schema.json": "5dd4e2c1649cee73a67924d3230850f1c2fd8a8af90f2c9bad563885d0032097",
         "schemas/authorization_vectors.schema.json": "5606aef6fa80dda2df6e44ec50c26095462446547e6d65b4b05286c78998a9ad",
         "schemas/base_case.schema.json": "2561976db55dc9a81cd65c854808a720bce446a1cb7423db1a4c561065111009",
         "schemas/candidate.schema.json": "5f33050ad92ae4fc8f6906c0744e6258a8f2206be6beacd5b35062f6a226b9b8",

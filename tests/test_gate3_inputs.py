@@ -122,11 +122,24 @@ def _expected_analysis_hash(root):
     return hashlib.sha256("\n".join(f"{p} {_sha(root, p)}" for p in paths).encode("utf-8")).hexdigest()
 
 
+# Decision 0039: the host environment the step machine reads, injected so CI's runner
+# (whose sandbox or uv.lock may be absent) doesn't decide a test.
+HOST = {"os_build": "macOS-26.1-arm64 Darwin Kernel 27.2.0", "python_build": "3.11.9 (main) [Clang 16]",
+        "sqlite_version": "3.45.1", "uv_lock_sha256": "a" * 64,
+        "sandbox": "macos-sandbox-exec:tool-sandbox-v0.3.0:10ee91ae313186fa"}
+
+
+@pytest.fixture(autouse=True)
+def _host(monkeypatch):
+    monkeypatch.setattr(gate3_hashes, "_machine_facts", lambda root: {**HOST, "unrelated": "x"})
+
+
 def _active(tree, tier_class="ALL", **changes):
     computed = gate3_hashes.compute(tree)
     active = {"tier": "F20" if tier_class == "ALL" else tier_class, "tier_class": tier_class,
               "empirical": {"analysis_hash": computed["analysis_hash"], "null_reasons": {}},
-              "engineering_fallback": dict(computed["engineering_fallback"])}
+              "engineering_fallback": dict(computed["engineering_fallback"]),
+              "host_environment": dict(computed["host_environment"])}
     if tier_class == "ENGINEERING":
         active["empirical"] = {"analysis_hash": None, "null_reasons": {"analysis_hash": "no generator at ENGINEERING"}}
     for dotted, value in changes.items():
@@ -223,3 +236,129 @@ def test_this_checkout_s_hash_prints():
     if gate3_hashes._clean_refusal(gate3_hashes.ROOT, [*gate3_hashes.analysis_paths(), gate3_hashes.CORPUS_FREEZE]):
         pytest.skip("this checkout has uncommitted changes under analysis/")
     assert len(gate3_hashes.analysis_hash()) == 64
+
+
+# --------------------------------------------------------------------------
+# Decision 0039: the host environment in protocol/active.json
+# --------------------------------------------------------------------------
+
+
+def test_compute_reads_exactly_the_five_host_fields(tree):
+    assert gate3_hashes.compute(tree)["host_environment"] == HOST
+    assert gate3_hashes.HOST_FIELDS == ("os_build", "python_build", "sqlite_version", "uv_lock_sha256", "sandbox")
+
+
+@pytest.mark.parametrize("tier_class", ["ALL", "ENGINEERING"])
+@pytest.mark.parametrize("field", ["os_build", "python_build", "sqlite_version", "uv_lock_sha256", "sandbox"])
+@pytest.mark.parametrize("value", [None, "something else"])
+def test_the_check_refuses_a_null_or_different_host_field(tree, tmp_path, tier_class, field, value, capsys):
+    path = tmp_path / "active.json"
+    path.write_text(json.dumps(_active(tree, tier_class, **{f"host_environment__{field}": value})), encoding="utf-8")
+    assert gate3_hashes.main(["--root", str(tree), "--check", str(path)]) == 1
+    assert f"host_environment.{field}" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("tier_class", ["ALL", "ENGINEERING"])
+def test_the_check_refuses_an_active_json_without_a_host_environment(tree, tmp_path, tier_class, capsys):
+    active = _active(tree, tier_class)
+    del active["host_environment"]
+    path = tmp_path / "active.json"
+    path.write_text(json.dumps(active), encoding="utf-8")
+    assert gate3_hashes.main(["--root", str(tree), "--check", str(path)]) == 1
+    assert "host_environment" in capsys.readouterr().err
+
+
+def test_the_check_refuses_a_machine_that_can_t_read_a_host_field(tree, tmp_path, monkeypatch, capsys):
+    path = tmp_path / "active.json"
+    path.write_text(json.dumps(_active(tree, "ALL")), encoding="utf-8")
+    monkeypatch.setattr(gate3_hashes, "_machine_facts", lambda root: {**HOST, "sandbox": None})
+    assert gate3_hashes.main(["--root", str(tree), "--check", str(path)]) == 1
+    assert "host_environment.sandbox" in capsys.readouterr().err
+
+
+def _run_dir(tmp_path, lines):
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "code_provenance.jsonl").write_text("".join(json.dumps(line) + "\n" for line in lines), encoding="utf-8")
+    return run
+
+
+def _invocation(phase, **changes):
+    return {"phase": phase, "code_commit": "c" * 40, "code_digest": "d" * 64, "spend_cap_usd": 9.9, **HOST, **changes}
+
+
+def test_check_run_passes_when_every_invocation_ran_in_the_frozen_host(tree, tmp_path, capsys):
+    active = tmp_path / "active.json"
+    active.write_text(json.dumps(_active(tree, "ALL")), encoding="utf-8")
+    run = _run_dir(tmp_path, [_invocation("start"), _invocation("stop"), _invocation("start"), _invocation("stop")])
+    assert gate3_hashes.main(["--check-run", str(run), "--active", str(active)]) == 0
+
+
+@pytest.mark.parametrize("field", ["os_build", "python_build", "sqlite_version", "uv_lock_sha256", "sandbox"])
+@pytest.mark.parametrize("value", [None, "something else", "missing"])
+def test_check_run_refuses_an_invocation_in_another_host(tree, tmp_path, field, value, capsys):
+    active = tmp_path / "active.json"
+    active.write_text(json.dumps(_active(tree, "ALL")), encoding="utf-8")
+    other = _invocation("start", **{field: value})
+    if value == "missing":
+        del other[field]
+    run = _run_dir(tmp_path, [_invocation("start"), _invocation("stop"), other])
+    assert gate3_hashes.main(["--check-run", str(run), "--active", str(active)]) == 1
+    err = capsys.readouterr().err
+    assert field in err and "line 3" in err
+
+
+@pytest.mark.parametrize("content", [None, "", "{not json\n", "[]\n"])
+def test_check_run_refuses_a_run_without_readable_provenance(tree, tmp_path, content, capsys):
+    active = tmp_path / "active.json"
+    active.write_text(json.dumps(_active(tree, "ALL")), encoding="utf-8")
+    run = tmp_path / "run"
+    run.mkdir()
+    if content is not None:
+        (run / "code_provenance.jsonl").write_text(content, encoding="utf-8")
+    assert gate3_hashes.main(["--check-run", str(run), "--active", str(active)]) == 1
+
+
+def test_check_run_refuses_an_active_json_whose_host_environment_is_null(tree, tmp_path, capsys):
+    active = tmp_path / "active.json"
+    active.write_text(json.dumps(_active(tree, "ALL", host_environment__sandbox=None)), encoding="utf-8")
+    run = _run_dir(tmp_path, [_invocation("start", sandbox=None)])
+    assert gate3_hashes.main(["--check-run", str(run), "--active", str(active)]) == 1
+    assert "host_environment.sandbox" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("field", ["os_build", "python_build", "sqlite_version", "uv_lock_sha256", "sandbox"])
+@pytest.mark.parametrize("near", ["trailing space", "case", "suffix", "number"])
+def test_near_miss_host_values_are_refused_by_both_checks(tree, tmp_path, field, near, capsys):
+    value = {"trailing space": HOST[field] + " ", "case": HOST[field].swapcase(),
+             "suffix": HOST[field][:-1] + ("0" if HOST[field][-1] != "0" else "1"), "number": 1}[near]
+    if value == HOST[field]:
+        pytest.skip("this value has no letters whose case could change")
+    path = tmp_path / "active.json"
+    path.write_text(json.dumps(_active(tree, "ALL", **{f"host_environment__{field}": value})), encoding="utf-8")
+    assert gate3_hashes.main(["--root", str(tree), "--check", str(path)]) == 1
+    assert f"host_environment.{field}" in capsys.readouterr().err
+    good = tmp_path / "good.json"
+    good.write_text(json.dumps(_active(tree, "ALL")), encoding="utf-8")
+    run = _run_dir(tmp_path, [_invocation("start"), _invocation("start", **{field: value}), _invocation("stop")])
+    assert gate3_hashes.main(["--check-run", str(run), "--active", str(good)]) == 1
+    err = capsys.readouterr().err
+    assert field in err and "line 2" in err and "line 3" not in err
+
+
+def test_check_and_check_run_can_t_be_combined(tree, tmp_path):
+    path = tmp_path / "active.json"
+    path.write_text(json.dumps(_active(tree, "ALL")), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        gate3_hashes.main(["--check", str(path), "--check-run", str(tmp_path)])
+
+
+@pytest.mark.parametrize("path", ["uv.lock", "tools/sandbox.py"])
+def test_an_uncommitted_host_input_is_refused(tree, path):
+    (tree / path).parent.mkdir(parents=True, exist_ok=True)
+    (tree / path).write_text("committed\n", encoding="utf-8")
+    _git(tree, "add", "-A")
+    _git(tree, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-qm", "t2")
+    (tree / path).write_text("edited\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="not a clean checkout"):
+        gate3_hashes.compute(tree)

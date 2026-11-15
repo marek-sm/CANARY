@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:CANARY:schema:active_protocol:0.1.0",
+  "$id": "urn:CANARY:schema:active_protocol:0.2.0",
   "title": "CANARY active protocol manifest",
   "description": "Machine-readable statement of the tier that actually runs for one release (SPEC.md Section 10 'Active-protocol manifest' and Section 12). Field meaning is owned by SPEC.md; this schema owns the serialized shape. An empirical tier carries non-null empirical fields and a non-empty geometry; ENGINEERING carries explicit null-with-reason official fields, empty geometry lists, zero counts, and a non-null validation block. Pre-lock version: additive changes land with fixtures and tests.",
   "type": "object",
@@ -27,10 +27,11 @@
     "empirical",
     "engineering_fallback",
     "budget_cap_usd",
-    "data_cutoff"
+    "data_cutoff",
+    "host_environment"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {"const": "0.2.0"},
     "protocol_id": {"type": "string", "minLength": 1},
     "protocol_version": {"type": "string", "minLength": 1},
     "tier": {"$ref": "#/$defs/tier"},
@@ -143,7 +144,20 @@
       "additionalProperties": false
     },
     "budget_cap_usd": {"type": ["number", "null"], "minimum": 0},
-    "data_cutoff": {"type": "string", "minLength": 1}
+    "data_cutoff": {"type": "string", "minLength": 1},
+    "host_environment": {
+      "description": "The host environment decision 0029 item 6 names, read on the frozen commit by runner.paid_run._machine_facts on the step machine (decision 0039). Null fields only in a pre-step draft; analysis.gate3_hashes --check refuses a null field at every tier but STOP.",
+      "type": "object",
+      "required": ["os_build", "python_build", "sqlite_version", "uv_lock_sha256", "sandbox"],
+      "properties": {
+        "os_build": {"type": ["string", "null"], "minLength": 1},
+        "python_build": {"type": ["string", "null"], "minLength": 1},
+        "sqlite_version": {"type": ["string", "null"], "minLength": 1},
+        "uv_lock_sha256": {"$ref": "#/$defs/nullable_hash"},
+        "sandbox": {"type": ["string", "null"], "minLength": 1}
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false,
   "allOf": [
