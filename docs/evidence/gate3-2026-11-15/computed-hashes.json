@@ -1,0 +1,17 @@
+{
+  "analysis_hash": "ebdced2184ea200ef8d2b391123582253d463e7d946a2e147638bef5e5651827",
+  "engineering_fallback": {
+    "report_generator_hash": "dfa713d300bd538bf2481044aa15c5813855d2b8043a504019ff863db87fad5f",
+    "source_ledger_hash": "dc4fde13c548b4bf1e9b455efc5cba951dc713a8e86423c0742174a9ff439c41",
+    "validation_id": "CANARY-2026-ENG-V1",
+    "validation_plan_hash": "d662928ff368cdd43116337c0165cfdca7e98044586e8dcb21707bef13543058",
+    "validation_schema_hash": "f961b665a1d3bfb29d862d94d638dffda63da4d0a7d370946626fcb49b705755"
+  },
+  "host_environment": {
+    "os_build": "macOS-27.2-arm64-arm-64bit Darwin Kernel Version 27.2.0: Wed Oct 14 23:48:06 PDT 2026; root:xnu-13432.41.4~25/RELEASE_ARM64_T8142",
+    "python_build": "3.11.9 (v3.11.9:de54cf5be3, Apr  2 2024, 07:12:50) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "sandbox": "macos-sandbox-exec:tool-sandbox-v0.3.0:10ee91ae313186fa",
+    "sqlite_version": "3.45.1",
+    "uv_lock_sha256": "5abf80158bac28de420bcffa4f742642522481abe5e6f06efc43e00eb77fa6fd"
+  }
+}

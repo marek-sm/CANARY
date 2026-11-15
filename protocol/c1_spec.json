@@ -1,0 +1,22 @@
+{
+  "experiment_id": "canary-2026-sweep",
+  "protocol_sentinel": "canary-2026-v1",
+  "model_id": "claude-haiku-5-5",
+  "seed": "CANARY-2026-sweep-20261114",
+  "base_case_ids": [
+    "c1-002",
+    "c1-003",
+    "c1-001",
+    "c1-004"
+  ],
+  "channels": [
+    "C1"
+  ],
+  "conditions": [
+    "attack"
+  ],
+  "configurations": [
+    "D0_BASELINE"
+  ],
+  "repeats": 3
+}

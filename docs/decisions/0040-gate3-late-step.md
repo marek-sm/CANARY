@@ -33,6 +33,8 @@ Every November 14 deadline on the Gate 3 path was missed. Each time below is Pac
 | The step committed on a pushed branch, by 11:59 pm | Decision 0038 item 6 and decision 0039 item 4 | Not done | — |
 | Gate 3, November 14 | `SPEC.md` Section 11 | Missed | — |
 
+**Corrected November 15, after the step.** The project lead's attestation file had no `D_G` row from November 14, so the `D_G` row above is wrong. `D_G` was attested on November 15, after 1:36:10 pm, after `D_H` and before the step ran; item 1's "the three attestations count as made" holds for `D_H` and the final digest only. `D_H` was attested at 9:26:29 pm and the final digest at 9:26:30 pm on November 14. The Gate 3 pass item rests on the final digest's attestation. The [Gate 3 record](../evidence/gate3-2026-11-15/README.md) states this.
+
 Before writing this record, the project lead was first told that the window was met, which was wrong. The report was corrected that evening.
 
 As written, decision 0039 item 4 makes the Gate 3 response `STOP`: 0 of the 1,092 planned official trials, and no comparative claim (`SPEC.md` Section 12). Decision 0038 Option 4 had rejected "Run Gate 3 after November 14". This record does it anyway, after the miss, with `STOP` known.
