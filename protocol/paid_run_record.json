@@ -448,11 +448,11 @@
   },
   "conditions": {
     "mock_grid": {
-      "events_sha256": "048629589ea10ea3d743f7348d06509ec3e77d55a9210845830b4e9891d38091",
+      "events_sha256": "9522889758328bdb02324c28d2d910865d3dd5270979b00a81f8e01de2ee615d",
       "experiment_id": "grid-dev",
-      "results_sha256": "b0f574655a174626964a542bb64fbe966f9066da8659d0ad7b7a4fe6fe796bdf",
-      "run_files_sha256": "1c428cb5b26e9a39a90ef6fb07929cccba16e4e030fecc9612144d8eec6169a1",
-      "run_path": "results/development/grid-mock",
+      "results_sha256": "71de7af06d3e26bd15a33d74b05f085a61a5622291c91f6e8f282345c82a94d5",
+      "run_files_sha256": "d95729c22bde62add64c29e2f59bd4631389713ed2fda0f698cfbd06afa1ff38",
+      "run_path": "results/development/grid-mock-2026-11-15",
       "tool_sandbox": "macos-sandbox-exec:tool-sandbox-v0.3.0:10ee91ae313186fa",
       "trials": 90,
       "verify_complete": true
@@ -501,8 +501,8 @@
     "python": "3.11.9"
   },
   "recorded_by": "marek-sm",
-  "recorded_commit": "2cf34f911fc3020cde4f826c018d99d97ca3f81c",
-  "recorded_on": "2026-11-14",
+  "recorded_commit": "8b313aa88d91eb49a64f34dc6142c580342c74d4",
+  "recorded_on": "2026-11-15",
   "sandbox": "macos-sandbox-exec:tool-sandbox-v0.3.0:10ee91ae313186fa",
   "schema_version": "1.1.0"
 }
