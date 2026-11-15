@@ -1,0 +1,43 @@
+{
+  "experiment_id": "canary-2026-sweep",
+  "protocol_sentinel": "canary-2026-v1",
+  "model_id": "claude-haiku-5-5",
+  "seed": "CANARY-2026-sweep-20261114",
+  "base_case_ids": [
+    "eval-001",
+    "eval-002",
+    "eval-003",
+    "eval-004",
+    "eval-005",
+    "eval-006",
+    "eval-007",
+    "eval-008",
+    "eval-009",
+    "eval-010",
+    "eval-011",
+    "eval-012",
+    "eval-013",
+    "eval-014",
+    "eval-015",
+    "eval-016",
+    "eval-017",
+    "eval-018",
+    "eval-019",
+    "eval-020"
+  ],
+  "channels": [
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "conditions": [
+    "attack",
+    "clean"
+  ],
+  "configurations": [
+    "D0_BASELINE",
+    "D1_POLICY_GATE",
+    "D2_DATAMARKING"
+  ],
+  "repeats": 3
+}
