@@ -39,7 +39,13 @@ Result line for `STATUS.md`: Not passed on November 14; the step ran at `F20` on
   - `python -m runner.paid_run record results/development/grid-mock --delivery '#61' --sandbox '#64' --request-to-effect '#39'`, committed as `340efb2` at 9:32:10 pm.
 
   They stay in history.
-- **A new pair follows the step.** After this record, the project lead makes a new mock grid and paid-run record on this branch's final commit, before any paid sweep or C1 call (decision 0040 item 3; decision 0025 item 12; decision 0029 item 6). Each names the mock grid inside this checkout, so the checkout stays untouched through the sweep.
+- **A new pair followed the step,** before any paid sweep or C1 call (decision 0040 item 3; decision 0025 item 12; decision 0029 item 6). The project lead made it on November 15 on `8b313aa`, the commit that records the step in the living documents:
+  - the mock grid `results/development/grid-mock-2026-11-15`, experiment `grid-dev`, mock provider only: 90 of 90 trials, with `verify` complete;
+  - events SHA-256 `9522889758328bdb02324c28d2d910865d3dd5270979b00a81f8e01de2ee615d`, results SHA-256 `71de7af06d3e26bd15a33d74b05f085a61a5622291c91f6e8f282345c82a94d5`;
+  - `python -m runner.paid_run record results/development/grid-mock-2026-11-15 --delivery '#61' --sandbox '#64' --request-to-effect '#39'`, with `recorded_commit` `8b313aa`, committed as `6c26b32` at 2:10:54 pm;
+  - `python -m runner.paid_run check` then printed "paid runs may start here".
+
+  The record names the mock grid inside this checkout, so the checkout stays untouched through the sweep.
 
 ### Inputs
 
@@ -105,7 +111,7 @@ Every check exited 0. Each one's output is in [`checks.txt`](checks.txt), in the
 | `make report` | 0, and no tracked file changed |
 | `paid_run.code_digest` print | `e36bd5ba3cf0ea8be80c3c3ca4a8cf43d36e154e26f4d7838d9c799df03a23a8` |
 
-`python -m runner.paid_run check` reads `~/.canary`, so only the project lead runs it. It runs on this branch's final commit, after the new paid-run record, and before any paid call.
+`python -m runner.paid_run check` reads `~/.canary`, so only the project lead runs it. The project lead ran it after committing the new paid-run record (`6c26b32`), and it printed "paid runs may start here".
 
 ### Attested digests
 
@@ -118,7 +124,7 @@ The project lead attested each digest with `python -m runner.lead_review attest`
 | Final `e36bd5ba3cf0ea8be80c3c3ca4a8cf43d36e154e26f4d7838d9c799df03a23a8` | `main` at `2cf34f9` | [`2026-11-14-report-module.md`](../../reviews/2026-11-14-report-module.md) | November 14, 9:26:30 pm |
 
 - Each review file has 0 open blocking findings.
-- **Where the times come from.** The `D_H` and final times are the `attested_at` values the project lead printed from his attestation file. That file lives outside the repository, so this record can't verify them.
+- **Where the times come from.** The `D_H` and final times are the `attested_at` values the project lead printed from the attestation file on the project lead's machine. That file lives outside the repository, so this record can't verify them.
 - **The `D_G` time is a bound.** It comes from the time of the local revert commit on its checkout, `9e88615`, which was never pushed.
 - **The machine evidence for the final digest's time is commit `340efb2`** (9:32:10 pm). `runner.paid_run record` refuses unless an attested lead-side review of the checkout's digest exists, so the final digest was attested before 9:32:10 pm. No commit bounds the `D_H` time.
 - **Erratum: `D_G` wasn't attested on November 14.** Decision 0040's context table says it was, and #111's attested review `2026-11-14-host-environment.md` implies it ("attested from `2026-11-14-gate3-inputs.md`"). The project lead's attestation file showed no `D_G` row on November 15.
