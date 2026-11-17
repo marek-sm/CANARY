@@ -148,6 +148,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/audits/2026-11-11-w8-t2-citation-audit.md`](docs/audits/2026-11-11-w8-t2-citation-audit.md) | The SPEC.md Section 15 corpus-freeze citation audit for the 20 frozen cases |
 | [`docs/W8_T4_HANDOFF.md`](docs/W8_T4_HANDOFF.md) | W8-T4 defense freeze: the defense freeze manifest, the recheck, and draft threat-model, defense, event-semantics, and security-test notes for the paper leads |
 | [`docs/audits/2026-11-13-w8-t4-recheck.md`](docs/audits/2026-11-13-w8-t4-recheck.md) | The SPEC.md Section 5 step 8 provenance and fixture-hash recheck of 4 sampled cases |
+| [`docs/W9_T5_HANDOFF.md`](docs/W9_T5_HANDOFF.md) | W9-T5 component-method routing, pre-results paper assets, offline-media preparation, accessible replay/report checks, and contribution-record handoff |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`docs/evidence/gate3-2026-11-15/`](docs/evidence/gate3-2026-11-15/README.md) | The Gate 3 step's record for November 15, under decision 0040: `protocol/active.json` at `F20` (1,092 official trials), the sweep and C1 specs, the step driver, each check's output, and the recomputed hashes |
 | [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md) | The Gate 2 step's record for November 10: the binary D1_POLICY_GATE and D2_DATAMARKING readiness decisions, the development-floor count, and the funded-budget check |

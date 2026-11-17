@@ -16,6 +16,9 @@ results.
   from that manifest and intentionally contains no data.
 - [`output_pipeline_freeze.json`](output_pipeline_freeze.json) is W8-T5's
   reproducible hash record for the accessible pre-results shell pipeline.
+- [`w9-t5-pre-results-handoff.md`](w9-t5-pre-results-handoff.md) routes the
+  frozen component-method and related-work inputs to the designated paper leads
+  and records T5's result-independent accessibility boundaries.
 - [`venue-checklists.md`](venue-checklists.md) maps the NeurIPS paper
   checklist and the IEEE conference-paper structure to the `SPEC.md` sections
   and artifacts that answer them, and marks what is still open. It makes no

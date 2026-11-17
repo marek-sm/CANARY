@@ -34,6 +34,11 @@ labeled as mock development evidence and excluded from every estimate. The
 caption and transcript scaffolds reserve accessible structure ahead of results;
 they do not authorize a claim or presentation duration.
 
+`offline_media_plan.md` records W9-T5's result-independent capture, privacy,
+caption, transcript, and replay-fallback preparation. It sets no duration while
+the organizer-confirmed slot and hardware remain unknown, and it does not
+authorize a live model call.
+
 W6-T5 acceptance evidence also includes `tests/test_demo_known_traces.py`,
 which covers every display-only label, every true/false/null intersection of
 the six underlying security facts, and the W5-T4 event-state language.
