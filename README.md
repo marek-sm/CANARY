@@ -142,6 +142,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0038-gate3-report-module.md`](docs/decisions/0038-gate3-report-module.md) | Lets the Gate 3 step use three late inputs merged on November 14: the G3-2 fix, `W8-T5`'s freeze record, and the project lead's estimand report module (`analysis/report.py`, reassigned from `W8-T3`); fixes the analysis seed, `analysis_hash`, and the `ENGINEERING` fallback inputs; and sets an outcome-blind `ENGINEERING` fallback at 9:00 pm |
 | [`docs/decisions/0039-gate3-host-environment.md`](docs/decisions/0039-gate3-host-environment.md) | Adds a fourth late Gate 3 input merged on November 14: the project lead's host-environment PR, which names decision 0029's host environment in `protocol/active.json`, with a check and a Gate 4 comparison; fixes the step's remaining input values and its two spec files; and moves the `ENGINEERING` fallback checkout to `D_H` |
 | [`docs/decisions/0040-gate3-late-step.md`](docs/decisions/0040-gate3-late-step.md) | Records that every November 14 Gate 3 deadline was missed (#111 merged at 9:18:40 pm) and moves the Gate 3 step, once and after the fact, to November 15 as `SPEC.md` Section 11's second recorded exception, changing nothing but dates; states what that costs a pre-registered study |
+| [`docs/decisions/0041-license-and-author-order.md`](docs/decisions/0041-license-and-author-order.md) | Chooses Apache-2.0 for code and CC BY 4.0 for content, requires each contributor's written agreement before those licenses cover their work, and sets the author-order rule |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
 | [`docs/W7_T5_HANDOFF.md`](docs/W7_T5_HANDOFF.md) | Replay fallback, excluded demo staging, operator evidence, and paper-lead notes |
@@ -150,6 +151,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/W8_T4_HANDOFF.md`](docs/W8_T4_HANDOFF.md) | W8-T4 defense freeze: the defense freeze manifest, the recheck, and draft threat-model, defense, event-semantics, and security-test notes for the paper leads |
 | [`docs/audits/2026-11-13-w8-t4-recheck.md`](docs/audits/2026-11-13-w8-t4-recheck.md) | The SPEC.md Section 5 step 8 provenance and fixture-hash recheck of 4 sampled cases |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
+| [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | License notices for the corpus's four payload sources |
 | [`docs/evidence/gate3-2026-11-15/`](docs/evidence/gate3-2026-11-15/README.md) | The Gate 3 step's record for November 15, under decision 0040: `protocol/active.json` at `F20` (1,092 official trials), the sweep and C1 specs, the step driver, each check's output, and the recomputed hashes |
 | [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md) | The Gate 2 step's record for November 10: the binary D1_POLICY_GATE and D2_DATAMARKING readiness decisions, the development-floor count, and the funded-budget check |
 | [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |
@@ -170,7 +172,7 @@ CANARY does not claim to solve prompt injection, establish general security, ran
 
 ## License and citation
 
-No reuse license is implied until a `LICENSE` file is committed. License selection is a tracked pre-release task. `CITATION.cff` is created only after the consented author list is stable.
+No reuse license is implied until a `LICENSE` file is committed. [Decision 0041](docs/decisions/0041-license-and-author-order.md) chooses the licenses, and they apply only once `LICENSE` is on `main`. `CITATION.cff` is created only after the consented author list is stable.
 
 ### W5-T1 mock tool/task smoke
 
