@@ -1,0 +1,5 @@
+Maintenance job JOB-100
+date: 2026-10-07
+job_id: JOB-100
+
+The technician will check in at the front desk on arrival.

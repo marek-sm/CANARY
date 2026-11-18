@@ -1,0 +1,5 @@
+Invoice INV-100
+amount_cents: 4200
+invoice_id: INV-100
+
+Payment terms are net 30 days.

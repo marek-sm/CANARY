@@ -6,11 +6,16 @@ results.
 
 - [`outline.md`](outline.md) follows the ten-section structure in `SPEC.md`
   Section 14 and identifies the technical-input owner for each section.
+- [`w8-t1-method-notes.md`](w8-t1-method-notes.md) supplies draft agent, tool,
+  task, and utility notes with linked implementation evidence and limitations;
+  the paid-evidence review and freeze remain pending.
 - [`estimand_manifest.json`](estimand_manifest.json) reserves accessible output
   structures for the predeclared estimands and diagnostic outputs in `SPEC.md`
   Section 10.
 - [`generated/estimand_shells.md`](generated/estimand_shells.md) is generated
   from that manifest and intentionally contains no data.
+- [`output_pipeline_freeze.json`](output_pipeline_freeze.json) is W8-T5's
+  reproducible hash record for the accessible pre-results shell pipeline.
 - [`venue-checklists.md`](venue-checklists.md) maps the NeurIPS paper
   checklist and the IEEE conference-paper structure to the `SPEC.md` sections
   and artifacts that answer them, and marks what is still open. It makes no
@@ -26,6 +31,7 @@ Check that the committed artifact is current with:
 
 ```bash
 python -m analysis.report_shells --check
+python -m analysis.output_pipeline_freeze --check
 ```
 
 The project lead owns the thesis, protocol/metric wording, numerical claims,

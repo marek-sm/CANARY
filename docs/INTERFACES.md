@@ -263,8 +263,14 @@ and ledger line. The sweep passes `split="evaluation"`, which is refused before 
 written without a `protocol_version` and trial ids from a spec's `protocol_sentinel`, because
 the locked schema's evaluation branch would otherwise reject the result after its paid call.
 The result schema's `split` is `development`, `evaluation`, or, from 1.1.0, `c1_control`
-([decision 0034](decisions/0034-c1-result-records.md)). `W8-T3`'s C1 executor is to write
-`c1_control`; until it exists, `run_schedule` refuses that split. Rehearsal and stage trials
+([decision 0034](decisions/0034-c1-result-records.md)). The official C1 executor
+(`runner/c1_trial.py`, [decision 0037](decisions/0037-c1-authorization.md)) writes `c1_control`:
+`run_schedule` runs a C1-only schedule through tool-result delivery from `corpus/c1_controls/`,
+with the control's own messages, the C1 reference policy, no grant, and only the C1 audit, and
+refuses a C1 run without delivery, with another audit, or from another corpus root.
+`python -m runner.c1_trial live` is the paid C1 run, refused like the sweep until the Gate 3
+record and the paid-run record hold and unless its spec is `protocol/active.json`'s C1 list in
+exact order; `python -m runner.c1_trial verify RUN` recomputes every stored C1 result. Rehearsal and stage trials
 stay `development` and pass `analysis_role` as `demo_rehearsal` or `demo_stage`, a free string
 there. A run can't be resumed under another split.
 
@@ -274,11 +280,27 @@ live --spec SPEC.json --protocol-version V` runs a committed schedule spec throu
 `corpus/evaluation` unless `--corpus-root` names another, writing under the ignored
 `results/raw/sweep/`. It refuses, before any key is read, without `CANARY_PAID_RUN_ACK=1`,
 a protocol version, or a frozen `protocol_sentinel`, on any base whose `split` isn't
-`evaluation`, on an output path Git could take, and wherever `paid_run_refusal` does.
+`evaluation`, on an output path Git could take, and wherever `paid_run_refusal` does. It also refuses unless `protocol/active.json` is committed and names this protocol version, these bases, both freeze hashes, and this schedule: the spec's seed, experiment ID, and model are its `empirical.schedule_seed`, `empirical.experiment_id`, and `empirical.model_requested`, its bases, channels, and configurations are its own in its exact order (the schedule generator iterates them in order), its repeats give `run_indices`, and its conditions are attack then clean. Every record it writes has `analysis_role` `primary_indirect`.
 `python -m runner.sweep verify RUN` checks completeness, schema, and that every stored
 result recomputes from its events, and prints counts only, never an outcome aggregate.
 `execute.check_stored_run` reads a run's split from its mode file and recomputes each
 result under it.
+
+[`runner/rehearsal.py`](../runner/rehearsal.py) is the `SPEC.md` Section 13 live-first
+rehearsal ([decision 0030](decisions/0030-done-by-november-30.md) item 8): `python -m
+runner.rehearsal live --protocol-version V --env-file PATH` runs the excluded demo case,
+`corpus/demo/demo-001.json`, on C2 under attack as ten dry runs across the `K` stage
+configurations of a committed `protocol/active.json`, through `run_schedule` with
+`split="development"` and `analysis_role="demo_rehearsal"`, writing under the ignored
+`results/raw/rehearsal/`. That is the whole `10 × K` rehearsal allowance. Besides the
+sweep's refusals, it refuses before any key is read at `K` = 0 or an `ENGINEERING` or
+`STOP` tier, on a stage configuration the tier doesn't retain or a model other than
+`active.json`'s, and wherever a dry run would be redone (a fresh run of started trials, a resume of a
+started trial with no durable events, or a trial started twice) or the ledger's rehearsal
+trials would pass `10 × K`. `python -m runner.rehearsal verify RUN` recomputes every stored result
+against the stored schedule and prints completeness, the missing trials, any trial the
+ledger started twice (its dry run doesn't count), and each dry run's recorded outcome flags; whether 9 of 10 showed the intended stage behavior is a
+human read of Section 13's script.
 
 `build_record` refuses unless every invocation of the mock grid ran this checkout's
 hashed code, clean, under this environment, through tool-result delivery, on

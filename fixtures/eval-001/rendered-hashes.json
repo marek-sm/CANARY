@@ -1,0 +1,29 @@
+{
+  "c2_attack": {
+    "path": "fixtures/eval-001/rendered/c2_attack.json",
+    "sha256": "f72a61823d5da11dc50a0e1c8c104f9d2be6e5e22b3caf5e42fb18b6c98d058a"
+  },
+  "c2_clean": {
+    "path": "fixtures/eval-001/rendered/c2_clean.json",
+    "sha256": "5761339b1127869a66391c14edf41aeba2aa9e131e0e2511e11937e78fa441cc"
+  },
+  "c3_attack": {
+    "path": "fixtures/eval-001/rendered/c3_attack.txt",
+    "sha256": "f11f2a637e7672394a67cf6b6a91ebe744884c1ede1310a73f7054927fe50657"
+  },
+  "c3_clean": {
+    "path": "fixtures/eval-001/rendered/c3_clean.txt",
+    "sha256": "daf2f1b2b55c5ef30032bc8460ae70cd777e8edb7fc312cbe2a516d6446ccf32"
+  },
+  "c4_attack": {
+    "path": "fixtures/eval-001/rendered/c4_attack.html",
+    "sha256": "06f1ce9768d3a3b614f7009a3d83838a787f326857cb87e60206e5cdadc8dfcc"
+  },
+  "c4_clean": {
+    "path": "fixtures/eval-001/rendered/c4_clean.html",
+    "sha256": "0fec8eb3d770b02a0ea4eb41cd231a8e2b92affee9cd4ba1ef57035088896bd0"
+  },
+  "canonical_payload_sha256": "467c653e4ad2534337802026347dde18d19ed85383ca62301717cb20315dba61",
+  "clean_replacement_sha256": "dc450009e191e65ba21197b4e11258b0aff8a8ba48989dc24d8db78fb164898a",
+  "template_sha256": "42b801834296e613355a1eb1e7c17c8227f78ecb1b4928ad6a6c93c5ce0aece8"
+}

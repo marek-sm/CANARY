@@ -1,6 +1,6 @@
-.PHONY: test trace paper-shells paper-shells-check demo-example demo-example-check
+.PHONY: test trace paper-shells paper-shells-check output-freeze output-freeze-check demo-example demo-example-check engineering-report engineering-report-check
 # grid-check is part of test so CI needs no separate workflow edit (OAuth workflow scope).
-test: grid-check
+test: grid-check engineering-report-check output-freeze-check
 	pytest -q
 
 trace:
@@ -12,13 +12,25 @@ paper-shells:
 paper-shells-check:
 	python -m analysis.report_shells --check
 
+output-freeze: paper-shells-check
+	python -m analysis.output_pipeline_freeze
+
+output-freeze-check: paper-shells-check
+	python -m analysis.output_pipeline_freeze --check
+
+engineering-report:
+	python -m analysis.engineering_report
+
+engineering-report-check:
+	python -m analysis.engineering_report --check
+
 demo-example:
 	python -m demo.accessibility
 
 demo-example-check:
 	python -m demo.accessibility --check
 
-.PHONY: corpus-fixtures corpus-check select
+.PHONY: corpus-fixtures corpus-check select eval-build freeze-check defense-freeze-check recheck
 corpus-fixtures:
 	python -m corpus.render_fixtures
 
@@ -28,6 +40,24 @@ corpus-check:
 
 select:
 	python -m corpus.select
+
+# W8-T2: build the selected tier's evaluation cases, then render them.
+eval-build:
+	python -m corpus.build_evaluation --n $(N)
+	python -m corpus.render_fixtures
+
+freeze-check:
+	python -m corpus.build_evaluation --n 20 --check
+	python -m corpus.render_fixtures --check
+	python -m corpus.freeze --check
+	python -m tasks.freeze --check
+
+# W8-T4: the defense freeze manifest and the Section 5 step 8 recheck.
+defense-freeze-check:
+	python -m defenses.freeze --check
+
+recheck:
+	python -m corpus.recheck
 
 .PHONY: sandbox-check
 # Decision 0023: every tool process runs sandboxed. Run once on a new machine; it
@@ -96,11 +126,21 @@ replay:
 # then runs W8-T3's analysis and report code, and fails in words until that code exists.
 # REPORT_MODULE is a placeholder name: W8-T3 sets it to the module it commits.
 REPORT_MODULE ?= analysis.report
-.PHONY: report
-report: paper-shells
+.PHONY: report lead-outputs lead-outputs-check
+report: paper-shells lead-outputs output-freeze-check
 	@python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$(REPORT_MODULE)') is None)" || \
-	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) were generated." >&2; exit 2; }
+	  { echo "make report: $(REPORT_MODULE) isn't on this checkout. W8-T3 commits the analysis and report code; only the estimand shells (analysis.report_shells) and the lead outputs (analysis.lead_outputs) were generated." >&2; exit 2; }
 	python -m $(REPORT_MODULE)
+
+# Decision 0036: decision 0012's count tables and decision 0028 item 4's count-only
+# diagnostics, as empty shells. Over results: python -m analysis.lead_outputs RECORDS
+# [--events RUN ...] --out PATH, where RECORDS is a complete, verified sweep run or a
+# released JSONL file (SPEC.md Section 9).
+lead-outputs:
+	python -m analysis.lead_outputs
+
+lead-outputs-check:
+	python -m analysis.lead_outputs --check
 
 gate2-budget:
 	python3 -m analysis.gate2_budget "$(RUN)" --remaining-balance-usd "$(BALANCE)" $(if $(TIER),--tier "$(TIER)") $(if $(DEFENSE),--defense "$(DEFENSE)") $(if $(C1_PILOT),--c1-pilot-cost-usd "$(C1_PILOT)") $(if $(OUT),--out "$(OUT)")

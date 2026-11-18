@@ -109,3 +109,14 @@ The demo-script part (item 6) stands whether or not S1 ever runs.
   - its D2_DATAMARKING counts may be biased, because some of those systems used spotlighting;
   - task defects in `invoice-receipt-email` and `maintenance-confirm-email` (the November 9 coverage smokes) carry into its utility counts unless `W8-T1` resolves them.
 - **The spend cap stays at $10 for the fall.** The project lead approved $50 for an S1 that would have run in November, and it no longer does.
+
+## Recorded November 17, 2026, when this record was brought up to date with `main`
+
+**Recorded November 17 by the project lead (times are Pacific).** Everything above this section is word for word as in commit `de894d7`, which was public when this pull request opened at 8:21 pm on November 12, before the sweep's first paid call. That timestamp is what shows the design came first. This record takes force only at its merge, after the sweep's trials ran. Four things changed around it:
+
+- **Only the Section 13 text lands in `SPEC.md` (items 6, 7, and 8).** Gate 3 froze on November 15. `SPEC.md` Section 11 then lets cosmetic prose or demo wording change without a protocol version, and only when it changes no data or claim. Item 6's demo wording fits that. The Section 2 sentence naming S1, the Section 14 sentence, and the matching sentence for `paper/lead-inputs.md` don't, so they are withheld.
+  - **Lost for now:** the paper has no permission to state that a follow-up is registered. That needs its own `SPEC.md` Section 11 route.
+  - **Not lost:** S1's registration is this public record. S1 doesn't need the withheld text, because it runs as later work under `AGENTS.md`'s "version as later work" rule.
+- **`SPEC.md`'s version (item 8).** The header stays v1.24.0, a documentation version, and `protocol/active.json`'s `protocol_version` stays 1.0.0. [Decision 0037](0037-c1-authorization.md) took v1.24.0 first. This note supersedes, for these words only, its item 5's "so it takes the next version when it rebases". `tests/test_c1_reference_policy.py` asserts the v1.24.0 header, that test's SHA-256 is pinned in `tasks/freeze.json`, and `tasks/` is a hashed path in the digest the Gate 3 step attested ([decision 0040](0040-gate3-late-step.md) item 7).
+- **The sweep's date (item 9).** Decision 0040 moved the Gate 3 step to November 15, and the sweep's first paid call came on November 16, not November 14.
+- **The merge date (item 9).** The November 15 target was missed. This pull request was still open on November 17, the last date item 9 allows.

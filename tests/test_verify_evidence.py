@@ -1978,6 +1978,24 @@ def live_run(clean_environment, fake_provider, tmp_path, monkeypatch):
     return SimpleNamespace(out=out, report=report, adapter=fake_provider.adapter, built=fake_provider.built)
 
 
+# Whole-tree review F-C: coverage --live has every other paid path's provider and model refusals.
+def test_the_coverage_live_path_refuses_the_fallback_until_a_decision_names_it(clean_environment, fake_provider, tmp_path, monkeypatch):
+    monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **k: None)
+    monkeypatch.setattr(grid_dev, "FALLBACK_DECISION", None)
+    spend_ledger.init()
+    with pytest.raises(paid_run.PaidRunRefused, match="decision 0010"):
+        coverage.run_live(tmp_path / "live", env_file=fake_provider.env_file, provider_name="openai")
+    assert fake_provider.built == [] and not (tmp_path / "live").exists()
+
+
+def test_the_coverage_live_path_refuses_a_model_other_than_the_providers(clean_environment, fake_provider, tmp_path, monkeypatch):
+    monkeypatch.setattr(paid_run, "paid_run_refusal", lambda **k: None)
+    spend_ledger.init()
+    with pytest.raises(paid_run.PaidRunRefused, match="runs only"):
+        coverage.run_live(tmp_path / "live", env_file=fake_provider.env_file, model="claude-opus-pricier")
+    assert fake_provider.built == [] and not (tmp_path / "live").exists()
+
+
 def test_the_coverage_live_path_runs_fifteen_cells_through_a_fake_provider(live_run):
     report = live_run.report
     assert live_run.built == ["synthetic-sentinel"]

@@ -1,0 +1,112 @@
+# Gate 3 step checks, run 2026-11-15 13:37:19 PST at HEAD 2b20105fcbd5f558ebead47719b3f410f2a94dd3
+
+$ make freeze-check
+python -m corpus.build_evaluation --n 20 --check
+python -m corpus.render_fixtures --check
+python -m corpus.freeze --check
+python -m tasks.freeze --check
+exit 0
+
+$ make defense-freeze-check
+python -m defenses.freeze --check
+exit 0
+
+$ python docs/evidence/gate3-2026-11-15/gate3_step.py --code-commit $(git rev-parse HEAD) --out protocol
+active.json written: F20 1092 official trials
+schedule refusals: (None, None)
+schedules: 1080 sweep trials + 12 C1 trials = 1092
+sweep_spec.json and c1_spec.json written
+exit 0
+
+$ python -m analysis.active_protocol --check protocol/active.json
+protocol/active.json: valid; arithmetic agrees
+exit 0
+
+$ python -m analysis.gate3_hashes --check protocol/active.json
+gate3_hashes: protocol/active.json agrees with the recomputed hashes (F20)
+exit 0
+
+$ make recheck
+python -m corpus.recheck
+{
+  "corpus_hash": "5afb8e1ee8f120f7ea8abfcdf4870b1339cdc5f992fe19f8e50a56939b6c9859",
+  "pool_hash": "864b46148d9818e0c48fed522b87b1c617ced4dcc5f0054d5959881d71914425",
+  "n": 20,
+  "corpus_checks_failed": [],
+  "sample": [
+    "88653772cbbd557c33f0",
+    "eedb6d91a0f709796081",
+    "901bdcccb51d43ff5c5c",
+    "2b467a07bc6b378fddfd"
+  ],
+  "cases": [
+    {
+      "base_case_id": "eval-013",
+      "candidate_id": "88653772cbbd557c33f0",
+      "citation_key": "injecagent-2024",
+      "checks": 24,
+      "checks_failed": []
+    },
+    {
+      "base_case_id": "eval-017",
+      "candidate_id": "eedb6d91a0f709796081",
+      "citation_key": "injecagent-2024",
+      "checks": 24,
+      "checks_failed": []
+    },
+    {
+      "base_case_id": "eval-006",
+      "candidate_id": "901bdcccb51d43ff5c5c",
+      "citation_key": "llmail-inject-2025",
+      "checks": 24,
+      "checks_failed": []
+    },
+    {
+      "base_case_id": "eval-015",
+      "candidate_id": "2b467a07bc6b378fddfd",
+      "citation_key": "asb-2024",
+      "checks": 24,
+      "checks_failed": []
+    }
+  ],
+  "result": "PASS"
+}
+exit 0
+
+$ python -m tasks.freeze --check
+exit 0
+
+$ make paper-shells-check
+python -m analysis.report_shells --check
+exit 0
+
+$ make output-freeze-check
+python -m analysis.report_shells --check
+python -m analysis.output_pipeline_freeze --check
+exit 0
+
+$ make lead-outputs-check
+python -m analysis.lead_outputs --check
+exit 0
+
+$ make engineering-report-check
+python -m analysis.engineering_report --check
+/Users/marek/Projects/CANARY-wt-gate3/paper/generated/engineering_report.md: current
+exit 0
+
+$ make report
+python -m analysis.report_shells
+python -m analysis.lead_outputs
+python -m analysis.report_shells --check
+python -m analysis.output_pipeline_freeze --check
+python -m analysis.report
+exit 0
+
+$ test -z "$(git status --porcelain --untracked-files=no)" && echo "tracked tree clean after make report"
+tracked tree clean after make report
+exit 0
+
+$ python -c "from runner import paid_run; print(paid_run.code_digest(paid_run.code_hashes(paid_run.REPO_ROOT)))"
+e36bd5ba3cf0ea8be80c3c3ca4a8cf43d36e154e26f4d7838d9c799df03a23a8
+exit 0
+

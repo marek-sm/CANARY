@@ -250,7 +250,7 @@ def live_refusal():
 
 def run_live(out, env_file, provider_name="anthropic", model=None, resume=False):
     """The 15 smokes on a real provider. A wrong answer is data, not a failed run."""
-    reason = live_refusal() or execute.raw_evidence_refusal(out)
+    reason = live_refusal() or grid_dev.fallback_refusal(provider_name) or execute.raw_evidence_refusal(out)
     if reason:
         raise paid_run.PaidRunRefused(reason)
 
@@ -258,6 +258,10 @@ def run_live(out, env_file, provider_name="anthropic", model=None, resume=False)
     from runner.provider_config import load_api_key
 
     config = live_smoke.PROVIDERS[provider_name]
+    if model is not None and model != config["model"]:
+        # The ledger prices every trial at this provider's frozen rates, so another model
+        # could spend past the cap while the ledger reads under it.
+        raise paid_run.PaidRunRefused(f"coverage --live on {provider_name} runs only {config['model']}, not {model}")
     config["check"](config["decoding"])
     try:
         key = load_api_key(Path(env_file), config["key"])
@@ -283,7 +287,7 @@ def main(argv=None):
     parser.add_argument("--live", action="store_true", help="run on a real provider (hand only; paid-run gate applies)")
     parser.add_argument("--provider", choices=("anthropic", "openai"), default="anthropic")
     parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
-    parser.add_argument("--model", default=None, help="defaults to the provider's decision 0010 model")
+    parser.add_argument("--model", default=None, help="the provider's decision 0010 model; any other refuses")
     args = parser.parse_args(argv)
     if args.build or args.check:
         build(check=args.check)

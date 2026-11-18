@@ -82,15 +82,22 @@ from oracles.authorization.audit import AUDIT_EVALUATOR_VERSION, AuditAuthorizer
 from oracles.utility import task_suite as task_utility
 from runner import paid_run, spend_ledger
 from runner import delivery as tool_delivery
+from runner import c1_trial
 from tasks import registry
 from runner.mock_provider import MOCK_MODEL_ID, PROVIDER_ADAPTER_VERSION, MockProvider
 from runner.schedule import (
+    C1_CHANNEL,
     PROTOCOL_SENTINEL,
     ScheduledTrial,
     generate_schedule,
     superblock_groups,
     validate_trial,
 )
+
+# The result schema's splits (schemas/result.schema.json 1.1.0; decision 0034 adds c1_control).
+SPLITS = ("development", "evaluation", "c1_control")
+
+
 
 # Reuse the frozen serialization/validation/evidence/result machinery and the
 # dev-001 text-only cell body from the prototype instead of copying them.
@@ -196,6 +203,22 @@ class FakeSink:
         _write_durably(self.path, json.dumps(list(receipts), ensure_ascii=False))
 
 
+def _is_c1_base(base: Mapping[str, Any]) -> bool:
+    return base.get("split") == "c1_control" and base.get("channel") == C1_CHANNEL
+
+
+def _reverify_base(base: Mapping[str, Any], template: str) -> None:
+    if _is_c1_base(base):
+        if c1_trial.load_control(c1_trial.C1_CORPUS_ROOT, base["base_case_id"]) != base:
+            raise ValueError("C1 control drifted mid-run")
+        return
+    reverified = load_template(
+        REPO_ROOT / base["fixture"]["template_path"], base["fixture"]["template_sha256"]
+    )
+    if reverified != template:
+        raise ValueError("fixture template drifted mid-run")
+
+
 def reset_trial_environment(
     trial_dir: Path, base: Mapping[str, Any], template: str
 ) -> tuple[FakeSink, GrantState]:
@@ -205,12 +228,9 @@ def reset_trial_environment(
     infrastructure failure. Agent state needs no explicit reset: ``run_loop``
     deep-copies the messages it is handed, so no history survives a trial.
     """
-    # Fixtures: re-verify the frozen template's exact raw bytes every trial.
-    reverified = load_template(
-        REPO_ROOT / base["fixture"]["template_path"], base["fixture"]["template_sha256"]
-    )
-    if reverified != template:
-        raise ValueError("fixture template drifted mid-run")
+    # Fixtures: re-verify the frozen template's exact raw bytes every trial, or a C1
+    # control's record against its manifest pin.
+    _reverify_base(base, template)
     # Fake sink: fresh empty receipt log, verified empty.
     sink = FakeSink(trial_dir / SINK_FILE)
     sink.reset()
@@ -228,11 +248,7 @@ def reopen_trial_environment(trial_dir: Path, base: Mapping[str, Any], template:
     The sink's receipts are evidence of effects that already happened, so a
     resumed trial keeps them. Only a sink that was never created is reset.
     """
-    reverified = load_template(
-        REPO_ROOT / base["fixture"]["template_path"], base["fixture"]["template_sha256"]
-    )
-    if reverified != template:
-        raise ValueError("fixture template drifted mid-run")
+    _reverify_base(base, template)
     sink = FakeSink(trial_dir / SINK_FILE)
     if not sink.path.exists():
         sink.reset()
@@ -349,6 +365,11 @@ def _load_base(
 ) -> tuple[Mapping[str, Any], str]:
     if base_case_id in cache:
         return cache[base_case_id]
+    if c1_trial.is_c1(base_case_id):
+        # An official C1 control has no task template (decision 0037): its record is the base.
+        control = c1_trial.load_control(corpus_root, base_case_id)
+        cache[base_case_id] = (control, "")
+        return control, ""
     path = _inside(corpus_root, corpus_root / f"{base_case_id}.json")
     base = json.loads(path.read_text(encoding="utf-8"))
     # A bad record is refused before any trial uses it. runner.coverage's generated
@@ -728,12 +749,18 @@ def _run_trial_body(
 ) -> None:
     """Start or continue the trial's events up to and including ``trial_ended``."""
     started = _first(stored, "trial_started")
-    case: Optional[tool_delivery.DeliveryCase] = None
+    case: Any = None  # a tool_delivery.DeliveryCase, or a c1_trial.C1Case
     fixture_hash: Optional[str] = None
     database_hash: Optional[str] = None
     fixture_root = _inside(trial_dir, trial_dir / ENV_DIR / "fixtures")
     try:
-        if delivery:
+        if delivery and _is_c1_base(base):
+            # Decision 0037: the control's own messages, the C1 reference policy, no grant.
+            case = c1_trial.prepare_case(base, trial.channel, trial.condition, trial.configuration)
+            fixture_hash = c1_trial.build_fixtures(fixture_root, canaries)
+            database_hash = registry.verify_database(fixture_root)
+            messages, untrusted_span, rendered = case.messages, None, None
+        elif delivery:
             case = tool_delivery.prepare_case(base, trial.channel, trial.condition, trial.configuration, template)
             fixture_hash = tool_delivery.build_fixtures(fixture_root, base, trial.channel, case.rendered, canaries)
             database_hash = registry.verify_database(fixture_root)
@@ -765,7 +792,7 @@ def _run_trial_body(
             if case is not None:
                 payload.update(case.started_fields())
                 # The trusted grants the audit evaluates against, so an independent scorer can recompute it.
-                payload["grants"] = [asdict(grant) for grant in registry.grants(case.template, trial.channel).grants]
+                payload["grants"] = [asdict(grant) for grant in _case_grants(case, trial.channel).grants]
         log.append("trial_started", payload)
     elif messages is not None and sha256_json(messages) != started["payload"]["prompt_sha256"]:
         messages = None  # the stored prompt can't be rebuilt, so the trial can't continue
@@ -886,12 +913,19 @@ def _run_trial_body(
     log.append("trial_ended", ended)
 
 
+def _case_grants(case: Any, channel: str) -> GrantState:
+    """The trusted grants a cell starts with: its template's, or none for a C1 control (decision 0037)."""
+    if isinstance(case, c1_trial.C1Case):
+        return case.grant_state()
+    return registry.grants(case.template, channel)
+
+
 def _run_delivery_loop(
     log: EventLog,
     replay: "_Replay",
     trial_dir: Path,
     trial: ScheduledTrial,
-    case: tool_delivery.DeliveryCase,
+    case: Any,
     provider: Any,
     sink: FakeSink,
     fixture_root: Path,
@@ -907,7 +941,7 @@ def _run_delivery_loop(
         tools = tool_delivery.TrialTools(
             configuration=trial.configuration,
             policy=case.policy,
-            grant_state=registry.grants(case.template, trial.channel),
+            grant_state=_case_grants(case, trial.channel),
             root=fixture_root,
             state=state,
             endpoint=endpoint,
@@ -922,7 +956,7 @@ def _run_delivery_loop(
             decoding=decoding,
             model_request={"model": trial.model_id},
             on_attempt=replay.on_attempt(log_attempt),
-            max_steps=case.template["max_steps"],
+            max_steps=case.max_steps if isinstance(case, c1_trial.C1Case) else case.template["max_steps"],
             logical_trial_id=trial.logical_trial_id,
             dispatch=tools.dispatch,
             on_tool=replay.on_tool,
@@ -1076,7 +1110,9 @@ def _result_from_events(
         # No audit ran or it failed: keep every request, unevaluable, authorized null.
         tool_events = build_tool_events(events, task_policy=None)
     return assemble_result(
-        trial, events, canaries, base["attack"]["attack_family_id"], tool_events=tool_events, base=base,
+        trial, events, canaries,
+        c1_trial.attack_family_id(base) if _is_c1_base(base) else base["attack"]["attack_family_id"],
+        tool_events=tool_events, base=base,
         split=split, protocol_version=protocol_version, analysis_role=analysis_role,
     )
 
@@ -1290,20 +1326,25 @@ def _score_delivery(
         security["external_exfiltration"],
         security["unauthorized_action_effect"],
     )
-    passed, reasons = (
-        task_utility.evaluate(started["template_id"], channel, events)
-        if started.get("template_id")
-        else (None, ["task_not_prepared"])
-    )
-    result["utility"] = {
-        "oracle_id": started.get("template_id"),
-        "oracle_version": task_utility.VERSION,
-        "pass": passed,
-        "reason_codes": reasons,
-    }
+    c1 = channel == C1_CHANNEL
+    if c1:
+        # Decision 0037 item 3: a C1 control has no legitimate task, so no utility validator.
+        result["utility"] = c1_trial.utility()
+    else:
+        passed, reasons = (
+            task_utility.evaluate(started["template_id"], channel, events)
+            if started.get("template_id")
+            else (None, ["task_not_prepared"])
+        )
+        result["utility"] = {
+            "oracle_id": started.get("template_id"),
+            "oracle_version": task_utility.VERSION,
+            "pass": passed,
+            "reason_codes": reasons,
+        }
     meta = result["run_metadata"]
     meta["task_policy_hash"] = started.get("policy_hash")
-    meta["utility_oracle_hash"] = sha256_text(
+    meta["utility_oracle_hash"] = None if c1 else sha256_text(
         (REPO_ROOT / "oracles" / "utility" / "task_suite.py").read_text(encoding="utf-8")
     )
     # Null only when the trial recorded none: a D0_BASELINE cell runs no defense, and
@@ -1662,7 +1703,10 @@ def _check_stored_environment(
         if any(e["event_type"] == "provider_attempt" for e in events):
             raise ValueError(f"{trial_id}: trial_started records no fixture hash, yet the trial called its provider")
         return
-    case = tool_delivery.prepare_case(base, trial.channel, trial.condition, trial.configuration, template)
+    if _is_c1_base(base):
+        case = c1_trial.prepare_case(base, trial.channel, trial.condition, trial.configuration)
+    else:
+        case = tool_delivery.prepare_case(base, trial.channel, trial.condition, trial.configuration, template)
     claims = {**case.started_fields(), "prompt_sha256": sha256_json(case.messages)}
     for field, value in claims.items():
         if started.get(field) != value:
@@ -1672,10 +1716,11 @@ def _check_stored_environment(
         raise ValueError(f"{trial_id}: the stored fixtures differ from the ones the trial started with")
     # The hash above ties these files to the events; this ties canaries.json to the files, so
     # replacing a canary can't make a disclosure of the real one stop counting.
-    for name, text in tool_delivery.secret_files(canaries).items():
+    for name, text in {**tool_delivery.secret_files(canaries), **tool_delivery.PLANTED_FILES}.items():
         path = fixtures / name
         if not path.is_file() or path.read_text(encoding="utf-8") != text:
-            raise ValueError(f"{trial_id}: the stored fixtures don't hold the canaries {CANARIES_FILE} names")
+            raise ValueError(f"{trial_id}: the stored fixtures don't hold the canaries {CANARIES_FILE} names "
+                             "or the planted resources")
     if registry.verify_database(fixtures) != started.get("database_hash"):
         raise ValueError(f"{trial_id}: the stored database differs from the one the trial started with")
     if ended.get("sink_observed") is True:
@@ -1708,7 +1753,8 @@ def _check_stored_trial(
             raise ValueError(f"{trial_id}: its events hold no {required}")
     _check_against_raw_responses(trial, events)
     base, template = _load_base(bases, corpus_root, trial.base_case_id)
-    differ = _differences(record, _result_from_events(trial, events, canaries, base, delivery_audit, **(labels or {})))
+    audit = c1_trial.audit if _is_c1_base(base) else delivery_audit
+    differ = _differences(record, _result_from_events(trial, events, canaries, base, audit, **(labels or {})))
     if differ:
         raise ValueError(f"{trial_id}: this checkout doesn't recompute the stored result from its events: {', '.join(differ[:5])}")
     _check_stored_environment(trial_dir, trial, base, template, events, canaries)
@@ -1763,7 +1809,8 @@ def check_stored_run(
     if len(labels) > 1:
         raise ValueError(f"{run_dir.name}: its results carry more than one protocol_version or analysis_role")
     protocol_version, analysis_role = next(iter(labels), (None, None))
-    root = Path(corpus_root) if corpus_root is not None else DEFAULT_CORPUS_ROOT
+    default_root = c1_trial.C1_CORPUS_ROOT if split == "c1_control" else DEFAULT_CORPUS_ROOT
+    root = Path(corpus_root) if corpus_root is not None else default_root
     canary_map = _load_canary_map(run_dir / CANARIES_FILE)
     bases: dict[str, tuple[Mapping[str, Any], str]] = {}
     for trial, record in pairs:
@@ -1857,9 +1904,42 @@ def run_schedule(
     so it's refused here before anything is written, not after a paid call. Only development
     trials count against SPEC.md Section 9's ceiling; every trial counts in dollars.
     """
-    if split not in ("development", "evaluation"):
-        raise ValueError(f"split {split!r} isn't one the result schema allows; rehearsal and stage trials stay "
-                         f"development and set analysis_role to one of {spend_ledger.DEMO_ROLES}")
+    if split not in SPLITS:
+        raise ValueError(f"split {split!r} isn't one the result schema allows ({list(SPLITS)}); rehearsal and stage "
+                         f"trials stay development and set analysis_role to one of {spend_ledger.DEMO_ROLES}")
+    c1_trials = [t for t in schedule if t.channel == C1_CHANNEL]
+    if split == "c1_control":
+        # Decision 0034 item 2: an official C1 record carries a protocol version, its own superblock,
+        # role c1_control, channel C1, attack, D0_BASELINE, and a c1-NNN base. Checked here, before
+        # anything is written, so a malformed C1 run never reaches a paid call.
+        if not protocol_version:
+            raise ValueError("a c1_control split needs its protocol_version (decision 0034)")
+        if analysis_role != "c1_control":
+            raise ValueError(f"a c1_control split's analysis_role must be 'c1_control', not {analysis_role!r} "
+                             f"(decision 0034), so a C1 record can never carry primary_indirect")
+        if any(t.protocol_sentinel == PROTOCOL_SENTINEL for t in schedule):
+            raise ValueError(f"a c1_control split's trial ids can't say {PROTOCOL_SENTINEL!r}; set the spec's protocol_sentinel")
+        if len(c1_trials) != len(schedule):
+            raise ValueError("a c1_control run holds only C1 trials: one run directory holds one split (decision 0034)")
+    elif c1_trials and split == "evaluation":
+        raise ValueError("C1 is never an evaluation channel (decision 0034 item 3); run it as split='c1_control'")
+    if c1_trials and len(c1_trials) != len(schedule):
+        raise ValueError("a schedule holds C1 or the indirect channels, never both (decision 0034 item 8)")
+    if c1_trials:
+        for trial in c1_trials:
+            validate_trial(trial)  # C1 shape: c1-NNN, attack, D0_BASELINE
+        # Decision 0037: the official C1 trial body runs through tool-result delivery against
+        # the C1 reference policy, with no grant, and only the C1 audit scores it.
+        if not delivery:
+            raise ValueError("a C1 control runs only through tool-result delivery (decision 0037)")
+        if audit is not None and audit is not c1_trial.audit:
+            raise ValueError("a C1 run is scored only by the C1 reference audit (decision 0037), not another audit")
+        audit = c1_trial.audit
+        if corpus_root is not None and Path(corpus_root).resolve() != c1_trial.C1_CORPUS_ROOT.resolve():
+            raise ValueError(f"a C1 run reads only the committed controls in {c1_trial.C1_CORPUS_ROOT}")
+        corpus_root = c1_trial.C1_CORPUS_ROOT
+        if provider_factory is None:
+            provider_factory = c1_trial.provider_factory(Path(corpus_root))
     if split == "evaluation":
         if not protocol_version:
             raise ValueError("an evaluation split needs its protocol_version")
