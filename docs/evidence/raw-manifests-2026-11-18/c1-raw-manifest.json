@@ -1,0 +1,50 @@
+{
+  "runs": {
+    "canary-2026-sweep": {
+      "code_commits": [
+        "dd9b02ea5b7480171c2baab309367330effa739a"
+      ],
+      "code_digests": [
+        "e36bd5ba3cf0ea8be80c3c3ca4a8cf43d36e154e26f4d7838d9c799df03a23a8"
+      ],
+      "experiment_ids": [
+        "canary-2026-sweep"
+      ],
+      "files": {
+        "t0000_c1-004_C1_attack_D0_BASELINE_r2/events.jsonl": "3a298dadc3fdacd3bdfaf3f27f2dd88c273b4b87ff61ff1bdbc146d78b5257b6",
+        "t0000_c1-004_C1_attack_D0_BASELINE_r2/results.jsonl": "7e15059c36f18c4504e2fd099538ebc479277b3e0dfb44ea1c83c064c6a8caa0",
+        "t0001_c1-003_C1_attack_D0_BASELINE_r1/events.jsonl": "31787acdf812d018c7ca48d7da881cf1a69b53c73b8fd1779ebf6a9d99353f78",
+        "t0001_c1-003_C1_attack_D0_BASELINE_r1/results.jsonl": "89e9612c77f3568759f3cfdf3a9a34901b6e861d973450e77639a17ba681eb56",
+        "t0002_c1-004_C1_attack_D0_BASELINE_r1/events.jsonl": "3f38b3220734bcbcd88dcfb88c7a9af9e0b0fb0450f383f97a2d079d4ef3fa55",
+        "t0002_c1-004_C1_attack_D0_BASELINE_r1/results.jsonl": "7823a79faf62995fb771ac82878aaaffdcaa08b52326665f50085a1d3b96eefc",
+        "t0003_c1-003_C1_attack_D0_BASELINE_r3/events.jsonl": "6df47a3d0138a3e690313443f652bc57a9f457c6592ac0ccc6abdef6b6f0207b",
+        "t0003_c1-003_C1_attack_D0_BASELINE_r3/results.jsonl": "871fedccccff629aa812900aaca9779d15023f9151d9fdcc31ff03d5a6a59f97",
+        "t0004_c1-001_C1_attack_D0_BASELINE_r1/events.jsonl": "7178b4a176e5a7d5c5dd5218b3c8a6f8eeb9392c42bfedb3ce42667d2913c6de",
+        "t0004_c1-001_C1_attack_D0_BASELINE_r1/results.jsonl": "e4d0b6889bc5b403b5f4e3e6ad448565144e4a5c83fadded7d11bcce3498138e",
+        "t0005_c1-004_C1_attack_D0_BASELINE_r3/events.jsonl": "6ff053190a40b1dbb5aaca58de6f50b26887465fa2de30fa43c6ad8ca4e93849",
+        "t0005_c1-004_C1_attack_D0_BASELINE_r3/results.jsonl": "979d042278dcb39456239c70fba4cc3b0a6311d9560e1191ef638f9a48030f46",
+        "t0006_c1-002_C1_attack_D0_BASELINE_r2/events.jsonl": "ddf8faf0419109efbdb046c80913f26aa1e1c24a0bab5beb7386686af1b92a02",
+        "t0006_c1-002_C1_attack_D0_BASELINE_r2/results.jsonl": "3666a6184db4fd7f876ef1262b89ce2bc5d1dccec91006aa82c72133bf592699",
+        "t0007_c1-002_C1_attack_D0_BASELINE_r3/events.jsonl": "38b870aec8e65e2a69c0b2ae2884811f805c98ba431e147f8545a867e492717c",
+        "t0007_c1-002_C1_attack_D0_BASELINE_r3/results.jsonl": "ffd48082b06e57416059d18732bf61c041d4adb07b1ccbbc77dcffad4d8c4bf0",
+        "t0008_c1-001_C1_attack_D0_BASELINE_r2/events.jsonl": "2f1d0115ff1d7d69d7e19d10b5d14e5760697a5123a22ef595d84636950084a5",
+        "t0008_c1-001_C1_attack_D0_BASELINE_r2/results.jsonl": "12b1ffe56731e696c52126f959f98a7934d4d43f4e8c2a280bcb03699d940abe",
+        "t0009_c1-001_C1_attack_D0_BASELINE_r3/events.jsonl": "dc7da43edd43794fbdabb63fe158578d3b8eaa75b910f63aef4690f01df0bfd6",
+        "t0009_c1-001_C1_attack_D0_BASELINE_r3/results.jsonl": "7e15bd219d4a9f44aad4b427ac56dfbfe2ff725e7c504e8c1049174c94009e23",
+        "t0010_c1-003_C1_attack_D0_BASELINE_r2/events.jsonl": "9451bfdb64a5eb25e73d5887e3691ac3b214f830fb164e43acf75b7ff9df3268",
+        "t0010_c1-003_C1_attack_D0_BASELINE_r2/results.jsonl": "331c1a35ce609748a11c09cd593f1cbe3df46b479153db5839ad65596ca09b04",
+        "t0011_c1-002_C1_attack_D0_BASELINE_r1/events.jsonl": "7b0793653ec61498d745d21ea4ddb8db3bc5671b3abce9c5c3abe7c3e64affff",
+        "t0011_c1-002_C1_attack_D0_BASELINE_r1/results.jsonl": "49f873ee922f2dfaf427e6ac3f14fa393a663e37870d58ef65265f485460b0a7"
+      },
+      "mock": false,
+      "models": [
+        "claude-haiku-5-5"
+      ],
+      "paid_run_record_commits": [
+        "8b313aa88d91eb49a64f34dc6142c580342c74d4"
+      ],
+      "trials": 12
+    }
+  },
+  "version": "raw-results-manifest-v0.1.0"
+}

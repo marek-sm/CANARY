@@ -152,6 +152,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/audits/2026-11-13-w8-t4-recheck.md`](docs/audits/2026-11-13-w8-t4-recheck.md) | The SPEC.md Section 5 step 8 provenance and fixture-hash recheck of 4 sampled cases |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | License notices for the corpus's four payload sources |
+| [`docs/evidence/raw-manifests-2026-11-18/`](docs/evidence/raw-manifests-2026-11-18/README.md) | SHA-256 manifests of the official sweep's and C1 run's raw results and events files, written after the runs, with what they do and don't establish |
 | [`docs/evidence/gate3-2026-11-15/`](docs/evidence/gate3-2026-11-15/README.md) | The Gate 3 step's record for November 15, under decision 0040: `protocol/active.json` at `F20` (1,092 official trials), the sweep and C1 specs, the step driver, each check's output, and the recomputed hashes |
 | [`docs/evidence/gate2-2026-11-10/`](docs/evidence/gate2-2026-11-10/README.md) | The Gate 2 step's record for November 10: the binary D1_POLICY_GATE and D2_DATAMARKING readiness decisions, the development-floor count, and the funded-budget check |
 | [`docs/evidence/paid-run-2026-11-09/`](docs/evidence/paid-run-2026-11-09/README.md) | The paid summary for the November 9 development grid and coverage smokes (decision 0025 item 5): the grid summary, the smokes' check, the paid-run record's commit, and the raw-file manifest |
