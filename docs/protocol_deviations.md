@@ -1,6 +1,6 @@
 # Protocol Deviations
 
-Five protocol deviations are recorded, DEV-0001 through DEV-0005, below the entry template.
+Eight protocol deviations are recorded, DEV-0001 through DEV-0008, below the entry template.
 
 This append-only log is used only after a scientific or claim-bearing artifact has frozen. Open each entry in a pull request before any fix merges or any rerun starts, and merge it complete with the repair (`SPEC.md` Section 11). Pre-freeze design decisions belong in `docs/decisions/`; current slice state belongs in `TASKS.md`, and the dated weekly rollup belongs in `STATUS.md`.
 
@@ -260,3 +260,77 @@ The superseded text is `SPEC.md` v1.23.0 in Git history, with Section 7 pinned a
 ### Claim impact
 
 None. No table, figure, README value, demo aggregate, or report sentence depends on a C1 record.
+
+## DEV-0007 — Decision 0028 item 8's in-sweep integrity check and batch hashes did not run
+
+- Date detected: 2026-11-18
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.24.0; `protocol/active.json` `protocol_version` 1.0.0
+- New protocol version: unchanged. No protocol text, record, oracle, scorer, or schedule changes (see Scope determination).
+- Prior experiment/validation ID: `canary-2026-sweep`, for the sweep and the official C1 run (protocol `CANARY-2026-F20`)
+- Replacement experiment/validation ID: None. No rerun (see Required response).
+- Affected cells/checks/artifacts: no cell. The checks are [decision 0028](decisions/0028-restore-strength.md) item 8's blinded integrity check at about 50% of the sweep and its batch hashes of raw records committed from a second clone during the sweep.
+- Outcome visibility at decision time: Operational only: completion counts, schema checks, and cost. No sweep or C1 outcome had been read.
+
+### Defect
+
+Decision 0028 item 8 required two steps during the sweep. Neither ran. The sweep's runbook had no step for either, and no commit adds batch hashes. No record shows a mid-sweep check: `python -m runner.sweep verify` ran only after the sweep finished and at the November 17 re-check. The project lead found the miss on November 18, while listing every decision obligation before Gate 4.
+
+### Scope determination
+
+This isn't a material measurement defect. No trial, record, oracle, scorer, or schedule changed, and none is known to be wrong. What was lost is in-sweep tamper evidence for the raw records between the runs and their first public anchor. The sweep ran November 16, 9:22–10:20 am Pacific, and the official C1 run 11:26–11:28 am. Both times are file times, read without opening any file. After the runs:
+- the full `verify` passed, 1,080 of 1,080 sweep trials and 12 of 12 C1 trials;
+- `python -m analysis.gate3_hashes --check-run` was clean on both runs;
+- the Drive copy was compared file by file on November 16 and November 17;
+- SHA-256 manifests of both runs were published on `main` in #118, merged November 18, 6:59 pm Pacific.
+
+### Required response
+
+Claim removal. No claim may say the raw records were anchored, hashed, or checked during the sweep. Neither step can run after the sweep has ended. A new sweep would run on a changed host (`os_build`, [decision 0042](decisions/0042-gate4-late-evidence.md) item 7) and isn't proposed.
+
+### Preserved evidence
+
+The original run directories stay in the Gate 3 step checkout at `dd9b02e`, with a Drive copy. Their manifests are `docs/evidence/raw-manifests-2026-11-18/sweep-raw-manifest.json` (SHA-256 `5f60c26689ed0331b35916c77b0fb964cb4c7e07bc536381b851329bcc915cb8`) and `docs/evidence/raw-manifests-2026-11-18/c1-raw-manifest.json` (SHA-256 `95a9ec9c9611592c257964dbae90d4e1c0add6726546f683d8957e97e99ed994`).
+
+### Verification
+
+At the Gate 4 step, `python -m runner.raw_manifest RUN --check MANIFEST` passes on both runs, and the Gate 4 record gives its date. `git log` shows no batch-hash commit between the sweep's first paid call and #118.
+
+### Claim impact
+
+The paper's Section 14 limitations give the first public anchor and say it came after the sweep ended. No table, figure, README value, or number changes.
+
+## DEV-0008 — Gate 4's November 19 target was missed, and its step moves after the fact to November 20
+
+- Date detected: 2026-11-19
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.24.0; `protocol/active.json` `protocol_version` 1.0.0
+- New protocol version: unchanged. Only a gate time changes (see Scope determination).
+- Prior experiment/validation ID: `canary-2026-sweep` (protocol `CANARY-2026-F20`)
+- Replacement experiment/validation ID: None. No rerun.
+- Affected cells/checks/artifacts: no cell. `SPEC.md` Section 11's Gate 4 target and its "Gate 4 fails" response, and the November 19 dates in [decision 0029](decisions/0029-gate-chain-shift.md) item 5 and `TASKS.md`.
+- Outcome visibility at decision time: Operational only: completion counts, schema checks, and cost. No sweep or C1 outcome had been read.
+
+### Defect
+
+`W9-T3`'s sweep, audit, and generated-results pull request, due November 18, wasn't open on November 19. So Gate 4's pass evidence didn't exist at its November 19 target. As written, Section 11's "a missed gate reduces scope" and its Gate 4 response would withhold every empirical comparison.
+
+### Scope determination
+
+The change isn't material. No measurement, schema, oracle, scorer, estimand, threshold, or pass-evidence text changes, and no date moves past one the rules already set: November 20 is the final supported-results date, and the November 22 cutoff stands. The owners of `W9-T3`, `W11-T1`, and `W11-T4` have had raw access since November 17 ([decision 0025](decisions/0025-full-study.md) item 12). This entry doesn't claim they haven't read outcomes.
+
+### Required response
+
+Claim removal. No claim may say Gate 4 met its November 19 target. [Decision 0042](decisions/0042-gate4-late-evidence.md) lets the Gate 4 step and its pass evidence complete through 11:59 pm November 20, once. If any pass item is missing or fails then, Section 11's Gate 4 response applies as written (decision 0042 item 4).
+
+### Preserved evidence
+
+The superseded text is `SPEC.md` v1.24.0 and `TASKS.md` at `58cc847`, in Git history.
+
+### Verification
+
+`tests/test_contract_lock.py` and `tests/test_c1_reference_policy.py` pass unchanged, because no pinned section or the header changed. The Gate 4 record gives the step's time.
+
+### Claim impact
+
+The Gate 4 record, `STATUS.md`, and the paper state that the target was missed and then moved. No table, figure, README value, or number changes.
