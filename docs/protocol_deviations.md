@@ -1,6 +1,6 @@
 # Protocol Deviations
 
-Eight protocol deviations are recorded, DEV-0001 through DEV-0008, below the entry template.
+Nine protocol deviations are recorded, DEV-0001 through DEV-0009, below the entry template.
 
 This append-only log is used only after a scientific or claim-bearing artifact has frozen. Open each entry in a pull request before any fix merges or any rerun starts, and merge it complete with the repair (`SPEC.md` Section 11). Pre-freeze design decisions belong in `docs/decisions/`; current slice state belongs in `TASKS.md`, and the dated weekly rollup belongs in `STATUS.md`.
 
@@ -334,3 +334,42 @@ The superseded text is `SPEC.md` v1.24.0 and `TASKS.md` at `58cc847`, in Git his
 ### Claim impact
 
 The Gate 4 record, `STATUS.md`, and the paper state that the target was missed and then moved. No table, figure, README value, or number changes.
+
+## DEV-0009 — Gate 4's November 20 time was missed, Gate 4 completes by November 23, the release chain moves to the December 3 Demo Day, and the count-only tables leave the public release
+
+- Date detected: 2026-11-21
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.24.0; `protocol/active.json` `protocol_version` 1.0.0
+- New protocol version: unchanged. Only gate and release times change, and one reporting output is removed (see Scope determination).
+- Prior experiment/validation ID: `canary-2026-sweep` (protocol `CANARY-2026-F20`)
+- Replacement experiment/validation ID: None. No rerun.
+- Affected cells/checks/artifacts: no cell. `SPEC.md`'s preamble, its Section 0 release-freeze row, Section 11's readiness-gate sentence, Gate 4 and Gate 5 rows, and "Gate 4 fails" response, and Section 14's paper and repository items; [decision 0028](decisions/0028-restore-strength.md) item 4's public count-only tables; and the dates in [decision 0042](decisions/0042-gate4-late-evidence.md), [decision 0030](decisions/0030-done-by-november-30.md), and `TASKS.md` that [decision 0043](decisions/0043-gate4-and-demo-day-dates.md) lists.
+- Outcome visibility at decision time: Operational only: completion counts, schema checks, cost, and provider errors. No sweep or C1 outcome had been read by the project lead.
+
+### Defect
+
+`W9-T3`'s Gate 4 evidence never arrived, so decision 0042's once-only exception lapsed at 11:59 pm November 20. As written, Section 11's Gate 4 response would withhold every empirical comparison. Decision 0036 item 6's November 20 release path for the count-only tables was also missed. The event organizers confirmed Demo Day for Thursday, December 3, after the release freeze's November 29 date.
+
+### Scope determination
+
+The date changes aren't material. No measurement, schema, oracle, scorer, estimand, threshold, or pass item changes, and the November 22 data cutoff stands: no trial and no repair runs after it. Missingness over 5% makes a headline comparison ineligible, as `SPEC.md` Section 9 already says, rather than failing Gate 4 as a whole.
+
+The count-only removal is a reporting change, made outcome-blind. The sanitizer content-addresses the fields `analysis/diagnostics.py` reads, so those tables can't regenerate from the released bundle, and a new script would be a feature after the freeze. No estimand, scorer, threshold, or pass item changes.
+
+This is the second after-the-fact move of Gate 4, and it lands past Gate 4's own November 22 cutoff. The owners of `W9-T3`, `W11-T1`, and `W11-T4` have had raw access since November 17 ([decision 0025](decisions/0025-full-study.md) item 12). This entry doesn't claim they haven't read outcomes.
+
+### Required response
+
+Claim removal. No claim may say Gate 4 met any earlier time, and no count-only table is public. Decision 0043 lets the Gate 4 step and its pass evidence complete through 11:59 pm November 23. If a whole-sweep pass item is missing or fails then, or no headline comparison remains eligible, the response is `STOP` (decision 0043 item 2).
+
+### Preserved evidence
+
+The superseded text is `SPEC.md` v1.24.0 and `TASKS.md` at `b764432`, in Git history. The project lead may still generate the count-only tables from the raw runs as an internal check. They appear in no public table, number, or claim.
+
+### Verification
+
+`tests/test_contract_lock.py` and `tests/test_c1_reference_policy.py` pass unchanged, because no pinned section or the header changed. The Gate 4 record gives the step's time.
+
+### Claim impact
+
+The Gate 4 record, `STATUS.md`, and the paper state both misses, this second move, which items the project lead built and ran, the removal of the count-only tables and the D2_DATAMARKING bias they size, that the frozen `ENGINEERING` fallback had no executor, and that the replay fixes came before decision 0043. The count-only tables leave the final public tables. No other table, figure, README value, or number changes.
