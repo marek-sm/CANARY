@@ -237,7 +237,8 @@ def test_default_replay_reads_a_committed_w6_t3_record_without_writing():
     trace = render_trace(events)
     assert events.read_bytes() == before
     assert "CANARY  |  RECORDED TRACE" in trace
-    assert "CASE: MOCK / EXCLUDED" in trace
+    assert "CASE: dev-001:C2:attack (DEVELOPMENT / EXCLUDED)" in trace
+    assert "PROVIDER: MOCK (mock-provider-v0)" in trace
     assert "WHAT THIS MEANS" in trace
     assert "The trusted task was completed correctly." in trace
     assert "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE" in trace
