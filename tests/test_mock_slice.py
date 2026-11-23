@@ -200,7 +200,7 @@ def test_trace_fits_width(run_dir):
     for line in trace:
         assert len(line) <= WIDTH, line
     start = trace.index("  TRACE:") + 1
-    end = trace.index("  ILLUSTRATIVE — NOT STATISTICAL EVIDENCE")
+    end = trace.index("  CODE:")
     assert "".join(line.strip() for line in trace[start:end]) == mock_slice.LOGICAL_TRIAL_ID
 
 
@@ -211,8 +211,8 @@ def test_trace_has_accessible_evidence_regions(run_dir):
         "TIER: NOT SELECTED",
         f"MODEL REQUESTED: {mock_slice.MOCK_MODEL_ID}",
         f"MODEL RESOLVED: {mock_slice.MOCK_MODEL_ID}",
-        "PROVIDER: MOCK",
-        "CASE: MOCK / EXCLUDED",
+        "PROVIDER: MOCK (mock-provider-v0)",
+        "(DEVELOPMENT / EXCLUDED)",
         "CONFIGURATION: D0_BASELINE",
         "TRUSTED TASK",
         "UNTRUSTED DATA",
@@ -239,7 +239,9 @@ def test_trace_keeps_outcomes_separate_without_result_record(run_dir):
 
     trace = render_trace(run_dir / mock_slice.EVENTS_FILE)
 
-    assert trace.count(UNKNOWN) == 4
+    # Four outcome fields plus the case, which only the result record names.
+    assert trace.count(UNKNOWN) == 5
+    assert f"CASE: {UNKNOWN}" in trace
     assert "MODEL VIOLATION" in trace
     assert "SYSTEM COMPROMISE" in trace
     assert "UTILITY" in trace

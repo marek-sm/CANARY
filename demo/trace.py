@@ -117,7 +117,10 @@ def _event_line(event: Mapping[str, Any]) -> str:
     if kind == "trial_started":
         text = "TRIAL STARTED"
     elif kind == "provider_attempt":
-        text = f"STEP {p['step']} MODEL RESPONSE, STOP: {(p['raw_response'] or {}).get('stop_reason', 'unknown').upper()}"
+        raw = p["raw_response"] if isinstance(p.get("raw_response"), Mapping) else {}
+        # WT-12: an unparseable response stores a null stop_reason.
+        stop = raw.get("stop_reason") or "unknown"
+        text = f"STEP {p['step']} MODEL RESPONSE, STOP: {str(stop).upper()}"
         if p["outcome"] != "model_response":
             text = f"STEP {p['step']} NO MODEL CONTENT"
     elif kind == "tool_requested":
@@ -125,13 +128,19 @@ def _event_line(event: Mapping[str, Any]) -> str:
         tool = p.get("tool") or canonical_request.get("tool") or "TOOL"
         text = f"REQUESTED {tool}"
     elif kind == "authorization_decision":
-        authorized = p.get("authorized")
+        # WT-11: the D1 gate writes its decision under gate_decision (runner/delivery.py);
+        # a top-level "authorized" is the older form. A null gate_decision is no evidence.
+        decision = p.get("gate_decision")
+        authorized = decision.get("authorized") if isinstance(decision, Mapping) else p.get("authorized")
         if authorized is True:
             text = "AUTHORIZED"
         elif authorized is False:
             text = "UNAUTHORIZED"
         else:
             text = "AUTHORIZATION: NO EVIDENCE / UNKNOWN"
+        action = p.get("gate_action")
+        if isinstance(action, str) and action:
+            text += f", GATE ACTION: {action.upper()}"
     elif kind == "tool_dispatch":
         if p.get("blocked") is True:
             text = "BLOCKED BY POLICY"
@@ -212,6 +221,57 @@ def plain_language_summary(result: Mapping[str, Any]) -> list[str]:
     return statements
 
 
+DEMO_ROLES = ("demo_rehearsal", "demo_stage")  # runner/spend_ledger.py's demo analysis roles
+
+
+def provider_label(events: list[Mapping[str, Any]]) -> str:
+    """N-66-1: the adapter the events record, never a constant."""
+    adapters = {
+        (event.get("component_versions") or {}).get("provider_adapter")
+        for event in events
+    }
+    adapters.discard(None)
+    if len(adapters) != 1:
+        return UNKNOWN if not adapters else "MIXED: " + ", ".join(sorted(adapters))
+    (adapter,) = adapters
+    return f"MOCK ({adapter})" if adapter.startswith("mock-") else adapter
+
+
+def case_label(result: Optional[Mapping[str, Any]]) -> str:
+    """N-66-1: the case and its split or demo role, as the result record states them."""
+    if not result:
+        return UNKNOWN
+    role, split = result.get("analysis_role"), result.get("split")
+    if role in DEMO_ROLES:
+        kind = "DEMO / EXCLUDED"
+    elif split == "development":
+        kind = "DEVELOPMENT / EXCLUDED"
+    elif split == "evaluation":
+        kind = "EVALUATION"
+    elif split == "c1_control":
+        kind = "C1 CONTROL"
+    else:
+        kind = UNKNOWN
+    return f"{result.get('case_id') or UNKNOWN} ({kind})"
+
+
+def _short(value: Any) -> str:
+    return value[:12] if isinstance(value, str) and value else "NOT RECORDED"
+
+
+def binding_lines(result: Optional[Mapping[str, Any]]) -> list[str]:
+    """N-66-2: the code commit and configuration hashes the replay is bound to."""
+    metadata = (result or {}).get("run_metadata") or {}
+    commit = metadata.get("code_commit")
+    lines = [INDENT + "CODE:"]
+    lines += [INDENT + line for line in _wrap_id(commit if isinstance(commit, str) and commit else "NOT RECORDED")]
+    lines += [
+        INDENT + f"PROMPT: {_short(metadata.get('prompt_hash'))}  CORPUS: {_short(metadata.get('corpus_hash'))}",
+        INDENT + f"DEFENSE: {_short(metadata.get('defense_hash'))}",
+    ]
+    return lines
+
+
 def render_trace(events_path: Path) -> str:
     events = read_jsonl(events_path, "event")
     results_path = events_path.parent / RESULTS_FILE
@@ -237,8 +297,9 @@ def render_trace(events_path: Path) -> str:
         INDENT + f"TIER: {tier}",
         INDENT + f"MODEL REQUESTED: {started['payload']['model_requested']}",
         INDENT + f"MODEL RESOLVED: {resolved_model or UNKNOWN}",
-        INDENT + "PROVIDER: MOCK",
-        INDENT + "CASE: MOCK / EXCLUDED",
+        *(INDENT + line for line in _wrap(f"PROVIDER: {provider_label(events)}")),
+        *(INDENT + line for line in _wrap(f"CASE: {case_label(result)}")),
+        *(INDENT + line for line in _wrap(f"EXPERIMENT: {started.get('experiment_id') or UNKNOWN}")),
         INDENT + f"CONFIGURATION: {started['configuration']}",
         "=" * WIDTH,
     ]
@@ -268,7 +329,19 @@ def render_trace(events_path: Path) -> str:
     for event in events:
         timeline += _wrap(_event_line(event))
     lines += _section("EVENT TIMELINE", timeline)
-    lines += _section("FINAL OUTPUT", _wrap(final["payload"]["text"]) if final else [UNKNOWN])
+    # WT-13: disclosure is scored on the cut-off replies joined to the final output
+    # (runner/execute.py), so a disclosure label must have its evidence on screen.
+    ended = next((e["payload"] for e in events if e["event_type"] == "trial_ended"), {})
+    cut_off = ended.get("cut_off_text")
+    if isinstance(cut_off, str) and cut_off:
+        lines += _section("CUT-OFF REPLIES (SCANNED FOR DISCLOSURE)", _wrap(cut_off))
+    if final:
+        final_body = _wrap(final["payload"]["text"])
+    elif ended.get("termination_reason") == "max_steps":
+        final_body = ["NONE: THE TRIAL REACHED ITS STEP LIMIT"]
+    else:
+        final_body = [UNKNOWN]
+    lines += _section("FINAL OUTPUT", final_body)
 
     security = result["security"] if result else {}
     utility = result["utility"] if result else {}
@@ -298,6 +371,7 @@ def render_trace(events_path: Path) -> str:
         INDENT + "TRACE:",
     ]
     lines += [INDENT + line for line in _wrap_id(started["logical_trial_id"])]
+    lines += binding_lines(result)
     lines += [INDENT + "ILLUSTRATIVE — NOT STATISTICAL EVIDENCE", "=" * WIDTH]
     return "\n".join(lines)
 
