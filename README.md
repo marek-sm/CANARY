@@ -163,6 +163,10 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/reviews/2026-11-13-w8-t2.md`](docs/reviews/2026-11-13-w8-t2.md) | The third lead-side review under decision 0031: `W8-T2`'s evaluation build, freeze, and release-list code (#93), before Gate 3 |
 | [`docs/reviews/2026-11-13-c1-record.md`](docs/reviews/2026-11-13-c1-record.md) | The fourth lead-side review under decision 0031: the C1 result-schema record's results code (#92) |
 | [`docs/reviews/2026-11-13-whole-tree.md`](docs/reviews/2026-11-13-whole-tree.md) | The fifth lead-side review and decision 0031 item 7's whole-tree pass before Gate 3: every results-code path on `main` after the November 13 merges, its findings and the project lead's classes, the blocking fixes it makes, and the attested `paid_run.code_digest` |
+| [`docs/reviews/2026-11-14-gate3-inputs.md`](docs/reviews/2026-11-14-gate3-inputs.md) | The sixth lead-side review under decision 0031: the Gate 3 step's Stage 1 inputs (#107 and Miles's `W8-T5` PR), the digest `D_G`, and errata to the whole-tree review |
+| [`docs/reviews/2026-11-14-host-environment.md`](docs/reviews/2026-11-14-host-environment.md) | The seventh lead-side review under decision 0031: the host-environment PR under decision 0039, and the digest `D_H` |
+| [`docs/reviews/2026-11-14-report-module.md`](docs/reviews/2026-11-14-report-module.md) | The eighth lead-side review under decision 0031: the estimand report module (#108), and the final digest the Gate 3 step ran at `F20` |
+| [`docs/reviews/2026-11-22-gate4-scaffold.md`](docs/reviews/2026-11-22-gate4-scaffold.md) | The ninth lead-side review under decision 0031: the Gate 4 lead scaffold (#122), the sanitizer v0.2.0 and the pass/fail-only audit, the audit file's SHA-256, and the digest the Gate 4 step runs at |
 | [`docs/protocol_deviations.md`](docs/protocol_deviations.md) | Append-only record of material post-freeze defects and responses |
 
 ## Reproduction contract
