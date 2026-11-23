@@ -89,6 +89,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`TASKS.md`](TASKS.md) | Work slices, owners, dependencies, gates, and current slice states |
 | [`STATUS.md`](STATUS.md) | Dated weekly gate, evidence, public-risk, and next-outcome rollup |
 | [`AGENTS.md`](AGENTS.md) | Ambient rules for human and automated coding work |
+| [`docs/commitments.md`](docs/commitments.md) | The methods checkpoint the paper is written to; read it before changing anything |
 | [`CLAUDE.md`](CLAUDE.md) | Thin Claude-specific entry point to the same rules |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution, review, testing, and protocol-change process |
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Professional conduct, privacy, consent, and reporting expectations |
@@ -145,6 +146,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/decisions/0041-license-and-author-order.md`](docs/decisions/0041-license-and-author-order.md) | Chooses Apache-2.0 for code and CC BY 4.0 for content, requires each contributor's written agreement before those licenses cover their work, and sets the author-order rule |
 | [`docs/decisions/0042-gate4-late-evidence.md`](docs/decisions/0042-gate4-late-evidence.md) | Records the missed November 19 Gate 4 target and lets the Gate 4 step and its pass evidence complete through November 20, the final supported-results date, as `SPEC.md` Section 11's third recorded exception, with no pass item changed (DEV-0008) |
 | [`docs/decisions/0043-gate4-and-demo-day-dates.md`](docs/decisions/0043-gate4-and-demo-day-dates.md) | Records that Gate 4 also missed November 20, lets its step and pass evidence complete by November 23 with no pass item relaxed, makes a Gate 4 failure `STOP`, removes the count-only tables from the public release, and re-dates the release chain to the confirmed December 3 Demo Day, as `SPEC.md` Section 11's fourth recorded exception (DEV-0009) |
+| [`docs/decisions/0044-binding-methods-checkpoint.md`](docs/decisions/0044-binding-methods-checkpoint.md) | Why the November 21 methods checkpoint sent to the research mentor binds every later change, how a change that would contradict it is stopped and corrected, which of its sentences are dated status, and why its byline is left out |
 | [`docs/W6_T2_HANDOFF.md`](docs/W6_T2_HANDOFF.md) | The five development bases, C1/demo source records, candidate intake, and how to check them |
 | [`docs/W7_T2_HANDOFF.md`](docs/W7_T2_HANDOFF.md) | The W7-T2 evaluation intake: every considered candidate, its source and status, and the selection script |
 | [`docs/W7_T5_HANDOFF.md`](docs/W7_T5_HANDOFF.md) | Replay fallback, excluded demo staging, operator evidence, and paper-lead notes |
