@@ -11,17 +11,20 @@ These rules apply to every human or automated coding session in this repository.
 5. `STATUS.md` owns the dated weekly gate/evidence/risk/next-outcome summary and cannot change items 1–4.
 6. Technical companion documents explain interfaces and implementation boundaries but cannot change items 1–3.
 
+[`docs/commitments.md`](docs/commitments.md) records the methods checkpoint sent to the project's research mentor on November 21, 2026, which the paper is written to ([decision 0044](docs/decisions/0044-binding-methods-checkpoint.md)). It is not a seventh authority: it changes none of items 1–6 and never delays `SPEC.md` Section 11 change control. A change that would contradict it waits for the project lead's decision.
+
 A conflict among these artifacts blocks the affected work. Do not choose whichever interpretation is convenient. Open a decision or protocol-deviation record and reconcile the artifacts under Section 11 of `SPEC.md`.
 
 ## Start every slice
 
-1. Read the latest `STATUS.md` for the current gate and public risks.
-2. Read the assigned entry in `TASKS.md` and its cited `SPEC.md` sections.
-3. Identify the acceptance evidence before changing code.
-4. Confirm whether the work touches frozen or claim-bearing artifacts.
-5. Make the smallest coherent change that satisfies the slice.
-6. Run the relevant tests and record the command and result in the pull request.
-7. Update `TASKS.md` only after evidence exists; update `STATUS.md` only when the dated weekly summary is affected.
+1. Read [`docs/commitments.md`](docs/commitments.md). Before any change that would contradict it, stop and tell the project lead; the file says how.
+2. Read the latest `STATUS.md` for the current gate and public risks.
+3. Read the assigned entry in `TASKS.md` and its cited `SPEC.md` sections.
+4. Identify the acceptance evidence before changing code.
+5. Confirm whether the work touches frozen or claim-bearing artifacts.
+6. Make the smallest coherent change that satisfies the slice.
+7. Run the relevant tests and record the command and result in the pull request.
+8. Update `TASKS.md` only after evidence exists; update `STATUS.md` only when the dated weekly summary is affected.
 
 ## Ownership and completion
 

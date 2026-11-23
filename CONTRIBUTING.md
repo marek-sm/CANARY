@@ -8,8 +8,9 @@ Read, in order:
 
 1. [`SPEC.md`](SPEC.md), especially the sections cited by your task;
 2. [`AGENTS.md`](AGENTS.md);
-3. the active slice in [`TASKS.md`](TASKS.md); and
-4. the relevant guide under `docs/`.
+3. [`docs/commitments.md`](docs/commitments.md), the methods checkpoint the paper is written to. Flag in your pull request anything your change might contradict, and the project lead checks ([decision 0044](docs/decisions/0044-binding-methods-checkpoint.md));
+4. the active slice in [`TASKS.md`](TASKS.md); and
+5. the relevant guide under `docs/`.
 
 Until a `LICENSE` and contribution terms are committed, external contributions are not accepted. Authorized project participants should confirm applicable club or university contribution terms with project leadership; this document does not create or alter ownership, and public availability alone does not grant reuse rights.
 

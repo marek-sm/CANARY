@@ -1756,6 +1756,7 @@ A conventional steering-document pattern is useful here, but CANARY needs differ
 | `docs/DEMO_DESIGN.md` | Terminal layout, typography, color-plus-text states, recording, timing-confirmation, and accessibility | Define results, metrics, claims, or an unconfirmed live duration |
 | `docs/DATA_RELEASE.md` | Data classification, sanitizer operations, release checks, and incident response | Authorize restricted content or change scored fields |
 | `docs/decisions/README.md` | Decision-record scope, lifecycle, and template | Replace status tracking or post-freeze protocol deviations |
+| `docs/commitments.md` | The methods checkpoint as sent to the research mentor on November 21, 2026, which of its sentences are dated status, and the log of corrections sent ([decision 0044](docs/decisions/0044-binding-methods-checkpoint.md)) | Define or change scientific meaning, hold current status, or delay Section 11 change control |
 | `docs/contributions/README.md` | Evidence and consent format for accurate public credit | Record selection, ranking, private feedback, or personal evaluation |
 | `docs/protocol_deviations.md` | Append-only record of material post-freeze defects and responses | Hide superseded evidence or replace pre-freeze decision records |
 
