@@ -1,6 +1,6 @@
 # Protocol Deviations
 
-Nine protocol deviations are recorded, DEV-0001 through DEV-0009, below the entry template.
+Ten protocol deviations are recorded, DEV-0001 through DEV-0010, below the entry template.
 
 This append-only log is used only after a scientific or claim-bearing artifact has frozen. Open each entry in a pull request before any fix merges or any rerun starts, and merge it complete with the repair (`SPEC.md` Section 11). Pre-freeze design decisions belong in `docs/decisions/`; current slice state belongs in `TASKS.md`, and the dated weekly rollup belongs in `STATUS.md`.
 
@@ -373,3 +373,38 @@ The superseded text is `SPEC.md` v1.24.0 and `TASKS.md` at `b764432`, in Git his
 ### Claim impact
 
 The Gate 4 record, `STATUS.md`, and the paper state both misses, this second move, which items the project lead built and ran, the removal of the count-only tables and the D2_DATAMARKING bias they size, that the frozen `ENGINEERING` fallback had no executor, and that the replay fixes came before decision 0043. The count-only tables leave the final public tables. No other table, figure, README value, or number changes.
+
+## DEV-0010 — `eval-006`'s rendered fixtures keep two real third-party URLs, and the source-written contact identifiers in the corpus records are ruled public source text
+
+- Date detected: 2026-11-13
+- Recorded by: marek-sm
+- Prior protocol version: `SPEC.md` v1.24.0; `protocol/active.json` `protocol_version` 1.0.0
+- New protocol version: unchanged. No protocol text, hashed file, or record changes.
+- Prior experiment/validation ID: `canary-2026-sweep` (protocol `CANARY-2026-F20`)
+- Replacement experiment/validation ID: None. No rerun.
+- Affected cells/checks/artifacts: no cell or check. The frozen base `eval-006` (`corpus/evaluation/eval-006.json` and `fixtures/eval-006/rendered/`), and the `original_payload` and `adaptation_notes` fields of the corpus records and of `corpus/release/payloads.json`.
+- Outcome visibility at decision time: Outcomes visible. Gate 4 had passed, so the project lead could read outcomes ([decision 0025](decisions/0025-full-study.md) item 12). This ruling reads none: it rests on the corpus text, the source licenses, and the tool sandbox only.
+
+### Defect
+
+The W8-T2 review of November 13 found that `eval-006`'s adapted payload, and so its three rendered fixtures, keep two real third-party URLs (N-93-6, [`docs/reviews/2026-11-13-w8-t2.md`](reviews/2026-11-13-w8-t2.md)). That conflicts with `AGENTS.md`'s "reserved/example domains" and with `SPEC.md` Section 3's "Every secret, identity, record, domain, and message is synthetic". The same review asked which release class the contact identifiers in the sources' original text belong to (Q-93-2). The project lead classified the review as non-safety and non-blocking on November 13, before the Gate 3 freeze, and ruled on Q-93-2 on November 24 in [decision 0045](decisions/0045-source-contact-identifiers.md). No value is given here.
+
+### Scope determination
+
+Not material. No measurement, schema, oracle, scorer, estimand, threshold, pass item, or scored field changes. `tools/sandbox.py` denies every tool every network endpoint (`tests/test_tool_sandbox.py`), so no tool could reach either URL or any source-written address. The finding predates the November 22 cutoff, so [decision 0043](decisions/0043-gate4-and-demo-day-dates.md) item 5 doesn't apply. `eval-006` is one of the 20 frozen bases and stays in every comparison as frozen.
+
+### Required response
+
+Claim removal. The release and the paper make no claim that every fixture domain is reserved or synthetic. The safety boundary's claim that no real email, site, person, account, or secret can be affected stands, and the tool sandbox is its proof.
+
+### Preserved evidence
+
+Every affected file is unchanged on `main` and in Git history, under Gate 3's `corpus_hash` and `source_ledger_hash` (`corpus/freeze.json`) where it falls in them.
+
+### Verification
+
+`tests/test_contract_lock.py`, `tests/test_tool_sandbox.py`, and `tests/test_release_payloads.py` pass unchanged. Decision 0045's pull request touches no `HASHED_DIRS` path.
+
+### Claim impact
+
+`THIRD_PARTY_NOTICES.md` and the paper's limitations disclose that the corpus records reproduce source text verbatim, including the contact addresses and URLs the sources wrote, and that `eval-006` keeps two real URLs. No table, figure, README value, or number changes.

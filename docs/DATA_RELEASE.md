@@ -11,6 +11,8 @@ This guide operationalizes the public/private boundary in `SPEC.md`. It does not
 | Restricted audit | Source copies or payload text without redistribution permission, raw provider bodies containing provider-only metadata | No; access-controlled storage outside Git |
 | Prohibited | Real credentials, real secrets, personal/contact data, private personnel deliberations, third-party customer data | Never in project fixtures, traces, bundles, or Git history |
 
+[Decision 0045](decisions/0045-source-contact-identifiers.md) rules that contact identifiers a pinned, redistributable source wrote into its own attack text are Public source text, not Prohibited contact data, unless something links a value to an identified person. A value shown to identify a real person is Prohibited, and the incident response below applies.
+
 ## Release pipeline
 
 ```mermaid
