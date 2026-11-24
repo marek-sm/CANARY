@@ -1,0 +1,86 @@
+# Gate 4 step checks, run 2026-11-23 from 6:38 pm (output folder created) to 6:54 pm PST at HEAD ce0fd0761a392f21dcc63b976595c913ae317110
+# Copied from the project lead's terminal, unedited apart from these header lines and the "$ " prompt prefix.
+# The shell variables were:
+#   SWEEP=~/Projects/CANARY-wt-gate3/results/raw/sweep/canary-2026-sweep
+#   C1=~/Projects/CANARY-wt-gate3/results/raw/c1/canary-2026-sweep
+#   OUT=~/Projects/gate4-2026-11-23
+# Setup: `git switch main && git pull --ff-only` fast-forwarded 337ae81..ce0fd07, and `git rev-parse HEAD`
+# printed ce0fd0761a392f21dcc63b976595c913ae317110. A trailing "# empty" note was passed to `git status --short`
+# as an argument (zsh without interactivecomments) and errored; `git status --short` printed nothing when
+# re-checked from the AI session before step 1. No other command was affected.
+
+$ shasum -a 256 docs/evidence/raw-manifests-2026-11-18/*.json
+95a9ec9c9611592c257964dbae90d4e1c0add6726546f683d8957e97e99ed994  docs/evidence/raw-manifests-2026-11-18/c1-raw-manifest.json
+5f60c26689ed0331b35916c77b0fb964cb4c7e07bc536381b851329bcc915cb8  docs/evidence/raw-manifests-2026-11-18/sweep-raw-manifest.json
+
+$ python -m runner.raw_manifest "$SWEEP" --check docs/evidence/raw-manifests-2026-11-18/sweep-raw-manifest.json
+ok: 1 run(s) match docs/evidence/raw-manifests-2026-11-18/sweep-raw-manifest.json
+
+$ python -m runner.raw_manifest "$C1" --check docs/evidence/raw-manifests-2026-11-18/c1-raw-manifest.json
+ok: 1 run(s) match docs/evidence/raw-manifests-2026-11-18/c1-raw-manifest.json
+
+$ python -m analysis.gate3_hashes --check-run "$SWEEP" --active protocol/active.json; echo "exit $?"
+gate3_hashes: every invocation in /Users/marek/Projects/CANARY-wt-gate3/results/raw/sweep/canary-2026-sweep ran in protocol/active.json's host environment
+exit 0
+
+$ python -m analysis.gate3_hashes --check-run "$C1" --active protocol/active.json; echo "exit $?"
+gate3_hashes: every invocation in /Users/marek/Projects/CANARY-wt-gate3/results/raw/c1/canary-2026-sweep ran in protocol/active.json's host environment
+exit 0
+
+$ python -m runner.lead_review check
+an attested lead-side review covers this checkout
+
+$ shasum -a 256 scripts/gate4_audit.py analysis/sanitizer.py
+71bf110d284084ba300d5f2c10c13ac80a17943864dd7b3720d0f500379e3ea5  scripts/gate4_audit.py
+14880c38fcfb42cacaa56584e7b4efd3fc24ef40615da04a6998c0e2f0e36f65  analysis/sanitizer.py
+
+$ python -m analysis.sanitizer --in "$SWEEP" --out "$OUT/sweep-bundle" --commit "$(git rev-parse HEAD)" --protocol-id CANARY-2026-F20
+sanitized bundle written; manifest /Users/marek/Projects/gate4-2026-11-23/sweep-bundle/manifest.json
+
+$ python -m analysis.sanitizer --in "$C1" --out "$OUT/c1-bundle" --commit "$(git rev-parse HEAD)" --protocol-id CANARY-2026-F20
+sanitized bundle written; manifest /Users/marek/Projects/gate4-2026-11-23/c1-bundle/manifest.json
+
+$ python scripts/gate4_audit.py --raw "$SWEEP" --sanitized "$OUT/sweep-bundle" --c1-raw "$C1" --c1-sanitized "$OUT/c1-bundle" > "$OUT/gate4-audit.txt"; echo "exit $?"
+exit 0
+
+$ cat "$OUT/gate4-audit.txt"
+verify_sweep: pass
+sanitized_match: pass
+missingness: pass
+model_comparability: pass
+attempt_histories: pass
+identifiers: pass
+resets: pass
+eligible_model_violation_rate_baseline: pass
+eligible_model_violation_rate_policy_gate: pass
+eligible_model_violation_rate_datamarking: pass
+eligible_system_compromise_rate_baseline: pass
+eligible_system_compromise_rate_policy_gate: pass
+eligible_system_compromise_rate_datamarking: pass
+eligible_clean_utility_baseline: pass
+eligible_clean_utility_policy_gate: pass
+eligible_clean_utility_datamarking: pass
+eligible_high_risk_clean_utility_baseline: pass
+eligible_high_risk_clean_utility_policy_gate: pass
+eligible_high_risk_clean_utility_datamarking: pass
+eligible_datamarking_attack_risk_difference: pass
+eligible_datamarking_injection_specific_difference: pass
+eligible_policy_gate_residual_system_risk_difference: pass
+eligible_clean_utility_cost_policy_gate: pass
+eligible_clean_utility_cost_datamarking: pass
+overall_sweep: PASS
+c1_verify: pass
+c1_sanitized_match: pass
+c1_model_comparability: pass
+c1_attempt_histories: pass
+c1_identifiers: pass
+c1_resets: pass
+overall_c1: PASS
+
+$ python -m analysis.lead_outputs "$SWEEP" --out "$OUT/lead_outputs.md"; echo "exit $?"
+exit 0
+
+$ python -m analysis.report "$SWEEP" --active protocol/active.json --c1-run "$C1" --out "$OUT/report.md"; echo "exit $?"
+exit 0
+
+$ git status --short
