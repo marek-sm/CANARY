@@ -2,6 +2,8 @@
 
 CANARY's corpus uses attack payload text from the sources below. That text, original or adapted, stays under each source's license ([decision 0041](docs/decisions/0041-license-and-author-order.md)). `corpus/release/payloads.json` records the source of each entry.
 
+The corpus records reproduce each source's original text verbatim, including the contact addresses and URLs the source wrote into its attack text. CANARY's adapted payloads replace every email address with a `fixture.test` recipient. One evaluation base, `eval-006`, keeps two real third-party URLs from its source. No CANARY tool can reach any external address or site (`tools/sandbox.py`). If you believe a value here identifies a real person, follow `SECURITY.md`'s private reporting route, and don't post the value publicly ([decision 0045](docs/decisions/0045-source-contact-identifiers.md)).
+
 ## AgentDojo
 
 Source: <https://github.com/ethz-spylab/agentdojo>, tag v0.1.35, commit `a75aba7631d3ca5fb7ab938965c97ead2f9ff84b`.
