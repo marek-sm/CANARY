@@ -100,6 +100,24 @@ The project lead made this decision on November 23, after the step (decision 004
 - **C1** appears only in its separate descriptive table and never enters a reported estimate.
 - **Claims** stay inside `SPEC.md` Section 1's barred claims, and no count-only table is public.
 
+## Final supported-results decision
+
+The project lead made this decision on the evening of November 25, before its 11:59 pm deadline (decision 0043 item 6; `TASKS.md`, lead inputs). `W11-T3`'s last push binds to it by 6:00 pm Friday, November 27.
+
+- **`W11-T1` and `W11-T4` hadn't merged before it.** At 9:00 pm November 25, GitHub showed no pull request or branch for either, nor for `W9-T1` or `W9-T4`, which they depend on. So no result below has had `W11-T1`'s task and utility audit or `W11-T4`'s enforcement-conformance and claim-boundary audit.
+- **The decision is the provisional decision above, unchanged:** the same eligibility, sentence form, supported and reported-only lists, C1 rule, and claim limits. No comparison is excluded, because no defect found after the cutoff has been reported.
+- **A defect found later,** by `W11-T1`, `W11-T4`, `W12-T3`, or anyone else, can't be repaired. Decision 0043 item 5 applies: the whole affected comparison is preserved and excluded, or the whole affected experiment if the scope is uncertain, and the response is `STOP` if no supported comparison remains.
+- **What waits:** `W12-T1` depends on `W11-T1`, and `W12-T4` on `W11-T4`, so neither starts until those merge (`TASKS.md`, the dependency rule). This record changes none of decision 0043 item 6's later dates, including `W12-T4`'s claim boundaries by 6:00 pm Friday, November 27 and the final claim language by 6:00 pm Monday, November 30.
+
+## Approved result summary for the video
+
+The project lead approved this summary on the evening of November 25, before its 11:59 pm deadline (decision 0043 item 6; `TASKS.md`, lead inputs). `W12-T1` uses it, and `W12-T3` audits it.
+
+- **Wording.** The video states the result only in `SPEC.md` Section 1's development-floor sentence, and only for what the final decision above supports. The D0_BASELINE and D2_DATAMARKING attacked counts keep that sentence's "not interpreted", with no verb of change.
+- **Numbers.** Every number comes from the generated outputs that `W11-T3` binds and `W11-T5` integrates. None is typed into the video script (`W12-T1`).
+- **Said with it:** one hosted model (`claude-haiku-5-5`), fictional local tools, and that the predeclared development floor applied.
+- **Never in the video:** C1 results, any count-only table, or any claim under `SPEC.md` Section 1's "Claims CANARY may not make".
+
 ## What this record states
 
 - **Both misses, and decision 0043** (decision 0043 item 9; decision 0042 items 1 and 8).
@@ -121,6 +139,6 @@ The project lead made this decision on November 23, after the step (decision 004
 - **The replay fixes came before decision 0043** (decision 0043 item 7). They were built on November 21, before that record merged. Miles approved [#121](https://github.com/marek-sm/CANARY/pull/121) at 5:39 pm November 22, and it merged at 11:25 pm.
 - **The host changed after the sweep** (decision 0042 item 7). macOS updated itself to 27.2.1 on November 18. `analysis.gate3_hashes --check` on this Mac now differs from `protocol/active.json` on `os_build` only. `--check-run` compares the runs' stored provenance, not this Mac, and passed on both runs. No repair ran, so no repair host was needed. `paid_run record` on this host still needs checking before the December 2 live-first gate.
 - **DEV-0007.** Decision 0028 item 8's in-sweep integrity check at about 50% and its batch hashes didn't run. The raw manifests anchor the files only from their publication on November 18. Step 1 shows that the files haven't changed since then, not before.
-- **`W11-T1` and `W11-T4`** hadn't merged at the step. The decision above is provisional until they merge, by 6:00 pm Wednesday, November 25. The final supported-results decision, by 11:59 pm November 25, records whether they had merged before it.
+- **`W11-T1` and `W11-T4`** hadn't merged at the step. The provisional decision was to stay provisional until they merged, by 6:00 pm Wednesday, November 25. The final supported-results decision above records that they hadn't, and it keeps the provisional decision unchanged.
 - **Not checked by the AI session:** the attestation row lives in `~/.canary` on the project lead's machine, so only `lead_review check`'s output above shows it.
 - This record claims nothing about what any estimand shows.
