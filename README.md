@@ -156,6 +156,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/W8_T4_HANDOFF.md`](docs/W8_T4_HANDOFF.md) | W8-T4 defense freeze: the defense freeze manifest, the recheck, and draft threat-model, defense, event-semantics, and security-test notes for the paper leads |
 | [`docs/audits/2026-11-13-w8-t4-recheck.md`](docs/audits/2026-11-13-w8-t4-recheck.md) | The SPEC.md Section 5 step 8 provenance and fixture-hash recheck of 4 sampled cases |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
+| [`LICENSE`](LICENSE) | Apache-2.0 for code and CC BY 4.0 for content under decision 0041, the path mapping, and the files left unlicensed because a contributor holding lines in them hasn't agreed |
 | [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | License notices for the corpus's four payload sources, and the notice that the corpus records reproduce source text verbatim, including source-written contact addresses and URLs (decision 0045) |
 | [`docs/evidence/raw-manifests-2026-11-18/`](docs/evidence/raw-manifests-2026-11-18/README.md) | SHA-256 manifests of the official sweep's and C1 run's raw results and events files, written after the runs, with what they do and don't establish |
 | [`docs/evidence/gate3-2026-11-15/`](docs/evidence/gate3-2026-11-15/README.md) | The Gate 3 step's record for November 15, under decision 0040: `protocol/active.json` at `F20` (1,092 official trials), the sweep and C1 specs, the step driver, each check's output, and the recomputed hashes |
@@ -183,7 +184,7 @@ CANARY does not claim to solve prompt injection, establish general security, ran
 
 ## License and citation
 
-No reuse license is implied until a `LICENSE` file is committed. [Decision 0041](docs/decisions/0041-license-and-author-order.md) chooses the licenses, and they apply only once `LICENSE` is on `main`. `CITATION.cff` is created only after the consented author list is stable.
+[`LICENSE`](LICENSE) applies [decision 0041](docs/decisions/0041-license-and-author-order.md): Apache-2.0 covers code and CC BY 4.0 covers content, as its path mapping says. Two contributors haven't posted the agreement on [#117](https://github.com/marek-sm/CANARY/issues/117), so `LICENSE` lists every file holding their surviving lines as unlicensed, this README among them. Those files are public with no reuse right, and any statement that CANARY's work can be reused or adopted covers only the licensed paths. Third-party payload text keeps its sources' MIT licenses ([`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)). `CITATION.cff` is created only after the consented author list is stable.
 
 ### W5-T1 mock tool/task smoke
 
