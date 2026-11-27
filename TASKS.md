@@ -391,6 +391,14 @@ W9 runs in club week 12 ([decision 0021](docs/decisions/0021-two-week-shift.md))
 | W9-T4 | Policy, defense, event, and sandbox hashes verified without tuning; no defense tuning after freeze; publication consent and attribution language submitted, from the folded `W10-T4` **Recorded November 17 by the project lead:** the pull request, due November 16, wasn't open by the end of that day and still wasn't open at 7:00 pm on November 17. | 1.75 | `W8-T4` (Mon) | → W11-T4 conformance-audit tooling | — | Dhruv |
 | W9-T5 | Component methods and related-work handoffs assembled from the `W8-T1` through `W8-T4` draft notes and frozen for the designated paper leads; pre-results paper assets completed, with those that use only `W5-T5`'s shells planned as `W8-T5` pull-forward in club week 11 ([decision 0021](docs/decisions/0021-two-week-shift.md)); replay and the empty accessible outputs kept working against frozen code; from the folded `W10-T5`, release-candidate accessibility support and offline media preparation that do not depend on results, and publication consent and attribution language submitted **Recorded November 17 by the project lead:** the pull request, due November 16, wasn't open by the end of that day and still wasn't open at 7:00 pm on November 17. The branch `codex/w9-t5-paper-handoff` carries a commit from 5:17 pm on November 16. | 7.0 ⚠ | W8-T5, `W8-T1`, `W8-T2`, `W8-T3`, `W8-T4` draft notes (Mon) | → W11-T5's code and content `LICENSE` from the lead's November 8 license choice, planned for this week (decision 0021), and waiting for every agreement under [decision 0041](docs/decisions/0041-license-and-author-order.md); then release-candidate assets that do not depend on results | Accessible output polish and offline media preparation → W11-T5 | Miles |
 
+**November 16 W9-T5 progress note.** T5 assembled the component-method and
+related-work routing, the result-independent offline-media plan, and the updated
+identifier-only contribution record on `codex/w9-t5-paper-handoff`. The frozen
+output check, empty `make report`, read-only `make replay`, accessible-example
+check, and the 749-test focused report/replay suite pass without a provider key
+or network. This records acceptance evidence on the branch; it does not call the
+slice merged or create an empirical result.
+
 ### W10 — folded into W9 and W11 (October 11 re-plan)
 
 Under [decision 0011](docs/decisions/0011-week8-replan.md), the official sweep runs once, in W9, so W10's work moved to W9 and W11 and these rows carry no work. They stay so the lattice keeps its 45 slice IDs.

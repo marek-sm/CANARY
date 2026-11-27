@@ -155,6 +155,7 @@ See [`SECURITY.md`](SECURITY.md) for reporting and safe-testing rules.
 | [`docs/audits/2026-11-11-w8-t2-citation-audit.md`](docs/audits/2026-11-11-w8-t2-citation-audit.md) | The SPEC.md Section 15 corpus-freeze citation audit for the 20 frozen cases |
 | [`docs/W8_T4_HANDOFF.md`](docs/W8_T4_HANDOFF.md) | W8-T4 defense freeze: the defense freeze manifest, the recheck, and draft threat-model, defense, event-semantics, and security-test notes for the paper leads |
 | [`docs/audits/2026-11-13-w8-t4-recheck.md`](docs/audits/2026-11-13-w8-t4-recheck.md) | The SPEC.md Section 5 step 8 provenance and fixture-hash recheck of 4 sampled cases |
+| [`docs/W9_T5_HANDOFF.md`](docs/W9_T5_HANDOFF.md) | W9-T5 component-method routing, pre-results paper assets, offline-media preparation, accessible replay/report checks, and contribution-record handoff |
 | [`docs/contributions/README.md`](docs/contributions/README.md) | Evidence and consent format for accurate public credit |
 | [`LICENSE`](LICENSE) | Apache-2.0 for code and CC BY 4.0 for content under decision 0041, the path mapping, and the files left unlicensed because a contributor holding lines in them hasn't agreed |
 | [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | License notices for the corpus's four payload sources, and the notice that the corpus records reproduce source text verbatim, including source-written contact addresses and URLs (decision 0045) |
